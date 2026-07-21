@@ -1,10 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/main.dart';
 
 void main() {
-  testWidgets('shows people screen', (tester) async {
-    await tester.pumpWidget(const UnidcomApp());
+  testWidgets('shows login screen', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: LoginScreen()));
 
-    expect(find.text('People'), findsOneWidget);
+    expect(find.text('Sign in'), findsWidgets);
   });
 }
