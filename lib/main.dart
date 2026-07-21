@@ -8,6 +8,7 @@ import 'app/dashboard.dart';
 import 'app/my_profile.dart';
 import 'app/reports.dart';
 import 'app/review_queue.dart';
+import 'data/supabase.dart' as data;
 import 'public/outputs.dart';
 import 'public/people_list.dart';
 import 'public/person_page.dart';
@@ -41,6 +42,9 @@ final _router = GoRouter(
     final onLogin = state.matchedLocation == '/login';
     if (!hasSession) return onLogin ? null : '/login';
     if (onLogin || state.matchedLocation == '/') return '/people';
+    if (state.matchedLocation == '/app/review' && !data.isAdmin) {
+      return '/people';
+    }
     return null;
   },
   routes: [
@@ -57,10 +61,13 @@ final _router = GoRouter(
         ),
         GoRoute(path: '/projects', builder: (_, _) => const ProjectsScreen()),
         GoRoute(path: '/outputs', builder: (_, _) => const OutputsScreen()),
+        GoRoute(
+          path: '/app/review',
+          builder: (_, _) => const ReviewQueueScreen(),
+        ),
       ],
     ),
     GoRoute(path: '/app/profile', builder: (_, _) => const MyProfileScreen()),
-    GoRoute(path: '/app/review', builder: (_, _) => const ReviewQueueScreen()),
     GoRoute(path: '/app/dashboard', builder: (_, _) => const DashboardScreen()),
     GoRoute(path: '/app/reports', builder: (_, _) => const ReportsScreen()),
   ],
@@ -101,20 +108,30 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final path = GoRouterState.of(context).uri.path;
-    final index = path.startsWith('/outputs')
-        ? 1
-        : path.startsWith('/projects')
-        ? 2
-        : 0;
+    final admin = data.isAdmin;
+    final destinations = [
+      _NavItem('/people', Icons.people, 'People'),
+      _NavItem('/outputs', Icons.article, 'Outputs'),
+      _NavItem('/projects', Icons.work, 'Projects'),
+      if (admin) _NavItem('/app/review', Icons.rate_review, 'Review'),
+    ];
+    final index = destinations.indexWhere((item) => path.startsWith(item.path));
+    final selectedIndex = index < 0 ? 0 : index;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(switch (index) {
-          1 => 'Outputs',
-          2 => 'Projects',
+        title: Text(switch (destinations[selectedIndex].path) {
+          '/outputs' => 'Outputs',
+          '/projects' => 'Projects',
+          '/app/review' => 'Review Queue',
           _ => 'People',
         }),
         actions: [
+          IconButton(
+            tooltip: 'My profile',
+            icon: const Icon(Icons.account_circle),
+            onPressed: () => context.go('/app/profile'),
+          ),
           IconButton(
             tooltip: 'Sign out',
             icon: const Icon(Icons.logout),
@@ -124,20 +141,23 @@ class AppShell extends StatelessWidget {
       ),
       body: child,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (value) => context.go(switch (value) {
-          1 => '/outputs',
-          2 => '/projects',
-          _ => '/people',
-        }),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.people), label: 'People'),
-          NavigationDestination(icon: Icon(Icons.article), label: 'Outputs'),
-          NavigationDestination(icon: Icon(Icons.work), label: 'Projects'),
+        selectedIndex: selectedIndex,
+        onDestinationSelected: (value) => context.go(destinations[value].path),
+        destinations: [
+          for (final item in destinations)
+            NavigationDestination(icon: Icon(item.icon), label: item.label),
         ],
       ),
     );
   }
+}
+
+class _NavItem {
+  const _NavItem(this.path, this.icon, this.label);
+
+  final String path;
+  final IconData icon;
+  final String label;
 }
 
 class LoginScreen extends StatefulWidget {

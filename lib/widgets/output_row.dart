@@ -7,12 +7,14 @@ class OutputRow extends StatelessWidget {
     this.year,
     this.type,
     this.detail,
+    this.trailing,
   });
 
   final String title;
   final int? year;
   final String? type;
   final String? detail;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +27,7 @@ class OutputRow extends StatelessWidget {
     return ListTile(
       title: Text(title),
       subtitle: meta.isEmpty ? null : Text(meta),
+      trailing: trailing,
     );
   }
 }
