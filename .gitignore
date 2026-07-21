@@ -1,4 +1,6 @@
 # Miscellaneous
+.DS_Store
+**/.DS_Store
 *.class
 *.lock
 *.log
@@ -6,6 +8,11 @@
 *.swp
 .buildlog/
 .history
+scripts/.env
+scripts/out/
+RAW_DATA/
+data/
+local_data/
 
 
 
