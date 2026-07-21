@@ -30,8 +30,10 @@ create table public.people (
   auth_user_id uuid references auth.users on delete set null,   -- links a researcher to a login (nullable)
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
+  -- ponytail: no unaccent() here — it is not IMMUTABLE so it can't be in a generated column.
+  -- 'simple' config keeps accents; the pg_trgm index below gives accent-tolerant fuzzy match.
   search tsvector generated always as
-    (to_tsvector('simple', unaccent(coalesce(preferred_name,'') || ' ' || coalesce(bio,'')))) stored
+    (to_tsvector('simple', coalesce(preferred_name,'') || ' ' || coalesce(bio,''))) stored
 );
 create index people_search_idx on public.people using gin (search);
 create index people_name_trgm_idx on public.people using gin (preferred_name gin_trgm_ops);
