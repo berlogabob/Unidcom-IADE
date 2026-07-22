@@ -2,4 +2,4 @@
 name = "unidcom-scripts"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["httpx", "python-dotenv", "supabase"]
+dependencies = ["httpx", "openpyxl", "python-dotenv", "supabase"]
