@@ -62,14 +62,17 @@ final _router = GoRouter(
         GoRoute(path: '/projects', builder: (_, _) => const ProjectsScreen()),
         GoRoute(path: '/outputs', builder: (_, _) => const OutputsScreen()),
         GoRoute(
+          path: '/app/dashboard',
+          builder: (_, _) => const DashboardScreen(),
+        ),
+        GoRoute(path: '/app/reports', builder: (_, _) => const ReportsScreen()),
+        GoRoute(
           path: '/app/review',
           builder: (_, _) => const ReviewQueueScreen(),
         ),
       ],
     ),
     GoRoute(path: '/app/profile', builder: (_, _) => const MyProfileScreen()),
-    GoRoute(path: '/app/dashboard', builder: (_, _) => const DashboardScreen()),
-    GoRoute(path: '/app/reports', builder: (_, _) => const ReportsScreen()),
   ],
 );
 
@@ -113,6 +116,8 @@ class AppShell extends StatelessWidget {
       _NavItem('/people', Icons.people, 'People'),
       _NavItem('/outputs', Icons.article, 'Outputs'),
       _NavItem('/projects', Icons.work, 'Projects'),
+      _NavItem('/app/dashboard', Icons.dashboard, 'Dashboard'),
+      _NavItem('/app/reports', Icons.table_chart, 'Reports'),
       if (admin) _NavItem('/app/review', Icons.rate_review, 'Review'),
     ];
     final index = destinations.indexWhere((item) => path.startsWith(item.path));
@@ -123,6 +128,8 @@ class AppShell extends StatelessWidget {
         title: Text(switch (destinations[selectedIndex].path) {
           '/outputs' => 'Outputs',
           '/projects' => 'Projects',
+          '/app/dashboard' => 'Dashboard',
+          '/app/reports' => 'Reports',
           '/app/review' => 'Review Queue',
           _ => 'People',
         }),

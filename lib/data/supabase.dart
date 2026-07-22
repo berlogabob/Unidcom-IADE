@@ -150,6 +150,41 @@ Future<List<Map<String, dynamic>>> fetchStalePeople() async {
   }
 }
 
+Future<List<Map<String, dynamic>>> fetchPeopleForStats() async {
+  try {
+    final rows = await db
+        .from('people')
+        .select('id, preferred_name, membership_type, orcid, last_verified_at')
+        .order('preferred_name');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<List<Map<String, dynamic>>> fetchOutputsForStats() async {
+  try {
+    final rows = await db
+        .from('outputs')
+        .select('id, type, subtype, reporting_year')
+        .order('type');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<List<Map<String, dynamic>>> fetchAuthorCounts() async {
+  try {
+    final rows = await db
+        .from('output_authors')
+        .select('person_id, people(preferred_name)');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<List<Map<String, dynamic>>> fetchOutputs({
   String? query,
   int? year,
@@ -166,6 +201,31 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
     }
     if (year != null) {
       request = request.eq('reporting_year', year);
+    }
+    final rows = await request
+        .order('reporting_year', ascending: false)
+        .order('title');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<List<Map<String, dynamic>>> fetchOutputsForReport({
+  int? year,
+  String? type,
+}) async {
+  try {
+    var request = db
+        .from('outputs')
+        .select(
+          'id, title, reporting_year, type, subtype, doi, url, output_authors(people(preferred_name))',
+        );
+    if (year != null) {
+      request = request.eq('reporting_year', year);
+    }
+    if (type != null && type.isNotEmpty) {
+      request = request.eq('type', type);
     }
     final rows = await request
         .order('reporting_year', ascending: false)
