@@ -75,6 +75,73 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
   }
 }
 
+Future<List<Map<String, dynamic>>> fetchAllActivePeople() async {
+  try {
+    final rows = await db
+        .from('people')
+        .select(
+          'id, preferred_name, legal_name, email, orcid, ciencia_id, membership_type, status, bio, photo_url',
+        )
+        .filter('merged_into', 'is', null)
+        .order('preferred_name');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<List<List<Map<String, dynamic>>>> fetchMergeCandidates() async {
+  final people = await fetchAllActivePeople();
+  final groups = <String, List<Map<String, dynamic>>>{};
+  for (final person in people) {
+    final key = _nameKey(person['preferred_name'] as String?);
+    if (key == null) continue;
+    groups.putIfAbsent(key, () => []).add(person);
+  }
+  final candidates = groups.values.where((group) => group.length > 1).toList()
+    ..sort((a, b) => b.length.compareTo(a.length));
+  return candidates;
+}
+
+Future<void> mergePeople(
+  String survivorId,
+  List<String> loserIds,
+  Map<String, dynamic> fields,
+) async {
+  try {
+    await db.rpc(
+      'merge_people',
+      params: {
+        'p_survivor': survivorId,
+        'p_losers': loserIds,
+        'p_fields': fields,
+      },
+    );
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+String? _nameKey(String? name) {
+  final tokens = _normalizeName(name).split(' ').where((s) => s.isNotEmpty);
+  if (tokens.length < 2) return null;
+  return '${tokens.first}|${tokens.last}';
+}
+
+String _normalizeName(String? value) {
+  const from = 'áàãâäåāăąçćčďéèêëēėęěíìîïīįłñńňóòõôöōőřśšșťúùûüūůűýÿžźż';
+  const to = 'aaaaaaaaacccdeeeeeeeeiiiiiilnnnooooooorssstuuuuuuyyzzz';
+  final text = (value ?? '').toLowerCase().split('').map((char) {
+    final index = from.indexOf(char);
+    return index == -1 ? char : to[index];
+  }).join();
+  return text
+      .replaceAll(RegExp(r'[^a-z0-9\s]'), ' ')
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .join(' ');
+}
+
 Future<void> updatePerson(String id, Map<String, dynamic> fields) async {
   try {
     await db.from('people').update(fields).eq('id', id);
@@ -268,6 +335,7 @@ Future<List<Map<String, dynamic>>> fetchPeopleForStats() async {
     final rows = await db
         .from('people')
         .select('id, preferred_name, membership_type, orcid, last_verified_at')
+        .filter('merged_into', 'is', null)
         .order('preferred_name');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {
