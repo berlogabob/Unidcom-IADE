@@ -6,6 +6,9 @@ import 'supabase.dart';
 
 const _crossrefUa = 'UNIDCOM-Directory/1.0 (mailto:andre.berloga@gmail.com)';
 
+// Institution tokens used to disambiguate ORCID homonyms (normalized, lowercased).
+const _orgTokens = ['iade', 'unidcom', 'universidade europeia'];
+
 String _clean(String? value) =>
     (value ?? '').trim().split(RegExp(r'\s+')).join(' ');
 
@@ -22,6 +25,11 @@ String _normalize(String? value) {
 String _familyKey(String? value) {
   final parts = _normalize(value).split(' ');
   return parts.isEmpty ? '' : parts.last;
+}
+
+String _givenKey(String? value) {
+  final parts = _normalize(value).split(' ').where((p) => p.isNotEmpty);
+  return parts.isEmpty ? '' : parts.first;
 }
 
 String? _cleanDoi(String? value) {
@@ -48,7 +56,9 @@ Future<Map<String, dynamic>?> _getJson(
   Map<String, String>? headers,
 }) async {
   try {
-    final response = await http.get(url, headers: headers);
+    final response = await http
+        .get(url, headers: headers)
+        .timeout(const Duration(seconds: 8));
     if (response.statusCode == 404 ||
         response.statusCode == 429 ||
         response.statusCode >= 500) {
@@ -59,6 +69,112 @@ Future<Map<String, dynamic>?> _getJson(
   } catch (_) {
     return null;
   }
+}
+
+/// Picks the best ORCID match from an `expanded-search` result list for
+/// [fullName], disambiguating homonyms by institution. Returns null when the
+/// match is ambiguous — better to suggest nothing than a wrong guess.
+({String orcid, double confidence})? pickOrcidCandidate(
+  List<dynamic> results,
+  String? fullName,
+) {
+  final targetGiven = _givenKey(fullName);
+  final targetFamily = _familyKey(fullName);
+  if (targetGiven.isEmpty || targetFamily.isEmpty) return null;
+
+  bool nameMatches(Map result) =>
+      _familyKey(result['family-names'] as String?) == targetFamily &&
+      _givenKey(result['given-names'] as String?) == targetGiven;
+
+  bool atOrg(Map result) {
+    final names = (result['institution-name'] as List? ?? [])
+        .whereType<String>()
+        .map(_normalize);
+    return names.any((n) => _orgTokens.any((t) => n.contains(t)));
+  }
+
+  final matches = results.whereType<Map>().where(nameMatches).toList();
+  final affiliated = matches.where(atOrg).toList();
+
+  Map? chosen;
+  double confidence;
+  if (affiliated.length == 1) {
+    chosen = affiliated.single;
+    confidence = 0.7;
+  } else if (affiliated.isEmpty && matches.length == 1) {
+    chosen = matches.single;
+    confidence = 0.5;
+  } else {
+    return null; // ambiguous
+  }
+
+  final orcid = _bareOrcid(chosen['orcid-id'] as String?);
+  return orcid == null ? null : (orcid: orcid, confidence: confidence);
+}
+
+/// Extracts a Ciência ID from an ORCID `/person` payload's external
+/// identifiers (matching CiênciaVitae by type name or URL). Null if absent.
+String? cienciaIdFromOrcidPerson(Map<String, dynamic> profile) {
+  final ids =
+      (profile['external-identifiers']
+              as Map?)?['external-identifier'] as List? ??
+      [];
+  for (final id in ids.whereType<Map>()) {
+    final type = _normalize(id['external-id-type'] as String?);
+    final url = _normalize(
+      (id['external-id-url'] as Map?)?['value'] as String?,
+    );
+    if (type.contains('ciencia') || url.contains('cienciavitae')) {
+      final value = _clean(id['external-id-value'] as String?);
+      if (value.isNotEmpty) return value;
+    }
+  }
+  return null;
+}
+
+/// Builds person suggestions mined from an ORCID `/person` profile, only for
+/// fields that are currently empty on [person]. Pure — no I/O.
+List<Map<String, dynamic>> orcidProfileSuggestions({
+  required String personId,
+  required Map<String, dynamic> person,
+  required Map<String, dynamic> profile,
+}) {
+  final suggestions = <Map<String, dynamic>>[];
+  bool empty(String field) => _clean(person[field] as String?).isEmpty;
+  void add(String field, String? value, double confidence) {
+    final clean = _clean(value);
+    if (clean.isEmpty || !empty(field)) return;
+    suggestions.add({
+      'subject_type': 'person',
+      'subject_id': personId,
+      'field': field,
+      'current_value': person[field],
+      'suggested_value': clean,
+      'source': 'orcid',
+      'confidence': confidence,
+    });
+  }
+
+  add('ciencia_id', cienciaIdFromOrcidPerson(profile), 0.8);
+  add('bio', (profile['biography'] as Map?)?['content'] as String?, 0.6);
+
+  final emails = (profile['emails'] as Map?)?['email'] as List? ?? [];
+  final email = emails.whereType<Map>().toList()
+    ..sort((a, b) {
+      int rank(Map e) =>
+          (e['primary'] == true ? 0 : 1) + (e['verified'] == true ? 0 : 1);
+      return rank(a).compareTo(rank(b));
+    });
+  if (email.isNotEmpty) add('email', email.first['email'] as String?, 0.7);
+
+  final name = profile['name'] as Map?;
+  final legal =
+      (name?['credit-name'] as Map?)?['value'] as String? ??
+      '${(name?['given-names'] as Map?)?['value'] ?? ''} '
+          '${(name?['family-name'] as Map?)?['value'] ?? ''}';
+  add('legal_name', legal, 0.5);
+
+  return suggestions;
 }
 
 Future<bool> _pendingExists(Map<String, dynamic> row) async {
@@ -94,7 +210,7 @@ Future<int> enrichPerson(String personId) async {
   try {
     final person = await db
         .from('people')
-        .select('preferred_name,orcid')
+        .select('preferred_name,orcid,ciencia_id,bio,email,legal_name')
         .eq('id', personId)
         .single();
     final name = person['preferred_name'] as String?;
@@ -109,7 +225,11 @@ Future<int> enrichPerson(String personId) async {
         .where((output) => _cleanDoi(output['doi'] as String?) != null);
 
     final suggestions = <Map<String, dynamic>>[];
-    var hasOrcidSuggestion = false;
+    // The ORCID we can mine a profile from: stored, or discovered below.
+    String? resolvedOrcid = hasOrcid
+        ? _bareOrcid(person['orcid'] as String?)
+        : null;
+
     for (final output in outputs) {
       final doi = _cleanDoi(output['doi'] as String?);
       if (doi == null) continue;
@@ -136,7 +256,7 @@ Future<int> enrichPerson(String personId) async {
         });
       }
 
-      if (hasOrcid) continue;
+      if (hasOrcid || resolvedOrcid != null) continue;
       for (final author in (message['author'] as List? ?? [])) {
         if (author is! Map) continue;
         final orcid = _bareOrcid(author['ORCID'] as String?);
@@ -153,11 +273,13 @@ Future<int> enrichPerson(String personId) async {
           'source': 'crossref',
           'confidence': 0.9,
         });
-        hasOrcidSuggestion = true;
+        resolvedOrcid = orcid;
+        break;
       }
     }
 
-    if (!hasOrcid && !hasOrcidSuggestion) {
+    // No ORCID yet — try a name search, disambiguated by institution.
+    if (resolvedOrcid == null) {
       final parts = _clean(name).split(' ');
       if (parts.length > 1) {
         final data = await _getJson(
@@ -169,22 +291,36 @@ Future<int> enrichPerson(String personId) async {
           headers: {'Accept': 'application/json'},
         );
         final results = data?['expanded-result'] as List? ?? [];
-        if (results.length == 1 && results.single is Map) {
-          final orcid = _bareOrcid(
-            (results.single as Map)['orcid-id'] as String?,
-          );
-          if (orcid != null) {
-            suggestions.add({
-              'subject_type': 'person',
-              'subject_id': personId,
-              'field': 'orcid',
-              'current_value': null,
-              'suggested_value': orcid,
-              'source': 'orcid',
-              'confidence': 0.4,
-            });
-          }
+        final candidate = pickOrcidCandidate(results, name);
+        if (candidate != null) {
+          suggestions.add({
+            'subject_type': 'person',
+            'subject_id': personId,
+            'field': 'orcid',
+            'current_value': null,
+            'suggested_value': candidate.orcid,
+            'source': 'orcid',
+            'confidence': candidate.confidence,
+          });
+          resolvedOrcid = candidate.orcid;
         }
+      }
+    }
+
+    // Mine the ORCID profile for Ciência ID / bio / email / legal name.
+    if (resolvedOrcid != null) {
+      final profile = await _getJson(
+        Uri.parse('https://pub.orcid.org/v3.0/$resolvedOrcid/person'),
+        headers: {'Accept': 'application/json'},
+      );
+      if (profile != null) {
+        suggestions.addAll(
+          orcidProfileSuggestions(
+            personId: personId,
+            person: person,
+            profile: profile,
+          ),
+        );
       }
     }
 
