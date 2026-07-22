@@ -526,3 +526,21 @@ Future<List<Map<String, dynamic>>> fetchProjects() async {
     throw Exception(_error(error));
   }
 }
+
+Future<Map<String, dynamic>> fetchProject(String id) async {
+  try {
+    final row = await db
+        .from('projects')
+        .select(
+          'id, title, acronym, description, total_budget, currency, '
+          'start_date, end_date, status, '
+          'project_members(role, people(id, preferred_name, membership_type, status)), '
+          'project_outputs(outputs(id, title, reporting_year, type, doi, url))',
+        )
+        .eq('id', id)
+        .single();
+    return Map<String, dynamic>.from(row);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}

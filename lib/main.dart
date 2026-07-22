@@ -14,6 +14,7 @@ import 'public/outputs.dart';
 import 'public/people_list.dart';
 import 'public/person_page.dart';
 import 'public/projects.dart';
+import 'public/project_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -63,6 +64,11 @@ final _router = GoRouter(
               PersonPageScreen(id: state.pathParameters['id']!),
         ),
         GoRoute(path: '/projects', builder: (_, _) => const ProjectsScreen()),
+        GoRoute(
+          path: '/projects/:id',
+          builder: (_, state) =>
+              ProjectPageScreen(id: state.pathParameters['id']!),
+        ),
         GoRoute(path: '/outputs', builder: (_, _) => const OutputsScreen()),
         GoRoute(
           path: '/app/dashboard',

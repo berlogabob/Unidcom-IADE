@@ -14,9 +14,10 @@ import uuid
 from pathlib import Path
 
 
-DEFAULT_INPUT = Path("/Users/berloga/Documents/GitHub/IADEUNIDCOM/RAW_DATA/exportsfromnotoin")
+DEFAULT_INPUT = Path(__file__).resolve().parent.parent / "RAW_DATA" / "exportsfromnotoin"
 PEOPLE_CSV = "UNIDCOM Researchers 082bff569c094748a845cf95464d85ab_all.csv"
 OUTPUTS_CSV = "UNIDCOM Outputs e671e4a09c784dafb4cd1808e49fcb83_all.csv"
+PROJECT_COL = "UNIDCOM | Projects"
 NS = uuid.UUID("3fc3e2b1-18c9-4834-b0b7-bcbb24ff419b")
 
 
@@ -98,6 +99,17 @@ def non_doi_url(value: str | None) -> str | None:
 def author_names(value: str) -> list[str]:
     value = re.sub(r"\s*\(https?://[^)]*\)", "", value or "")
     return [clean(name) for name in value.split(", ") if clean(name)]
+
+
+def project_title(value: str | None) -> str | None:
+    # ponytail: one project per cell; the Notion export never packs multiple.
+    return clean(re.sub(r"\s*\(https?://[^)]*\)", "", value or "")) or None
+
+
+def output_key(row: dict[str, str]) -> str:
+    """Same keying build_outputs uses, so row_id matches the built output id."""
+    doi = normalize_doi(row["URL/DOI"])
+    return f"doi:{doi}" if doi else f"title:{match_key(row['Produção'])}"
 
 
 def build_people(rows: list[dict[str, str]]) -> tuple[list[dict], dict[str, str]]:
@@ -187,7 +199,7 @@ def build_outputs(rows: list[dict[str, str]], people: list[dict], person_by_name
 
     for row in rows:
         doi = normalize_doi(row["URL/DOI"])
-        key = f"doi:{doi}" if doi else f"title:{match_key(row['Produção'])}"
+        key = output_key(row)
         if key not in outputs_by_key:
             output_id = row_id("outputs", key)
             outputs_by_key[key] = {
@@ -225,7 +237,56 @@ def build_outputs(rows: list[dict[str, str]], people: list[dict], person_by_name
     return outputs, authors
 
 
-def self_check(people: list[dict], outputs: list[dict], authors: list[dict]) -> None:
+def build_projects(
+    rows: list[dict[str, str]], person_by_name: dict[str, str]
+) -> tuple[list[dict], list[dict], list[dict]]:
+    projects: dict[str, dict] = {}
+    members: dict[str, set[str]] = {}
+    outputs_links: set[tuple[str, str]] = set()
+
+    for row in rows:
+        title = project_title(row.get(PROJECT_COL))
+        if not title:
+            continue
+        pid = row_id("projects", match_key(title))
+        projects.setdefault(
+            pid,
+            {
+                "id": pid,
+                "title": title,
+                "acronym": None,
+                "description": None,
+                "status": "active",
+                "approval_status": "pending",
+                "public_visibility": False,
+            },
+        )
+        outputs_links.add((pid, row_id("outputs", output_key(row))))
+        for name in author_names(row["Investigador"]):
+            person_id = person_by_name.get(match_key(name))
+            if person_id:
+                members.setdefault(pid, set()).add(person_id)
+
+    project_list = sorted(projects.values(), key=lambda p: p["title"])
+    member_rows = [
+        {"project_id": pid, "person_id": person_id, "role": None}
+        for pid in sorted(members)
+        for person_id in sorted(members[pid])
+    ]
+    output_rows = [
+        {"project_id": pid, "output_id": oid} for pid, oid in sorted(outputs_links)
+    ]
+    return project_list, member_rows, output_rows
+
+
+def self_check(
+    people: list[dict],
+    outputs: list[dict],
+    authors: list[dict],
+    projects: list[dict],
+    project_members: list[dict],
+    project_outputs: list[dict],
+) -> None:
     assert 180 <= len(people) <= 186, len(people)
     assert 355 <= len(outputs) <= 371, len(outputs)
     people_by_id = {p["id"]: p for p in people}
@@ -237,12 +298,22 @@ def self_check(people: list[dict], outputs: list[dict], authors: list[dict]) -> 
         assert len(matches) == 1, (doi, len(matches))
         names = {people_by_id[a["person_id"]]["preferred_name"] for a in authors if a["output_id"] == matches[0]["id"]}
         assert len(names) >= 2 and wanted <= names, (doi, names)
+
+    assert 1 <= len(projects) <= 10, len(projects)
+    project_ids = {p["id"] for p in projects}
+    output_ids = {o["id"] for o in outputs}
+    for link in project_outputs:
+        assert link["project_id"] in project_ids, link
+        assert link["output_id"] in output_ids, link
+    for member in project_members:
+        assert member["project_id"] in project_ids, member
+        assert member["person_id"] in people_by_id, member
     print("SELF-CHECK: PASS")
 
 
-def write_json(out_dir: Path, people: list[dict], outputs: list[dict], authors: list[dict]) -> None:
+def write_json(out_dir: Path, tables: dict[str, list[dict]]) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
-    for name, rows in (("people", people), ("outputs", outputs), ("output_authors", authors)):
+    for name, rows in tables.items():
         (out_dir / f"{name}.json").write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
@@ -269,7 +340,14 @@ def update_or_insert(table, row: dict, existing_id: str | None = None) -> str:
     return row["id"]
 
 
-def load_supabase(people: list[dict], outputs: list[dict], authors: list[dict]) -> None:
+def load_supabase(
+    people: list[dict],
+    outputs: list[dict],
+    authors: list[dict],
+    projects: list[dict],
+    project_members: list[dict],
+    project_outputs: list[dict],
+) -> None:
     env = load_env()
     if not env:
         raise SystemExit(1)
@@ -296,11 +374,52 @@ def load_supabase(people: list[dict], outputs: list[dict], authors: list[dict]) 
     rows = [{**a, "output_id": output_ids[a["output_id"]], "person_id": person_ids[a["person_id"]]} for a in rows]
     client.table("output_authors").upsert(rows, on_conflict="output_id,person_id").execute()
 
+    # Projects use stable uuid5 ids (no natural key) — upsert on id is idempotent.
+    if projects:
+        client.table("projects").upsert(projects, on_conflict="id").execute()
+    po_rows = [{"project_id": r["project_id"], "output_id": output_ids[r["output_id"]]} for r in project_outputs]
+    if po_rows:
+        client.table("project_outputs").upsert(po_rows, on_conflict="project_id,output_id").execute()
+    pm_rows = [{**r, "person_id": person_ids[r["person_id"]]} for r in project_members]
+    if pm_rows:
+        client.table("project_members").upsert(pm_rows, on_conflict="project_id,person_id").execute()
+
+
+def load_projects(
+    projects: list[dict], project_members: list[dict], project_outputs: list[dict]
+) -> None:
+    """Load ONLY the project tables — never touches people/outputs, so app-side
+    edits (ORCID, Ciência ID, approvals) are safe. Uses the deterministic ids
+    already in the DB; drops any link whose parent row is missing."""
+    env = load_env()
+    if not env:
+        raise SystemExit(1)
+    from supabase import create_client
+
+    client = create_client(*env)
+    output_ids = {o["id"] for o in (client.table("outputs").select("id").execute().data or [])}
+    person_ids = {p["id"] for p in (client.table("people").select("id").execute().data or [])}
+
+    if projects:
+        client.table("projects").upsert(projects, on_conflict="id").execute()
+
+    po = [r for r in project_outputs if r["output_id"] in output_ids]
+    pm = [r for r in project_members if r["person_id"] in person_ids]
+    if len(po) != len(project_outputs):
+        print(f"WARN: skipped {len(project_outputs) - len(po)} output links (output not in DB)", file=sys.stderr)
+    if len(pm) != len(project_members):
+        print(f"WARN: skipped {len(project_members) - len(pm)} members (person not in DB)", file=sys.stderr)
+    if po:
+        client.table("project_outputs").upsert(po, on_conflict="project_id,output_id").execute()
+    if pm:
+        client.table("project_members").upsert(pm, on_conflict="project_id,person_id").execute()
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
-    parser.add_argument("--load", action="store_true")
+    parser.add_argument("--load", action="store_true", help="full load (rewrites people/outputs too)")
+    parser.add_argument("--projects-only", action="store_true", help="load only projects; safe for app edits")
     return parser.parse_args()
 
 
@@ -310,11 +429,29 @@ def main() -> None:
     output_rows = read_csv(args.input / OUTPUTS_CSV)
     people, person_by_name = build_people(people_rows)
     outputs, authors = build_outputs(output_rows, people, person_by_name)
-    self_check(people, outputs, authors)
-    write_json(Path(__file__).with_name("out"), people, outputs, authors)
-    print(f"DRY-RUN COUNTS: people={len(people)} outputs={len(outputs)} author_links={len(authors)}")
-    if args.load:
-        load_supabase(people, outputs, authors)
+    projects, project_members, project_outputs = build_projects(output_rows, person_by_name)
+    self_check(people, outputs, authors, projects, project_members, project_outputs)
+    write_json(
+        Path(__file__).with_name("out"),
+        {
+            "people": people,
+            "outputs": outputs,
+            "output_authors": authors,
+            "projects": projects,
+            "project_members": project_members,
+            "project_outputs": project_outputs,
+        },
+    )
+    print(
+        f"DRY-RUN COUNTS: people={len(people)} outputs={len(outputs)} "
+        f"author_links={len(authors)} projects={len(projects)} "
+        f"project_members={len(project_members)} project_outputs={len(project_outputs)}"
+    )
+    if args.projects_only:
+        load_projects(projects, project_members, project_outputs)
+        print("LOAD (projects only): PASS")
+    elif args.load:
+        load_supabase(people, outputs, authors, projects, project_members, project_outputs)
         print("LOAD: PASS")
 
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
 
@@ -29,6 +30,8 @@ class ProjectsScreen extends StatelessWidget {
             return ListTile(
               title: Text(project['title'] as String? ?? 'Untitled'),
               subtitle: Text(project['status'] as String? ?? ''),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.go('/projects/${project['id']}'),
             );
           },
         );
