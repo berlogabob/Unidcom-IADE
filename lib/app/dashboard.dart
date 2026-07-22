@@ -36,67 +36,81 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return Center(child: Text(snapshot.error.toString()));
         }
         final data = snapshot.data!;
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final tileWidth = constraints.maxWidth < 700
-                ? constraints.maxWidth
-                : (constraints.maxWidth - 48) / 5;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      _tile(
-                        tileWidth,
-                        'Researchers',
-                        data.peopleCount,
-                        Icons.people,
-                      ),
-                      _tile(
-                        tileWidth,
-                        'Outputs',
-                        data.outputCount,
-                        Icons.article,
-                      ),
-                      _tile(
-                        tileWidth,
-                        'Journal articles',
-                        data.journalCount,
-                        Icons.library_books,
-                      ),
-                      _tile(
-                        tileWidth,
-                        'Needs verification',
-                        data.needsVerification,
-                        Icons.verified_outlined,
-                      ),
-                      _tile(
-                        tileWidth,
-                        'Missing ORCID',
-                        data.missingOrcid,
-                        Icons.badge_outlined,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _ResponsiveCharts(data: data),
-                ],
-              ),
-            );
-          },
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _StatTilesRow(data: data),
+              const SizedBox(height: 16),
+              _ResponsiveCharts(data: data),
+            ],
+          ),
         );
       },
     );
   }
+}
 
-  Widget _tile(double width, String label, int value, IconData icon) {
-    return SizedBox(
-      width: width,
-      child: StatTile(label: label, value: '$value', icon: icon),
+class _StatTilesRow extends StatelessWidget {
+  const _StatTilesRow({required this.data});
+
+  final _DashboardData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final tiles = [
+      StatTile(
+        label: 'Researchers',
+        value: '${data.peopleCount}',
+        icon: Icons.people,
+      ),
+      StatTile(
+        label: 'Outputs',
+        value: '${data.outputCount}',
+        icon: Icons.article,
+      ),
+      StatTile(
+        label: 'Journal articles',
+        value: '${data.journalCount}',
+        icon: Icons.library_books,
+      ),
+      StatTile(
+        label: 'Needs verification',
+        value: '${data.needsVerification}',
+        icon: Icons.verified_outlined,
+      ),
+      StatTile(
+        label: 'Missing ORCID',
+        value: '${data.missingOrcid}',
+        icon: Icons.badge_outlined,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 700) {
+          return Row(
+            children: [
+              for (var i = 0; i < tiles.length; i++) ...[
+                if (i > 0) const SizedBox(width: 12),
+                Expanded(child: tiles[i]),
+              ],
+            ],
+          );
+        }
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (var i = 0; i < tiles.length; i++) ...[
+                if (i > 0) const SizedBox(width: 12),
+                SizedBox(width: 150, child: tiles[i]),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -114,6 +128,7 @@ class _ResponsiveCharts extends StatelessWidget {
         final children = [
           _ChartCard(
             title: 'Outputs by type',
+            bounded: false,
             child: _HorizontalBars(items: data.outputsByType),
           ),
           _ChartCard(
@@ -122,6 +137,7 @@ class _ResponsiveCharts extends StatelessWidget {
           ),
           _ChartCard(
             title: 'Top 10 researchers by output count',
+            bounded: false,
             child: _HorizontalBars(items: data.topResearchers),
           ),
           _ChartCard(
@@ -153,10 +169,15 @@ class _ResponsiveCharts extends StatelessWidget {
 }
 
 class _ChartCard extends StatelessWidget {
-  const _ChartCard({required this.title, required this.child});
+  const _ChartCard({
+    required this.title,
+    required this.child,
+    this.bounded = true,
+  });
 
   final String title;
   final Widget child;
+  final bool bounded;
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +189,7 @@ class _ChartCard extends StatelessWidget {
           children: [
             Text(title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
-            SizedBox(height: 280, child: child),
+            if (bounded) SizedBox(height: 280, child: child) else child,
           ],
         ),
       ),
@@ -188,52 +209,68 @@ class _HorizontalBars extends StatelessWidget {
     final color = slotColor(1, theme.brightness);
     final max = items.map((item) => item.count).reduce((a, b) => a > b ? a : b);
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         for (final item in items)
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 132,
+          SizedBox(
+            height: 44,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 190,
+                  child: Tooltip(
+                    message: item.label,
                     child: Text(
-                      item.label,
-                      maxLines: 2,
+                      _shortLabel(item.label),
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: item.count / max,
-                      child: Container(
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: item.count / max,
+                    child: Container(
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 34,
-                    child: Text(
-                      '${item.count}',
-                      style: theme.textTheme.bodySmall,
-                    ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 34,
+                  child: Text(
+                    '${item.count}',
+                    style: theme.textTheme.bodySmall,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
       ],
     );
   }
 }
+
+const _shortOutputTypeLabels = {
+  'Actividades de gestão e auxílio à UNIDCOM': 'Gestão & apoio UNIDCOM',
+  'Organização de Seminários e Conferências': 'Seminários & conferências',
+  'Valorizações de atividades ou outros outputs no âmbito de projetos científicos':
+      'Valorizações de projetos',
+  'Participação em projectos de investigação': 'Participação em projetos',
+  'Reconhecimento pela comunidade científica': 'Reconhecimento científico',
+  'Missões de internacionalização no âmbito de projetos científicos':
+      'Missões de internacionalização',
+  'Conferência em congressos (sem publicação)': 'Conferências (sem publicação)',
+};
+
+String _shortLabel(String label) => _shortOutputTypeLabels[label] ?? label;
 
 class _QuartileChart extends StatelessWidget {
   const _QuartileChart({required this.counts});
