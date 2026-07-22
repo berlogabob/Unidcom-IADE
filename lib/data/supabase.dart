@@ -18,6 +18,16 @@ const dbTables = [
   'enrichment_suggestions',
 ];
 
+/// Reads one table's rows — used by the read-only table browser.
+Future<List<Map<String, dynamic>>> fetchTable(String name) async {
+  try {
+    final rows = await db.from(name).select();
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 /// Reads every table (admin RLS sees all rows) into a table -> rows map.
 Future<Map<String, List<Map<String, dynamic>>>> exportAll() async {
   try {
