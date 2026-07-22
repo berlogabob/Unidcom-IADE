@@ -141,7 +141,7 @@ class _ResponsiveCharts extends StatelessWidget {
             child: _HorizontalBars(items: data.topResearchers),
           ),
           _ChartCard(
-            title: 'People by membership type',
+            title: 'People by category',
             child: _MembershipChart(items: data.membershipCounts),
           ),
         ];
@@ -365,6 +365,7 @@ class _MembershipChart extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) return const Center(child: Text('No membership data'));
     final theme = Theme.of(context);
+    final total = items.fold(0, (sum, item) => sum + item.count);
     return Row(
       children: [
         Expanded(
@@ -408,7 +409,8 @@ class _MembershipChart extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '${items[i].label} (${items[i].count})',
+                          '${items[i].label} — ${items[i].count}'
+                          ' (${(items[i].count * 100 / total).round()}%)',
                           style: theme.textTheme.bodySmall,
                         ),
                       ),
@@ -537,22 +539,32 @@ List<_CountItem> _topResearchers(List<Map<String, dynamic>> authors) {
   return items.take(10).toList();
 }
 
+// One place to re-map when the authoritative categories arrive from the boss.
+const _categoryLabels = {
+  'integrated': 'Integrated members',
+  'collaborator': 'Collaborators',
+  'phd_student': 'PhD students',
+  'external': 'External',
+  'advisory_board': 'Advisory board',
+  'staff': 'Staff',
+};
+
 List<_CountItem> _membershipCounts(List<Map<String, dynamic>> people) {
-  const order = [
-    'integrated',
-    'collaborator',
-    'phd_student',
-    'external',
-    'staff',
-    'advisory_board',
-  ];
   final counts = _countBy(
     people,
     (row) => row['membership_type'] as String? ?? '',
   );
-  return [
-    for (final key in order)
-      if ((counts[key] ?? 0) > 0)
-        _CountItem(key.replaceAll('_', ' '), counts[key]!),
-  ];
+  var other = 0;
+  final items = <_CountItem>[];
+  counts.forEach((key, count) {
+    final label = _categoryLabels[key];
+    if (label == null) {
+      other += count; // null / unknown enum values
+    } else {
+      items.add(_CountItem(label, count));
+    }
+  });
+  if (other > 0) items.add(_CountItem('Other', other));
+  items.sort((a, b) => b.count.compareTo(a.count));
+  return items;
 }

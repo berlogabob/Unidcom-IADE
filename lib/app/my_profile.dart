@@ -17,8 +17,33 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     setState(() => _person = fetchMyPerson());
   }
 
-  Future<void> _link(String id) async {
-    await linkPersonToMe(id);
+  Future<void> _link(Map<String, dynamic> person) async {
+    final name = person['preferred_name'] as String? ?? 'this profile';
+    // ponytail: one-tap claim caused accidental mis-links ("checking" someone
+    // else's account bound it to you). A confirm dialog is the whole fix.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Link this profile to YOUR login?'),
+        content: Text(
+          'Your account will show "$name" as your own profile. '
+          'Only do this to claim your OWN researcher profile — '
+          'not to view or check someone else\'s account.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Link to me'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await linkPersonToMe(person['id'] as String);
     if (!mounted) return;
     _refresh();
     ScaffoldMessenger.of(
@@ -91,7 +116,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                             ),
                             subtitle: Text(person['email'] as String? ?? ''),
                             trailing: const Icon(Icons.link),
-                            onTap: () => _link(person['id'] as String),
+                            onTap: () => _link(person),
                           ),
                       ],
                     );
