@@ -126,6 +126,7 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final path = GoRouterState.of(context).uri.path;
     final admin = data.isAdmin;
+    final hasSession = Supabase.instance.client.auth.currentSession != null;
     final destinations = [
       _NavItem('/people', Icons.people, 'People'),
       _NavItem('/outputs', Icons.article, 'Outputs'),
@@ -146,18 +147,26 @@ class AppShell extends StatelessWidget {
           '/app/admin' => 'Admin',
           _ => 'People',
         }),
-        actions: [
-          IconButton(
-            tooltip: 'My profile',
-            icon: const Icon(Icons.account_circle),
-            onPressed: () => context.go('/app/profile'),
-          ),
-          IconButton(
-            tooltip: 'Sign out',
-            icon: const Icon(Icons.logout),
-            onPressed: () => Supabase.instance.client.auth.signOut(),
-          ),
-        ],
+        actions: hasSession
+            ? [
+                IconButton(
+                  tooltip: 'My profile',
+                  icon: const Icon(Icons.account_circle),
+                  onPressed: () => context.go('/app/profile'),
+                ),
+                IconButton(
+                  tooltip: 'Sign out',
+                  icon: const Icon(Icons.logout),
+                  onPressed: () => Supabase.instance.client.auth.signOut(),
+                ),
+              ]
+            : [
+                IconButton(
+                  tooltip: 'Sign in',
+                  icon: const Icon(Icons.login),
+                  onPressed: () => context.go('/login'),
+                ),
+              ],
       ),
       body: child,
       bottomNavigationBar: NavigationBar(
