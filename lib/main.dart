@@ -17,23 +17,55 @@ import 'public/projects.dart';
 import 'public/project_page.dart';
 
 const _brandRed = Color(0xFFFF2A13);
-const _brandRedDeep = Color(0xFFEF2201);
+const _brandDeep = Color(0xFFEF2201);
+const _brandDark = Color(0xFFA71000);
 const _ink = Color(0xFF272727);
-const _navy = Color(0xFF20385A);
+const _grey = Color(0xFF666666);
+const _mist = Color(0xFFF3F3F3);
+const _line = Color(0xFFEAEAEA);
+
+const ColorScheme _scheme = ColorScheme(
+  brightness: Brightness.light,
+  primary: _brandRed,
+  onPrimary: Colors.white,
+  primaryContainer: _mist,
+  onPrimaryContainer: _ink,
+  secondary: _ink,
+  onSecondary: Colors.white,
+  secondaryContainer: _mist,
+  onSecondaryContainer: _ink,
+  tertiary: _grey,
+  onTertiary: Colors.white,
+  tertiaryContainer: _mist,
+  onTertiaryContainer: _ink,
+  error: _brandDark,
+  onError: Colors.white,
+  errorContainer: _mist,
+  onErrorContainer: _brandDark,
+  surface: Colors.white,
+  onSurface: _ink,
+  onSurfaceVariant: _grey,
+  outline: Color(0xFFBDBDBD),
+  outlineVariant: _line,
+  surfaceContainerLowest: Colors.white,
+  surfaceContainerLow: Color(0xFFFAFAFA),
+  surfaceContainer: _mist,
+  surfaceContainerHigh: Color(0xFFEDEDED),
+  surfaceContainerHighest: _line,
+  inverseSurface: _ink,
+  onInverseSurface: Colors.white,
+  inversePrimary: _brandRed,
+  shadow: Colors.black,
+  scrim: Colors.black,
+  surfaceTint: Colors.transparent,
+);
 
 ThemeData _unidcomTheme() {
-  final scheme = ColorScheme.fromSeed(
-    seedColor: _brandRed,
-    primary: _brandRed,
-    secondary: _navy,
-    surface: Colors.white,
-    onSurface: _ink,
-    brightness: Brightness.light,
-  );
-  final base = ThemeData(colorScheme: scheme, useMaterial3: true);
+  final base = ThemeData(colorScheme: _scheme, useMaterial3: true);
 
   return base.copyWith(
     scaffoldBackgroundColor: Colors.white,
+    dividerColor: _line,
     textTheme: GoogleFonts.latoTextTheme(
       base.textTheme,
     ).apply(bodyColor: _ink, displayColor: _ink),
@@ -64,7 +96,7 @@ ThemeData _unidcomTheme() {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: _brandRedDeep,
+        backgroundColor: _brandDeep,
         foregroundColor: Colors.white,
       ),
     ),
