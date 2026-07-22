@@ -33,6 +33,10 @@ Future<void> main() async {
   runApp(const UnidcomApp());
 }
 
+// ponytail: login gate OFF for today (campus wifi blocking auth). Flip to
+// false to restore the login screen. Anon visitors get the public view.
+const _loginDisabled = true;
+
 final _router = GoRouter(
   initialLocation: '/people',
   refreshListenable: GoRouterRefreshStream(
@@ -41,8 +45,11 @@ final _router = GoRouter(
   redirect: (context, state) {
     final hasSession = Supabase.instance.client.auth.currentSession != null;
     final onLogin = state.matchedLocation == '/login';
-    if (!hasSession) return onLogin ? null : '/login';
-    if (onLogin || state.matchedLocation == '/') return '/people';
+    if (!_loginDisabled) {
+      if (!hasSession) return onLogin ? null : '/login';
+      if (onLogin) return '/people';
+    }
+    if (state.matchedLocation == '/') return '/people';
     if (state.matchedLocation == '/app/admin' && !data.isAdmin) {
       return '/people';
     }
