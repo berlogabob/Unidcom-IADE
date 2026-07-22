@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/dashboard.dart';
+import 'app/data_page.dart';
 import 'app/merge.dart';
 import 'app/my_profile.dart';
 import 'app/reports.dart';
@@ -46,7 +47,8 @@ final _router = GoRouter(
     if (!hasSession) return onLogin ? null : '/login';
     if (onLogin || state.matchedLocation == '/') return '/people';
     if ((state.matchedLocation == '/app/review' ||
-            state.matchedLocation == '/app/merge') &&
+            state.matchedLocation == '/app/merge' ||
+            state.matchedLocation == '/app/data') &&
         !data.isAdmin) {
       return '/people';
     }
@@ -86,6 +88,7 @@ final _router = GoRouter(
           builder: (_, _) => const ReviewQueueScreen(),
         ),
         GoRoute(path: '/app/merge', builder: (_, _) => const MergeScreen()),
+        GoRoute(path: '/app/data', builder: (_, _) => const DataScreen()),
       ],
     ),
     GoRoute(path: '/app/profile', builder: (_, _) => const MyProfileScreen()),
@@ -136,6 +139,7 @@ class AppShell extends StatelessWidget {
       _NavItem('/app/reports', Icons.table_chart, 'Reports'),
       if (admin) _NavItem('/app/review', Icons.rate_review, 'Review'),
       if (admin) _NavItem('/app/merge', Icons.merge, 'Merge'),
+      if (admin) _NavItem('/app/data', Icons.storage, 'Data'),
     ];
     final index = destinations.indexWhere((item) => path.startsWith(item.path));
     final selectedIndex = index < 0 ? 0 : index;
@@ -149,6 +153,7 @@ class AppShell extends StatelessWidget {
           '/app/reports' => 'Reports',
           '/app/review' => 'Review Queue',
           '/app/merge' => 'Merge People',
+          '/app/data' => 'Import / Export',
           _ => 'People',
         }),
         actions: [

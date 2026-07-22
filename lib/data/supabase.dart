@@ -4,6 +4,49 @@ final db = Supabase.instance.client;
 
 bool get isAdmin => db.auth.currentUser?.appMetadata['role'] == 'admin';
 
+/// Full-DB export/import order: base tables first, then link tables that FK into
+/// them. Mirrors scripts/export.py TABLES. Upsert resolves on each table's PK.
+const dbTables = [
+  'people',
+  'outputs',
+  'projects',
+  'tags',
+  'output_authors',
+  'project_members',
+  'project_outputs',
+  'person_tags',
+  'enrichment_suggestions',
+];
+
+/// Reads every table (admin RLS sees all rows) into a table -> rows map.
+Future<Map<String, List<Map<String, dynamic>>>> exportAll() async {
+  try {
+    final data = <String, List<Map<String, dynamic>>>{};
+    for (final table in dbTables) {
+      final rows = await db.from(table).select();
+      data[table] = rows.map((row) => Map<String, dynamic>.from(row)).toList();
+    }
+    return data;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Upserts each present table in dependency order. Non-destructive (never
+/// deletes). In-app the admin's is_admin() is true, so protect_people_cols
+/// allows governance columns — no trigger juggling needed (unlike restore.py).
+Future<void> importAll(Map<String, List<Map<String, dynamic>>> data) async {
+  try {
+    for (final table in dbTables) {
+      final rows = data[table];
+      if (rows == null || rows.isEmpty) continue;
+      await db.from(table).upsert(rows);
+    }
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 String _error(Object error) =>
     error is PostgrestException || error is AuthException
     ? (error as dynamic).message as String
