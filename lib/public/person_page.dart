@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/enrich_client.dart';
 import '../data/supabase.dart';
@@ -87,6 +88,18 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     }
   }
 
+  Future<void> _open(String url) async {
+    final ok = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Couldn't open link")));
+    }
+  }
+
   Widget _suggestionsSection() {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _suggestions,
@@ -140,15 +153,111 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
             .whereType<String>()
             .toList();
 
-        return ListView(
-          padding: const EdgeInsets.all(16),
+        return Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _header(person, admin),
+                if (admin) _suggestionsSection(),
+                const SizedBox(height: 24),
+                _sectionTitle('Identifiers'),
+                const SizedBox(height: 8),
+                _identifiers(person),
+                const SizedBox(height: 24),
+                _sectionTitle('About'),
+                const SizedBox(height: 8),
+                _bio(person),
+                const SizedBox(height: 24),
+                _sectionTitle('Outputs · ${outputAuthors.length}'),
+                const SizedBox(height: 8),
+                if (outputAuthors.isEmpty)
+                  _muted('No outputs found')
+                else
+                  for (final author in outputAuthors) _outputRow(author),
+                if (tags.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  _sectionTitle('Tags'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [for (final tag in tags) Chip(label: Text(tag))],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _header(Map<String, dynamic> person, bool admin) {
+    final name = person['preferred_name'] as String? ?? 'Unnamed';
+    final legal = person['legal_name'] as String?;
+    final photo = (person['photo_url'] as String? ?? '').trim();
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              person['preferred_name'] as String? ?? 'Unnamed',
-              style: Theme.of(context).textTheme.headlineSmall,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 36,
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  foregroundImage: photo.isEmpty ? null : NetworkImage(photo),
+                  child: Text(
+                    _initials(name),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name, style: theme.textTheme.headlineSmall),
+                      if (legal != null && legal.trim().isNotEmpty)
+                        Text(
+                          legal,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final value in [
+                            person['membership_type'],
+                            person['status'],
+                            person['profile_status'],
+                          ])
+                            if (value != null)
+                              Chip(
+                                label: Text(value as String),
+                                visualDensity: VisualDensity.compact,
+                              ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             if (admin) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
                 children: [
@@ -175,62 +284,133 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                   ),
                 ],
               ),
-              _suggestionsSection(),
-            ],
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (person['membership_type'] != null)
-                  Chip(label: Text(person['membership_type'] as String)),
-                if (person['status'] != null)
-                  Chip(label: Text(person['status'] as String)),
-              ],
-            ),
-            if (person['email'] != null) ...[
-              const SizedBox(height: 8),
-              Text(person['email'] as String),
-            ],
-            if (person['bio'] != null &&
-                (person['bio'] as String).isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(person['bio'] as String),
-            ],
-            const SizedBox(height: 24),
-            Text('Outputs', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            if (outputAuthors.isEmpty)
-              const Text('No outputs found')
-            else
-              for (final author in outputAuthors)
-                OutputRow(
-                  title:
-                      (author['outputs'] as Map<String, dynamic>?)?['title']
-                          as String? ??
-                      'Untitled',
-                  year:
-                      (author['outputs']
-                              as Map<String, dynamic>?)?['reporting_year']
-                          as int?,
-                  type:
-                      (author['outputs'] as Map<String, dynamic>?)?['type']
-                          as String?,
-                  detail: author['role'] as String?,
-                ),
-            if (tags.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              Text('Tags', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [for (final tag in tags) Chip(label: Text(tag))],
-              ),
             ],
           ],
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  Widget _identifiers(Map<String, dynamic> person) {
+    final email = (person['email'] as String? ?? '').trim();
+    final orcid = (person['orcid'] as String? ?? '').trim();
+    final ciencia = (person['ciencia_id'] as String? ?? '').trim();
+    final verified = person['last_verified_at'] as String?;
+
+    return Column(
+      children: [
+        _InfoRow(
+          icon: Icons.mail_outline,
+          label: 'Email',
+          child: email.isEmpty
+              ? _muted('Not set')
+              : _link(email, 'mailto:$email'),
+        ),
+        _InfoRow(
+          icon: Icons.badge_outlined,
+          label: 'ORCID',
+          child: orcid.isEmpty
+              ? _muted('Not set')
+              : _link(orcid, 'https://orcid.org/$orcid'),
+        ),
+        _InfoRow(
+          icon: Icons.fingerprint,
+          label: 'Ciência ID',
+          child: ciencia.isEmpty
+              ? _muted('Not set')
+              : SelectableText(ciencia),
+        ),
+        _InfoRow(
+          icon: Icons.verified_outlined,
+          label: 'Last verified',
+          child: _muted(
+            verified == null ? 'Never' : verified.split('T').first,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _bio(Map<String, dynamic> person) {
+    final bio = (person['bio'] as String? ?? '').trim();
+    return bio.isEmpty ? _muted('No bio yet') : Text(bio);
+  }
+
+  Widget _outputRow(Map<String, dynamic> author) {
+    final output = author['outputs'] as Map<String, dynamic>?;
+    final link = resolveOutputUrl(
+      output?['url'] as String?,
+      output?['doi'] as String?,
+    );
+    return OutputRow(
+      title: output?['title'] as String? ?? 'Untitled',
+      year: output?['reporting_year'] as int?,
+      type: output?['type'] as String?,
+      detail: author['role'] as String?,
+      trailing: link == null ? null : const Icon(Icons.open_in_new, size: 18),
+      onTap: link == null ? null : () => _open(link),
+    );
+  }
+
+  Widget _sectionTitle(String text) =>
+      Text(text, style: Theme.of(context).textTheme.titleLarge);
+
+  Widget _muted(String text) => Text(
+    text,
+    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    ),
+  );
+
+  Widget _link(String text, String url) => InkWell(
+    onTap: () => _open(url),
+    child: Text(
+      text,
+      style: TextStyle(
+        color: Theme.of(context).colorScheme.primary,
+        decoration: TextDecoration.underline,
+      ),
+    ),
+  );
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+    if (parts.isEmpty) return '?';
+    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    return (parts.first.characters.first + parts.last.characters.first)
+        .toUpperCase();
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.icon, required this.label, required this.child});
+
+  final IconData icon;
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 96,
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          Expanded(child: child),
+        ],
+      ),
     );
   }
 }
