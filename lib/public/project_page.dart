@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../data/supabase.dart';
 import '../widgets/output_row.dart';
@@ -33,18 +32,6 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
   late Future<Map<String, dynamic>> _project = fetchProject(widget.id);
 
   void _refresh() => setState(() => _project = fetchProject(widget.id));
-
-  Future<void> _open(String url) async {
-    final ok = await launchUrl(
-      Uri.parse(url),
-      mode: LaunchMode.externalApplication,
-    );
-    if (!ok && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Couldn't open link")));
-    }
-  }
 
   Future<void> _edit(Map<String, dynamic> project) async {
     final saved = await showProjectEditor(context, project: project);
@@ -226,10 +213,6 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
     final output = link['outputs'] as Map<String, dynamic>?;
     if (output == null) return const SizedBox.shrink();
     final outputId = output['id'] as String;
-    final url = resolveOutputUrl(
-      output['url'] as String?,
-      output['doi'] as String?,
-    );
     return Row(
       children: [
         Expanded(
@@ -237,10 +220,8 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
             title: output['title'] as String? ?? 'Untitled',
             year: output['reporting_year'] as int?,
             type: output['type'] as String?,
-            trailing: url == null
-                ? null
-                : const Icon(Icons.open_in_new, size: 18),
-            onTap: url == null ? null : () => _open(url),
+            trailing: const Icon(Icons.chevron_right, size: 18),
+            onTap: () => context.go('/outputs/$outputId'),
           ),
         ),
         if (admin)

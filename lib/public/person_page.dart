@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/enrich_client.dart';
@@ -338,17 +339,14 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
 
   Widget _outputRow(Map<String, dynamic> author) {
     final output = author['outputs'] as Map<String, dynamic>?;
-    final link = resolveOutputUrl(
-      output?['url'] as String?,
-      output?['doi'] as String?,
-    );
+    if (output == null) return const SizedBox.shrink();
     return OutputRow(
-      title: output?['title'] as String? ?? 'Untitled',
-      year: output?['reporting_year'] as int?,
-      type: output?['type'] as String?,
+      title: output['title'] as String? ?? 'Untitled',
+      year: output['reporting_year'] as int?,
+      type: output['type'] as String?,
       detail: author['role'] as String?,
-      trailing: link == null ? null : const Icon(Icons.open_in_new, size: 18),
-      onTap: link == null ? null : () => _open(link),
+      trailing: const Icon(Icons.chevron_right, size: 18),
+      onTap: () => context.go('/outputs/${output['id']}'),
     );
   }
 

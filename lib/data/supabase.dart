@@ -457,6 +457,23 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
   }
 }
 
+Future<Map<String, dynamic>> fetchOutput(String id) async {
+  try {
+    final row = await db
+        .from('outputs')
+        .select(
+          'id, title, reporting_year, type, subtype, category_path, doi, url, approval_status, '
+          'output_authors(role, author_position, people(id, preferred_name, membership_type, status)), '
+          'project_outputs(projects(id, title, status))',
+        )
+        .eq('id', id)
+        .single();
+    return Map<String, dynamic>.from(row);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<List<String>> fetchDistinctOutputTypes() async {
   try {
     final rows = await db.from('outputs').select('type');
@@ -519,7 +536,9 @@ Future<List<Map<String, dynamic>>> fetchProjects() async {
   try {
     final rows = await db
         .from('projects')
-        .select('id, title, acronym, description, start_date, end_date, status')
+        .select(
+          'id, title, acronym, description, start_date, end_date, status, created_at',
+        )
         .order('title');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {

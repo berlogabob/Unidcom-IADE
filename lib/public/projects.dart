@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../widgets/queue_list.dart';
 import 'project_page.dart';
 
 class ProjectsScreen extends StatefulWidget {
@@ -23,12 +24,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          if (isAdmin)
-            Align(
+    return Column(
+      children: [
+        if (isAdmin)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Align(
               alignment: Alignment.centerRight,
               child: FilledButton.icon(
                 onPressed: _add,
@@ -36,37 +37,28 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 label: const Text('Add project'),
               ),
             ),
-          Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _projects,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text(snapshot.error.toString()));
-                }
-                final projects = snapshot.data ?? [];
-                if (projects.isEmpty) {
-                  return const Center(child: Text('No projects yet'));
-                }
-                return ListView.builder(
-                  itemCount: projects.length,
-                  itemBuilder: (context, index) {
-                    final project = projects[index];
-                    return ListTile(
-                      title: Text(project['title'] as String? ?? 'Untitled'),
-                      subtitle: Text(project['status'] as String? ?? ''),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => context.go('/projects/${project['id']}'),
-                    );
-                  },
-                );
-              },
+          ),
+        Expanded(
+          child: QueueList(
+            future: _projects,
+            emptyText: 'No projects yet',
+            searchOf: (p) => p['title'] as String? ?? '',
+            timeOf: (p) => p['created_at'] as String? ?? '',
+            filters: [
+              QueueFilter(
+                label: 'Status',
+                valueOf: (p) => p['status'] as String?,
+              ),
+            ],
+            itemBuilder: (project) => ListTile(
+              title: Text(project['title'] as String? ?? 'Untitled'),
+              subtitle: Text(project['status'] as String? ?? ''),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.go('/projects/${project['id']}'),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

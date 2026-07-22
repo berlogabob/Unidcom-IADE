@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
 import '../widgets/output_row.dart';
@@ -132,6 +133,9 @@ class _OutputsScreenState extends State<OutputsScreen> {
                                   year: output['reporting_year'] as int?,
                                   type: output['type'] as String?,
                                   detail: authors,
+                                  onTap: () => context.go(
+                                    '/outputs/${output['id']}',
+                                  ),
                                 );
                               },
                             ),

@@ -11,6 +11,7 @@ import 'app/reports.dart';
 import 'app/review_queue.dart';
 import 'data/supabase.dart' as data;
 import 'public/outputs.dart';
+import 'public/output_page.dart';
 import 'public/people_list.dart';
 import 'public/person_page.dart';
 import 'public/projects.dart';
@@ -70,6 +71,11 @@ final _router = GoRouter(
               ProjectPageScreen(id: state.pathParameters['id']!),
         ),
         GoRoute(path: '/outputs', builder: (_, _) => const OutputsScreen()),
+        GoRoute(
+          path: '/outputs/:id',
+          builder: (_, state) =>
+              OutputPageScreen(id: state.pathParameters['id']!),
+        ),
         GoRoute(
           path: '/app/dashboard',
           builder: (_, _) => const DashboardScreen(),

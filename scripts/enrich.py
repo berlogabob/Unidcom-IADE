@@ -48,12 +48,33 @@ def title_key(value: str | None) -> str:
     return re.sub(r"[^\w\s]", "", normalize(value))
 
 
+def ciencia_id_from_orcid_person(profile: dict[str, Any]) -> str | None:
+    """Mirror of enrich_client.dart: pull a Ciência ID from ORCID external ids."""
+    ids = ((profile.get("external-identifiers") or {}).get("external-identifier")) or []
+    for ident in ids:
+        if not isinstance(ident, dict):
+            continue
+        id_type = normalize(ident.get("external-id-type"))
+        url = normalize((ident.get("external-id-url") or {}).get("value"))
+        if "ciencia" in id_type or "cienciavitae" in url:
+            value = clean(ident.get("external-id-value"))
+            if value:
+                return value
+    return None
+
+
 def self_check() -> None:
     assert family_key("Hande Ayanoglu") == "ayanoglu"
     assert normalize("Ayanoglu") == "ayanoglu"
     assert normalize("João Dias") == "joao dias"
     assert clean_doi("https://doi.org/10.X") == "10.x"
     assert clean_doi("https://doi.org/10.1234/AbC).") == "10.1234/abc"
+    assert ciencia_id_from_orcid_person(
+        {"external-identifiers": {"external-identifier": [
+            {"external-id-type": "CienciaID", "external-id-value": "5D19-A8B4-0000"},
+        ]}}
+    ) == "5D19-A8B4-0000"
+    assert ciencia_id_from_orcid_person({}) is None
     print("SELF-CHECK: PASS")
 
 
@@ -238,10 +259,66 @@ def run_orcid(db: Client, limit: int | None) -> int:
     return inserted
 
 
+def run_coverage(db: Client, limit: int | None) -> None:
+    """Read-only: current ORCID/Ciência fill rates, and how many ORCID profiles
+    already expose a Ciência ID / bio / email — the number that decides whether
+    the CiênciaVitae API is worth adding."""
+    people = (
+        db.table("people")
+        .select("id,preferred_name,orcid,ciencia_id")
+        .filter("merged_into", "is", "null")
+        .execute()
+        .data
+        or []
+    )
+    total = len(people)
+    with_orcid = [p for p in people if clean(p.get("orcid"))]
+    with_ciencia = [p for p in people if clean(p.get("ciencia_id"))]
+    neither = [p for p in people if not clean(p.get("orcid")) and not clean(p.get("ciencia_id"))]
+
+    print("=== current fill rates ===")
+    print(f"people:            {total}")
+    print(f"with ORCID:        {len(with_orcid)} ({_pct(len(with_orcid), total)})")
+    print(f"with Ciência ID:   {len(with_ciencia)} ({_pct(len(with_ciencia), total)})")
+    print(f"with neither:      {len(neither)} ({_pct(len(neither), total)})")
+
+    probe = [p for p in with_orcid if not clean(p.get("ciencia_id"))]
+    if limit is not None:
+        probe = probe[:limit]
+    print(f"\n=== probing {len(probe)} ORCID profiles (ORCID set, Ciência ID missing) ===")
+    fetched = ciencia = bio = email = 0
+    with httpx.Client(headers={"Accept": "application/json"}) as http:
+        for person in probe:
+            orcid = bare_orcid(person.get("orcid"))
+            if not orcid:
+                continue
+            time.sleep(0.3)
+            profile = get_json(http, f"https://pub.orcid.org/v3.0/{orcid}/person")
+            if profile is None:
+                continue
+            fetched += 1
+            if ciencia_id_from_orcid_person(profile):
+                ciencia += 1
+            if clean((profile.get("biography") or {}).get("content")):
+                bio += 1
+            if (profile.get("emails") or {}).get("email"):
+                email += 1
+
+    print(f"profiles fetched:          {fetched}")
+    print(f"  expose a Ciência ID:     {ciencia} ({_pct(ciencia, fetched)})  <- key figure")
+    print(f"  expose a biography:      {bio} ({_pct(bio, fetched)})")
+    print(f"  expose a public email:   {email} ({_pct(email, fetched)})")
+
+
+def _pct(part: int, whole: int) -> str:
+    return f"{round(100 * part / whole)}%" if whole else "0%"
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--crossref", action="store_true")
     parser.add_argument("--orcid", action="store_true")
+    parser.add_argument("--coverage", action="store_true")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--selfcheck", action="store_true")
     return parser.parse_args()
@@ -254,6 +331,10 @@ def main() -> None:
         return
 
     db = load_client()
+    if args.coverage:
+        run_coverage(db, args.limit)
+        return
+
     run_crossref_pass = args.crossref or not args.orcid
     run_orcid_pass = args.orcid or not args.crossref
     crossref_processed = 0
