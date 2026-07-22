@@ -297,6 +297,8 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     final orcid = (person['orcid'] as String? ?? '').trim();
     final ciencia = (person['ciencia_id'] as String? ?? '').trim();
     final verified = person['last_verified_at'] as String?;
+    final joined = (person['join_date'] as String? ?? '').trim();
+    final left = (person['exit_date'] as String? ?? '').trim();
 
     return Column(
       children: [
@@ -321,6 +323,17 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
               ? _muted('Not set')
               : SelectableText(ciencia),
         ),
+        _InfoRow(
+          icon: Icons.login,
+          label: 'Member since',
+          child: _muted(joined.isEmpty ? '—' : joined),
+        ),
+        if (left.isNotEmpty)
+          _InfoRow(
+            icon: Icons.logout,
+            label: 'Left',
+            child: _muted(left),
+          ),
         _InfoRow(
           icon: Icons.verified_outlined,
           label: 'Last verified',
@@ -426,6 +439,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   static const _membershipTypes = [
     'integrated',
     'collaborator',
+    'phd_student',
     'external',
     'staff',
     'advisory_board',

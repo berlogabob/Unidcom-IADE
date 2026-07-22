@@ -541,6 +541,7 @@ List<_CountItem> _membershipCounts(List<Map<String, dynamic>> people) {
   const order = [
     'integrated',
     'collaborator',
+    'phd_student',
     'external',
     'staff',
     'advisory_board',

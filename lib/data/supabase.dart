@@ -64,6 +64,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
         .select(
           'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, '
           'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
+          'join_date, exit_date, '
           'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url)), '
           'person_tags(tags(name))',
         )

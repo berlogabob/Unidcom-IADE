@@ -145,6 +145,7 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
           const [
             'integrated',
             'collaborator',
+            'phd_student',
             'external',
             'staff',
             'advisory_board',
