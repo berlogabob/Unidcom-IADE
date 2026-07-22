@@ -17,7 +17,11 @@ class _OutputsScreenState extends State<OutputsScreen> {
   Timer? _debounce;
   String _query = '';
   String _year = '';
+  String? _type;
+  String? _quartile;
+  String? _approvalStatus;
   late Future<List<Map<String, dynamic>>> _outputs = fetchOutputs();
+  late final Future<List<String>> _types = fetchDistinctOutputTypes();
 
   @override
   void dispose() {
@@ -27,7 +31,15 @@ class _OutputsScreenState extends State<OutputsScreen> {
 
   void _load() {
     final year = int.tryParse(_year);
-    setState(() => _outputs = fetchOutputs(query: _query, year: year));
+    setState(
+      () => _outputs = fetchOutputs(
+        query: _query,
+        year: year,
+        type: _type,
+        quartile: _quartile,
+        approvalStatus: _approvalStatus,
+      ),
+    );
   }
 
   void _search(String value) {
@@ -60,6 +72,13 @@ class _OutputsScreenState extends State<OutputsScreen> {
             ],
           ),
           const SizedBox(height: 12),
+          FutureBuilder<List<String>>(
+            future: _types,
+            builder: (context, snapshot) {
+              return _filters(snapshot.data ?? []);
+            },
+          ),
+          const SizedBox(height: 12),
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
               future: _outputs,
@@ -71,40 +90,112 @@ class _OutputsScreenState extends State<OutputsScreen> {
                   return Center(child: Text(snapshot.error.toString()));
                 }
                 final outputs = snapshot.data ?? [];
-                if (outputs.isEmpty) {
-                  return const Center(child: Text('No outputs found'));
-                }
 
-                return ListView.builder(
-                  itemCount: outputs.length,
-                  itemBuilder: (context, index) {
-                    final output = outputs[index];
-                    final authors =
-                        (output['output_authors'] as List<dynamic>? ?? [])
-                            .map((author) {
-                              final people =
-                                  (author as Map<String, dynamic>)['people'];
-                              return (people
-                                      as Map<
-                                        String,
-                                        dynamic
-                                      >?)?['preferred_name']
-                                  as String?;
-                            })
-                            .whereType<String>()
-                            .join(', ');
-                    return OutputRow(
-                      title: output['title'] as String? ?? 'Untitled',
-                      year: output['reporting_year'] as int?,
-                      type: output['type'] as String?,
-                      detail: authors,
-                    );
-                  },
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      '${outputs.length} outputs',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: outputs.isEmpty
+                          ? const Center(child: Text('No outputs found'))
+                          : ListView.builder(
+                              itemCount: outputs.length,
+                              itemBuilder: (context, index) {
+                                final output = outputs[index];
+                                final authors =
+                                    (output['output_authors']
+                                                as List<dynamic>? ??
+                                            [])
+                                        .map((author) {
+                                          final people =
+                                              (author
+                                                  as Map<
+                                                    String,
+                                                    dynamic
+                                                  >)['people'];
+                                          return (people
+                                                  as Map<
+                                                    String,
+                                                    dynamic
+                                                  >?)?['preferred_name']
+                                              as String?;
+                                        })
+                                        .whereType<String>()
+                                        .join(', ');
+                                return OutputRow(
+                                  title:
+                                      output['title'] as String? ?? 'Untitled',
+                                  year: output['reporting_year'] as int?,
+                                  type: output['type'] as String?,
+                                  detail: authors,
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 );
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _filters(List<String> types) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _dropdown('Type', _type, types, (value) {
+          _type = value;
+          _load();
+        }, width: 240),
+        _dropdown('Quartile', _quartile, const ['Q1', 'Q2', 'Q3', 'Q4'], (
+          value,
+        ) {
+          _quartile = value;
+          _load();
+        }),
+        _dropdown(
+          'Approval',
+          _approvalStatus,
+          const ['pending', 'approved', 'rejected'],
+          (value) {
+            _approvalStatus = value;
+            _load();
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _dropdown(
+    String label,
+    String? value,
+    List<String> values,
+    ValueChanged<String?> onChanged, {
+    double width = 160,
+  }) {
+    return SizedBox(
+      width: width,
+      child: DropdownButtonFormField<String?>(
+        initialValue: value,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+        items: [
+          const DropdownMenuItem(value: null, child: Text('All')),
+          for (final item in values)
+            DropdownMenuItem(value: item, child: Text(item)),
+        ],
+        onChanged: onChanged,
       ),
     );
   }

@@ -9,16 +9,46 @@ String _error(Object error) =>
     ? (error as dynamic).message as String
     : error.toString();
 
-Future<List<Map<String, dynamic>>> fetchPeople({String? query}) async {
+Future<List<Map<String, dynamic>>> fetchPeople({
+  String? query,
+  String? membershipType,
+  String? status,
+  String? profileStatus,
+  bool missingOrcid = false,
+  bool needsVerification = false,
+  bool hasOutputs = false,
+}) async {
   try {
     final q = query?.trim();
+    final select = hasOutputs
+        ? 'id, preferred_name, membership_type, status, email, photo_url, profile_status, output_authors!inner(output_id)'
+        : 'id, preferred_name, membership_type, status, email, photo_url, profile_status';
     var request = db
         .from('people')
-        .select(
-          'id, preferred_name, membership_type, status, email, photo_url, profile_status',
-        );
+        .select(select)
+        .filter('merged_into', 'is', null);
     if (q != null && q.isNotEmpty) {
       request = request.ilike('preferred_name', '%$q%');
+    }
+    if (membershipType != null) {
+      request = request.eq('membership_type', membershipType);
+    }
+    if (status != null) {
+      request = request.eq('status', status);
+    }
+    if (profileStatus != null) {
+      request = request.eq('profile_status', profileStatus);
+    }
+    if (missingOrcid) {
+      request = request.or('orcid.is.null,orcid.eq.');
+    }
+    if (needsVerification) {
+      final cutoff = DateTime.now()
+          .subtract(const Duration(days: 183))
+          .toIso8601String();
+      request = request.or(
+        'last_verified_at.is.null,last_verified_at.lt.$cutoff',
+      );
     }
     final rows = await request.order('preferred_name');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
@@ -271,13 +301,16 @@ Future<List<Map<String, dynamic>>> fetchAuthorCounts() async {
 Future<List<Map<String, dynamic>>> fetchOutputs({
   String? query,
   int? year,
+  String? type,
+  String? quartile,
+  String? approvalStatus,
 }) async {
   try {
     final q = query?.trim();
     var request = db
         .from('outputs')
         .select(
-          'id, title, reporting_year, type, subtype, doi, url, output_authors(people(id,preferred_name))',
+          'id, title, reporting_year, type, subtype, doi, url, approval_status, output_authors(people(id,preferred_name))',
         );
     if (q != null && q.isNotEmpty) {
       request = request.ilike('title', '%$q%');
@@ -285,10 +318,52 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
     if (year != null) {
       request = request.eq('reporting_year', year);
     }
+    if (type != null) {
+      request = request.eq('type', type);
+    }
+    if (quartile != null) {
+      request = request.ilike('subtype', '%quartil $quartile%');
+    }
+    if (approvalStatus != null) {
+      request = request.eq('approval_status', approvalStatus);
+    }
     final rows = await request
         .order('reporting_year', ascending: false)
         .order('title');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<List<String>> fetchDistinctOutputTypes() async {
+  try {
+    final rows = await db.from('outputs').select('type');
+    final types =
+        rows
+            .map((row) => row['type'] as String?)
+            .whereType<String>()
+            .where((type) => type.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
+    return types;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<List<int>> fetchDistinctOutputYears() async {
+  try {
+    final rows = await db.from('outputs').select('reporting_year');
+    final years =
+        rows
+            .map((row) => row['reporting_year'] as int?)
+            .whereType<int>()
+            .toSet()
+            .toList()
+          ..sort();
+    return years;
   } catch (error) {
     throw Exception(_error(error));
   }
