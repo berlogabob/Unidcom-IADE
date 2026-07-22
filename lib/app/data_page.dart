@@ -14,6 +14,16 @@ class DataScreen extends StatefulWidget {
 
 class _DataScreenState extends State<DataScreen> {
   bool _busy = false;
+  String _table = dbTables.first;
+  late Future<List<Map<String, dynamic>>> _rows = fetchTable(_table);
+
+  void _selectTable(String? table) {
+    if (table == null) return;
+    setState(() {
+      _table = table;
+      _rows = fetchTable(table);
+    });
+  }
 
   void _snack(String message) {
     if (mounted) {
@@ -125,8 +135,92 @@ class _DataScreenState extends State<DataScreen> {
             const SizedBox(height: 24),
             const Center(child: CircularProgressIndicator()),
           ],
+          const Divider(height: 32),
+          Row(
+            children: [
+              const Text('Browse table:'),
+              const SizedBox(width: 12),
+              DropdownButton<String>(
+                value: _table,
+                items: [
+                  for (final table in dbTables)
+                    DropdownMenuItem(value: table, child: Text(table)),
+                ],
+                onChanged: _selectTable,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(child: _TableView(future: _rows)),
         ],
       ),
+    );
+  }
+}
+
+class _TableView extends StatelessWidget {
+  const _TableView({required this.future});
+
+  final Future<List<Map<String, dynamic>>> future;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text(snapshot.error.toString()));
+        }
+        final rows = snapshot.data ?? [];
+        if (rows.isEmpty) return const Center(child: Text('No rows'));
+        // Column set = union of keys across rows, minus the noisy tsvector.
+        final columns =
+            <String>{for (final row in rows) ...row.keys}
+              ..remove('search');
+        final cols = columns.toList();
+        // ponytail: render all rows (<=360 at lab scale); paginate only if a
+        // table ever grows large.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${rows.length} rows'),
+            const SizedBox(height: 4),
+            Expanded(
+              child: Scrollbar(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SingleChildScrollView(
+                    child: DataTable(
+                      columns: [
+                        for (final col in cols) DataColumn(label: Text(col)),
+                      ],
+                      rows: [
+                        for (final row in rows)
+                          DataRow(
+                            cells: [
+                              for (final col in cols)
+                                DataCell(
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 320,
+                                    ),
+                                    child: Text('${row[col] ?? ''}'),
+                                  ),
+                                ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
