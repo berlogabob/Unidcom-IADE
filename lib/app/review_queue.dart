@@ -15,12 +15,15 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
   late Future<List<Map<String, dynamic>>> _pendingOutputs =
       fetchPendingOutputs();
   late Future<List<Map<String, dynamic>>> _stalePeople = fetchStalePeople();
+  late Future<List<Map<String, dynamic>>> _pendingSuggestions =
+      fetchPendingSuggestions();
 
   void _refresh() {
     setState(() {
       _pendingPeople = fetchPendingPeople();
       _pendingOutputs = fetchPendingOutputs();
       _stalePeople = fetchStalePeople();
+      _pendingSuggestions = fetchPendingSuggestions();
     });
   }
 
@@ -34,19 +37,31 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
     _refresh();
   }
 
+  Future<void> _acceptSuggestion(String id) async {
+    await acceptSuggestion(id);
+    _refresh();
+  }
+
+  Future<void> _rejectSuggestion(String id) async {
+    await rejectSuggestion(id);
+    _refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!isAdmin) return const Center(child: Text('Admin access required'));
 
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Column(
         children: [
           const TabBar(
+            isScrollable: true,
             tabs: [
               Tab(text: 'Profiles to approve'),
               Tab(text: 'Outputs to approve'),
               Tab(text: 'Needs re-verification'),
+              Tab(text: 'Suggestions'),
             ],
           ),
           Expanded(
@@ -96,9 +111,58 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                     );
                   },
                 ),
+                _AsyncList(
+                  future: _pendingSuggestions,
+                  emptyText: 'No enrichment suggestions waiting for review',
+                  itemBuilder: (suggestion) => _SuggestionTile(
+                    suggestion: suggestion,
+                    onAccept: () =>
+                        _acceptSuggestion(suggestion['id'] as String),
+                    onReject: () =>
+                        _rejectSuggestion(suggestion['id'] as String),
+                  ),
+                ),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SuggestionTile extends StatelessWidget {
+  const _SuggestionTile({
+    required this.suggestion,
+    required this.onAccept,
+    required this.onReject,
+  });
+
+  final Map<String, dynamic> suggestion;
+  final VoidCallback onAccept;
+  final VoidCallback onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = suggestion['current_value'] as String?;
+    final value = suggestion['suggested_value'] as String? ?? '';
+    final confidence = suggestion['confidence'];
+    final confidenceText = confidence == null
+        ? ''
+        : ' · ${(num.parse(confidence.toString()) * 100).round()}%';
+
+    return ListTile(
+      title: Text(suggestion['subject_name'] as String? ?? 'Missing subject'),
+      subtitle: Text(
+        '${suggestion['field']}: ${current ?? 'empty'} -> $value\n'
+        '${suggestion['source']}$confidenceText',
+      ),
+      isThreeLine: true,
+      trailing: Wrap(
+        spacing: 8,
+        children: [
+          OutlinedButton(onPressed: onReject, child: const Text('Reject')),
+          FilledButton(onPressed: onAccept, child: const Text('Accept')),
         ],
       ),
     );

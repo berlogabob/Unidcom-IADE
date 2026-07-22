@@ -53,6 +53,14 @@ Future<void> updatePerson(String id, Map<String, dynamic> fields) async {
   }
 }
 
+Future<void> updateOutput(String id, Map<String, dynamic> fields) async {
+  try {
+    await db.from('outputs').update(fields).eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<void> updateMyProfile(Map<String, dynamic> fields) async {
   try {
     final userId = db.auth.currentUser?.id;
@@ -145,6 +153,72 @@ Future<List<Map<String, dynamic>>> fetchStalePeople() async {
         .or('last_verified_at.is.null,last_verified_at.lt.$cutoff')
         .order('preferred_name');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<List<Map<String, dynamic>>> fetchPendingSuggestions() async {
+  try {
+    final rows = await db
+        .from('enrichment_suggestions')
+        .select()
+        .eq('status', 'pending')
+        .order('created_at');
+    final suggestions = rows
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+    for (final suggestion in suggestions) {
+      final table = suggestion['subject_type'] == 'person'
+          ? 'people'
+          : 'outputs';
+      final nameField = suggestion['subject_type'] == 'person'
+          ? 'preferred_name'
+          : 'title';
+      final subject = await db
+          .from(table)
+          .select(nameField)
+          .eq('id', suggestion['subject_id'] as String)
+          .maybeSingle();
+      suggestion['subject_name'] =
+          subject?[nameField] as String? ?? 'Missing subject';
+    }
+    return suggestions;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> acceptSuggestion(String id) async {
+  try {
+    final suggestion = await db
+        .from('enrichment_suggestions')
+        .select()
+        .eq('id', id)
+        .single();
+    final subjectId = suggestion['subject_id'] as String;
+    final field = suggestion['field'] as String;
+    final value = suggestion['suggested_value'];
+    if (suggestion['subject_type'] == 'person') {
+      await updatePerson(subjectId, {field: value});
+    } else {
+      await updateOutput(subjectId, {field: value});
+    }
+    await db
+        .from('enrichment_suggestions')
+        .update({'status': 'accepted'})
+        .eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> rejectSuggestion(String id) async {
+  try {
+    await db
+        .from('enrichment_suggestions')
+        .update({'status': 'rejected'})
+        .eq('id', id);
   } catch (error) {
     throw Exception(_error(error));
   }
