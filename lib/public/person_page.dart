@@ -1,7 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../data/enrich_client.dart';
 import '../data/supabase.dart';
 import '../widgets/output_row.dart';
+
+Future<bool> showPersonEditor(
+  BuildContext context, {
+  Map<String, dynamic>? person,
+}) async {
+  return await showDialog<bool>(
+        context: context,
+        builder: (context) => _PersonEditDialog(person: person),
+      ) ??
+      false;
+}
 
 class PersonPageScreen extends StatefulWidget {
   const PersonPageScreen({super.key, required this.id});
@@ -14,6 +26,7 @@ class PersonPageScreen extends StatefulWidget {
 
 class _PersonPageScreenState extends State<PersonPageScreen> {
   late Future<Map<String, dynamic>> _person = fetchPerson(widget.id);
+  bool _enriching = false;
 
   void _refresh() {
     setState(() => _person = fetchPerson(widget.id));
@@ -29,11 +42,32 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
   }
 
   Future<void> _edit(Map<String, dynamic> person) async {
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (context) => _PersonEditDialog(person: person),
-    );
+    final saved = await showPersonEditor(context, person: person);
     if (saved == true) _refresh();
+  }
+
+  Future<void> _autoFill() async {
+    setState(() => _enriching = true);
+    try {
+      final count = await enrichPerson(widget.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            count > 0
+                ? '$count suggestions added — see Review → Suggestions'
+                : 'No new suggestions found',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) setState(() => _enriching = false);
+    }
   }
 
   @override
@@ -78,6 +112,17 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                     onPressed: () => _edit(person),
                     icon: const Icon(Icons.edit),
                     label: const Text('Edit'),
+                  ),
+                  FilledButton.icon(
+                    onPressed: _enriching ? null : _autoFill,
+                    icon: _enriching
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.auto_fix_high),
+                    label: Text(_enriching ? 'Auto-filling...' : 'Auto-fill'),
                   ),
                   FilledButton.icon(
                     onPressed: _approve,
@@ -146,9 +191,9 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
 }
 
 class _PersonEditDialog extends StatefulWidget {
-  const _PersonEditDialog({required this.person});
+  const _PersonEditDialog({this.person});
 
-  final Map<String, dynamic> person;
+  final Map<String, dynamic>? person;
 
   @override
   State<_PersonEditDialog> createState() => _PersonEditDialogState();
@@ -165,6 +210,8 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   static const _statuses = ['a_confirmar', 'active', 'inactive'];
   static const _profileStatuses = ['draft', 'pending_review', 'approved'];
 
+  bool get _creating => widget.person?['id'] == null;
+
   late final _preferredName = _controller('preferred_name');
   late final _legalName = _controller('legal_name');
   late final _bio = _controller('bio');
@@ -173,16 +220,17 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   late final _orcid = _controller('orcid');
   late final _cienciaId = _controller('ciencia_id');
   late String _membershipType =
-      widget.person['membership_type'] as String? ?? _membershipTypes.first;
-  late String _status = widget.person['status'] as String? ?? _statuses.first;
+      widget.person?['membership_type'] as String? ?? _membershipTypes.first;
+  late String _status = widget.person?['status'] as String? ?? _statuses.first;
   late String _profileStatus =
-      widget.person['profile_status'] as String? ?? _profileStatuses.first;
+      widget.person?['profile_status'] as String? ?? _profileStatuses.first;
   late bool _publicVisibility =
-      widget.person['public_visibility'] as bool? ?? false;
+      widget.person?['public_visibility'] as bool? ?? false;
+  bool _linkToMe = false;
   bool _saving = false;
 
   TextEditingController _controller(String key) =>
-      TextEditingController(text: widget.person[key] as String? ?? '');
+      TextEditingController(text: widget.person?[key] as String? ?? '');
 
   @override
   void dispose() {
@@ -208,7 +256,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await updatePerson(widget.person['id'] as String, {
+      final fields = {
         'preferred_name': _preferredName.text.trim(),
         'legal_name': _text(_legalName),
         'bio': _text(_bio),
@@ -220,7 +268,13 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
         'status': _status,
         'profile_status': _profileStatus,
         'public_visibility': _publicVisibility,
-      });
+      };
+      if (_creating) {
+        final id = await createPerson(fields);
+        if (_linkToMe) await linkPersonToMe(id);
+      } else {
+        await updatePerson(widget.person!['id'] as String, fields);
+      }
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
@@ -234,7 +288,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Edit researcher'),
+      title: Text(_creating ? 'Add researcher' : 'Edit researcher'),
       content: SizedBox(
         width: 520,
         child: SingleChildScrollView(
@@ -272,6 +326,14 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
                 value: _publicVisibility,
                 onChanged: (value) => setState(() => _publicVisibility = value),
               ),
+              if (_creating)
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('This is my profile (link to my login)'),
+                  value: _linkToMe,
+                  onChanged: (value) =>
+                      setState(() => _linkToMe = value ?? false),
+                ),
             ],
           ),
         ),

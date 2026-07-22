@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import 'person_page.dart';
 import '../widgets/person_card.dart';
 import '../widgets/search_bar.dart';
 
@@ -31,13 +32,34 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
     });
   }
 
+  void _refresh() {
+    setState(() => _people = fetchPeople());
+  }
+
+  Future<void> _addPerson() async {
+    final saved = await showPersonEditor(context);
+    if (saved) _refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          SearchBarField(onChanged: _search),
+          Row(
+            children: [
+              Expanded(child: SearchBarField(onChanged: _search)),
+              if (isAdmin) ...[
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: _addPerson,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add person'),
+                ),
+              ],
+            ],
+          ),
           const SizedBox(height: 12),
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(

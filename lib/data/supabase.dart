@@ -53,6 +53,15 @@ Future<void> updatePerson(String id, Map<String, dynamic> fields) async {
   }
 }
 
+Future<String> createPerson(Map<String, dynamic> fields) async {
+  try {
+    final row = await db.from('people').insert(fields).select('id').single();
+    return row['id'] as String;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<void> updateOutput(String id, Map<String, dynamic> fields) async {
   try {
     await db.from('outputs').update(fields).eq('id', id);
