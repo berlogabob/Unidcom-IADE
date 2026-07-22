@@ -19,6 +19,9 @@ from supabase import Client, create_client
 
 CROSSREF_UA = "UNIDCOM-Directory/1.0 (mailto:andre.berloga@gmail.com)"
 
+# Institution tokens used to disambiguate ORCID homonyms (normalized).
+ORG_TOKENS = ["iade", "unidcom", "universidade europeia"]
+
 
 def clean(value: str | None) -> str:
     return " ".join((value or "").strip().split())
@@ -32,6 +35,83 @@ def normalize(value: str | None) -> str:
 def family_key(value: str | None) -> str:
     parts = normalize(value).split()
     return parts[-1] if parts else ""
+
+
+def given_key(value: str | None) -> str:
+    parts = normalize(value).split()
+    return parts[0] if parts else ""
+
+
+def pick_orcid_candidate(
+    results: list[Any], full_name: str | None
+) -> tuple[str, float] | None:
+    """Port of enrich_client.dart pickOrcidCandidate: match given+family and
+    disambiguate homonyms by institution. None when ambiguous (better than a
+    wrong guess)."""
+    target_given = given_key(full_name)
+    target_family = family_key(full_name)
+    if not target_given or not target_family:
+        return None
+
+    def name_matches(result: dict[str, Any]) -> bool:
+        return (
+            family_key(result.get("family-names")) == target_family
+            and given_key(result.get("given-names")) == target_given
+        )
+
+    def at_org(result: dict[str, Any]) -> bool:
+        names = [normalize(n) for n in (result.get("institution-name") or []) if isinstance(n, str)]
+        return any(any(token in n for token in ORG_TOKENS) for n in names)
+
+    matches = [r for r in results if isinstance(r, dict) and name_matches(r)]
+    affiliated = [r for r in matches if at_org(r)]
+
+    if len(affiliated) == 1:
+        chosen, confidence = affiliated[0], 0.7
+    elif not affiliated and len(matches) == 1:
+        chosen, confidence = matches[0], 0.5
+    else:
+        return None
+
+    orcid = bare_orcid(chosen.get("orcid-id"))
+    return (orcid, confidence) if orcid else None
+
+
+def orcid_profile_suggestions(
+    person: dict[str, Any], profile: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Port of enrich_client.dart orcidProfileSuggestions: mine an ORCID
+    /person payload for empty person fields."""
+    out: list[dict[str, Any]] = []
+
+    def add(field: str, value: str | None, confidence: float) -> None:
+        v = clean(value)
+        if v and not clean(person.get(field)):
+            out.append({
+                "subject_type": "person",
+                "subject_id": person["id"],
+                "field": field,
+                "current_value": person.get(field),
+                "suggested_value": v,
+                "source": "orcid",
+                "confidence": confidence,
+            })
+
+    add("ciencia_id", ciencia_id_from_orcid_person(profile), 0.8)
+    add("bio", (profile.get("biography") or {}).get("content"), 0.6)
+
+    emails = [e for e in ((profile.get("emails") or {}).get("email") or []) if isinstance(e, dict)]
+    emails.sort(key=lambda e: (0 if e.get("primary") else 1) + (0 if e.get("verified") else 1))
+    if emails:
+        add("email", emails[0].get("email"), 0.7)
+
+    name = profile.get("name") or {}
+    legal = (name.get("credit-name") or {}).get("value") or (
+        f"{(name.get('given-names') or {}).get('value', '')} "
+        f"{(name.get('family-name') or {}).get('value', '')}"
+    )
+    add("legal_name", legal, 0.5)
+    return out
 
 
 def clean_doi(value: str | None) -> str | None:
@@ -75,6 +155,26 @@ def self_check() -> None:
         ]}}
     ) == "5D19-A8B4-0000"
     assert ciencia_id_from_orcid_person({}) is None
+
+    def _r(orcid, given, family, orgs=None):
+        return {"orcid-id": orcid, "given-names": given, "family-names": family,
+                "institution-name": orgs or []}
+
+    # IADE-affiliated homonym wins at 0.7
+    assert pick_orcid_candidate(
+        [_r("0000-0001-0000-0001", "Ana", "Silva", ["Other Uni"]),
+         _r("0000-0002-0000-0002", "Ana", "Silva", ["IADE, Universidade Europeia"])],
+        "Ana Silva",
+    ) == ("0000-0002-0000-0002", 0.7)
+    # lone match at 0.5
+    assert pick_orcid_candidate([_r("0000-0003-0000-0003", "Bruno", "Costa")], "Bruno Costa") == (
+        "0000-0003-0000-0003", 0.5,
+    )
+    # ambiguous -> None
+    assert pick_orcid_candidate(
+        [_r("0000-0004-0000-0004", "Ana", "Silva"), _r("0000-0005-0000-0005", "Ana", "Silva")],
+        "Ana Silva",
+    ) is None
     print("SELF-CHECK: PASS")
 
 
@@ -223,40 +323,63 @@ def pending_orcid_subjects(db: Client) -> set[str]:
     return {row["subject_id"] for row in rows}
 
 
-def run_orcid(db: Client, limit: int | None) -> int:
-    request = db.table("people").select("id,preferred_name,orcid").or_("orcid.is.null,orcid.eq.")
+def run_orcid(db: Client, limit: int | None) -> tuple[int, int]:
+    request = (
+        db.table("people")
+        .select("id,preferred_name,orcid,ciencia_id,bio,email,legal_name")
+        .filter("merged_into", "is", "null")
+    )
     if limit is not None:
         request = request.limit(limit)
+    people = request.execute().data or []
     skipped_ids = pending_orcid_subjects(db)
-    people = [p for p in (request.execute().data or []) if p["id"] not in skipped_ids]
-    inserted = 0
+    profile_fields = ("ciencia_id", "bio", "email", "legal_name")
+    orcid_inserted = 0
+    profile_inserted = 0
     with httpx.Client(headers={"Accept": "application/json"}) as http:
         for person in people:
-            parts = clean(person.get("preferred_name")).split()
-            if len(parts) < 2:
+            resolved = bare_orcid(person.get("orcid"))
+            # Discover an ORCID by name if the person has none.
+            if not resolved:
+                if person["id"] in skipped_ids:
+                    continue  # already has a pending orcid suggestion
+                parts = clean(person.get("preferred_name")).split()
+                if len(parts) < 2:
+                    continue
+                query = f"given-names:{' '.join(parts[:-1])} AND family-name:{parts[-1]}"
+                time.sleep(0.3)
+                data = get_json(http, "https://pub.orcid.org/v3.0/expanded-search/", params={"q": query})
+                candidate = pick_orcid_candidate(
+                    (data or {}).get("expanded-result") or [], person.get("preferred_name")
+                )
+                if not candidate:
+                    continue
+                resolved, confidence = candidate
+                if insert_suggestion(
+                    db,
+                    {
+                        "subject_type": "person",
+                        "subject_id": person["id"],
+                        "field": "orcid",
+                        "current_value": None,
+                        "suggested_value": resolved,
+                        "source": "orcid",
+                        "confidence": confidence,
+                    },
+                ):
+                    orcid_inserted += 1
+
+            # Mine the ORCID profile for empty person fields.
+            if not any(not clean(person.get(f)) for f in profile_fields):
                 continue
-            query = f"given-names:{' '.join(parts[:-1])} AND family-name:{parts[-1]}"
             time.sleep(0.3)
-            data = get_json(http, "https://pub.orcid.org/v3.0/expanded-search/", params={"q": query})
-            results = (data or {}).get("expanded-result") or []
-            if len(results) != 1:
+            profile = get_json(http, f"https://pub.orcid.org/v3.0/{resolved}/person")
+            if profile is None:
                 continue
-            orcid = bare_orcid(results[0].get("orcid-id"))
-            if not orcid:
-                continue
-            inserted += insert_suggestion(
-                db,
-                {
-                    "subject_type": "person",
-                    "subject_id": person["id"],
-                    "field": "orcid",
-                    "current_value": None,
-                    "suggested_value": orcid,
-                    "source": "orcid",
-                    "confidence": 0.4,
-                },
-            )
-    return inserted
+            for row in orcid_profile_suggestions(person, profile):
+                if insert_suggestion(db, row):
+                    profile_inserted += 1
+    return orcid_inserted, profile_inserted
 
 
 def run_coverage(db: Client, limit: int | None) -> None:
@@ -340,16 +463,18 @@ def main() -> None:
     crossref_processed = 0
     crossref_suggestions = 0
     orcid_suggestions = 0
+    orcid_profile_suggestions_count = 0
 
     if run_crossref_pass:
         crossref_processed, crossref_suggestions = run_crossref(db, args.limit)
     if run_orcid_pass:
-        orcid_suggestions = run_orcid(db, args.limit)
+        orcid_suggestions, orcid_profile_suggestions_count = run_orcid(db, args.limit)
 
-    total = crossref_suggestions + orcid_suggestions
+    total = crossref_suggestions + orcid_suggestions + orcid_profile_suggestions_count
     print(f"crossref DOIs processed: {crossref_processed}")
     print(f"crossref suggestions: {crossref_suggestions}")
     print(f"orcid suggestions: {orcid_suggestions}")
+    print(f"orcid profile suggestions (ciencia_id/bio/email/legal_name): {orcid_profile_suggestions_count}")
     print(f"total inserted: {total}")
 
 
