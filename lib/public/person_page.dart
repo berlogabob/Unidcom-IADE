@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/enrich_client.dart';
 import '../data/supabase.dart';
 import '../widgets/output_row.dart';
+import '../widgets/suggestion_tile.dart';
 
 Future<bool> showPersonEditor(
   BuildContext context, {
@@ -26,10 +27,25 @@ class PersonPageScreen extends StatefulWidget {
 
 class _PersonPageScreenState extends State<PersonPageScreen> {
   late Future<Map<String, dynamic>> _person = fetchPerson(widget.id);
+  late Future<List<Map<String, dynamic>>> _suggestions =
+      fetchSuggestionsForPerson(widget.id);
   bool _enriching = false;
 
   void _refresh() {
-    setState(() => _person = fetchPerson(widget.id));
+    setState(() {
+      _person = fetchPerson(widget.id);
+      _suggestions = fetchSuggestionsForPerson(widget.id);
+    });
+  }
+
+  Future<void> _acceptSuggestion(String id) async {
+    await acceptSuggestion(id);
+    _refresh();
+  }
+
+  Future<void> _rejectSuggestion(String id) async {
+    await rejectSuggestion(id);
+    _refresh();
   }
 
   Future<void> _approve() async {
@@ -51,11 +67,12 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     try {
       final count = await enrichPerson(widget.id);
       if (!mounted) return;
+      if (count > 0) _refresh();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             count > 0
-                ? '$count suggestions added — see Review → Suggestions'
+                ? '$count suggestions added'
                 : 'No new suggestions found',
           ),
         ),
@@ -68,6 +85,33 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     } finally {
       if (mounted) setState(() => _enriching = false);
     }
+  }
+
+  Widget _suggestionsSection() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _suggestions,
+      builder: (context, snapshot) {
+        final suggestions = snapshot.data ?? [];
+        if (suggestions.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
+            Text(
+              'Suggestions',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            for (final suggestion in suggestions)
+              SuggestionTile(
+                suggestion: suggestion,
+                showTitle: false,
+                onAccept: () => _acceptSuggestion(suggestion['id'] as String),
+                onReject: () => _rejectSuggestion(suggestion['id'] as String),
+              ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -131,6 +175,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                   ),
                 ],
               ),
+              _suggestionsSection(),
             ],
             const SizedBox(height: 8),
             Wrap(

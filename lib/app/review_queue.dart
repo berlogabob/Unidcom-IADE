@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../data/supabase.dart';
 import '../widgets/output_row.dart';
+import '../widgets/queue_list.dart';
+import '../widgets/suggestion_tile.dart';
 
 class ReviewQueueScreen extends StatefulWidget {
   const ReviewQueueScreen({super.key});
@@ -67,9 +69,17 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
           Expanded(
             child: TabBarView(
               children: [
-                _AsyncList(
+                QueueList(
                   future: _pendingPeople,
                   emptyText: 'No profiles waiting for approval',
+                  searchOf: (p) => p['preferred_name'] as String? ?? '',
+                  timeOf: (p) => p['created_at'] as String? ?? '',
+                  filters: [
+                    QueueFilter(
+                      label: 'Profile',
+                      valueOf: (p) => p['profile_status'] as String?,
+                    ),
+                  ],
                   itemBuilder: (person) => ListTile(
                     title: Text(
                       person['preferred_name'] as String? ?? 'Unnamed',
@@ -81,9 +91,17 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                     ),
                   ),
                 ),
-                _AsyncList(
+                QueueList(
                   future: _pendingOutputs,
                   emptyText: 'No outputs waiting for approval',
+                  searchOf: (o) => o['title'] as String? ?? '',
+                  timeOf: (o) => o['created_at'] as String? ?? '',
+                  filters: [
+                    QueueFilter(
+                      label: 'Type',
+                      valueOf: (o) => o['type'] as String?,
+                    ),
+                  ],
                   itemBuilder: (output) => OutputRow(
                     title: output['title'] as String? ?? 'Untitled',
                     year: output['reporting_year'] as int?,
@@ -95,26 +113,42 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                     ),
                   ),
                 ),
-                _AsyncList(
+                QueueList(
                   future: _stalePeople,
                   emptyText: 'No profiles need re-verification',
-                  itemBuilder: (person) {
-                    // test mode: reminder emails intentionally disabled
-                    return ListTile(
-                      title: Text(
-                        person['preferred_name'] as String? ?? 'Unnamed',
-                      ),
-                      subtitle: Text(
-                        person['last_verified_at'] as String? ??
-                            'Never verified',
-                      ),
-                    );
-                  },
+                  searchOf: (p) => p['preferred_name'] as String? ?? '',
+                  timeOf: (p) => p['last_verified_at'] as String? ?? '',
+                  filters: [
+                    QueueFilter(
+                      label: 'Membership',
+                      valueOf: (p) => p['membership_type'] as String?,
+                    ),
+                  ],
+                  // test mode: reminder emails intentionally disabled
+                  itemBuilder: (person) => ListTile(
+                    title: Text(
+                      person['preferred_name'] as String? ?? 'Unnamed',
+                    ),
+                    subtitle: Text(
+                      person['last_verified_at'] as String? ?? 'Never verified',
+                    ),
+                  ),
                 ),
-                _AsyncList(
+                QueueList(
                   future: _pendingSuggestions,
                   emptyText: 'No enrichment suggestions waiting for review',
-                  itemBuilder: (suggestion) => _SuggestionTile(
+                  searchOf: (s) => s['subject_name'] as String? ?? '',
+                  timeOf: (s) => s['created_at'] as String? ?? '',
+                  confidenceOf: (s) => s['confidence'] == null
+                      ? null
+                      : num.parse(s['confidence'].toString()),
+                  filters: [
+                    QueueFilter(
+                      label: 'Source',
+                      valueOf: (s) => s['source'] as String?,
+                    ),
+                  ],
+                  itemBuilder: (suggestion) => SuggestionTile(
                     suggestion: suggestion,
                     onAccept: () =>
                         _acceptSuggestion(suggestion['id'] as String),
@@ -131,74 +165,3 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
   }
 }
 
-class _SuggestionTile extends StatelessWidget {
-  const _SuggestionTile({
-    required this.suggestion,
-    required this.onAccept,
-    required this.onReject,
-  });
-
-  final Map<String, dynamic> suggestion;
-  final VoidCallback onAccept;
-  final VoidCallback onReject;
-
-  @override
-  Widget build(BuildContext context) {
-    final current = suggestion['current_value'] as String?;
-    final value = suggestion['suggested_value'] as String? ?? '';
-    final confidence = suggestion['confidence'];
-    final confidenceText = confidence == null
-        ? ''
-        : ' · ${(num.parse(confidence.toString()) * 100).round()}%';
-
-    return ListTile(
-      title: Text(suggestion['subject_name'] as String? ?? 'Missing subject'),
-      subtitle: Text(
-        '${suggestion['field']}: ${current ?? 'empty'} -> $value\n'
-        '${suggestion['source']}$confidenceText',
-      ),
-      isThreeLine: true,
-      trailing: Wrap(
-        spacing: 8,
-        children: [
-          OutlinedButton(onPressed: onReject, child: const Text('Reject')),
-          FilledButton(onPressed: onAccept, child: const Text('Accept')),
-        ],
-      ),
-    );
-  }
-}
-
-class _AsyncList extends StatelessWidget {
-  const _AsyncList({
-    required this.future,
-    required this.emptyText,
-    required this.itemBuilder,
-  });
-
-  final Future<List<Map<String, dynamic>>> future;
-  final String emptyText;
-  final Widget Function(Map<String, dynamic>) itemBuilder;
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-        final rows = snapshot.data ?? [];
-        if (rows.isEmpty) return Center(child: Text(emptyText));
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: rows.length,
-          itemBuilder: (context, index) => itemBuilder(rows[index]),
-        );
-      },
-    );
-  }
-}

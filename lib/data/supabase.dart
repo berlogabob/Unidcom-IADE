@@ -91,12 +91,54 @@ Future<List<Map<String, dynamic>>> fetchAllActivePeople() async {
 }
 
 Future<List<List<Map<String, dynamic>>>> fetchMergeCandidates() async {
-  final people = await fetchAllActivePeople();
-  final groups = <String, List<Map<String, dynamic>>>{};
-  for (final person in people) {
-    final key = _nameKey(person['preferred_name'] as String?);
-    if (key == null) continue;
-    groups.putIfAbsent(key, () => []).add(person);
+  return groupMergeCandidates(await fetchAllActivePeople());
+}
+
+/// Groups people whose names are duplicates via token-set containment:
+/// two names match when one's normalized token set is a subset of the other's
+/// (e.g. "Sara Gancho" ⊆ "Sara Patrícia Martins Gancho"). Distinct middle
+/// names ("Paulo Teixeira Costa" vs "Paulo Nuno Costa") therefore do NOT match.
+///
+// ponytail: O(n²) containment scan over active people; fine at lab scale.
+// Ceiling: a bare 2-token name ("Paulo Costa") can transitively link two fuller
+// distinct names into one review group — acceptable (admin picks per-field in the
+// merge matrix); add a similarity threshold if that becomes noisy.
+List<List<Map<String, dynamic>>> groupMergeCandidates(
+  List<Map<String, dynamic>> people,
+) {
+  final sets = <Set<String>>[];
+  final valid = <int>[]; // indices of people with a usable (>=2 token) name
+  for (var i = 0; i < people.length; i++) {
+    final tokens = _normalizeName(people[i]['preferred_name'] as String?)
+        .split(' ')
+        .where((s) => s.isNotEmpty)
+        .toSet();
+    sets.add(tokens);
+    if (tokens.length >= 2) valid.add(i);
+  }
+
+  // Union-find over people whose token sets are in a subset/superset relation.
+  final parent = List<int>.generate(people.length, (i) => i);
+  int find(int x) {
+    while (parent[x] != x) {
+      parent[x] = parent[parent[x]];
+      x = parent[x];
+    }
+    return x;
+  }
+
+  for (var a = 0; a < valid.length; a++) {
+    for (var b = a + 1; b < valid.length; b++) {
+      final i = valid[a], j = valid[b];
+      if (sets[i].containsAll(sets[j]) || sets[j].containsAll(sets[i])) {
+        parent[find(i)] = find(j);
+      }
+    }
+  }
+
+  final groups = <int, List<Map<String, dynamic>>>{};
+  for (final i in valid) {
+    groups.putIfAbsent(find(i), () => []).add(people[i]);
   }
   final candidates = groups.values.where((group) => group.length > 1).toList()
     ..sort((a, b) => b.length.compareTo(a.length));
@@ -120,12 +162,6 @@ Future<void> mergePeople(
   } catch (error) {
     throw Exception(_error(error));
   }
-}
-
-String? _nameKey(String? name) {
-  final tokens = _normalizeName(name).split(' ').where((s) => s.isNotEmpty);
-  if (tokens.length < 2) return null;
-  return '${tokens.first}|${tokens.last}';
 }
 
 String _normalizeName(String? value) {
@@ -226,7 +262,7 @@ Future<List<Map<String, dynamic>>> fetchPendingPeople() async {
   try {
     final rows = await db
         .from('people')
-        .select('id, preferred_name, email, profile_status')
+        .select('id, preferred_name, email, profile_status, created_at')
         .neq('profile_status', 'approved')
         .order('preferred_name');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
@@ -239,7 +275,7 @@ Future<List<Map<String, dynamic>>> fetchPendingOutputs() async {
   try {
     final rows = await db
         .from('outputs')
-        .select('id, title, reporting_year, type, approval_status')
+        .select('id, title, reporting_year, type, approval_status, created_at')
         .eq('approval_status', 'pending')
         .order('created_at');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
@@ -255,7 +291,7 @@ Future<List<Map<String, dynamic>>> fetchStalePeople() async {
         .toIso8601String();
     final rows = await db
         .from('people')
-        .select('id, preferred_name, email, last_verified_at')
+        .select('id, preferred_name, email, last_verified_at, membership_type')
         .or('last_verified_at.is.null,last_verified_at.lt.$cutoff')
         .order('preferred_name');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
@@ -290,6 +326,23 @@ Future<List<Map<String, dynamic>>> fetchPendingSuggestions() async {
           subject?[nameField] as String? ?? 'Missing subject';
     }
     return suggestions;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<List<Map<String, dynamic>>> fetchSuggestionsForPerson(
+  String personId,
+) async {
+  try {
+    final rows = await db
+        .from('enrichment_suggestions')
+        .select()
+        .eq('subject_type', 'person')
+        .eq('subject_id', personId)
+        .eq('status', 'pending')
+        .order('created_at');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {
     throw Exception(_error(error));
   }
