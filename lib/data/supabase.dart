@@ -533,13 +533,81 @@ Future<Map<String, dynamic>> fetchProject(String id) async {
         .from('projects')
         .select(
           'id, title, acronym, description, total_budget, currency, '
-          'start_date, end_date, status, '
+          'start_date, end_date, status, public_visibility, approval_status, '
           'project_members(role, people(id, preferred_name, membership_type, status)), '
           'project_outputs(outputs(id, title, reporting_year, type, doi, url))',
         )
         .eq('id', id)
         .single();
     return Map<String, dynamic>.from(row);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<String> createProject(Map<String, dynamic> fields) async {
+  try {
+    final row = await db.from('projects').insert(fields).select('id').single();
+    return row['id'] as String;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> updateProject(String id, Map<String, dynamic> fields) async {
+  try {
+    await db.from('projects').update(fields).eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> addProjectMember(
+  String projectId,
+  String personId, {
+  String? role,
+}) async {
+  try {
+    await db.from('project_members').upsert({
+      'project_id': projectId,
+      'person_id': personId,
+      'role': role,
+    }, onConflict: 'project_id,person_id');
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> removeProjectMember(String projectId, String personId) async {
+  try {
+    await db
+        .from('project_members')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('person_id', personId);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> linkProjectOutput(String projectId, String outputId) async {
+  try {
+    await db.from('project_outputs').upsert({
+      'project_id': projectId,
+      'output_id': outputId,
+    }, onConflict: 'project_id,output_id');
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> unlinkProjectOutput(String projectId, String outputId) async {
+  try {
+    await db
+        .from('project_outputs')
+        .delete()
+        .eq('project_id', projectId)
+        .eq('output_id', outputId);
   } catch (error) {
     throw Exception(_error(error));
   }
