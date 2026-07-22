@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/admin_page.dart';
@@ -14,6 +15,61 @@ import 'public/people_list.dart';
 import 'public/person_page.dart';
 import 'public/projects.dart';
 import 'public/project_page.dart';
+
+const _brandRed = Color(0xFFFF2A13);
+const _brandRedDeep = Color(0xFFEF2201);
+const _ink = Color(0xFF272727);
+const _navy = Color(0xFF20385A);
+
+ThemeData _unidcomTheme() {
+  final scheme = ColorScheme.fromSeed(
+    seedColor: _brandRed,
+    primary: _brandRed,
+    secondary: _navy,
+    surface: Colors.white,
+    onSurface: _ink,
+    brightness: Brightness.light,
+  );
+  final base = ThemeData(colorScheme: scheme, useMaterial3: true);
+
+  return base.copyWith(
+    scaffoldBackgroundColor: Colors.white,
+    textTheme: GoogleFonts.latoTextTheme(
+      base.textTheme,
+    ).apply(bodyColor: _ink, displayColor: _ink),
+    appBarTheme: AppBarTheme(
+      backgroundColor: Colors.white,
+      foregroundColor: _ink,
+      elevation: 0,
+      scrolledUnderElevation: 0.5,
+      shape: const Border(bottom: BorderSide(color: Color(0xFFEAEAEA))),
+      titleTextStyle: GoogleFonts.lato(
+        color: _ink,
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.5,
+      ),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: Colors.white,
+      indicatorColor: _brandRed.withValues(alpha: 0.12),
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          color: states.contains(WidgetState.selected) ? _brandRed : _ink,
+        ),
+      ),
+      labelTextStyle: WidgetStatePropertyAll(
+        GoogleFonts.lato(fontSize: 12, fontWeight: FontWeight.w600),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: _brandRedDeep,
+        foregroundColor: Colors.white,
+      ),
+    ),
+  );
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -97,7 +153,7 @@ class UnidcomApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Unidcom IADE',
-      theme: ThemeData(colorSchemeSeed: Colors.black, useMaterial3: true),
+      theme: _unidcomTheme(),
       routerConfig: _router,
     );
   }
