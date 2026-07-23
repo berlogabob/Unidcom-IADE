@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/supabase.dart';
+import '../widgets/pick_matrix.dart';
 import '../widgets/search_bar.dart';
 
 class MergeScreen extends StatefulWidget {
@@ -360,7 +361,7 @@ class _MergeMatrixDialogState extends State<_MergeMatrixDialog> {
                                     const DataCell(Text('SURVIVOR')),
                                     for (final person in widget.people)
                                       DataCell(
-                                        _RadioChoice(
+                                        RadioChoice(
                                           selected:
                                               person['id'] as String ==
                                               _survivorId,
@@ -381,7 +382,7 @@ class _MergeMatrixDialogState extends State<_MergeMatrixDialog> {
                                         DataCell(
                                           SizedBox(
                                             width: 220,
-                                            child: _RadioChoice(
+                                            child: RadioChoice(
                                               selected:
                                                   person['id'] as String ==
                                                   _choice[field.$1],
@@ -415,8 +416,9 @@ class _MergeMatrixDialogState extends State<_MergeMatrixDialog> {
                     const SizedBox(width: 16),
                     SizedBox(
                       width: 280,
-                      child: _ResultPreview(
+                      child: ResultPreview(
                         fields: _fields,
+                        tallField: 'bio',
                         values: {
                           for (final field in _fields)
                             field.$1: _value(
@@ -460,69 +462,3 @@ class _MergeMatrixDialogState extends State<_MergeMatrixDialog> {
   }
 }
 
-class _RadioChoice extends StatelessWidget {
-  const _RadioChoice({required this.selected, required this.onTap, this.child});
-
-  final bool selected;
-  final VoidCallback? onTap;
-  final Widget? child;
-
-  @override
-  Widget build(BuildContext context) {
-    final icon = Icon(
-      selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-      color: selected ? Theme.of(context).colorScheme.primary : null,
-    );
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: child == null
-            ? icon
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  icon,
-                  const SizedBox(width: 8),
-                  Expanded(child: child!),
-                ],
-              ),
-      ),
-    );
-  }
-}
-
-class _ResultPreview extends StatelessWidget {
-  const _ResultPreview({required this.fields, required this.values});
-
-  final List<(String, String)> fields;
-  final Map<String, String> values;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Result', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              for (final field in fields) ...[
-                Text(field.$2, style: Theme.of(context).textTheme.labelMedium),
-                Text(
-                  values[field.$1]?.isEmpty ?? true ? '-' : values[field.$1]!,
-                  maxLines: field.$1 == 'bio' ? 6 : 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}

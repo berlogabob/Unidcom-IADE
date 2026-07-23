@@ -137,31 +137,26 @@ String? cienciaIdFromOrcidPerson(Map<String, dynamic> profile) {
   return null;
 }
 
-/// Builds person suggestions mined from an ORCID `/person` profile, only for
-/// fields that are currently empty on [person]. Pure — no I/O.
-List<Map<String, dynamic>> orcidProfileSuggestions({
-  required String personId,
-  required Map<String, dynamic> person,
-  required Map<String, dynamic> profile,
-}) {
-  final suggestions = <Map<String, dynamic>>[];
-  bool empty(String field) => _clean(person[field] as String?).isEmpty;
-  void add(String field, String? value, double confidence) {
+/// Per-field confidence used when an ORCID-mined value becomes a suggestion.
+const _orcidFieldConfidence = {
+  'ciencia_id': 0.8,
+  'bio': 0.6,
+  'email': 0.7,
+  'legal_name': 0.5,
+};
+
+/// Extracts the mineable person fields from an ORCID `/person` payload:
+/// `{ciencia_id, bio, email, legal_name}`, omitting any that are absent/blank.
+/// Pure — no I/O. Shared by the batch suggestion path and the update matrix.
+Map<String, String> orcidPersonValues(Map<String, dynamic> profile) {
+  final values = <String, String>{};
+  void put(String field, String? value) {
     final clean = _clean(value);
-    if (clean.isEmpty || !empty(field)) return;
-    suggestions.add({
-      'subject_type': 'person',
-      'subject_id': personId,
-      'field': field,
-      'current_value': person[field],
-      'suggested_value': clean,
-      'source': 'orcid',
-      'confidence': confidence,
-    });
+    if (clean.isNotEmpty) values[field] = clean;
   }
 
-  add('ciencia_id', cienciaIdFromOrcidPerson(profile), 0.8);
-  add('bio', (profile['biography'] as Map?)?['content'] as String?, 0.6);
+  put('ciencia_id', cienciaIdFromOrcidPerson(profile));
+  put('bio', (profile['biography'] as Map?)?['content'] as String?);
 
   final emails = (profile['emails'] as Map?)?['email'] as List? ?? [];
   final email = emails.whereType<Map>().toList()
@@ -170,16 +165,78 @@ List<Map<String, dynamic>> orcidProfileSuggestions({
           (e['primary'] == true ? 0 : 1) + (e['verified'] == true ? 0 : 1);
       return rank(a).compareTo(rank(b));
     });
-  if (email.isNotEmpty) add('email', email.first['email'] as String?, 0.7);
+  if (email.isNotEmpty) put('email', email.first['email'] as String?);
 
   final name = profile['name'] as Map?;
   final legal =
       (name?['credit-name'] as Map?)?['value'] as String? ??
       '${(name?['given-names'] as Map?)?['value'] ?? ''} '
           '${(name?['family-name'] as Map?)?['value'] ?? ''}';
-  add('legal_name', legal, 0.5);
+  put('legal_name', legal);
 
-  return suggestions;
+  return values;
+}
+
+/// Builds person suggestions mined from an ORCID `/person` profile, only for
+/// fields that are currently empty on [person]. Pure — no I/O.
+List<Map<String, dynamic>> orcidProfileSuggestions({
+  required String personId,
+  required Map<String, dynamic> person,
+  required Map<String, dynamic> profile,
+}) {
+  bool empty(String field) => _clean(person[field] as String?).isEmpty;
+  return [
+    for (final entry in orcidPersonValues(profile).entries)
+      if (empty(entry.key))
+        {
+          'subject_type': 'person',
+          'subject_id': personId,
+          'field': entry.key,
+          'current_value': person[entry.key],
+          'suggested_value': entry.value,
+          'source': 'orcid',
+          'confidence': _orcidFieldConfidence[entry.key],
+        },
+  ];
+}
+
+/// Resolves [personId]'s ORCID (stored, else discovered by name) and returns
+/// the live ORCID `/person` values plus `{orcid: <resolved>}`. Null if no ORCID
+/// can be resolved or the profile fetch fails. Unlike [orcidProfileSuggestions]
+/// this does NOT filter to empty fields — the caller reconciles changes.
+Future<Map<String, String>?> fetchOrcidValues(String personId) async {
+  final person = await db
+      .from('people')
+      .select('preferred_name,orcid')
+      .eq('id', personId)
+      .single();
+
+  var resolved = _bareOrcid(person['orcid'] as String?);
+  if (resolved == null) {
+    final parts = _clean(person['preferred_name'] as String?).split(' ');
+    if (parts.length < 2) return null;
+    final data = await _getJson(
+      Uri.https('pub.orcid.org', '/v3.0/expanded-search/', {
+        'q':
+            'given-names:${parts.take(parts.length - 1).join(' ')} '
+            'AND family-name:${parts.last}',
+      }),
+      headers: {'Accept': 'application/json'},
+    );
+    final candidate = pickOrcidCandidate(
+      data?['expanded-result'] as List? ?? [],
+      person['preferred_name'] as String?,
+    );
+    resolved = candidate?.orcid;
+  }
+  if (resolved == null) return null;
+
+  final profile = await _getJson(
+    Uri.parse('https://pub.orcid.org/v3.0/$resolved/person'),
+    headers: {'Accept': 'application/json'},
+  );
+  if (profile == null) return null;
+  return {...orcidPersonValues(profile), 'orcid': resolved};
 }
 
 Future<bool> _pendingExists(Map<String, dynamic> row) async {

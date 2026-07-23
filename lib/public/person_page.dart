@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../app/orcid_update.dart';
 import '../data/enrich_client.dart';
 import '../data/supabase.dart';
 import '../widgets/output_row.dart';
@@ -75,19 +76,24 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     if (saved == true) _refresh();
   }
 
-  Future<void> _autoFill() async {
+  Future<void> _autoFill(Map<String, dynamic> person) async {
     setState(() => _enriching = true);
     try {
-      final count = await enrichPerson(widget.id);
+      final incoming = await fetchOrcidValues(widget.id);
       if (!mounted) return;
-      if (count > 0) _refresh();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            count > 0 ? '$count suggestions added' : 'No new suggestions found',
-          ),
-        ),
+      if (incoming == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No ORCID profile found to pull from')),
+        );
+        return;
+      }
+      final applied = await showOrcidUpdateDialog(
+        context,
+        personId: widget.id,
+        current: person,
+        incoming: incoming,
       );
+      if (applied && mounted) _refresh();
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -315,7 +321,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                   ),
                   if (admin)
                     FilledButton.icon(
-                      onPressed: _enriching ? null : _autoFill,
+                      onPressed: _enriching ? null : () => _autoFill(person),
                       icon: _enriching
                           ? const SizedBox(
                               width: 18,
@@ -323,7 +329,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.auto_fix_high),
-                      label: Text(_enriching ? 'Auto-filling...' : 'Auto-fill'),
+                      label: Text(_enriching ? 'Loading...' : 'Auto-fill'),
                     ),
                   if (admin)
                     FilledButton.icon(

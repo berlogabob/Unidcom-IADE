@@ -42,6 +42,38 @@ void main() {
     });
   });
 
+  group('orcidPersonValues', () {
+    test('extracts bio, ciencia_id, ranked email and legal name', () {
+      final profile = {
+        'biography': {'content': 'IADE UNIDCOM updated bio to test'},
+        'external-identifiers': {
+          'external-identifier': [
+            {'external-id-type': 'CienciaID', 'external-id-value': 'E018-7F41-627B'},
+          ],
+        },
+        'emails': {
+          'email': [
+            {'email': 'other@x.pt', 'primary': false, 'verified': false},
+            {'email': '20251186@iade.pt', 'primary': true, 'verified': true},
+          ],
+        },
+        'name': {
+          'given-names': {'value': 'Andrey'},
+          'family-name': {'value': 'Dyakov'},
+        },
+      };
+      final values = orcidPersonValues(profile);
+      expect(values['bio'], 'IADE UNIDCOM updated bio to test');
+      expect(values['ciencia_id'], 'E018-7F41-627B');
+      expect(values['email'], '20251186@iade.pt'); // primary+verified ranked first
+      expect(values['legal_name'], 'Andrey Dyakov');
+    });
+
+    test('omits fields absent from the profile', () {
+      expect(orcidPersonValues({'name': {}}), isEmpty);
+    });
+  });
+
   group('pickOrcidCandidate', () {
     Map<String, dynamic> result(String orcid, String given, String family,
             [List<String>? orgs]) =>
