@@ -391,3 +391,49 @@ Future<int> enrichPerson(String personId) async {
     throw Exception(error);
   }
 }
+
+/// Read-only ORCID "drift" check (public API): does the person list an IADE
+/// affiliation on their ORCID record, which employers ORCID has, and how many
+/// works are on it. Null if no ORCID resolves. This is what a future push would
+/// reconcile — it performs NO write.
+Future<Map<String, dynamic>?> fetchOrcidSyncStatus(String personId) async {
+  final person = await db
+      .from('people')
+      .select('orcid')
+      .eq('id', personId)
+      .single();
+  final orcid = _bareOrcid(person['orcid'] as String?);
+  if (orcid == null) return null;
+
+  final employments = await _getJson(
+    Uri.parse('https://pub.orcid.org/v3.0/$orcid/employments'),
+    headers: {'Accept': 'application/json'},
+  );
+  final orgNames = <String>[];
+  for (final group in (employments?['affiliation-group'] as List? ?? [])) {
+    for (final summary in ((group as Map)['summaries'] as List? ?? [])) {
+      final name =
+          (((summary as Map)['employment-summary'] as Map?)?['organization']
+                  as Map?)?['name']
+              as String?;
+      if (name != null && name.trim().isNotEmpty) orgNames.add(name.trim());
+    }
+  }
+  final affiliationOnOrcid = orgNames.any((name) {
+    final norm = _normalize(name);
+    return _orgTokens.any((token) => norm.contains(token));
+  });
+
+  final works = await _getJson(
+    Uri.parse('https://pub.orcid.org/v3.0/$orcid/works'),
+    headers: {'Accept': 'application/json'},
+  );
+  final worksCount = (works?['group'] as List? ?? []).length;
+
+  return {
+    'orcid': orcid,
+    'affiliationOnOrcid': affiliationOnOrcid,
+    'orgNames': orgNames,
+    'worksCount': worksCount,
+  };
+}
