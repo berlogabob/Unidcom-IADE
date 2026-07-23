@@ -17,7 +17,7 @@
   #stamp { position:fixed; bottom:8px; left:10px; color:var(--muted); font-size:12px; }
   #scroll { position:absolute; inset:0; overflow:auto; cursor:grab; }
   #scroll.grabbing { cursor:grabbing; }
-  #stage { transform-origin: 0 0; padding:24px; width:max-content; }
+  #stage { padding:24px; width:max-content; }
   #stage svg { max-width:none !important; height:auto; }
   #err { padding:24px; color:#a71000; white-space:pre-wrap; }
 </style>
@@ -41,7 +41,13 @@
     const text = await (await fetch('schema.mmd', { cache: 'no-store' })).text();
     const m = text.match(/generated\s+(\d{4}-\d{2}-\d{2})/);
     if (m) document.getElementById('stamp').textContent = 'Schema as of ' + m[1];
-    mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'neutral',
+      securityLevel: 'loose',
+      er: { useMaxWidth: false },          // render at natural size, don't shrink to fit
+      themeVariables: { fontSize: '16px' },
+    });
     const { svg } = await mermaid.render('erd', text);
     stage.innerHTML = svg;
   } catch (e) {
@@ -50,9 +56,11 @@
   }
 
   // Zoom (buttons + ctrl/⌘-wheel) and drag-to-pan.
+  // CSS `zoom` (not `transform`) so magnification reflows and the scroll
+  // container gains real scroll range — pan works at any zoom, no clipping.
   let scale = 1;
-  const apply = () => { stage.style.transform = 'scale(' + scale + ')'; };
-  const zoom = (f) => { scale = Math.min(4, Math.max(0.2, scale * f)); apply(); };
+  const apply = () => { stage.style.zoom = scale; };
+  const zoom = (f) => { scale = Math.min(8, Math.max(0.3, scale * f)); apply(); };
   document.getElementById('in').onclick = () => zoom(1.2);
   document.getElementById('out').onclick = () => zoom(1 / 1.2);
   document.getElementById('reset').onclick = () => { scale = 1; apply(); };
