@@ -117,7 +117,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
         .select(
           'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, '
           'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
-          'join_date, exit_date, '
+          'join_date, exit_date, phd, notes, integration_year, '
           'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url)), '
           'lab_members(is_coordinator, labs(id, code, name)), '
           'person_tags(tags(name))',
@@ -455,7 +455,7 @@ Future<List<Map<String, dynamic>>> fetchOutputsForStats() async {
   try {
     final rows = await db
         .from('outputs')
-        .select('id, type, subtype, reporting_year')
+        .select('id, type, subtype, reporting_year, fct_selected, verified_online')
         .order('type');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {
@@ -518,6 +518,7 @@ Future<Map<String, dynamic>> fetchOutput(String id) async {
         .from('outputs')
         .select(
           'id, title, reporting_year, type, subtype, category_path, doi, url, approval_status, '
+          'full_reference, fct_selected, verified_online, macro_type, output_status, source, '
           'output_authors(role, author_position, people(id, preferred_name, membership_type, status)), '
           'project_outputs(projects(id, title, status))',
         )
@@ -608,13 +609,14 @@ Future<Map<String, dynamic>> fetchProject(String id) async {
         .from('projects')
         .select(
           'id, title, acronym, description, total_budget, currency, '
-          'start_date, end_date, status, funding, category, '
+          'start_date, end_date, status, funding, category, notes, risk, '
           'public_visibility, approval_status, '
           'project_members(role, people(id, preferred_name, membership_type, status)), '
           'project_outputs(outputs(id, title, reporting_year, type, doi, url)), '
           'project_clusters(clusters(id, code, name)), '
           'project_labs(labs(id, code, name)), '
-          'project_objectives(objectives(id, code, name))',
+          'project_objectives(objectives(id, code, name)), '
+          'project_collaborations(collaborations(id, name, kind))',
         )
         .eq('id', id)
         .single();
@@ -741,7 +743,8 @@ Future<Map<String, dynamic>> fetchLab(String id) async {
           'id, code, name, overview, notes, '
           'lab_members(is_coordinator, people(id, preferred_name, membership_type, status)), '
           'lab_objectives(objectives(id, code, name)), '
-          'project_labs(projects(id, title, status))',
+          'project_labs(projects(id, title, status)), '
+          'lab_collaborations(collaborations(id, name, kind))',
         )
         .eq('id', id)
         .single();

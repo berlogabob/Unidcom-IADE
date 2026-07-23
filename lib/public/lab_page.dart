@@ -122,6 +122,9 @@ class _LabPageScreenState extends State<LabPageScreen> {
               },
             ),
             const SizedBox(height: 16),
+            _collaborations(
+              embedded(lab, 'lab_collaborations', 'collaborations'),
+            ),
             sectionHeader(context, 'Projects · ${projects.length}', null, ''),
             const SizedBox(height: 8),
             if (projects.isEmpty)
@@ -139,6 +142,40 @@ class _LabPageScreenState extends State<LabPageScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _collaborations(List<Map<String, dynamic>> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Collaborations',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final c in items)
+                Chip(
+                  avatar: Icon(
+                    (c['kind'] as String?) == 'internal'
+                        ? Icons.groups
+                        : Icons.public,
+                    size: 16,
+                  ),
+                  label: Text(c['name'] as String? ?? '—'),
+                  visualDensity: VisualDensity.compact,
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

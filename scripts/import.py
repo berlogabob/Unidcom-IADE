@@ -86,6 +86,11 @@ def parse_year(value: str) -> int | None:
         return None
 
 
+def yesno(value: str | None) -> bool | None:
+    v = clean(value).lower()
+    return True if v == "yes" else False if v == "no" else None
+
+
 def normalize_doi(value: str | None) -> str | None:
     m = re.search(r"10\.\d{4,9}/[^\s\"<>]+", value or "", re.I)
     return m.group(0).rstrip(").,;").lower() if m else None
@@ -161,6 +166,11 @@ def build_people(rows: list[dict[str, str]]) -> tuple[list[dict], dict[str, str]
             "ciencia_id": None,
             "profile_status": "draft",
             "public_visibility": False,
+            "notes": next((clean(r.get("Notas")) for r in group if clean(r.get("Notas"))), None),
+            "phd": next((clean(r.get("PhD")) for r in group if clean(r.get("PhD"))), None),
+            "integration_year": next(
+                (parse_year(r["Ano de integração"]) for r in group
+                 if clean(r.get("Ano de integração"))), None),
         }
         people.append(person)
         for name in names:
@@ -212,6 +222,12 @@ def build_outputs(rows: list[dict[str, str]], people: list[dict], person_by_name
                 "doi": doi,
                 "url": non_doi_url(row["URL/DOI"]),
                 "approval_status": "pending",
+                "full_reference": clean(row.get("Referência completa")) or None,
+                "fct_selected": yesno(row.get("FCT selected")),
+                "macro_type": clean(row.get("Macro-tipo")) or None,
+                "verified_online": yesno(row.get("Verificado online?")),
+                "source": clean(row.get("Fonte")) or None,
+                "output_status": clean(row.get("Estado do output")) or None,
             }
             authors_by_output[output_id] = []
         output_id = outputs_by_key[key]["id"]
@@ -415,11 +431,70 @@ def load_projects(
         client.table("project_members").upsert(pm, on_conflict="project_id,person_id").execute()
 
 
+OUTPUT_BACKFILL_COLS = (
+    "full_reference", "fct_selected", "macro_type", "verified_online",
+    "source", "output_status",
+)
+PEOPLE_BACKFILL_COLS = ("notes", "phd", "integration_year")
+
+
+def backfill_supabase(people: list[dict], outputs: list[dict]) -> None:
+    """Non-destructive: updates ONLY the newly-added columns on rows already in
+    the DB (matched by doi/id and email/id). Never touches approval_status,
+    membership, enrichment or any other field — safe to re-run anytime."""
+    env = load_env()
+    if not env:
+        raise SystemExit(1)
+    from supabase import create_client
+
+    client = create_client(*env)
+
+    existing = client.table("outputs").select("id,doi").execute().data or []
+    by_doi = {o["doi"]: o["id"] for o in existing if o.get("doi")}
+    live_ids = {o["id"] for o in existing}
+    out_updated = 0
+    for output in outputs:
+        oid = by_doi.get(output["doi"]) or (output["id"] if output["id"] in live_ids else None)
+        if not oid:
+            continue
+        client.table("outputs").update(
+            {c: output[c] for c in OUTPUT_BACKFILL_COLS}
+        ).eq("id", oid).execute()
+        out_updated += 1
+
+    live_people = (
+        client.table("people")
+        .select("id,email," + ",".join(PEOPLE_BACKFILL_COLS))
+        .execute()
+        .data
+        or []
+    )
+    by_email = {p["email"]: p for p in live_people if p.get("email")}
+    by_pid = {p["id"]: p for p in live_people}
+    ppl_updated = 0
+    for person in people:
+        current = by_email.get(person.get("email")) or by_pid.get(person["id"])
+        if not current:
+            continue
+        # only fill where the DB is currently empty (respect any manual edits)
+        fields = {
+            c: person.get(c)
+            for c in PEOPLE_BACKFILL_COLS
+            if person.get(c) and not current.get(c)
+        }
+        if fields:
+            client.table("people").update(fields).eq("id", current["id"]).execute()
+            ppl_updated += 1
+    print(f"BACKFILL: outputs updated={out_updated} people updated={ppl_updated}")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--load", action="store_true", help="full load (rewrites people/outputs too)")
     parser.add_argument("--projects-only", action="store_true", help="load only projects; safe for app edits")
+    parser.add_argument("--backfill", action="store_true",
+                        help="update only the new output/people columns; safe for app edits")
     return parser.parse_args()
 
 
@@ -447,7 +522,9 @@ def main() -> None:
         f"author_links={len(authors)} projects={len(projects)} "
         f"project_members={len(project_members)} project_outputs={len(project_outputs)}"
     )
-    if args.projects_only:
+    if args.backfill:
+        backfill_supabase(people, outputs)
+    elif args.projects_only:
         load_projects(projects, project_members, project_outputs)
         print("LOAD (projects only): PASS")
     elif args.load:

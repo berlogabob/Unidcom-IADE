@@ -165,6 +165,9 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
                     _refresh();
                   },
                 ),
+                _collaborations(
+                  _embedded(project, 'project_collaborations', 'collaborations'),
+                ),
                 const SizedBox(height: 24),
                 _sectionHeader(
                   'Members · ${members.length}',
@@ -246,12 +249,22 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
                     label: Text(funding),
                     visualDensity: VisualDensity.compact,
                   ),
+                if ((project['risk'] as String? ?? '').trim().isNotEmpty)
+                  Chip(
+                    avatar: const Icon(Icons.warning_amber, size: 16),
+                    label: Text('Risk: ${project['risk']}'),
+                    visualDensity: VisualDensity.compact,
+                  ),
                 if (dates.isNotEmpty) _muted(dates),
               ],
             ),
             if (description.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(description),
+            ],
+            if ((project['notes'] as String? ?? '').trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
+              _muted(project['notes'] as String),
             ],
             if (admin) ...[
               const SizedBox(height: 16),
@@ -373,6 +386,40 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
                   ),
               ],
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _collaborations(List<Map<String, dynamic>> items) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Collaborations',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final c in items)
+                Chip(
+                  avatar: Icon(
+                    (c['kind'] as String?) == 'internal'
+                        ? Icons.groups
+                        : Icons.public,
+                    size: 16,
+                  ),
+                  label: Text(c['name'] as String? ?? '—'),
+                  visualDensity: VisualDensity.compact,
+                ),
+            ],
+          ),
         ],
       ),
     );

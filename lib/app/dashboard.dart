@@ -119,6 +119,11 @@ class _StatTilesRow extends StatelessWidget {
         value: '${data.clusterCount}',
         icon: Icons.hub_outlined,
       ),
+      StatTile(
+        label: 'Verified outputs',
+        value: '${data.verifiedOutputs}',
+        icon: Icons.verified_outlined,
+      ),
     ];
 
     return LayoutBuilder(
@@ -479,6 +484,7 @@ class _DashboardData {
     required this.labCount,
     required this.projectCount,
     required this.clusterCount,
+    required this.verifiedOutputs,
     required this.outputsByType,
     required this.journalsByQuartile,
     required this.topResearchers,
@@ -495,6 +501,7 @@ class _DashboardData {
   final int labCount;
   final int projectCount;
   final int clusterCount;
+  final int verifiedOutputs;
   final List<_CountItem> outputsByType;
   final Map<String, int> journalsByQuartile;
   final List<_CountItem> topResearchers;
@@ -542,6 +549,7 @@ class _DashboardData {
       labCount: labCount,
       projectCount: projectCount,
       clusterCount: clusterCount,
+      verifiedOutputs: outputs.where((o) => o['verified_online'] == true).length,
       outputsByType: _topWithOther(_countBy(outputs, (row) => _type(row))),
       journalsByQuartile: quartiles,
       topResearchers: _topResearchers(authors),

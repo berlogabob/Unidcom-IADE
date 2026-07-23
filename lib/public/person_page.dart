@@ -361,10 +361,20 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
               ? _muted('Not set')
               : SelectableText(ciencia),
         ),
+        if ((person['phd'] as String? ?? '').trim().isNotEmpty)
+          _InfoRow(
+            icon: Icons.school_outlined,
+            label: 'PhD',
+            child: Text(person['phd'] as String),
+          ),
         _InfoRow(
           icon: Icons.login,
           label: 'Member since',
-          child: _muted(joined.isEmpty ? '—' : joined),
+          child: _muted(
+            joined.isNotEmpty
+                ? joined
+                : (person['integration_year']?.toString() ?? '—'),
+          ),
         ),
         if (left.isNotEmpty)
           _InfoRow(
@@ -385,7 +395,18 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
 
   Widget _bio(Map<String, dynamic> person) {
     final bio = (person['bio'] as String? ?? '').trim();
-    return bio.isEmpty ? _muted('No bio yet') : Text(bio);
+    final notes = (person['notes'] as String? ?? '').trim();
+    if (bio.isEmpty && notes.isEmpty) return _muted('No bio yet');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (bio.isNotEmpty) Text(bio),
+        if (notes.isNotEmpty) ...[
+          if (bio.isNotEmpty) const SizedBox(height: 8),
+          _muted(notes),
+        ],
+      ],
+    );
   }
 
   Widget _outputRow(Map<String, dynamic> author) {

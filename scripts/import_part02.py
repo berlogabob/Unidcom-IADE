@@ -25,6 +25,7 @@ CLUSTERS_CSV = "UNIDCOM Clusters 74a4236e5d7a4cf6963deff9ac41d073_all.csv"
 LABS_CSV = "UNIDCOM Labs 2d49755618b24a6995b7532e0379c81d_all.csv"
 OBJECTIVES_CSV = "UNIDCOM Objectives b0e4e26fef4e4d4a8a1f52b8365442c3_all.csv"
 PROJECTS_CSV = "UNIDCOM Projects 55d40fc0b5ba4163b8a761d848811d1d_all.csv"
+INTCOLAB_CSV = "UNIDCOM Internal Collaborations 077c7bbcd0ed46e3ab3d663e0285edc8_all.csv"
 
 NS = uuid.UUID("3fc3e2b1-18c9-4834-b0b7-bcbb24ff419b")  # same as import.py
 
@@ -103,13 +104,34 @@ def build(people_by_name: dict[str, str]) -> dict[str, list[dict]]:
             warnings.append(f"unknown person: {name}")
         return pid
 
+    # collaboration registry (shared across labs/projects/intcolab)
+    collabs: dict[str, dict] = {}
+    lab_collaborations: list[dict] = []
+    project_collaborations: list[dict] = []
+    seen_lc: set[tuple[str, str]] = set()
+    seen_pc: set[tuple[str, str]] = set()
+
+    def collab(name: str, kind: str, notes: str | None = None) -> str:
+        cid = row_id("collaborations", match_key(name))
+        row = collabs.get(cid)
+        if row is None:
+            collabs[cid] = {"id": cid, "name": clean(name), "kind": kind, "notes": notes}
+        else:
+            if notes and not row["notes"]:
+                row["notes"] = notes
+            if kind == "internal":  # internal wins if a name shows up both ways
+                row["kind"] = "internal"
+        return cid
+
     # --- clusters
     clusters, cluster_by_name = [], {}
     for r in read_csv(DATA / CLUSTERS_CSV):
         code = clean(r["Código"])
         cid = row_id("clusters", code)
         clusters.append({"id": cid, "code": code, "name": clean(r["Cluster"]),
-                         "concern": clean(r["Concern"]) or None, "notes": clean(r["Notas"]) or None})
+                         "concern": clean(r["Concern"]) or None,
+                         "notes": clean(r["Notas"]) or None,
+                         "source": clean(r["Fonte"]) or None})
         cluster_by_name[match_key(r["Cluster"])] = cid
 
     # --- objectives (+ objective_clusters)
@@ -128,8 +150,9 @@ def build(people_by_name: dict[str, str]) -> dict[str, list[dict]]:
             else:
                 warnings.append(f"objective {code}: unknown cluster {cname}")
 
-    # --- labs (+ lab_members, lab_objectives)
-    labs, lab_by_name, lab_members, lab_objectives = [], {}, [], []
+    # --- labs (+ lab_members, lab_objectives, external collaborations)
+    labs, lab_by_name, lab_members = [], {}, []
+    lab_objective_pairs: set[tuple[str, str]] = set()
     for r in read_csv(DATA / LABS_CSV):
         code = clean(r["Código"])
         lid = row_id("labs", code)
@@ -147,18 +170,36 @@ def build(people_by_name: dict[str, str]) -> dict[str, list[dict]]:
         for oname in link_names(r["Objetives"]):
             oid = objective_by_name.get(match_key(oname))
             if oid:
-                lab_objectives.append({"lab_id": lid, "objective_id": oid})
+                lab_objective_pairs.add((lid, oid))
             else:
                 warnings.append(f"lab {code}: unknown objective {oname}")
+        for cname in link_names(r["External collaborations"]):
+            cid = collab(cname, "external")
+            if (lid, cid) not in seen_lc:
+                seen_lc.add((lid, cid))
+                lab_collaborations.append({"lab_id": lid, "collaboration_id": cid})
+
+    # lab_objectives also declared from the Objectives.Labs side — union both.
+    for r in read_csv(DATA / OBJECTIVES_CSV):
+        oid = objective_by_name.get(match_key(r["Objetivo"]))
+        for lname in link_names(r["Labs"]):
+            lid = lab_by_name.get(match_key(lname))
+            if oid and lid:
+                lab_objective_pairs.add((lid, oid))
+    lab_objectives = [{"lab_id": lid, "objective_id": oid} for lid, oid in sorted(lab_objective_pairs)]
 
     # --- projects (merge onto import.py ids) + members + links
+    # ponytail: no approval_status/public_visibility here — omitting them means the
+    # idempotent upsert never resets an admin's approval on re-run.
     projects, project_members, project_clusters, project_labs, project_objectives = [], [], [], [], []
+    project_by_title: dict[str, str] = {}
     seen_members: set[tuple[str, str]] = set()
     for r in read_csv(DATA / PROJECTS_CSV):
         title = clean(r["Project"])
         if not title:
             continue
         pid = row_id("projects", match_key(title))
+        project_by_title[match_key(title)] = pid
         projects.append({
             "id": pid, "title": title,
             "description": clean(r["Abstract"]) or None,
@@ -167,7 +208,8 @@ def build(people_by_name: dict[str, str]) -> dict[str, list[dict]]:
             "end_date": parse_date(r["Data fim"]),
             "funding": clean(r["Financiamento"]) or None,
             "category": clean(r["Categoria"]) or None,
-            "approval_status": "pending", "public_visibility": False,
+            "notes": clean(r["Notas"]) or None,
+            "risk": clean(r["Risco"]) or None,
         })
         for col, role in (("PI", "pi"), ("CO-PI", "co_pi"),
                           ("Responsáveis", "responsible"), ("Team", "member")):
@@ -188,6 +230,30 @@ def build(people_by_name: dict[str, str]) -> dict[str, list[dict]]:
             oid = objective_by_name.get(match_key(oname))
             if oid:
                 project_objectives.append({"project_id": pid, "objective_id": oid})
+        for col, kind in (("External Collaborations", "external"),
+                          ("Internal Collaborations", "internal")):
+            for cname in link_names(r.get(col, "")):
+                cid = collab(cname, kind)
+                if (pid, cid) not in seen_pc:
+                    seen_pc.add((pid, cid))
+                    project_collaborations.append({"project_id": pid, "collaboration_id": cid})
+
+    # --- internal collaboration entities (their own Notion table)
+    for r in read_csv(DATA / INTCOLAB_CSV):
+        name = clean(r["Internal Collaboration"])
+        if not name:
+            continue
+        cid = collab(name, "internal", clean(r["Notas"]) or None)
+        for lname in link_names(r["Labs"]):
+            lid = lab_by_name.get(match_key(lname))
+            if lid and (lid, cid) not in seen_lc:
+                seen_lc.add((lid, cid))
+                lab_collaborations.append({"lab_id": lid, "collaboration_id": cid})
+        for pname in link_names(r["Projects"]):
+            pid = project_by_title.get(match_key(pname))
+            if pid and (pid, cid) not in seen_pc:
+                seen_pc.add((pid, cid))
+                project_collaborations.append({"project_id": pid, "collaboration_id": cid})
 
     for w in warnings:
         print(f"WARN: {w}", file=sys.stderr)
@@ -198,6 +264,9 @@ def build(people_by_name: dict[str, str]) -> dict[str, list[dict]]:
         "lab_objectives": lab_objectives, "projects": projects,
         "project_members": project_members, "project_clusters": project_clusters,
         "project_labs": project_labs, "project_objectives": project_objectives,
+        "collaborations": list(collabs.values()),
+        "lab_collaborations": lab_collaborations,
+        "project_collaborations": project_collaborations,
     }
 
 
@@ -206,7 +275,10 @@ def self_check(t: dict[str, list[dict]]) -> None:
     assert len(t["labs"]) == 5, len(t["labs"])
     assert len(t["objectives"]) == 12, len(t["objectives"])
     assert len(t["projects"]) == 33, len(t["projects"])
-    ids = {name: {r["id"] for r in t[name]} for name in ("clusters", "labs", "objectives", "projects")}
+    ids = {
+        name: {r["id"] for r in t[name]}
+        for name in ("clusters", "labs", "objectives", "projects", "collaborations")
+    }
     checks = [
         ("lab_members", "lab_id", "labs"), ("lab_objectives", "lab_id", "labs"),
         ("lab_objectives", "objective_id", "objectives"),
@@ -216,12 +288,17 @@ def self_check(t: dict[str, list[dict]]) -> None:
         ("project_labs", "project_id", "projects"), ("project_labs", "lab_id", "labs"),
         ("project_objectives", "project_id", "projects"), ("project_objectives", "objective_id", "objectives"),
         ("project_members", "project_id", "projects"),
+        ("lab_collaborations", "lab_id", "labs"),
+        ("lab_collaborations", "collaboration_id", "collaborations"),
+        ("project_collaborations", "project_id", "projects"),
+        ("project_collaborations", "collaboration_id", "collaborations"),
     ]
     for table, fk, parent in checks:
         for row in t[table]:
             assert row[fk] in ids[parent], (table, fk, row[fk])
     assert all(m["person_id"] for m in t["lab_members"] + t["project_members"])
     assert any(m["is_coordinator"] for m in t["lab_members"]), "no coordinators"
+    assert all(c["kind"] in ("external", "internal") for c in t["collaborations"])
     print("SELF-CHECK: PASS")
 
 
@@ -243,6 +320,7 @@ def load(t: dict[str, list[dict]]) -> None:
     client.table("labs").upsert(t["labs"], on_conflict="id").execute()
     client.table("objectives").upsert(t["objectives"], on_conflict="id").execute()
     client.table("projects").upsert(t["projects"], on_conflict="id").execute()
+    client.table("collaborations").upsert(t["collaborations"], on_conflict="id").execute()
     for name, conflict in [
         ("lab_members", "lab_id,person_id"),
         ("objective_clusters", "objective_id,cluster_id"),
@@ -251,6 +329,8 @@ def load(t: dict[str, list[dict]]) -> None:
         ("project_labs", "project_id,lab_id"),
         ("project_objectives", "project_id,objective_id"),
         ("project_members", "project_id,person_id"),
+        ("lab_collaborations", "lab_id,collaboration_id"),
+        ("project_collaborations", "project_id,collaboration_id"),
     ]:
         if t[name]:
             client.table(name).upsert(t[name], on_conflict=conflict).execute()
