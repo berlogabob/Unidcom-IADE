@@ -28,10 +28,14 @@ update public.person_roles set label = 'integrated'
 
 alter table public.person_roles enable trigger trg_protect_person_roles;
 
--- Mirror the base membership onto the people cache.
+-- Mirror the base membership onto the people cache. The people table has its own
+-- protect_people_cols trigger that resets membership_type for non-admin writes
+-- (a migration has no admin JWT), so disable it around these updates too.
+alter table public.people disable trigger trg_protect_people;
 update public.people set membership_type = 'collaborator' where membership_type = 'phd_student';
 update public.people set membership_type = 'external'     where membership_type = 'advisory_board';
 update public.people set membership_type = 'integrated'   where membership_type = 'staff';
+alter table public.people enable trigger trg_protect_people;
 
 -- mentorships folds into person_roles (kind='mentorship'); the table is empty.
 drop table if exists public.mentorships;
