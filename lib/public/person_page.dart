@@ -359,7 +359,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
           label: 'Ciência ID',
           child: ciencia.isEmpty
               ? _muted('Not set')
-              : SelectableText(ciencia),
+              : _link(ciencia, 'https://www.cienciavitae.pt/portal/$ciencia'),
         ),
         if ((person['phd'] as String? ?? '').trim().isNotEmpty)
           _InfoRow(

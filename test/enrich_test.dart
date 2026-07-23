@@ -62,6 +62,18 @@ void main() {
       expect(picked?.confidence, 0.7);
     });
 
+    test('picks IADE by full legal name over a same-name homonym', () {
+      final results = [
+        result('0000-0002-1994-3944', 'Andrey', 'Dyakov',
+            ['Mining Institute of the Kola Science Centre']),
+        result('0009-0009-8585-0074', 'Andrey', 'Dyakov',
+            ['Instituto de Artes Visuais, Design e Marketing']),
+      ];
+      final picked = pickOrcidCandidate(results, 'Andrey Dyakov');
+      expect(picked?.orcid, '0009-0009-8585-0074');
+      expect(picked?.confidence, 0.7);
+    });
+
     test('lone name match at 0.5', () {
       final results = [result('0000-0003-0000-0003', 'Bruno', 'Costa')];
       final picked = pickOrcidCandidate(results, 'Bruno Costa');

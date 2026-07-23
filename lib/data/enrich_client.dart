@@ -7,7 +7,12 @@ import 'supabase.dart';
 const _crossrefUa = 'UNIDCOM-Directory/1.0 (mailto:andre.berloga@gmail.com)';
 
 // Institution tokens used to disambiguate ORCID homonyms (normalized, lowercased).
-const _orgTokens = ['iade', 'unidcom', 'universidade europeia'];
+const _orgTokens = [
+  'iade',
+  'unidcom',
+  'universidade europeia',
+  'instituto de artes visuais', // IADE's full legal name as ORCID stores it
+];
 
 String _clean(String? value) =>
     (value ?? '').trim().split(RegExp(r'\s+')).join(' ');
