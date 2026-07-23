@@ -171,10 +171,7 @@ final _router = GoRouter(
           builder: (_, state) =>
               OutputPageScreen(id: state.pathParameters['id']!),
         ),
-        GoRoute(
-          path: '/structure',
-          builder: (_, _) => const StructureScreen(),
-        ),
+        GoRoute(path: '/structure', builder: (_, _) => const StructureScreen()),
         GoRoute(
           path: '/labs/:id',
           builder: (_, state) => LabPageScreen(id: state.pathParameters['id']!),
@@ -194,9 +191,12 @@ final _router = GoRouter(
           builder: (_, _) => const DashboardScreen(),
         ),
         GoRoute(path: '/app/admin', builder: (_, _) => const AdminScreen()),
+        GoRoute(
+          path: '/app/profile',
+          builder: (_, _) => const MyProfileScreen(),
+        ),
       ],
     ),
-    GoRoute(path: '/app/profile', builder: (_, _) => const MyProfileScreen()),
   ],
 );
 
@@ -248,8 +248,7 @@ class AppShell extends StatelessWidget {
         prefixes: ['/structure', '/labs', '/clusters', '/objectives'],
       ),
       _NavItem('/app/dashboard', Icons.dashboard, 'Dashboard'),
-      if (admin)
-        _NavItem('/app/admin', Icons.admin_panel_settings, 'Admin'),
+      if (admin) _NavItem('/app/admin', Icons.admin_panel_settings, 'Admin'),
     ];
     final index = destinations.indexWhere(
       (item) => item.prefixes.any(path.startsWith),

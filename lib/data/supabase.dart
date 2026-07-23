@@ -132,7 +132,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
         .select(
           'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, '
           'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
-          'join_date, exit_date, phd, notes, integration_year, '
+          'join_date, exit_date, phd, notes, integration_year, auth_user_id, '
           'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url)), '
           'lab_members(is_coordinator, labs(id, code, name)), '
           'person_tags(tags(name))',
@@ -179,10 +179,9 @@ List<List<Map<String, dynamic>>> groupMergeCandidates(
   final sets = <Set<String>>[];
   final valid = <int>[]; // indices of people with a usable (>=2 token) name
   for (var i = 0; i < people.length; i++) {
-    final tokens = _normalizeName(people[i]['preferred_name'] as String?)
-        .split(' ')
-        .where((s) => s.isNotEmpty)
-        .toSet();
+    final tokens = _normalizeName(
+      people[i]['preferred_name'] as String?,
+    ).split(' ').where((s) => s.isNotEmpty).toSet();
     sets.add(tokens);
     if (tokens.length >= 2) valid.add(i);
   }
@@ -268,16 +267,6 @@ Future<String> createPerson(Map<String, dynamic> fields) async {
 Future<void> updateOutput(String id, Map<String, dynamic> fields) async {
   try {
     await db.from('outputs').update(fields).eq('id', id);
-  } catch (error) {
-    throw Exception(_error(error));
-  }
-}
-
-Future<void> updateMyProfile(Map<String, dynamic> fields) async {
-  try {
-    final userId = db.auth.currentUser?.id;
-    if (userId == null) throw Exception('Not signed in');
-    await db.from('people').update(fields).eq('auth_user_id', userId);
   } catch (error) {
     throw Exception(_error(error));
   }
@@ -470,7 +459,9 @@ Future<List<Map<String, dynamic>>> fetchOutputsForStats() async {
   try {
     final rows = await db
         .from('outputs')
-        .select('id, type, subtype, reporting_year, fct_selected, verified_online')
+        .select(
+          'id, type, subtype, reporting_year, fct_selected, verified_online',
+        )
         .order('type');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {
@@ -944,11 +935,11 @@ Future<void> unlinkProjectCluster(String projectId, String clusterId) =>
       'cluster_id': clusterId,
     });
 
-Future<void> linkProjectLab(String projectId, String labId) =>
-    upsertLink('project_labs', {
-      'project_id': projectId,
-      'lab_id': labId,
-    }, 'project_id,lab_id');
+Future<void> linkProjectLab(String projectId, String labId) => upsertLink(
+  'project_labs',
+  {'project_id': projectId, 'lab_id': labId},
+  'project_id,lab_id',
+);
 
 Future<void> unlinkProjectLab(String projectId, String labId) =>
     deleteLink('project_labs', {'project_id': projectId, 'lab_id': labId});
@@ -965,17 +956,16 @@ Future<void> unlinkProjectObjective(String projectId, String objectiveId) =>
       'objective_id': objectiveId,
     });
 
-Future<void> linkLabObjective(String labId, String objectiveId) =>
-    upsertLink('lab_objectives', {
-      'lab_id': labId,
-      'objective_id': objectiveId,
-    }, 'lab_id,objective_id');
+Future<void> linkLabObjective(String labId, String objectiveId) => upsertLink(
+  'lab_objectives',
+  {'lab_id': labId, 'objective_id': objectiveId},
+  'lab_id,objective_id',
+);
 
-Future<void> unlinkLabObjective(String labId, String objectiveId) =>
-    deleteLink('lab_objectives', {
-      'lab_id': labId,
-      'objective_id': objectiveId,
-    });
+Future<void> unlinkLabObjective(String labId, String objectiveId) => deleteLink(
+  'lab_objectives',
+  {'lab_id': labId, 'objective_id': objectiveId},
+);
 
 // ------------------------------------------------------- dashboard counters
 /// [table] is project_clusters / project_labs; [embed] is clusters / labs.

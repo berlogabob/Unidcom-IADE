@@ -10,10 +10,14 @@ import '../widgets/suggestion_tile.dart';
 Future<bool> showPersonEditor(
   BuildContext context, {
   Map<String, dynamic>? person,
+  bool canEditGovernance = true,
 }) async {
   return await showDialog<bool>(
         context: context,
-        builder: (context) => _PersonEditDialog(person: person),
+        builder: (context) => _PersonEditDialog(
+          person: person,
+          canEditGovernance: canEditGovernance,
+        ),
       ) ??
       false;
 }
@@ -59,8 +63,15 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     ).showSnackBar(const SnackBar(content: Text('Profile approved')));
   }
 
-  Future<void> _edit(Map<String, dynamic> person) async {
-    final saved = await showPersonEditor(context, person: person);
+  Future<void> _edit(
+    Map<String, dynamic> person, {
+    required bool canEditGovernance,
+  }) async {
+    final saved = await showPersonEditor(
+      context,
+      person: person,
+      canEditGovernance: canEditGovernance,
+    );
     if (saved == true) _refresh();
   }
 
@@ -73,9 +84,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            count > 0
-                ? '$count suggestions added'
-                : 'No new suggestions found',
+            count > 0 ? '$count suggestions added' : 'No new suggestions found',
           ),
         ),
       );
@@ -111,10 +120,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
-            Text(
-              'Suggestions',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            Text('Suggestions', style: Theme.of(context).textTheme.titleLarge),
             for (final suggestion in suggestions)
               SuggestionTile(
                 suggestion: suggestion,
@@ -142,6 +148,9 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
 
         final person = snapshot.data ?? {};
         final admin = isAdmin;
+        final isOwner =
+            person['auth_user_id'] != null &&
+            person['auth_user_id'] == db.auth.currentUser?.id;
         final outputAuthors = (person['output_authors'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
         final labMemberships = (person['lab_members'] as List<dynamic>? ?? [])
@@ -165,7 +174,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _header(person, admin),
+                _header(person, admin, isOwner),
                 if (admin) _suggestionsSection(),
                 const SizedBox(height: 24),
                 _sectionTitle('Identifiers'),
@@ -202,8 +211,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                                     '—',
                               ),
                             ),
-                            onPressed: () =>
-                                context.go('/labs/${lab['id']}'),
+                            onPressed: () => context.go('/labs/${lab['id']}'),
                           );
                         }(),
                     ],
@@ -234,7 +242,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     );
   }
 
-  Widget _header(Map<String, dynamic> person, bool admin) {
+  Widget _header(Map<String, dynamic> person, bool admin, bool isOwner) {
     final name = person['preferred_name'] as String? ?? 'Unnamed';
     final legal = person['legal_name'] as String?;
     final photo = (person['photo_url'] as String? ?? '').trim();
@@ -295,32 +303,34 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                 ),
               ],
             ),
-            if (admin) ...[
+            if (admin || isOwner) ...[
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
                 children: [
                   FilledButton.icon(
-                    onPressed: () => _edit(person),
+                    onPressed: () => _edit(person, canEditGovernance: admin),
                     icon: const Icon(Icons.edit),
                     label: const Text('Edit'),
                   ),
-                  FilledButton.icon(
-                    onPressed: _enriching ? null : _autoFill,
-                    icon: _enriching
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.auto_fix_high),
-                    label: Text(_enriching ? 'Auto-filling...' : 'Auto-fill'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: _approve,
-                    icon: const Icon(Icons.check),
-                    label: const Text('Approve'),
-                  ),
+                  if (admin)
+                    FilledButton.icon(
+                      onPressed: _enriching ? null : _autoFill,
+                      icon: _enriching
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.auto_fix_high),
+                      label: Text(_enriching ? 'Auto-filling...' : 'Auto-fill'),
+                    ),
+                  if (admin)
+                    FilledButton.icon(
+                      onPressed: _approve,
+                      icon: const Icon(Icons.check),
+                      label: const Text('Approve'),
+                    ),
                 ],
               ),
             ],
@@ -377,17 +387,11 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
           ),
         ),
         if (left.isNotEmpty)
-          _InfoRow(
-            icon: Icons.logout,
-            label: 'Left',
-            child: _muted(left),
-          ),
+          _InfoRow(icon: Icons.logout, label: 'Left', child: _muted(left)),
         _InfoRow(
           icon: Icons.verified_outlined,
           label: 'Last verified',
-          child: _muted(
-            verified == null ? 'Never' : verified.split('T').first,
-          ),
+          child: _muted(verified == null ? 'Never' : verified.split('T').first),
         ),
       ],
     );
@@ -453,7 +457,11 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label, required this.child});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.child,
+  });
 
   final IconData icon;
   final String label;
@@ -486,9 +494,13 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _PersonEditDialog extends StatefulWidget {
-  const _PersonEditDialog({this.person});
+  const _PersonEditDialog({this.person, this.canEditGovernance = true});
 
   final Map<String, dynamic>? person;
+
+  // Owners (non-admins) edit their own profile but not governance/visibility;
+  // those columns are also protected by a DB trigger for non-admins.
+  final bool canEditGovernance;
 
   @override
   State<_PersonEditDialog> createState() => _PersonEditDialogState();
@@ -515,6 +527,10 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   late final _email = _controller('email');
   late final _orcid = _controller('orcid');
   late final _cienciaId = _controller('ciencia_id');
+  late final _phd = _controller('phd');
+  late final _joinDate = _controller('join_date');
+  late final _exitDate = _controller('exit_date');
+  late final _integrationYear = _controller('integration_year');
   late String _membershipType =
       widget.person?['membership_type'] as String? ?? _membershipTypes.first;
   late String _status = widget.person?['status'] as String? ?? _statuses.first;
@@ -526,7 +542,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   bool _saving = false;
 
   TextEditingController _controller(String key) =>
-      TextEditingController(text: widget.person?[key] as String? ?? '');
+      TextEditingController(text: widget.person?[key]?.toString() ?? '');
 
   @override
   void dispose() {
@@ -538,6 +554,10 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
       _email,
       _orcid,
       _cienciaId,
+      _phd,
+      _joinDate,
+      _exitDate,
+      _integrationYear,
     ]) {
       controller.dispose();
     }
@@ -552,7 +572,8 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      final fields = {
+      final year = _integrationYear.text.trim();
+      final fields = <String, dynamic>{
         'preferred_name': _preferredName.text.trim(),
         'legal_name': _text(_legalName),
         'bio': _text(_bio),
@@ -560,11 +581,19 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
         'email': _text(_email),
         'orcid': _text(_orcid),
         'ciencia_id': _text(_cienciaId),
-        'membership_type': _membershipType,
-        'status': _status,
-        'profile_status': _profileStatus,
-        'public_visibility': _publicVisibility,
+        'phd': _text(_phd),
+        'join_date': _text(_joinDate),
+        'exit_date': _text(_exitDate),
+        'integration_year': year.isEmpty ? null : int.tryParse(year),
       };
+      if (widget.canEditGovernance) {
+        fields.addAll({
+          'membership_type': _membershipType,
+          'status': _status,
+          'profile_status': _profileStatus,
+          'public_visibility': _publicVisibility,
+        });
+      }
       if (_creating) {
         final id = await createPerson(fields);
         if (_linkToMe) await linkPersonToMe(id);
@@ -598,38 +627,46 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
               _field(_email, 'Email'),
               _field(_orcid, 'ORCID'),
               _field(_cienciaId, 'Ciencia ID'),
-              _dropdown(
-                'Membership type',
-                _membershipType,
-                _membershipTypes,
-                (value) => setState(() => _membershipType = value!),
-              ),
-              _dropdown(
-                'Status',
-                _status,
-                _statuses,
-                (value) => setState(() => _status = value!),
-              ),
-              _dropdown(
-                'Profile status',
-                _profileStatus,
-                _profileStatuses,
-                (value) => setState(() => _profileStatus = value!),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Public visibility'),
-                value: _publicVisibility,
-                onChanged: (value) => setState(() => _publicVisibility = value),
-              ),
-              if (_creating)
-                CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('This is my profile (link to my login)'),
-                  value: _linkToMe,
-                  onChanged: (value) =>
-                      setState(() => _linkToMe = value ?? false),
+              _field(_phd, 'PhD'),
+              // ponytail: ISO text fields; swap to showDatePicker if typos bite.
+              _field(_joinDate, 'Join date (YYYY-MM-DD)'),
+              _field(_exitDate, 'Exit date (YYYY-MM-DD)'),
+              _field(_integrationYear, 'Integration year'),
+              if (widget.canEditGovernance) ...[
+                _dropdown(
+                  'Membership type',
+                  _membershipType,
+                  _membershipTypes,
+                  (value) => setState(() => _membershipType = value!),
                 ),
+                _dropdown(
+                  'Status',
+                  _status,
+                  _statuses,
+                  (value) => setState(() => _status = value!),
+                ),
+                _dropdown(
+                  'Profile status',
+                  _profileStatus,
+                  _profileStatuses,
+                  (value) => setState(() => _profileStatus = value!),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Public visibility'),
+                  value: _publicVisibility,
+                  onChanged: (value) =>
+                      setState(() => _publicVisibility = value),
+                ),
+                if (_creating)
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('This is my profile (link to my login)'),
+                    value: _linkToMe,
+                    onChanged: (value) =>
+                        setState(() => _linkToMe = value ?? false),
+                  ),
+              ],
             ],
           ),
         ),
