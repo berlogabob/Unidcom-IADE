@@ -49,10 +49,23 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 label: 'Status',
                 valueOf: (p) => p['status'] as String?,
               ),
+              QueueFilter(
+                label: 'Category',
+                valueOf: (p) => p['category'] as String?,
+              ),
+              QueueFilter(
+                label: 'Funding',
+                valueOf: (p) => p['funding'] as String?,
+              ),
             ],
             itemBuilder: (project) => ListTile(
               title: Text(project['title'] as String? ?? 'Untitled'),
-              subtitle: Text(project['status'] as String? ?? ''),
+              subtitle: Text(
+                [project['status'], project['category'], project['funding']]
+                    .map((v) => (v as String?)?.trim())
+                    .where((v) => v != null && v.isNotEmpty)
+                    .join(' · '),
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.go('/projects/${project['id']}'),
             ),

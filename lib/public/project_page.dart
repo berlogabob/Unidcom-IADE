@@ -1,12 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
 import '../widgets/output_row.dart';
 import '../widgets/person_card.dart';
-import '../widgets/search_bar.dart';
+import '../widgets/search_picker.dart';
 
 Future<bool> showProjectEditor(
   BuildContext context, {
@@ -67,6 +65,29 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
     _refresh();
   }
 
+  Future<void> _linkEntity({
+    required String title,
+    required Future<List<Map<String, dynamic>>> Function() fetch,
+    required Future<void> Function(String projectId, String id) link,
+  }) async {
+    final chosen = await showSearchPicker(
+      context,
+      title: title,
+      search: (q) async {
+        final all = await fetch();
+        if (q.trim().isEmpty) return all;
+        final needle = q.toLowerCase();
+        return all
+            .where((e) => (e['name'] as String? ?? '').toLowerCase().contains(needle))
+            .toList();
+      },
+      label: (e) => e['name'] as String? ?? e['code'] as String? ?? 'Unnamed',
+    );
+    if (chosen == null) return;
+    await link(widget.id, chosen['id'] as String);
+    _refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
@@ -85,6 +106,10 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
             .cast<Map<String, dynamic>>();
         final outputs = (project['project_outputs'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
+        final clusters = _embedded(project, 'project_clusters', 'clusters');
+        final labs = _embedded(project, 'project_labs', 'labs');
+        final objectives =
+            _embedded(project, 'project_objectives', 'objectives');
 
         return Align(
           alignment: Alignment.topCenter,
@@ -94,6 +119,52 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 _header(project, admin),
+                const SizedBox(height: 24),
+                _linkChips(
+                  'Clusters',
+                  clusters,
+                  '/clusters',
+                  admin,
+                  onAdd: () => _linkEntity(
+                    title: 'Link cluster',
+                    fetch: fetchClusters,
+                    link: linkProjectCluster,
+                  ),
+                  onRemove: (id) async {
+                    await unlinkProjectCluster(widget.id, id);
+                    _refresh();
+                  },
+                ),
+                _linkChips(
+                  'Labs',
+                  labs,
+                  '/labs',
+                  admin,
+                  onAdd: () => _linkEntity(
+                    title: 'Link lab',
+                    fetch: fetchLabs,
+                    link: linkProjectLab,
+                  ),
+                  onRemove: (id) async {
+                    await unlinkProjectLab(widget.id, id);
+                    _refresh();
+                  },
+                ),
+                _linkChips(
+                  'Objectives',
+                  objectives,
+                  '/objectives',
+                  admin,
+                  onAdd: () => _linkEntity(
+                    title: 'Link objective',
+                    fetch: fetchObjectives,
+                    link: linkProjectObjective,
+                  ),
+                  onRemove: (id) async {
+                    await unlinkProjectObjective(widget.id, id);
+                    _refresh();
+                  },
+                ),
                 const SizedBox(height: 24),
                 _sectionHeader(
                   'Members · ${members.length}',
@@ -128,6 +199,8 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
     final theme = Theme.of(context);
     final acronym = (project['acronym'] as String? ?? '').trim();
     final description = (project['description'] as String? ?? '').trim();
+    final category = (project['category'] as String? ?? '').trim();
+    final funding = (project['funding'] as String? ?? '').trim();
     final dates = [project['start_date'], project['end_date']]
         .map((d) => (d as String?)?.trim())
         .where((d) => d != null && d.isNotEmpty)
@@ -159,6 +232,18 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
                 if (project['status'] != null)
                   Chip(
                     label: Text(project['status'] as String),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                if (category.isNotEmpty)
+                  Chip(
+                    avatar: const Icon(Icons.category_outlined, size: 16),
+                    label: Text(category),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                if (funding.isNotEmpty)
+                  Chip(
+                    avatar: const Icon(Icons.euro, size: 16),
+                    label: Text(funding),
                     visualDensity: VisualDensity.compact,
                   ),
                 if (dates.isNotEmpty) _muted(dates),
@@ -237,6 +322,62 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
     );
   }
 
+  List<Map<String, dynamic>> _embedded(
+    Map<String, dynamic> row,
+    String join,
+    String embed,
+  ) {
+    return (row[join] as List<dynamic>? ?? [])
+        .map((e) => (e as Map<String, dynamic>)[embed] as Map<String, dynamic>?)
+        .whereType<Map<String, dynamic>>()
+        .toList();
+  }
+
+  Widget _linkChips(
+    String title,
+    List<Map<String, dynamic>> items,
+    String basePath,
+    bool admin, {
+    required VoidCallback onAdd,
+    required Future<void> Function(String id) onRemove,
+  }) {
+    if (items.isEmpty && !admin) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader(title, admin ? onAdd : null, 'Add'),
+          const SizedBox(height: 8),
+          if (items.isEmpty)
+            _muted('None linked')
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final item in items)
+                  InputChip(
+                    label: Tooltip(
+                      message: item['name'] as String? ?? '',
+                      child: Text(
+                        item['code'] as String? ??
+                            item['name'] as String? ??
+                            '—',
+                      ),
+                    ),
+                    onPressed: () => context.go('$basePath/${item['id']}'),
+                    onDeleted: admin
+                        ? () => onRemove(item['id'] as String)
+                        : null,
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _sectionHeader(String text, VoidCallback? onAdd, String addLabel) {
     return Row(
       children: [
@@ -261,112 +402,6 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
   );
 }
 
-/// Search-and-pick dialog reused for people and outputs. Returns the chosen row.
-Future<Map<String, dynamic>?> showSearchPicker(
-  BuildContext context, {
-  required String title,
-  required Future<List<Map<String, dynamic>>> Function(String query) search,
-  required String Function(Map<String, dynamic>) label,
-  String Function(Map<String, dynamic>)? subtitle,
-}) {
-  return showDialog<Map<String, dynamic>>(
-    context: context,
-    builder: (context) => _SearchPickerDialog(
-      title: title,
-      search: search,
-      label: label,
-      subtitle: subtitle,
-    ),
-  );
-}
-
-class _SearchPickerDialog extends StatefulWidget {
-  const _SearchPickerDialog({
-    required this.title,
-    required this.search,
-    required this.label,
-    this.subtitle,
-  });
-
-  final String title;
-  final Future<List<Map<String, dynamic>>> Function(String) search;
-  final String Function(Map<String, dynamic>) label;
-  final String Function(Map<String, dynamic>)? subtitle;
-
-  @override
-  State<_SearchPickerDialog> createState() => _SearchPickerDialogState();
-}
-
-class _SearchPickerDialogState extends State<_SearchPickerDialog> {
-  Timer? _debounce;
-  late Future<List<Map<String, dynamic>>> _results = widget.search('');
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  void _onChanged(String value) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      setState(() => _results = widget.search(value));
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: SizedBox(
-        width: 480,
-        height: 420,
-        child: Column(
-          children: [
-            SearchBarField(onChanged: _onChanged),
-            const SizedBox(height: 12),
-            Expanded(
-              child: FutureBuilder<List<Map<String, dynamic>>>(
-                future: _results,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text(snapshot.error.toString()));
-                  }
-                  final rows = snapshot.data ?? [];
-                  if (rows.isEmpty) {
-                    return const Center(child: Text('No results'));
-                  }
-                  return ListView.builder(
-                    itemCount: rows.length,
-                    itemBuilder: (context, index) {
-                      final row = rows[index];
-                      final sub = widget.subtitle?.call(row) ?? '';
-                      return ListTile(
-                        title: Text(widget.label(row)),
-                        subtitle: sub.isEmpty ? null : Text(sub),
-                        onTap: () => Navigator.of(context).pop(row),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-      ],
-    );
-  }
-}
-
 class _ProjectEditDialog extends StatefulWidget {
   const _ProjectEditDialog({this.project});
 
@@ -379,6 +414,13 @@ class _ProjectEditDialog extends StatefulWidget {
 class _ProjectEditDialogState extends State<_ProjectEditDialog> {
   static const _statuses = ['planned', 'active', 'completed', 'cancelled'];
   static const _approvalStatuses = ['pending', 'approved', 'rejected'];
+  static const _categories = [
+    'Labs',
+    'Operação',
+    'Eventos',
+    'Estratégia',
+    'Outputs',
+  ];
 
   bool get _creating => widget.project?['id'] == null;
 
@@ -388,6 +430,8 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
   late final _startDate = _controller('start_date');
   late final _endDate = _controller('end_date');
   late final _budget = _controller('total_budget');
+  late final _funding = _controller('funding');
+  late String? _category = widget.project?['category'] as String?;
   late final _currency = TextEditingController(
     text: widget.project?['currency'] as String? ?? 'EUR',
   );
@@ -413,6 +457,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
       _endDate,
       _budget,
       _currency,
+      _funding,
     ]) {
       c.dispose();
     }
@@ -443,6 +488,8 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
             ? null
             : num.tryParse(_budget.text.trim()),
         'currency': _text(_currency) ?? 'EUR',
+        'funding': _text(_funding),
+        'category': _category,
         'status': _status,
         'approval_status': _approvalStatus,
         'public_visibility': _publicVisibility,
@@ -489,6 +536,25 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
                   const SizedBox(width: 12),
                   SizedBox(width: 120, child: _field(_currency, 'Currency')),
                 ],
+              ),
+              _field(_funding, 'Funding (e.g. FCT, Interno, Outro)'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DropdownButtonFormField<String?>(
+                  initialValue: _categories.contains(_category)
+                      ? _category
+                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('None')),
+                    for (final item in _categories)
+                      DropdownMenuItem(value: item, child: Text(item)),
+                  ],
+                  onChanged: (v) => setState(() => _category = v),
+                ),
               ),
               _dropdown(
                 'Status',

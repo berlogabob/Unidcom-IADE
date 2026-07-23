@@ -144,6 +144,10 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
         final admin = isAdmin;
         final outputAuthors = (person['output_authors'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
+        final labMemberships = (person['lab_members'] as List<dynamic>? ?? [])
+            .cast<Map<String, dynamic>>()
+            .where((m) => m['labs'] is Map)
+            .toList();
         final tags = (person['person_tags'] as List<dynamic>? ?? [])
             .map(
               (tag) =>
@@ -172,6 +176,40 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                 const SizedBox(height: 8),
                 _bio(person),
                 const SizedBox(height: 24),
+                if (labMemberships.isNotEmpty) ...[
+                  _sectionTitle('Labs'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final m in labMemberships)
+                        () {
+                          final lab = m['labs'] as Map<String, dynamic>;
+                          final coordinator =
+                              m['is_coordinator'] as bool? ?? false;
+                          return InputChip(
+                            avatar: coordinator
+                                ? const Icon(Icons.star, size: 16)
+                                : null,
+                            label: Tooltip(
+                              message: coordinator
+                                  ? '${lab['name']} (coordinator)'
+                                  : lab['name'] as String? ?? '',
+                              child: Text(
+                                lab['code'] as String? ??
+                                    lab['name'] as String? ??
+                                    '—',
+                              ),
+                            ),
+                            onPressed: () =>
+                                context.go('/labs/${lab['id']}'),
+                          );
+                        }(),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ],
                 _sectionTitle('Outputs · ${outputAuthors.length}'),
                 const SizedBox(height: 8),
                 if (outputAuthors.isEmpty)
