@@ -17,9 +17,9 @@ const membershipLabels = {
 /// Merged with the distinct labels already in the DB by [fetchRoleVocabulary];
 /// users can also type a new value.
 const seedRoleVocabulary = [
-  'phd_student',
-  'advisory_board',
-  'staff',
+  'PhD student',
+  'Advisory Board',
+  'Staff',
   'Scientific Coordination',
   'Science Management',
   'Executive Direction',

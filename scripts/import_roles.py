@@ -44,7 +44,7 @@ ROLE = {
     "coordenacao cientifica": "Scientific Coordination",
     "gestao de ciencia": "Science Management",
     "direcao executiva": "Executive Direction",
-    "advisory board": "advisory_board",
+    "advisory board": "Advisory Board",
     "outro": "Other",
 }
 
@@ -68,7 +68,7 @@ def parse_papel(papel: str) -> tuple[str | None, list[str]]:
         elif k in ROLE:
             roles.append(ROLE[k])
     # Advisory-board-only rows have no membership token -> external base.
-    if base is None and "advisory_board" in roles:
+    if base is None and "Advisory Board" in roles:
         base = "external"
     return base, roles
 

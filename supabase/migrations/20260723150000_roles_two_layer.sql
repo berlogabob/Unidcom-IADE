@@ -15,7 +15,11 @@ alter table public.person_roles disable trigger trg_protect_person_roles;
 -- phd_student -> collaborator (+ role); advisory_board -> external (+ role);
 -- staff -> integrated (+ role).
 insert into public.person_roles (person_id, kind, label, year, status)
-select person_id, 'role', label, year, status
+select person_id, 'role',
+  case label when 'phd_student'    then 'PhD student'
+             when 'advisory_board' then 'Advisory Board'
+             when 'staff'          then 'Staff' end,
+  year, status
 from public.person_roles
 where kind = 'membership' and label in ('phd_student', 'advisory_board', 'staff');
 
