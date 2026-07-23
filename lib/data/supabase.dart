@@ -5,15 +5,30 @@ final db = Supabase.instance.client;
 bool get isAdmin => db.auth.currentUser?.appMetadata['role'] == 'admin';
 
 /// Full-DB export/import order: base tables first, then link tables that FK into
-/// them. Mirrors scripts/export.py TABLES. Upsert resolves on each table's PK.
+/// them. Upsert resolves on each table's PK. Keep in sync with the schema — the
+/// diagram (web/schema.mmd) is the authoritative picture.
 const dbTables = [
+  // base entities
   'people',
   'outputs',
   'projects',
+  'clusters',
+  'labs',
+  'objectives',
+  'collaborations',
   'tags',
+  // link tables (FK into the above)
   'output_authors',
   'project_members',
   'project_outputs',
+  'project_clusters',
+  'project_labs',
+  'project_objectives',
+  'objective_clusters',
+  'lab_members',
+  'lab_objectives',
+  'lab_collaborations',
+  'project_collaborations',
   'person_tags',
   'enrichment_suggestions',
 ];

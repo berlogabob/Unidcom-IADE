@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../csv_download.dart';
 import '../data/supabase.dart';
+import '../widgets/schema_view.dart';
 
 class DataScreen extends StatefulWidget {
   const DataScreen({super.key});
@@ -12,8 +13,11 @@ class DataScreen extends StatefulWidget {
   State<DataScreen> createState() => _DataScreenState();
 }
 
+enum _View { table, diagram }
+
 class _DataScreenState extends State<DataScreen> {
   bool _busy = false;
+  _View _view = _View.table;
   String _table = dbTables.first;
   late Future<List<Map<String, dynamic>>> _rows = fetchTable(_table);
 
@@ -136,22 +140,47 @@ class _DataScreenState extends State<DataScreen> {
             const Center(child: CircularProgressIndicator()),
           ],
           const Divider(height: 32),
-          Row(
-            children: [
-              const Text('Browse table:'),
-              const SizedBox(width: 12),
-              DropdownButton<String>(
-                value: _table,
-                items: [
-                  for (final table in dbTables)
-                    DropdownMenuItem(value: table, child: Text(table)),
-                ],
-                onChanged: _selectTable,
+          SegmentedButton<_View>(
+            segments: const [
+              ButtonSegment(
+                value: _View.table,
+                label: Text('Table'),
+                icon: Icon(Icons.table_rows),
+              ),
+              ButtonSegment(
+                value: _View.diagram,
+                label: Text('Diagram'),
+                icon: Icon(Icons.schema),
               ),
             ],
+            selected: {_view},
+            onSelectionChanged: (s) => setState(() => _view = s.first),
           ),
-          const SizedBox(height: 8),
-          Expanded(child: _TableView(future: _rows)),
+          const SizedBox(height: 12),
+          if (_view == _View.table) ...[
+            Row(
+              children: [
+                const Text('Browse table:'),
+                const SizedBox(width: 12),
+                DropdownButton<String>(
+                  value: _table,
+                  items: [
+                    for (final table in dbTables)
+                      DropdownMenuItem(value: table, child: Text(table)),
+                  ],
+                  onChanged: _selectTable,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Expanded(child: _TableView(future: _rows)),
+          ] else
+            Expanded(
+              child: Card(
+                clipBehavior: Clip.antiAlias,
+                child: schemaView(),
+              ),
+            ),
         ],
       ),
     );
