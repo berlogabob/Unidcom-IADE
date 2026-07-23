@@ -1,0 +1,191 @@
+%% generated 2026-07-23 by scripts/gen_schema_diagram.py — do not edit by hand
+erDiagram
+  clusters {
+    uuid id PK
+    text code
+    text name
+    text concern
+    text notes
+    timestamptz created_at
+    text source
+  }
+  collaborations {
+    uuid id PK
+    text name
+    text kind
+    text notes
+    timestamptz created_at
+  }
+  enrichment_suggestions {
+    uuid id PK
+    text subject_type
+    uuid subject_id
+    text field
+    text current_value
+    text suggested_value
+    text source
+    numeric confidence
+    text status
+    timestamptz created_at
+  }
+  lab_collaborations {
+    uuid lab_id PK
+    uuid collaboration_id PK
+  }
+  lab_members {
+    uuid lab_id PK
+    uuid person_id PK
+    boolean is_coordinator
+  }
+  lab_objectives {
+    uuid lab_id PK
+    uuid objective_id PK
+  }
+  labs {
+    uuid id PK
+    text code
+    text name
+    text overview
+    text notes
+    timestamptz created_at
+  }
+  objective_clusters {
+    uuid objective_id PK
+    uuid cluster_id PK
+  }
+  objectives {
+    uuid id PK
+    text code
+    text name
+    text description
+    text kpis
+    text source
+    timestamptz created_at
+  }
+  output_authors {
+    uuid output_id PK
+    uuid person_id PK
+    text role
+    integer author_position
+  }
+  outputs {
+    uuid id PK
+    text title
+    integer reporting_year
+    text type
+    text subtype
+    text category_path
+    text doi
+    text url
+    text approval_status
+    timestamptz created_at
+    text full_reference
+    boolean fct_selected
+    text macro_type
+    boolean verified_online
+    text source
+    text output_status
+  }
+  people {
+    uuid id PK
+    text preferred_name
+    text legal_name
+    text bio
+    text photo_url
+    text membership_type
+    text status
+    text email
+    text orcid
+    text ciencia_id
+    text profile_status
+    boolean public_visibility
+    timestamptz last_verified_at
+    uuid auth_user_id
+    timestamptz created_at
+    timestamptz updated_at
+    tsvector search
+    uuid merged_into FK
+    date join_date
+    date exit_date
+    text notes
+    text phd
+    integer integration_year
+  }
+  person_tags {
+    uuid person_id PK
+    uuid tag_id PK
+  }
+  project_clusters {
+    uuid project_id PK
+    uuid cluster_id PK
+  }
+  project_collaborations {
+    uuid project_id PK
+    uuid collaboration_id PK
+  }
+  project_labs {
+    uuid project_id PK
+    uuid lab_id PK
+  }
+  project_members {
+    uuid project_id PK
+    uuid person_id PK
+    text role
+  }
+  project_objectives {
+    uuid project_id PK
+    uuid objective_id PK
+  }
+  project_outputs {
+    uuid project_id PK
+    uuid output_id PK
+  }
+  projects {
+    uuid id PK
+    text title
+    text acronym
+    text description
+    numeric total_budget
+    text currency
+    date start_date
+    date end_date
+    text status
+    boolean public_visibility
+    text approval_status
+    timestamptz created_at
+    text funding
+    text category
+    text notes
+    text risk
+  }
+  tags {
+    uuid id PK
+    text name
+    text category
+  }
+
+  clusters ||--o{ objective_clusters : "cluster_id"
+  clusters ||--o{ project_clusters : "cluster_id"
+  collaborations ||--o{ lab_collaborations : "collaboration_id"
+  collaborations ||--o{ project_collaborations : "collaboration_id"
+  labs ||--o{ lab_collaborations : "lab_id"
+  labs ||--o{ lab_members : "lab_id"
+  labs ||--o{ lab_objectives : "lab_id"
+  labs ||--o{ project_labs : "lab_id"
+  objectives ||--o{ lab_objectives : "objective_id"
+  objectives ||--o{ objective_clusters : "objective_id"
+  objectives ||--o{ project_objectives : "objective_id"
+  outputs ||--o{ output_authors : "output_id"
+  outputs ||--o{ project_outputs : "output_id"
+  people ||--o{ lab_members : "person_id"
+  people ||--o{ output_authors : "person_id"
+  people ||--o{ people : "merged_into"
+  people ||--o{ person_tags : "person_id"
+  people ||--o{ project_members : "person_id"
+  projects ||--o{ project_clusters : "project_id"
+  projects ||--o{ project_collaborations : "project_id"
+  projects ||--o{ project_labs : "project_id"
+  projects ||--o{ project_members : "project_id"
+  projects ||--o{ project_objectives : "project_id"
+  projects ||--o{ project_outputs : "project_id"
+  tags ||--o{ person_tags : "tag_id"
