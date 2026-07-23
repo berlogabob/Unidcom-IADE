@@ -11,6 +11,14 @@ class QueueFilter {
   final String? Function(Map<String, dynamic>) valueOf;
 }
 
+/// A "Group by" option: rows sharing the same [keyOf] value get a section header.
+class QueueGroup {
+  const QueueGroup({required this.label, required this.keyOf});
+
+  final String label;
+  final String Function(Map<String, dynamic>) keyOf;
+}
+
 /// A FutureBuilder list with a client-side search box, sort dropdown
 /// (A–Z / Time / Confidence %) and optional per-tab filter dropdowns.
 /// Client-side is fine — the review queues are small.
@@ -24,6 +32,7 @@ class QueueList extends StatefulWidget {
     this.timeOf,
     this.confidenceOf,
     this.filters = const [],
+    this.groups = const [],
   });
 
   final Future<List<Map<String, dynamic>>> future;
@@ -33,6 +42,7 @@ class QueueList extends StatefulWidget {
   final Comparable Function(Map<String, dynamic>)? timeOf;
   final num? Function(Map<String, dynamic>)? confidenceOf;
   final List<QueueFilter> filters;
+  final List<QueueGroup> groups;
 
   @override
   State<QueueList> createState() => _QueueListState();
@@ -44,6 +54,7 @@ class _QueueListState extends State<QueueList> {
   String _query = '';
   _Sort _sort = _Sort.az;
   final Map<String, String?> _filterValues = {};
+  QueueGroup? _group;
 
   List<Map<String, dynamic>> _apply(List<Map<String, dynamic>> rows) {
     var result = rows;
@@ -143,6 +154,23 @@ class _QueueListState extends State<QueueList> {
                 ),
               );
             }(),
+          if (widget.groups.isNotEmpty)
+            SizedBox(
+              width: 180,
+              child: DropdownButtonFormField<QueueGroup?>(
+                initialValue: _group,
+                decoration: const InputDecoration(
+                  labelText: 'Group by',
+                  border: OutlineInputBorder(),
+                ),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('None')),
+                  for (final group in widget.groups)
+                    DropdownMenuItem(value: group, child: Text(group.label)),
+                ],
+                onChanged: (v) => setState(() => _group = v),
+              ),
+            ),
         ],
       ),
     );
@@ -160,6 +188,31 @@ class _QueueListState extends State<QueueList> {
         .toList()
       ..sort();
     return values;
+  }
+
+  /// Buckets [rows] by the group key (first-seen order preserved) and emits a
+  /// section header with a count before each group's items.
+  List<Widget> _groupedChildren(
+    List<Map<String, dynamic>> rows,
+    QueueGroup group,
+  ) {
+    final buckets = <String, List<Map<String, dynamic>>>{};
+    for (final row in rows) {
+      final key = group.keyOf(row);
+      buckets.putIfAbsent(key.isEmpty ? '—' : key, () => []).add(row);
+    }
+    return [
+      for (final entry in buckets.entries) ...[
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
+          child: Text(
+            '${entry.key} · ${entry.value.length}',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ),
+        for (final row in entry.value) widget.itemBuilder(row),
+      ],
+    ];
   }
 
   @override
@@ -181,11 +234,11 @@ class _QueueListState extends State<QueueList> {
             Expanded(
               child: visible.isEmpty
                   ? Center(child: Text(widget.emptyText))
-                  : ListView.builder(
+                  : ListView(
                       padding: const EdgeInsets.all(16),
-                      itemCount: visible.length,
-                      itemBuilder: (context, index) =>
-                          widget.itemBuilder(visible[index]),
+                      children: _group == null
+                          ? [for (final row in visible) widget.itemBuilder(row)]
+                          : _groupedChildren(visible, _group!),
                     ),
             ),
           ],

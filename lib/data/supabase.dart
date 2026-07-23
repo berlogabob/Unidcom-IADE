@@ -134,7 +134,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
           'join_date, exit_date, phd, notes, integration_year, auth_user_id, '
           'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url)), '
-          'lab_members(is_coordinator, labs(id, code, name)), '
+          'lab_members(is_coordinator, year, labs(id, code, name)), '
           'person_tags(tags(name))',
         )
         .eq('id', id)
@@ -250,6 +250,103 @@ String _normalizeName(String? value) {
 Future<void> updatePerson(String id, Map<String, dynamic> fields) async {
   try {
     await db.from('people').update(fields).eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Records changed fields to change_log (the "what / how / when" audit trail).
+/// Best-effort: a logging failure never blocks the underlying edit. Only fields
+/// whose trimmed value actually changed are logged; [source] is manual | orcid |
+/// crossref | import | sync_out. Actor = the signed-in auth user.
+Future<void> logChanges(
+  String subjectType,
+  String subjectId,
+  Map<String, dynamic> before,
+  Map<String, dynamic> after, {
+  String source = 'manual',
+}) async {
+  final actor = db.auth.currentUser?.id;
+  final rows = <Map<String, dynamic>>[];
+  after.forEach((field, newValue) {
+    final oldStr = before[field]?.toString().trim() ?? '';
+    final newStr = newValue?.toString().trim() ?? '';
+    if (oldStr == newStr) return;
+    rows.add({
+      'subject_type': subjectType,
+      'subject_id': subjectId,
+      'field': field,
+      'old_value': oldStr.isEmpty ? null : oldStr,
+      'new_value': newStr.isEmpty ? null : newStr,
+      'source': source,
+      'actor': actor,
+    });
+  });
+  if (rows.isEmpty) return;
+  try {
+    await db.from('change_log').insert(rows);
+  } catch (_) {
+    // ponytail: audit is best-effort; never fail the edit because logging hiccuped.
+  }
+}
+
+/// Recent audit rows, newest first, with `subject_name` and `actor_name`
+/// resolved in batch (person/output subjects, and actor via people.auth_user_id).
+Future<List<Map<String, dynamic>>> fetchChangeLog({int limit = 200}) async {
+  try {
+    final rows =
+        (await db
+                .from('change_log')
+                .select()
+                .order('changed_at', ascending: false)
+                .limit(limit))
+            .map((row) => Map<String, dynamic>.from(row))
+            .toList();
+
+    final personIds = <String>{};
+    final outputIds = <String>{};
+    final actorIds = <String>{};
+    for (final row in rows) {
+      final sid = row['subject_id'] as String?;
+      if (sid != null && row['subject_type'] == 'person') personIds.add(sid);
+      if (sid != null && row['subject_type'] == 'output') outputIds.add(sid);
+      final actor = row['actor'] as String?;
+      if (actor != null) actorIds.add(actor);
+    }
+
+    final names = <String, String>{};
+    if (personIds.isNotEmpty) {
+      for (final p in await db
+          .from('people')
+          .select('id, preferred_name')
+          .inFilter('id', personIds.toList())) {
+        names['person:${p['id']}'] = p['preferred_name'] as String? ?? '';
+      }
+    }
+    if (outputIds.isNotEmpty) {
+      for (final o in await db
+          .from('outputs')
+          .select('id, title')
+          .inFilter('id', outputIds.toList())) {
+        names['output:${o['id']}'] = o['title'] as String? ?? '';
+      }
+    }
+    final actors = <String, String>{};
+    if (actorIds.isNotEmpty) {
+      for (final p in await db
+          .from('people')
+          .select('auth_user_id, preferred_name')
+          .inFilter('auth_user_id', actorIds.toList())) {
+        final au = p['auth_user_id'] as String?;
+        if (au != null) actors[au] = p['preferred_name'] as String? ?? '';
+      }
+    }
+
+    for (final row in rows) {
+      row['subject_name'] = names['${row['subject_type']}:${row['subject_id']}'];
+      row['actor_name'] = actors[row['actor']];
+    }
+    return rows;
   } catch (error) {
     throw Exception(_error(error));
   }
@@ -414,14 +511,22 @@ Future<void> acceptSuggestion(String id) async {
         .select()
         .eq('id', id)
         .single();
+    final subjectType = suggestion['subject_type'] as String;
     final subjectId = suggestion['subject_id'] as String;
     final field = suggestion['field'] as String;
     final value = suggestion['suggested_value'];
-    if (suggestion['subject_type'] == 'person') {
+    if (subjectType == 'person') {
       await updatePerson(subjectId, {field: value});
     } else {
       await updateOutput(subjectId, {field: value});
     }
+    await logChanges(
+      subjectType,
+      subjectId,
+      {field: suggestion['current_value']},
+      {field: value},
+      source: suggestion['source'] as String? ?? 'orcid',
+    );
     await db
         .from('enrichment_suggestions')
         .update({'status': 'accepted'})
@@ -747,7 +852,7 @@ Future<Map<String, dynamic>> fetchLab(String id) async {
         .from('labs')
         .select(
           'id, code, name, overview, notes, '
-          'lab_members(is_coordinator, people(id, preferred_name, membership_type, status)), '
+          'lab_members(is_coordinator, year, people(id, preferred_name, membership_type, status)), '
           'lab_objectives(objectives(id, code, name)), '
           'project_labs(projects(id, title, status)), '
           'lab_collaborations(collaborations(id, name, kind))',
@@ -789,16 +894,22 @@ Future<void> addLabMember(
   String labId,
   String personId, {
   bool isCoordinator = false,
+  int? year,
 }) async {
   await upsertLink('lab_members', {
     'lab_id': labId,
     'person_id': personId,
     'is_coordinator': isCoordinator,
-  }, 'lab_id,person_id');
+    'year': year ?? DateTime.now().year,
+  }, 'lab_id,person_id,year');
 }
 
-Future<void> removeLabMember(String labId, String personId) =>
-    deleteLink('lab_members', {'lab_id': labId, 'person_id': personId});
+Future<void> removeLabMember(String labId, String personId, {int? year}) =>
+    deleteLink('lab_members', {
+      'lab_id': labId,
+      'person_id': personId,
+      'year': '${year ?? DateTime.now().year}',
+    });
 
 // ------------------------------------------------------------------ clusters
 Future<List<Map<String, dynamic>>> fetchClusters() async {
@@ -992,6 +1103,81 @@ Future<Map<String, int>> fetchProjectLinkCounts(
 Future<int> fetchCount(String table) async {
   try {
     return await db.from(table).count();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Rows on [table] tagged with a given `year` (lab_members / mentorships).
+/// Client-side length — trivial at this scale.
+Future<int> countRowsForYear(String table, int year) async {
+  try {
+    final rows = await db.from(table).select('year').eq('year', year);
+    return rows.length;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Distinct years across every year-bearing table (outputs.reporting_year,
+/// lab_members.year, mentorships.year), ascending. Drives the year selectors.
+Future<List<int>> fetchDistinctYears() async {
+  try {
+    final years = <int>{};
+    for (final row in await db.from('outputs').select('reporting_year')) {
+      final y = row['reporting_year'] as int?;
+      if (y != null) years.add(y);
+    }
+    for (final table in ['lab_members', 'mentorships']) {
+      for (final row in await db.from(table).select('year')) {
+        final y = row['year'] as int?;
+        if (y != null) years.add(y);
+      }
+    }
+    final list = years.toList()..sort();
+    return list;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+// ---------------------------------------------------------------- mentorships
+Future<List<Map<String, dynamic>>> fetchMentorships(String mentorId) async {
+  try {
+    final rows = await db
+        .from('mentorships')
+        .select('id, student_person_id, student_name, year, notes')
+        .eq('mentor_id', mentorId)
+        .order('year', ascending: false);
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> addMentorship({
+  required String mentorId,
+  required String studentName,
+  required int year,
+  String? studentPersonId,
+  String? notes,
+}) async {
+  try {
+    await db.from('mentorships').insert({
+      'mentor_id': mentorId,
+      'student_name': studentName,
+      'student_person_id': studentPersonId,
+      'year': year,
+      'notes': notes,
+    });
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> removeMentorship(String id) async {
+  try {
+    await db.from('mentorships').delete().eq('id', id);
   } catch (error) {
     throw Exception(_error(error));
   }

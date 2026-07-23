@@ -19,6 +19,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
   late Future<List<Map<String, dynamic>>> _stalePeople = fetchStalePeople();
   late Future<List<Map<String, dynamic>>> _pendingSuggestions =
       fetchPendingSuggestions();
+  late Future<List<Map<String, dynamic>>> _changeLog = fetchChangeLog();
 
   void _refresh() {
     setState(() {
@@ -26,6 +27,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
       _pendingOutputs = fetchPendingOutputs();
       _stalePeople = fetchStalePeople();
       _pendingSuggestions = fetchPendingSuggestions();
+      _changeLog = fetchChangeLog();
     });
   }
 
@@ -54,7 +56,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
     if (!isAdmin) return const Center(child: Text('Admin access required'));
 
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Column(
         children: [
           const TabBar(
@@ -64,6 +66,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
               Tab(text: 'Outputs to approve'),
               Tab(text: 'Needs re-verification'),
               Tab(text: 'Suggestions'),
+              Tab(text: 'Activity'),
             ],
           ),
           Expanded(
@@ -148,6 +151,16 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                       valueOf: (s) => s['source'] as String?,
                     ),
                   ],
+                  groups: [
+                    QueueGroup(
+                      label: 'Person',
+                      keyOf: (s) => s['subject_name'] as String? ?? '—',
+                    ),
+                    QueueGroup(
+                      label: 'Field',
+                      keyOf: (s) => s['field'] as String? ?? '—',
+                    ),
+                  ],
                   itemBuilder: (suggestion) => SuggestionTile(
                     suggestion: suggestion,
                     onAccept: () =>
@@ -156,11 +169,57 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                         _rejectSuggestion(suggestion['id'] as String),
                   ),
                 ),
+                QueueList(
+                  future: _changeLog,
+                  emptyText: 'No changes recorded yet',
+                  searchOf: (c) =>
+                      '${c['subject_name'] ?? ''} ${c['field'] ?? ''}',
+                  timeOf: (c) => c['changed_at'] as String? ?? '',
+                  filters: [
+                    QueueFilter(
+                      label: 'Source',
+                      valueOf: (c) => c['source'] as String?,
+                    ),
+                  ],
+                  groups: [
+                    QueueGroup(
+                      label: 'Person',
+                      keyOf: (c) => c['subject_name'] as String? ?? '—',
+                    ),
+                    QueueGroup(
+                      label: 'Source',
+                      keyOf: (c) => c['source'] as String? ?? '—',
+                    ),
+                  ],
+                  itemBuilder: _changeTile,
+                ),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _changeTile(Map<String, dynamic> change) {
+    final field = change['field'] as String? ?? '?';
+    final oldValue = change['old_value'] as String? ?? '∅';
+    final newValue = change['new_value'] as String? ?? '∅';
+    final subject = change['subject_name'] as String?;
+    final actor = change['actor_name'] as String?;
+    final source = change['source'] as String? ?? 'manual';
+    final when = (change['changed_at'] as String? ?? '').split('T').first;
+    return ListTile(
+      title: Text('$field: $oldValue → $newValue'),
+      subtitle: Text(
+        [
+          if (subject != null && subject.isNotEmpty) subject,
+          source,
+          if (actor != null && actor.isNotEmpty) 'by $actor',
+          when,
+        ].join(' · '),
+      ),
+      isThreeLine: false,
     );
   }
 }

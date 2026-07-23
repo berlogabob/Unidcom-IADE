@@ -82,11 +82,20 @@ class _UpdateMatrixDialogState extends State<_UpdateMatrixDialog> {
   Future<void> _apply() async {
     setState(() => _saving = true);
     try {
-      final fields = <String, dynamic>{
+      final chosen = <String, dynamic>{
         for (final field in widget.rows) field.$1: _chosen(field.$1),
-        'last_verified_at': DateTime.now().toIso8601String(),
       };
-      await updatePerson(widget.personId, fields);
+      await updatePerson(widget.personId, {
+        ...chosen,
+        'last_verified_at': DateTime.now().toIso8601String(),
+      });
+      await logChanges(
+        'person',
+        widget.personId,
+        widget.current,
+        chosen,
+        source: 'orcid',
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Updated ${widget.rows.length} field(s) from ORCID')),

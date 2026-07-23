@@ -13,7 +13,14 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  late final Future<_DashboardData> _data = _loadDashboard();
+  int? _year; // null = all-time
+  final Future<List<int>> _years = fetchDistinctYears();
+  late Future<_DashboardData> _data = _loadDashboard();
+
+  void _setYear(int? year) => setState(() {
+    _year = year;
+    _data = _loadDashboard();
+  });
 
   Future<_DashboardData> _loadDashboard() async {
     final rows = await Future.wait([
@@ -31,15 +38,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'clusters',
     );
     final byLab = await fetchProjectLinkCounts('project_labs', 'labs');
+    final labAllocations = _year == null
+        ? await fetchCount('lab_members')
+        : await countRowsForYear('lab_members', _year!);
+    final mentorships = _year == null
+        ? await fetchCount('mentorships')
+        : await countRowsForYear('mentorships', _year!);
     return _DashboardData.fromRows(
       rows[0],
       rows[1],
       rows[2],
+      year: _year,
       labCount: counts[0],
       projectCount: counts[1],
       clusterCount: counts[2],
       projectsByCluster: byCluster,
       projectsByLab: byLab,
+      labAllocations: labAllocations,
+      mentorships: mentorships,
+    );
+  }
+
+  Widget _yearSelector() {
+    return FutureBuilder<List<int>>(
+      future: _years,
+      builder: (context, snapshot) {
+        final years = (snapshot.data ?? [])..sort((a, b) => b.compareTo(a));
+        return Row(
+          children: [
+            Text('Year', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(width: 12),
+            DropdownButton<int?>(
+              value: _year,
+              items: [
+                const DropdownMenuItem(value: null, child: Text('All-time')),
+                for (final y in years)
+                  DropdownMenuItem(value: y, child: Text('$y')),
+              ],
+              onChanged: _setYear,
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -60,6 +100,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _yearSelector(),
+              const SizedBox(height: 12),
               _StatTilesRow(data: data),
               const SizedBox(height: 16),
               _ResponsiveCharts(data: data),
@@ -123,6 +165,16 @@ class _StatTilesRow extends StatelessWidget {
         label: 'Verified outputs',
         value: '${data.verifiedOutputs}',
         icon: Icons.verified_outlined,
+      ),
+      StatTile(
+        label: data.year == null ? 'Lab allocations' : 'Lab allocations ${data.year}',
+        value: '${data.labAllocations}',
+        icon: Icons.science_outlined,
+      ),
+      StatTile(
+        label: data.year == null ? 'Mentorships' : 'Mentorships ${data.year}',
+        value: '${data.mentorships}',
+        icon: Icons.school_outlined,
       ),
     ];
 
@@ -476,6 +528,7 @@ class _MembershipChart extends StatelessWidget {
 
 class _DashboardData {
   const _DashboardData({
+    required this.year,
     required this.peopleCount,
     required this.outputCount,
     required this.journalCount,
@@ -485,6 +538,8 @@ class _DashboardData {
     required this.projectCount,
     required this.clusterCount,
     required this.verifiedOutputs,
+    required this.labAllocations,
+    required this.mentorships,
     required this.outputsByType,
     required this.journalsByQuartile,
     required this.topResearchers,
@@ -493,6 +548,7 @@ class _DashboardData {
     required this.projectsByLab,
   });
 
+  final int? year;
   final int peopleCount;
   final int outputCount;
   final int journalCount;
@@ -502,6 +558,8 @@ class _DashboardData {
   final int projectCount;
   final int clusterCount;
   final int verifiedOutputs;
+  final int labAllocations;
+  final int mentorships;
   final List<_CountItem> outputsByType;
   final Map<String, int> journalsByQuartile;
   final List<_CountItem> topResearchers;
@@ -511,14 +569,21 @@ class _DashboardData {
 
   factory _DashboardData.fromRows(
     List<Map<String, dynamic>> people,
-    List<Map<String, dynamic>> outputs,
+    List<Map<String, dynamic>> allOutputs,
     List<Map<String, dynamic>> authors, {
+    int? year,
     required int labCount,
     required int projectCount,
     required int clusterCount,
     required Map<String, int> projectsByCluster,
     required Map<String, int> projectsByLab,
+    required int labAllocations,
+    required int mentorships,
   }) {
+    // Output-based stats respect the selected year (outputs carry reporting_year).
+    final outputs = year == null
+        ? allOutputs
+        : allOutputs.where((o) => o['reporting_year'] == year).toList();
     final cutoff = DateTime.now().subtract(const Duration(days: 183));
     final journalOutputs = outputs.where(_isJournal).toList();
     final quartiles = {
@@ -534,6 +599,7 @@ class _DashboardData {
     }
 
     return _DashboardData(
+      year: year,
       peopleCount: people.length,
       outputCount: outputs.length,
       journalCount: journalOutputs.length,
@@ -549,6 +615,8 @@ class _DashboardData {
       labCount: labCount,
       projectCount: projectCount,
       clusterCount: clusterCount,
+      labAllocations: labAllocations,
+      mentorships: mentorships,
       verifiedOutputs: outputs.where((o) => o['verified_online'] == true).length,
       outputsByType: _topWithOther(_countBy(outputs, (row) => _type(row))),
       journalsByQuartile: quartiles,

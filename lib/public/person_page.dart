@@ -36,12 +36,16 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
   late Future<Map<String, dynamic>> _person = fetchPerson(widget.id);
   late Future<List<Map<String, dynamic>>> _suggestions =
       fetchSuggestionsForPerson(widget.id);
+  late Future<List<Map<String, dynamic>>> _mentorships = fetchMentorships(
+    widget.id,
+  );
   bool _enriching = false;
 
   void _refresh() {
     setState(() {
       _person = fetchPerson(widget.id);
       _suggestions = fetchSuggestionsForPerson(widget.id);
+      _mentorships = fetchMentorships(widget.id);
     });
   }
 
@@ -140,6 +144,74 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     );
   }
 
+  Widget _mentorshipsSection(Map<String, dynamic> person, bool admin) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _mentorships,
+      builder: (context, snapshot) {
+        final rows = snapshot.data ?? [];
+        // Group by year, newest first, so counts read per-year (2 in 2024, 4 in 2026…).
+        final byYear = <int, List<Map<String, dynamic>>>{};
+        for (final row in rows) {
+          (byYear[row['year'] as int? ?? 0] ??= []).add(row);
+        }
+        final years = byYear.keys.toList()..sort((a, b) => b.compareTo(a));
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: _sectionTitle('Mentorships · ${rows.length}')),
+                if (admin)
+                  TextButton.icon(
+                    onPressed: _addMentorship,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (rows.isEmpty)
+              _muted('No mentorships recorded')
+            else
+              for (final year in years) ...[
+                Text(
+                  '$year · ${byYear[year]!.length}',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                for (final m in byYear[year]!)
+                  ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(m['student_name'] as String? ?? 'Unnamed'),
+                    subtitle: (m['notes'] as String?)?.isNotEmpty == true
+                        ? Text(m['notes'] as String)
+                        : null,
+                    trailing: admin
+                        ? IconButton(
+                            tooltip: 'Remove',
+                            icon: const Icon(Icons.close),
+                            onPressed: () async {
+                              await removeMentorship(m['id'] as String);
+                              _refresh();
+                            },
+                          )
+                        : null,
+                  ),
+              ],
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _addMentorship() async {
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (context) => _MentorshipDialog(mentorId: widget.id),
+    );
+    if (added == true && mounted) _refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
@@ -203,19 +275,20 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                           final lab = m['labs'] as Map<String, dynamic>;
                           final coordinator =
                               m['is_coordinator'] as bool? ?? false;
+                          final year = m['year'] as int?;
+                          final code =
+                              lab['code'] as String? ??
+                              lab['name'] as String? ??
+                              '—';
                           return InputChip(
                             avatar: coordinator
                                 ? const Icon(Icons.star, size: 16)
                                 : null,
                             label: Tooltip(
                               message: coordinator
-                                  ? '${lab['name']} (coordinator)'
-                                  : lab['name'] as String? ?? '',
-                              child: Text(
-                                lab['code'] as String? ??
-                                    lab['name'] as String? ??
-                                    '—',
-                              ),
+                                  ? '${lab['name']} (coordinator, $year)'
+                                  : '${lab['name']} ($year)',
+                              child: Text(year == null ? code : '$code · $year'),
                             ),
                             onPressed: () => context.go('/labs/${lab['id']}'),
                           );
@@ -230,6 +303,8 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                   _muted('No outputs found')
                 else
                   for (final author in outputAuthors) _outputRow(author),
+                const SizedBox(height: 24),
+                _mentorshipsSection(person, admin),
                 if (tags.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   _sectionTitle('Tags'),
@@ -604,7 +679,9 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
         final id = await createPerson(fields);
         if (_linkToMe) await linkPersonToMe(id);
       } else {
-        await updatePerson(widget.person!['id'] as String, fields);
+        final id = widget.person!['id'] as String;
+        await updatePerson(id, fields);
+        await logChanges('person', id, widget.person!, fields);
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
@@ -728,6 +805,99 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
         ],
         onChanged: onChanged,
       ),
+    );
+  }
+}
+
+/// Adds one mentorship for a given year. Student is a free-text name (a person
+/// link can be added later); year defaults to the current year.
+class _MentorshipDialog extends StatefulWidget {
+  const _MentorshipDialog({required this.mentorId});
+
+  final String mentorId;
+
+  @override
+  State<_MentorshipDialog> createState() => _MentorshipDialogState();
+}
+
+class _MentorshipDialogState extends State<_MentorshipDialog> {
+  final _student = TextEditingController();
+  final _year = TextEditingController(text: '${DateTime.now().year}');
+  final _notes = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _student.dispose();
+    _year.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _student.text.trim();
+    final year = int.tryParse(_year.text.trim());
+    if (name.isEmpty || year == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Student name and a valid year required')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await addMentorship(
+        mentorId: widget.mentorId,
+        studentName: name,
+        year: year,
+        notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    InputDecoration deco(String label) =>
+        InputDecoration(labelText: label, border: const OutlineInputBorder());
+    return AlertDialog(
+      title: const Text('Add mentorship'),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: _student, decoration: deco('Student name')),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _year,
+              keyboardType: TextInputType.number,
+              decoration: deco('Year'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notes,
+              maxLines: 2,
+              decoration: deco('Notes (optional)'),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? 'Saving...' : 'Add'),
+        ),
+      ],
     );
   }
 }

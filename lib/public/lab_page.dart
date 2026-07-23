@@ -17,6 +17,7 @@ class LabPageScreen extends StatefulWidget {
 
 class _LabPageScreenState extends State<LabPageScreen> {
   late Future<Map<String, dynamic>> _lab = fetchLab(widget.id);
+  int _year = DateTime.now().year;
 
   void _refresh() => setState(() => _lab = fetchLab(widget.id));
 
@@ -47,7 +48,7 @@ class _LabPageScreenState extends State<LabPageScreen> {
       subtitle: (p) => p['email'] as String? ?? '',
     );
     if (person == null) return;
-    await addLabMember(widget.id, person['id'] as String);
+    await addLabMember(widget.id, person['id'] as String, year: _year);
     _refresh();
   }
 
@@ -83,8 +84,15 @@ class _LabPageScreenState extends State<LabPageScreen> {
         }
         final lab = snapshot.data ?? {};
         final admin = isAdmin;
-        final members = (lab['lab_members'] as List<dynamic>? ?? [])
+        final allMembers = (lab['lab_members'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
+        final years =
+            {_year, ...allMembers.map((m) => m['year'] as int? ?? _year)}
+                .toList()
+              ..sort((a, b) => b.compareTo(a));
+        final members = allMembers
+            .where((m) => (m['year'] as int? ?? _year) == _year)
+            .toList();
         final objectives = embedded(lab, 'lab_objectives', 'objectives');
         final projects = embedded(lab, 'project_labs', 'projects');
 
@@ -97,15 +105,29 @@ class _LabPageScreenState extends State<LabPageScreen> {
               onEdit: admin ? () => _edit(lab) : null,
             ),
             const SizedBox(height: 24),
-            sectionHeader(
-              context,
-              'Members · ${members.length}',
-              admin ? _addMember : null,
-              'Add member',
+            Row(
+              children: [
+                Expanded(
+                  child: sectionHeader(
+                    context,
+                    'Members · ${members.length}',
+                    admin ? _addMember : null,
+                    'Add member',
+                  ),
+                ),
+                DropdownButton<int>(
+                  value: _year,
+                  items: [
+                    for (final y in years)
+                      DropdownMenuItem(value: y, child: Text('$y')),
+                  ],
+                  onChanged: (v) => setState(() => _year = v ?? _year),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             if (members.isEmpty)
-              mutedText(context, 'No members yet')
+              mutedText(context, 'No members in $_year')
             else
               for (final member in members) _memberRow(member, admin),
             const SizedBox(height: 24),
@@ -205,6 +227,7 @@ class _LabPageScreenState extends State<LabPageScreen> {
                 widget.id,
                 personId,
                 isCoordinator: !isCoordinator,
+                year: _year,
               );
               _refresh();
             },
@@ -213,7 +236,7 @@ class _LabPageScreenState extends State<LabPageScreen> {
             tooltip: 'Remove member',
             icon: const Icon(Icons.close),
             onPressed: () async {
-              await removeLabMember(widget.id, personId);
+              await removeLabMember(widget.id, personId, year: _year);
               _refresh();
             },
           ),
