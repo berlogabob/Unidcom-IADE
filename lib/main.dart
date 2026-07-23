@@ -9,12 +9,16 @@ import 'app/admin_page.dart';
 import 'app/dashboard.dart';
 import 'app/my_profile.dart';
 import 'data/supabase.dart' as data;
+import 'public/cluster_page.dart';
+import 'public/lab_page.dart';
+import 'public/objective_page.dart';
 import 'public/outputs.dart';
 import 'public/output_page.dart';
 import 'public/people_list.dart';
 import 'public/person_page.dart';
 import 'public/projects.dart';
 import 'public/project_page.dart';
+import 'public/structure.dart';
 
 const _brandRed = Color(0xFFFF2A13);
 const _brandDeep = Color(0xFFEF2201);
@@ -168,6 +172,24 @@ final _router = GoRouter(
               OutputPageScreen(id: state.pathParameters['id']!),
         ),
         GoRoute(
+          path: '/structure',
+          builder: (_, _) => const StructureScreen(),
+        ),
+        GoRoute(
+          path: '/labs/:id',
+          builder: (_, state) => LabPageScreen(id: state.pathParameters['id']!),
+        ),
+        GoRoute(
+          path: '/clusters/:id',
+          builder: (_, state) =>
+              ClusterPageScreen(id: state.pathParameters['id']!),
+        ),
+        GoRoute(
+          path: '/objectives/:id',
+          builder: (_, state) =>
+              ObjectivePageScreen(id: state.pathParameters['id']!),
+        ),
+        GoRoute(
           path: '/app/dashboard',
           builder: (_, _) => const DashboardScreen(),
         ),
@@ -219,11 +241,19 @@ class AppShell extends StatelessWidget {
       _NavItem('/people', Icons.people, 'People'),
       _NavItem('/outputs', Icons.article, 'Outputs'),
       _NavItem('/projects', Icons.work, 'Projects'),
+      _NavItem(
+        '/structure',
+        Icons.account_tree,
+        'Structure',
+        prefixes: ['/structure', '/labs', '/clusters', '/objectives'],
+      ),
       _NavItem('/app/dashboard', Icons.dashboard, 'Dashboard'),
       if (admin)
         _NavItem('/app/admin', Icons.admin_panel_settings, 'Admin'),
     ];
-    final index = destinations.indexWhere((item) => path.startsWith(item.path));
+    final index = destinations.indexWhere(
+      (item) => item.prefixes.any(path.startsWith),
+    );
     final selectedIndex = index < 0 ? 0 : index;
 
     return Scaffold(
@@ -231,6 +261,7 @@ class AppShell extends StatelessWidget {
         title: Text(switch (destinations[selectedIndex].path) {
           '/outputs' => 'Outputs',
           '/projects' => 'Projects',
+          '/structure' => 'Structure',
           '/app/dashboard' => 'Dashboard',
           '/app/admin' => 'Admin',
           _ => 'People',
@@ -270,11 +301,16 @@ class AppShell extends StatelessWidget {
 }
 
 class _NavItem {
-  const _NavItem(this.path, this.icon, this.label);
+  _NavItem(this.path, this.icon, this.label, {List<String>? prefixes})
+    : prefixes = prefixes ?? [path];
 
   final String path;
   final IconData icon;
   final String label;
+
+  /// Path prefixes that map to this tab (detail routes included). Defaults to
+  /// [path] so single-section tabs keep their existing startsWith behavior.
+  final List<String> prefixes;
 }
 
 class LoginScreen extends StatefulWidget {

@@ -21,7 +21,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
       fetchOutputsForStats(),
       fetchAuthorCounts(),
     ]);
-    return _DashboardData.fromRows(rows[0], rows[1], rows[2]);
+    final counts = await Future.wait([
+      fetchCount('labs'),
+      fetchCount('projects'),
+      fetchCount('clusters'),
+    ]);
+    final byCluster = await fetchProjectLinkCounts(
+      'project_clusters',
+      'clusters',
+    );
+    final byLab = await fetchProjectLinkCounts('project_labs', 'labs');
+    return _DashboardData.fromRows(
+      rows[0],
+      rows[1],
+      rows[2],
+      labCount: counts[0],
+      projectCount: counts[1],
+      clusterCount: counts[2],
+      projectsByCluster: byCluster,
+      projectsByLab: byLab,
+    );
   }
 
   @override
@@ -85,6 +104,21 @@ class _StatTilesRow extends StatelessWidget {
         value: '${data.missingOrcid}',
         icon: Icons.badge_outlined,
       ),
+      StatTile(
+        label: 'Labs',
+        value: '${data.labCount}',
+        icon: Icons.science_outlined,
+      ),
+      StatTile(
+        label: 'Projects',
+        value: '${data.projectCount}',
+        icon: Icons.work_outline,
+      ),
+      StatTile(
+        label: 'Clusters',
+        value: '${data.clusterCount}',
+        icon: Icons.hub_outlined,
+      ),
     ];
 
     return LayoutBuilder(
@@ -143,6 +177,16 @@ class _ResponsiveCharts extends StatelessWidget {
           _ChartCard(
             title: 'People by category',
             child: _MembershipChart(items: data.membershipCounts),
+          ),
+          _ChartCard(
+            title: 'Projects by cluster',
+            bounded: false,
+            child: _HorizontalBars(items: data.projectsByCluster),
+          ),
+          _ChartCard(
+            title: 'Projects by lab',
+            bounded: false,
+            child: _HorizontalBars(items: data.projectsByLab),
           ),
         ];
         if (!wide) {
@@ -432,10 +476,15 @@ class _DashboardData {
     required this.journalCount,
     required this.needsVerification,
     required this.missingOrcid,
+    required this.labCount,
+    required this.projectCount,
+    required this.clusterCount,
     required this.outputsByType,
     required this.journalsByQuartile,
     required this.topResearchers,
     required this.membershipCounts,
+    required this.projectsByCluster,
+    required this.projectsByLab,
   });
 
   final int peopleCount;
@@ -443,16 +492,26 @@ class _DashboardData {
   final int journalCount;
   final int needsVerification;
   final int missingOrcid;
+  final int labCount;
+  final int projectCount;
+  final int clusterCount;
   final List<_CountItem> outputsByType;
   final Map<String, int> journalsByQuartile;
   final List<_CountItem> topResearchers;
   final List<_CountItem> membershipCounts;
+  final List<_CountItem> projectsByCluster;
+  final List<_CountItem> projectsByLab;
 
   factory _DashboardData.fromRows(
     List<Map<String, dynamic>> people,
     List<Map<String, dynamic>> outputs,
-    List<Map<String, dynamic>> authors,
-  ) {
+    List<Map<String, dynamic>> authors, {
+    required int labCount,
+    required int projectCount,
+    required int clusterCount,
+    required Map<String, int> projectsByCluster,
+    required Map<String, int> projectsByLab,
+  }) {
     final cutoff = DateTime.now().subtract(const Duration(days: 183));
     final journalOutputs = outputs.where(_isJournal).toList();
     final quartiles = {
@@ -480,12 +539,24 @@ class _DashboardData {
         final value = (person['orcid'] as String?)?.trim();
         return value == null || value.isEmpty;
       }).length,
+      labCount: labCount,
+      projectCount: projectCount,
+      clusterCount: clusterCount,
       outputsByType: _topWithOther(_countBy(outputs, (row) => _type(row))),
       journalsByQuartile: quartiles,
       topResearchers: _topResearchers(authors),
       membershipCounts: _membershipCounts(people),
+      projectsByCluster: _mapToItems(projectsByCluster),
+      projectsByLab: _mapToItems(projectsByLab),
     );
   }
+}
+
+List<_CountItem> _mapToItems(Map<String, int> counts) {
+  final items =
+      counts.entries.map((e) => _CountItem(e.key, e.value)).toList()
+        ..sort((a, b) => b.count.compareTo(a.count));
+  return items;
 }
 
 class _CountItem {

@@ -119,6 +119,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
           'join_date, exit_date, '
           'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url)), '
+          'lab_members(is_coordinator, labs(id, code, name)), '
           'person_tags(tags(name))',
         )
         .eq('id', id)
@@ -591,7 +592,8 @@ Future<List<Map<String, dynamic>>> fetchProjects() async {
     final rows = await db
         .from('projects')
         .select(
-          'id, title, acronym, description, start_date, end_date, status, created_at',
+          'id, title, acronym, description, start_date, end_date, status, '
+          'funding, category, created_at',
         )
         .order('title');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
@@ -606,9 +608,13 @@ Future<Map<String, dynamic>> fetchProject(String id) async {
         .from('projects')
         .select(
           'id, title, acronym, description, total_budget, currency, '
-          'start_date, end_date, status, public_visibility, approval_status, '
+          'start_date, end_date, status, funding, category, '
+          'public_visibility, approval_status, '
           'project_members(role, people(id, preferred_name, membership_type, status)), '
-          'project_outputs(outputs(id, title, reporting_year, type, doi, url))',
+          'project_outputs(outputs(id, title, reporting_year, type, doi, url)), '
+          'project_clusters(clusters(id, code, name)), '
+          'project_labs(labs(id, code, name)), '
+          'project_objectives(objectives(id, code, name))',
         )
         .eq('id', id)
         .single();
@@ -681,6 +687,303 @@ Future<void> unlinkProjectOutput(String projectId, String outputId) async {
         .delete()
         .eq('project_id', projectId)
         .eq('output_id', outputId);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+// ---------------------------------------------------------------- link helpers
+/// Generic upsert/delete for the many-to-many join tables (project_clusters,
+/// project_labs, project_objectives, lab_objectives, ...). Saves ~10 near-copies.
+Future<void> upsertLink(
+  String table,
+  Map<String, dynamic> row,
+  String onConflict,
+) async {
+  try {
+    await db.from(table).upsert(row, onConflict: onConflict);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> deleteLink(String table, Map<String, String> filters) async {
+  try {
+    var query = db.from(table).delete();
+    filters.forEach((column, value) => query = query.eq(column, value));
+    await query;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+// ---------------------------------------------------------------------- labs
+Future<List<Map<String, dynamic>>> fetchLabs() async {
+  try {
+    final rows = await db
+        .from('labs')
+        .select(
+          'id, code, name, overview, notes, '
+          'lab_members(count), lab_objectives(count), project_labs(count)',
+        )
+        .order('name');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<Map<String, dynamic>> fetchLab(String id) async {
+  try {
+    final row = await db
+        .from('labs')
+        .select(
+          'id, code, name, overview, notes, '
+          'lab_members(is_coordinator, people(id, preferred_name, membership_type, status)), '
+          'lab_objectives(objectives(id, code, name)), '
+          'project_labs(projects(id, title, status))',
+        )
+        .eq('id', id)
+        .single();
+    return Map<String, dynamic>.from(row);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<String> createLab(Map<String, dynamic> fields) async {
+  try {
+    final row = await db.from('labs').insert(fields).select('id').single();
+    return row['id'] as String;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> updateLab(String id, Map<String, dynamic> fields) async {
+  try {
+    await db.from('labs').update(fields).eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> deleteLab(String id) async {
+  try {
+    await db.from('labs').delete().eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> addLabMember(
+  String labId,
+  String personId, {
+  bool isCoordinator = false,
+}) async {
+  await upsertLink('lab_members', {
+    'lab_id': labId,
+    'person_id': personId,
+    'is_coordinator': isCoordinator,
+  }, 'lab_id,person_id');
+}
+
+Future<void> removeLabMember(String labId, String personId) =>
+    deleteLink('lab_members', {'lab_id': labId, 'person_id': personId});
+
+// ------------------------------------------------------------------ clusters
+Future<List<Map<String, dynamic>>> fetchClusters() async {
+  try {
+    final rows = await db
+        .from('clusters')
+        .select(
+          'id, code, name, concern, notes, '
+          'objective_clusters(count), project_clusters(count)',
+        )
+        .order('code');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<Map<String, dynamic>> fetchCluster(String id) async {
+  try {
+    final row = await db
+        .from('clusters')
+        .select(
+          'id, code, name, concern, notes, '
+          'objective_clusters(objectives(id, code, name)), '
+          'project_clusters(projects(id, title, status))',
+        )
+        .eq('id', id)
+        .single();
+    return Map<String, dynamic>.from(row);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<String> createCluster(Map<String, dynamic> fields) async {
+  try {
+    final row = await db.from('clusters').insert(fields).select('id').single();
+    return row['id'] as String;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> updateCluster(String id, Map<String, dynamic> fields) async {
+  try {
+    await db.from('clusters').update(fields).eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> deleteCluster(String id) async {
+  try {
+    await db.from('clusters').delete().eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+// ---------------------------------------------------------------- objectives
+Future<List<Map<String, dynamic>>> fetchObjectives() async {
+  try {
+    final rows = await db
+        .from('objectives')
+        .select(
+          'id, code, name, description, kpis, '
+          'objective_clusters(clusters(code)), '
+          'project_objectives(count), lab_objectives(count)',
+        )
+        .order('code');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<Map<String, dynamic>> fetchObjective(String id) async {
+  try {
+    final row = await db
+        .from('objectives')
+        .select(
+          'id, code, name, description, kpis, source, '
+          'objective_clusters(clusters(id, code, name)), '
+          'lab_objectives(labs(id, code, name)), '
+          'project_objectives(projects(id, title, status))',
+        )
+        .eq('id', id)
+        .single();
+    return Map<String, dynamic>.from(row);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<String> createObjective(Map<String, dynamic> fields) async {
+  try {
+    final row = await db
+        .from('objectives')
+        .insert(fields)
+        .select('id')
+        .single();
+    return row['id'] as String;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> updateObjective(String id, Map<String, dynamic> fields) async {
+  try {
+    await db.from('objectives').update(fields).eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> deleteObjective(String id) async {
+  try {
+    await db.from('objectives').delete().eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+// -------------------------------------------------- project link management
+Future<void> linkProjectCluster(String projectId, String clusterId) =>
+    upsertLink('project_clusters', {
+      'project_id': projectId,
+      'cluster_id': clusterId,
+    }, 'project_id,cluster_id');
+
+Future<void> unlinkProjectCluster(String projectId, String clusterId) =>
+    deleteLink('project_clusters', {
+      'project_id': projectId,
+      'cluster_id': clusterId,
+    });
+
+Future<void> linkProjectLab(String projectId, String labId) =>
+    upsertLink('project_labs', {
+      'project_id': projectId,
+      'lab_id': labId,
+    }, 'project_id,lab_id');
+
+Future<void> unlinkProjectLab(String projectId, String labId) =>
+    deleteLink('project_labs', {'project_id': projectId, 'lab_id': labId});
+
+Future<void> linkProjectObjective(String projectId, String objectiveId) =>
+    upsertLink('project_objectives', {
+      'project_id': projectId,
+      'objective_id': objectiveId,
+    }, 'project_id,objective_id');
+
+Future<void> unlinkProjectObjective(String projectId, String objectiveId) =>
+    deleteLink('project_objectives', {
+      'project_id': projectId,
+      'objective_id': objectiveId,
+    });
+
+Future<void> linkLabObjective(String labId, String objectiveId) =>
+    upsertLink('lab_objectives', {
+      'lab_id': labId,
+      'objective_id': objectiveId,
+    }, 'lab_id,objective_id');
+
+Future<void> unlinkLabObjective(String labId, String objectiveId) =>
+    deleteLink('lab_objectives', {
+      'lab_id': labId,
+      'objective_id': objectiveId,
+    });
+
+// ------------------------------------------------------- dashboard counters
+/// [table] is project_clusters / project_labs; [embed] is clusters / labs.
+/// Returns {code: projectCount}. Client-side tally — trivial at this scale.
+Future<Map<String, int>> fetchProjectLinkCounts(
+  String table,
+  String embed,
+) async {
+  try {
+    final rows = await db.from(table).select('$embed(code)');
+    final counts = <String, int>{};
+    for (final row in rows) {
+      final code = (row[embed] as Map<String, dynamic>?)?['code'] as String?;
+      if (code != null) {
+        counts.update(code, (n) => n + 1, ifAbsent: () => 1);
+      }
+    }
+    return counts;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<int> fetchCount(String table) async {
+  try {
+    return await db.from(table).count();
   } catch (error) {
     throw Exception(_error(error));
   }
