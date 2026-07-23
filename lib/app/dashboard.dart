@@ -41,9 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final labAllocations = _year == null
         ? await fetchCount('lab_members')
         : await countRowsForYear('lab_members', _year!);
-    final mentorships = _year == null
-        ? await fetchCount('mentorships')
-        : await countRowsForYear('mentorships', _year!);
+    final mentorships = await countRoles('mentorship', year: _year);
     // For a selected year, membership comes from the roles logbook (a person can
     // be integrated one year, external the next); all-time uses the current cache.
     final membershipByYear = _year == null

@@ -61,15 +61,6 @@ erDiagram
     text notes
     timestamptz created_at
   }
-  mentorships {
-    uuid id PK
-    uuid mentor_id FK
-    uuid student_person_id FK
-    text student_name
-    integer year
-    text notes
-    timestamptz created_at
-  }
   objective_clusters {
     uuid objective_id PK
     uuid cluster_id PK
@@ -141,6 +132,7 @@ erDiagram
     text status
     text notes
     timestamptz created_at
+    uuid link_id FK
   }
   person_tags {
     uuid person_id PK
@@ -210,10 +202,9 @@ erDiagram
   outputs ||--o{ output_authors : "output_id"
   outputs ||--o{ project_outputs : "output_id"
   people ||--o{ lab_members : "person_id"
-  people ||--o{ mentorships : "mentor_id"
-  people ||--o{ mentorships : "student_person_id"
   people ||--o{ output_authors : "person_id"
   people ||--o{ people : "merged_into"
+  people ||--o{ person_roles : "link_id"
   people ||--o{ person_roles : "person_id"
   people ||--o{ person_tags : "person_id"
   people ||--o{ project_members : "person_id"

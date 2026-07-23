@@ -4,25 +4,28 @@ final db = Supabase.instance.client;
 
 bool get isAdmin => db.auth.currentUser?.appMetadata['role'] == 'admin';
 
-/// Canonical membership categories — the single source shared by the person
-/// editor, the roles logbook, and the dashboard (matches the DB check + the
-/// phd_student addition). Keep the order stable; it drives dropdowns.
-const membershipTypes = [
-  'integrated',
-  'collaborator',
-  'phd_student',
-  'external',
-  'staff',
-  'advisory_board',
-];
+/// Layer 1 — mandatory membership (one per person/year): the single source
+/// shared by the person editor, the logbook, and the dashboard.
+const membershipTypes = ['integrated', 'collaborator', 'external'];
 const membershipLabels = {
   'integrated': 'Integrated members',
   'collaborator': 'Collaborators',
-  'phd_student': 'PhD students',
   'external': 'External',
-  'staff': 'Staff',
-  'advisory_board': 'Advisory board',
 };
+
+/// Layer 2 — starter vocabulary of optional roles (from the raw `Papel` column).
+/// Merged with the distinct labels already in the DB by [fetchRoleVocabulary];
+/// users can also type a new value.
+const seedRoleVocabulary = [
+  'phd_student',
+  'advisory_board',
+  'staff',
+  'Scientific Coordination',
+  'Science Management',
+  'Executive Direction',
+  'Mentor',
+  'Other',
+];
 
 /// Full-DB export/import order: base tables first, then link tables that FK into
 /// them. Upsert resolves on each table's PK. Keep in sync with the schema — the
@@ -51,7 +54,6 @@ const dbTables = [
   'project_collaborations',
   'person_tags',
   'person_roles',
-  'mentorships',
   'enrichment_suggestions',
 ];
 
@@ -1141,8 +1143,7 @@ Future<int> fetchCount(String table) async {
   }
 }
 
-/// Rows on [table] tagged with a given `year` (lab_members / mentorships).
-/// Client-side length — trivial at this scale.
+/// lab_members rows for a given `year` (distinct persons). Trivial at this scale.
 Future<int> countRowsForYear(String table, int year) async {
   try {
     final rows = await db.from(table).select('year').eq('year', year);
@@ -1152,8 +1153,21 @@ Future<int> countRowsForYear(String table, int year) async {
   }
 }
 
+/// person_roles rows of a given [kind], optionally scoped to [year] (e.g. the
+/// mentorship count on the dashboard).
+Future<int> countRoles(String kind, {int? year}) async {
+  try {
+    var request = db.from('person_roles').select('id').eq('kind', kind);
+    if (year != null) request = request.eq('year', year);
+    final rows = await request;
+    return rows.length;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 /// Distinct years across every year-bearing table (outputs.reporting_year,
-/// lab_members.year, mentorships.year), ascending. Drives the year selectors.
+/// lab_members.year, person_roles.year), ascending. Drives the year selectors.
 Future<List<int>> fetchDistinctYears() async {
   try {
     final years = <int>{};
@@ -1161,7 +1175,7 @@ Future<List<int>> fetchDistinctYears() async {
       final y = row['reporting_year'] as int?;
       if (y != null) years.add(y);
     }
-    for (final table in ['lab_members', 'mentorships']) {
+    for (final table in ['lab_members', 'person_roles']) {
       for (final row in await db.from(table).select('year')) {
         final y = row['year'] as int?;
         if (y != null) years.add(y);
@@ -1174,58 +1188,33 @@ Future<List<int>> fetchDistinctYears() async {
   }
 }
 
-// ---------------------------------------------------------------- mentorships
-Future<List<Map<String, dynamic>>> fetchMentorships(String mentorId) async {
-  try {
-    final rows = await db
-        .from('mentorships')
-        .select('id, student_person_id, student_name, year, notes')
-        .eq('mentor_id', mentorId)
-        .order('year', ascending: false);
-    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
-  } catch (error) {
-    throw Exception(_error(error));
-  }
-}
-
-Future<void> addMentorship({
-  required String mentorId,
-  required String studentName,
-  required int year,
-  String? studentPersonId,
-  String? notes,
-}) async {
-  try {
-    await db.from('mentorships').insert({
-      'mentor_id': mentorId,
-      'student_name': studentName,
-      'student_person_id': studentPersonId,
-      'year': year,
-      'notes': notes,
-    });
-  } catch (error) {
-    throw Exception(_error(error));
-  }
-}
-
-Future<void> removeMentorship(String id) async {
-  try {
-    await db.from('mentorships').delete().eq('id', id);
-  } catch (error) {
-    throw Exception(_error(error));
-  }
-}
-
 // ------------------------------------------------- person_roles (logbook)
 Future<List<Map<String, dynamic>>> fetchPersonRoles(String personId) async {
   try {
     final rows = await db
         .from('person_roles')
-        .select('id, kind, label, year, status, notes')
+        .select('id, kind, label, year, status, notes, link_id')
         .eq('person_id', personId)
-        .order('year', ascending: false, nullsFirst: false)
-        .order('kind');
+        .order('year', ascending: false, nullsFirst: false);
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Distinct existing labels for a [kind] plus the seed vocabulary — feeds the
+/// role/tag autocomplete (a typed new value is still allowed).
+Future<List<String>> fetchRoleVocabulary(String kind) async {
+  try {
+    final rows = await db.from('person_roles').select('label').eq('kind', kind);
+    final values = <String>{
+      for (final row in rows)
+        if ((row['label'] as String?)?.trim().isNotEmpty == true)
+          (row['label'] as String).trim(),
+    };
+    if (kind == 'role') values.addAll(seedRoleVocabulary);
+    final list = values.toList()..sort();
+    return list;
   } catch (error) {
     throw Exception(_error(error));
   }
@@ -1237,6 +1226,7 @@ Future<void> addPersonRole({
   required String label,
   int? year,
   String? notes,
+  String? linkId,
 }) async {
   try {
     await db.from('person_roles').insert({
@@ -1245,6 +1235,7 @@ Future<void> addPersonRole({
       'label': label,
       'year': year,
       'notes': notes,
+      'link_id': linkId,
     });
     // Admin adds are approved by the trigger; keep the membership cache in sync.
     await _syncMembershipCache(personId, kind, label, year);

@@ -142,14 +142,7 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
         _dropdown(
           'Membership',
           _membershipType,
-          const [
-            'integrated',
-            'collaborator',
-            'phd_student',
-            'external',
-            'staff',
-            'advisory_board',
-          ],
+          membershipTypes, // Layer-1 values (integrated/collaborator/external)
           (value) {
             _membershipType = value;
             _load();
