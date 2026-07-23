@@ -4,6 +4,26 @@ final db = Supabase.instance.client;
 
 bool get isAdmin => db.auth.currentUser?.appMetadata['role'] == 'admin';
 
+/// Canonical membership categories — the single source shared by the person
+/// editor, the roles logbook, and the dashboard (matches the DB check + the
+/// phd_student addition). Keep the order stable; it drives dropdowns.
+const membershipTypes = [
+  'integrated',
+  'collaborator',
+  'phd_student',
+  'external',
+  'staff',
+  'advisory_board',
+];
+const membershipLabels = {
+  'integrated': 'Integrated members',
+  'collaborator': 'Collaborators',
+  'phd_student': 'PhD students',
+  'external': 'External',
+  'staff': 'Staff',
+  'advisory_board': 'Advisory board',
+};
+
 /// Full-DB export/import order: base tables first, then link tables that FK into
 /// them. Upsert resolves on each table's PK. Keep in sync with the schema — the
 /// diagram (web/schema.mmd) is the authoritative picture.
@@ -30,6 +50,8 @@ const dbTables = [
   'lab_collaborations',
   'project_collaborations',
   'person_tags',
+  'person_roles',
+  'mentorships',
   'enrichment_suggestions',
 ];
 
@@ -837,10 +859,21 @@ Future<List<Map<String, dynamic>>> fetchLabs() async {
         .from('labs')
         .select(
           'id, code, name, overview, notes, '
-          'lab_members(count), lab_objectives(count), project_labs(count)',
+          'lab_members(person_id), lab_objectives(count), project_labs(count)',
         )
         .order('name');
-    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+    // lab_members now has a `year` in its PK, so a person across N years yields N
+    // rows — collapse to a distinct-person count so the roster isn't inflated.
+    return rows.map((row) {
+      final map = Map<String, dynamic>.from(row);
+      final members = (map['lab_members'] as List<dynamic>? ?? [])
+          .map((m) => (m as Map<String, dynamic>)['person_id'])
+          .toSet();
+      map['lab_members'] = [
+        {'count': members.length},
+      ];
+      return map;
+    }).toList();
   } catch (error) {
     throw Exception(_error(error));
   }
@@ -1178,6 +1211,139 @@ Future<void> addMentorship({
 Future<void> removeMentorship(String id) async {
   try {
     await db.from('mentorships').delete().eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+// ------------------------------------------------- person_roles (logbook)
+Future<List<Map<String, dynamic>>> fetchPersonRoles(String personId) async {
+  try {
+    final rows = await db
+        .from('person_roles')
+        .select('id, kind, label, year, status, notes')
+        .eq('person_id', personId)
+        .order('year', ascending: false, nullsFirst: false)
+        .order('kind');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> addPersonRole({
+  required String personId,
+  required String kind,
+  required String label,
+  int? year,
+  String? notes,
+}) async {
+  try {
+    await db.from('person_roles').insert({
+      'person_id': personId,
+      'kind': kind,
+      'label': label,
+      'year': year,
+      'notes': notes,
+    });
+    // Admin adds are approved by the trigger; keep the membership cache in sync.
+    await _syncMembershipCache(personId, kind, label, year);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> removePersonRole(String id) async {
+  try {
+    await db.from('person_roles').delete().eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> approvePersonRole(String id) async {
+  try {
+    final row = await db
+        .from('person_roles')
+        .update({'status': 'approved'})
+        .eq('id', id)
+        .select('person_id, kind, label, year')
+        .maybeSingle();
+    if (row != null) {
+      await _syncMembershipCache(
+        row['person_id'] as String,
+        row['kind'] as String,
+        row['label'] as String,
+        row['year'] as int?,
+      );
+    }
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// When an admin approves/sets a current-year `membership` entry, mirror it onto
+/// `people.membership_type` (the current cache the lists + dashboard read).
+Future<void> _syncMembershipCache(
+  String personId,
+  String kind,
+  String label,
+  int? year,
+) async {
+  if (!isAdmin || kind != 'membership' || year != DateTime.now().year) return;
+  try {
+    await db.from('people').update({'membership_type': label}).eq('id', personId);
+  } catch (_) {
+    // Cache sync is best-effort; the logbook row is the source of truth.
+  }
+}
+
+/// Aligns the current-year `membership` logbook row with a scalar edit from the
+/// person editor (upsert on the single (person, membership, current-year) row).
+Future<void> upsertCurrentMembership(String personId, String label) async {
+  final year = DateTime.now().year;
+  try {
+    final existing = await db
+        .from('person_roles')
+        .select('id')
+        .eq('person_id', personId)
+        .eq('kind', 'membership')
+        .eq('year', year)
+        .maybeSingle();
+    if (existing != null) {
+      await db
+          .from('person_roles')
+          .update({'label': label})
+          .eq('id', existing['id']);
+    } else {
+      await db.from('person_roles').insert({
+        'person_id': personId,
+        'kind': 'membership',
+        'label': label,
+        'year': year,
+      });
+    }
+  } catch (_) {
+    // Best-effort mirror; the scalar people.membership_type is already saved.
+  }
+}
+
+/// Approved `membership` counts for [year] from the logbook — powers the
+/// year-aware dashboard pie. {label: count}.
+Future<Map<String, int>> fetchMembershipByYear(int year) async {
+  try {
+    final rows = await db
+        .from('person_roles')
+        .select('label')
+        .eq('kind', 'membership')
+        .eq('status', 'approved')
+        .eq('year', year);
+    final counts = <String, int>{};
+    for (final row in rows) {
+      final label = row['label'] as String?;
+      if (label != null) counts.update(label, (n) => n + 1, ifAbsent: () => 1);
+    }
+    return counts;
   } catch (error) {
     throw Exception(_error(error));
   }

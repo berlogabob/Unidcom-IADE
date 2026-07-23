@@ -44,6 +44,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final mentorships = _year == null
         ? await fetchCount('mentorships')
         : await countRowsForYear('mentorships', _year!);
+    // For a selected year, membership comes from the roles logbook (a person can
+    // be integrated one year, external the next); all-time uses the current cache.
+    final membershipByYear = _year == null
+        ? null
+        : await fetchMembershipByYear(_year!);
     return _DashboardData.fromRows(
       rows[0],
       rows[1],
@@ -56,6 +61,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       projectsByLab: byLab,
       labAllocations: labAllocations,
       mentorships: mentorships,
+      membershipByYear: membershipByYear,
     );
   }
 
@@ -579,6 +585,7 @@ class _DashboardData {
     required Map<String, int> projectsByLab,
     required int labAllocations,
     required int mentorships,
+    Map<String, int>? membershipByYear,
   }) {
     // Output-based stats respect the selected year (outputs carry reporting_year).
     final outputs = year == null
@@ -621,7 +628,9 @@ class _DashboardData {
       outputsByType: _topWithOther(_countBy(outputs, (row) => _type(row))),
       journalsByQuartile: quartiles,
       topResearchers: _topResearchers(authors),
-      membershipCounts: _membershipCounts(people),
+      membershipCounts: membershipByYear != null
+          ? _membershipItems(membershipByYear)
+          : _membershipCounts(people),
       projectsByCluster: _mapToItems(projectsByCluster),
       projectsByLab: _mapToItems(projectsByLab),
     );
@@ -686,25 +695,18 @@ List<_CountItem> _topResearchers(List<Map<String, dynamic>> authors) {
   return items.take(10).toList();
 }
 
-// One place to re-map when the authoritative categories arrive from the boss.
-const _categoryLabels = {
-  'integrated': 'Integrated members',
-  'collaborator': 'Collaborators',
-  'phd_student': 'PhD students',
-  'external': 'External',
-  'advisory_board': 'Advisory board',
-  'staff': 'Staff',
-};
+List<_CountItem> _membershipCounts(List<Map<String, dynamic>> people) =>
+    _membershipItems(
+      _countBy(people, (row) => row['membership_type'] as String? ?? ''),
+    );
 
-List<_CountItem> _membershipCounts(List<Map<String, dynamic>> people) {
-  final counts = _countBy(
-    people,
-    (row) => row['membership_type'] as String? ?? '',
-  );
+/// Maps a {membership_type: count} map to display items, using the canonical
+/// [membershipLabels] (shared with the editor + logbook); unknowns → "Other".
+List<_CountItem> _membershipItems(Map<String, int> counts) {
   var other = 0;
   final items = <_CountItem>[];
   counts.forEach((key, count) {
-    final label = _categoryLabels[key];
+    final label = membershipLabels[key];
     if (label == null) {
       other += count; // null / unknown enum values
     } else {

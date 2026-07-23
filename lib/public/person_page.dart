@@ -39,6 +39,8 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
   late Future<List<Map<String, dynamic>>> _mentorships = fetchMentorships(
     widget.id,
   );
+  late Future<List<Map<String, dynamic>>> _roles = fetchPersonRoles(widget.id);
+  bool _rolesByTag = false; // false = group by year, true = group by tag/kind
   bool _enriching = false;
 
   void _refresh() {
@@ -46,6 +48,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
       _person = fetchPerson(widget.id);
       _suggestions = fetchSuggestionsForPerson(widget.id);
       _mentorships = fetchMentorships(widget.id);
+      _roles = fetchPersonRoles(widget.id);
     });
   }
 
@@ -144,6 +147,153 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     );
   }
 
+  static const _kindLabels = {
+    'membership': 'Membership',
+    'tag': 'Tag',
+    'role': 'Role',
+  };
+
+  String _roleValue(Map<String, dynamic> role) {
+    final label = role['label'] as String? ?? '';
+    if (role['kind'] == 'membership') return membershipLabels[label] ?? label;
+    return label;
+  }
+
+  Widget _rolesSection(bool admin, bool isOwner) {
+    final canEdit = admin || isOwner;
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _roles,
+      builder: (context, snapshot) {
+        final roles = snapshot.data ?? [];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: _sectionTitle('Roles & tags · ${roles.length}')),
+                if (canEdit)
+                  TextButton.icon(
+                    onPressed: _addRole,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (roles.isNotEmpty)
+              SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: false, label: Text('By year')),
+                  ButtonSegment(value: true, label: Text('By tag')),
+                ],
+                selected: {_rolesByTag},
+                onSelectionChanged: (s) =>
+                    setState(() => _rolesByTag = s.first),
+              ),
+            const SizedBox(height: 8),
+            if (roles.isEmpty)
+              _muted('No roles or tags recorded')
+            else if (_rolesByTag)
+              ..._rolesByTagView(roles, admin, isOwner)
+            else
+              ..._rolesByYearView(roles, admin, isOwner),
+          ],
+        );
+      },
+    );
+  }
+
+  List<Widget> _rolesByYearView(
+    List<Map<String, dynamic>> roles,
+    bool admin,
+    bool isOwner,
+  ) {
+    final byYear = <int?, List<Map<String, dynamic>>>{};
+    for (final role in roles) {
+      (byYear[role['year'] as int?] ??= []).add(role);
+    }
+    final years = byYear.keys.toList()
+      ..sort((a, b) => (b ?? -1).compareTo(a ?? -1));
+    return [
+      for (final year in years) ...[
+        Text(
+          year?.toString() ?? 'Undated',
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        for (final role in byYear[year]!) _roleRow(role, admin, isOwner),
+      ],
+    ];
+  }
+
+  List<Widget> _rolesByTagView(
+    List<Map<String, dynamic>> roles,
+    bool admin,
+    bool isOwner,
+  ) {
+    final byKey = <String, List<Map<String, dynamic>>>{};
+    for (final role in roles) {
+      final key = '${_kindLabels[role['kind']] ?? role['kind']} · '
+          '${_roleValue(role)}';
+      (byKey[key] ??= []).add(role);
+    }
+    final keys = byKey.keys.toList()..sort();
+    return [
+      for (final key in keys) ...[
+        Text(key, style: Theme.of(context).textTheme.titleSmall),
+        for (final role in byKey[key]!) _roleRow(role, admin, isOwner),
+      ],
+    ];
+  }
+
+  Widget _roleRow(Map<String, dynamic> role, bool admin, bool isOwner) {
+    final pending = role['status'] == 'pending';
+    final kind = _kindLabels[role['kind']] ?? role['kind'] as String? ?? '';
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      title: Text('$kind · ${_roleValue(role)}'),
+      subtitle: (role['notes'] as String?)?.isNotEmpty == true
+          ? Text(role['notes'] as String)
+          : null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (pending)
+            const Chip(
+              label: Text('pending'),
+              visualDensity: VisualDensity.compact,
+            ),
+          if (admin && pending)
+            IconButton(
+              tooltip: 'Approve',
+              icon: const Icon(Icons.check),
+              onPressed: () async {
+                await approvePersonRole(role['id'] as String);
+                _refresh();
+              },
+            ),
+          if (admin || isOwner)
+            IconButton(
+              tooltip: 'Remove',
+              icon: const Icon(Icons.close),
+              onPressed: () async {
+                await removePersonRole(role['id'] as String);
+                _refresh();
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addRole() async {
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (context) => _RoleDialog(personId: widget.id),
+    );
+    if (added == true && mounted) _refresh();
+  }
+
   Widget _mentorshipsSection(Map<String, dynamic> person, bool admin) {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _mentorships,
@@ -235,15 +385,6 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
             .cast<Map<String, dynamic>>()
             .where((m) => m['labs'] is Map)
             .toList();
-        final tags = (person['person_tags'] as List<dynamic>? ?? [])
-            .map(
-              (tag) =>
-                  (tag as Map<String, dynamic>)['tags']
-                      as Map<String, dynamic>?,
-            )
-            .map((tag) => tag?['name'] as String?)
-            .whereType<String>()
-            .toList();
 
         return Align(
           alignment: Alignment.topCenter,
@@ -304,17 +445,9 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                 else
                   for (final author in outputAuthors) _outputRow(author),
                 const SizedBox(height: 24),
+                _rolesSection(admin, isOwner),
+                const SizedBox(height: 24),
                 _mentorshipsSection(person, admin),
-                if (tags.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  _sectionTitle('Tags'),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [for (final tag in tags) Chip(label: Text(tag))],
-                  ),
-                ],
               ],
             ),
           ),
@@ -588,14 +721,7 @@ class _PersonEditDialog extends StatefulWidget {
 }
 
 class _PersonEditDialogState extends State<_PersonEditDialog> {
-  static const _membershipTypes = [
-    'integrated',
-    'collaborator',
-    'phd_student',
-    'external',
-    'staff',
-    'advisory_board',
-  ];
+  static const _membershipTypes = membershipTypes; // canonical list (supabase.dart)
   static const _statuses = ['a_confirmar', 'active', 'inactive'];
   static const _profileStatuses = ['draft', 'pending_review', 'approved'];
 
@@ -682,6 +808,9 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
         final id = widget.person!['id'] as String;
         await updatePerson(id, fields);
         await logChanges('person', id, widget.person!, fields);
+        if (widget.canEditGovernance) {
+          await upsertCurrentMembership(id, _membershipType);
+        }
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
@@ -878,6 +1007,138 @@ class _MentorshipDialogState extends State<_MentorshipDialog> {
               controller: _year,
               keyboardType: TextInputType.number,
               decoration: deco('Year'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notes,
+              maxLines: 2,
+              decoration: deco('Notes (optional)'),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? 'Saving...' : 'Add'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Adds one logbook entry: a membership (enum), a tag, or a custom role, for an
+/// optional year. Owner adds land as pending; admin adds are approved.
+class _RoleDialog extends StatefulWidget {
+  const _RoleDialog({required this.personId});
+
+  final String personId;
+
+  @override
+  State<_RoleDialog> createState() => _RoleDialogState();
+}
+
+class _RoleDialogState extends State<_RoleDialog> {
+  String _kind = 'membership';
+  String _membership = membershipTypes.first;
+  final _label = TextEditingController();
+  final _year = TextEditingController(text: '${DateTime.now().year}');
+  final _notes = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _label.dispose();
+    _year.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final label = _kind == 'membership' ? _membership : _label.text.trim();
+    if (label.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('A label is required')));
+      return;
+    }
+    final yearText = _year.text.trim();
+    final year = yearText.isEmpty ? null : int.tryParse(yearText);
+    if (yearText.isNotEmpty && year == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Year must be a number')));
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await addPersonRole(
+        personId: widget.personId,
+        kind: _kind,
+        label: label,
+        year: year,
+        notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    InputDecoration deco(String label) =>
+        InputDecoration(labelText: label, border: const OutlineInputBorder());
+    return AlertDialog(
+      title: const Text('Add role or tag'),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<String>(
+              initialValue: _kind,
+              decoration: deco('Kind'),
+              items: const [
+                DropdownMenuItem(value: 'membership', child: Text('Membership')),
+                DropdownMenuItem(value: 'tag', child: Text('Tag')),
+                DropdownMenuItem(value: 'role', child: Text('Role')),
+              ],
+              onChanged: (v) => setState(() => _kind = v ?? 'membership'),
+            ),
+            const SizedBox(height: 12),
+            if (_kind == 'membership')
+              DropdownButtonFormField<String>(
+                initialValue: _membership,
+                decoration: deco('Membership'),
+                items: [
+                  for (final t in membershipTypes)
+                    DropdownMenuItem(
+                      value: t,
+                      child: Text(membershipLabels[t] ?? t),
+                    ),
+                ],
+                onChanged: (v) =>
+                    setState(() => _membership = v ?? membershipTypes.first),
+              )
+            else
+              TextField(
+                controller: _label,
+                decoration: deco(_kind == 'tag' ? 'Tag' : 'Role'),
+              ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _year,
+              keyboardType: TextInputType.number,
+              decoration: deco('Year (blank = undated)'),
             ),
             const SizedBox(height: 12),
             TextField(

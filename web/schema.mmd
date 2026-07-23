@@ -1,5 +1,16 @@
 %% generated 2026-07-23 by scripts/gen_schema_diagram.py — do not edit by hand
 erDiagram
+  change_log {
+    uuid id PK
+    text subject_type
+    uuid subject_id
+    text field
+    text old_value
+    text new_value
+    text source
+    uuid actor
+    timestamptz changed_at
+  }
   clusters {
     uuid id PK
     text code
@@ -36,6 +47,7 @@ erDiagram
     uuid lab_id PK
     uuid person_id PK
     boolean is_coordinator
+    integer year PK
   }
   lab_objectives {
     uuid lab_id PK
@@ -46,6 +58,15 @@ erDiagram
     text code
     text name
     text overview
+    text notes
+    timestamptz created_at
+  }
+  mentorships {
+    uuid id PK
+    uuid mentor_id FK
+    uuid student_person_id FK
+    text student_name
+    integer year
     text notes
     timestamptz created_at
   }
@@ -111,9 +132,20 @@ erDiagram
     text phd
     integer integration_year
   }
+  person_roles {
+    uuid id PK
+    uuid person_id FK
+    text kind
+    text label
+    integer year
+    text status
+    text notes
+    timestamptz created_at
+  }
   person_tags {
     uuid person_id PK
     uuid tag_id PK
+    integer year
   }
   project_clusters {
     uuid project_id PK
@@ -178,8 +210,11 @@ erDiagram
   outputs ||--o{ output_authors : "output_id"
   outputs ||--o{ project_outputs : "output_id"
   people ||--o{ lab_members : "person_id"
+  people ||--o{ mentorships : "mentor_id"
+  people ||--o{ mentorships : "student_person_id"
   people ||--o{ output_authors : "person_id"
   people ||--o{ people : "merged_into"
+  people ||--o{ person_roles : "person_id"
   people ||--o{ person_tags : "person_id"
   people ||--o{ project_members : "person_id"
   projects ||--o{ project_clusters : "project_id"
