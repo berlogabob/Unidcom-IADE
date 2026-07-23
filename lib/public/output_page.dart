@@ -80,16 +80,21 @@ class OutputPageScreen extends StatelessWidget {
   Widget _header(BuildContext context, Map<String, dynamic> output) {
     final theme = Theme.of(context);
     final category = (output['category_path'] as String? ?? '').trim();
+    final reference = (output['full_reference'] as String? ?? '').trim();
     final link = resolveOutputUrl(
       output['url'] as String?,
       output['doi'] as String?,
     );
     final chips = [
       output['reporting_year']?.toString(),
+      output['macro_type'] as String?,
       output['type'] as String?,
       output['subtype'] as String?,
+      output['output_status'] as String?,
       output['approval_status'] as String?,
     ].whereType<String>().where((v) => v.isNotEmpty);
+    final fctSelected = output['fct_selected'] as bool? ?? false;
+    final verified = output['verified_online'] as bool? ?? false;
 
     return Card(
       child: Padding(
@@ -105,14 +110,37 @@ class OutputPageScreen extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 for (final chip in chips)
                   Chip(
                     label: Text(chip),
                     visualDensity: VisualDensity.compact,
                   ),
+                if (fctSelected)
+                  Chip(
+                    avatar: const Icon(Icons.flag, size: 16),
+                    label: const Text('FCT selected'),
+                    visualDensity: VisualDensity.compact,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                  ),
+                if (verified)
+                  const Chip(
+                    avatar: Icon(Icons.verified, size: 16),
+                    label: Text('Verified online'),
+                    visualDensity: VisualDensity.compact,
+                  ),
               ],
             ),
+            if (reference.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              SelectableText(
+                reference,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
             if (category.isNotEmpty) ...[
               const SizedBox(height: 8),
               _muted(context, category),
