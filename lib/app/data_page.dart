@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../csv_download.dart';
 import '../data/supabase.dart';
+import '../widgets/outputs_tree.dart';
 import '../widgets/schema_view.dart';
 
 class DataScreen extends StatefulWidget {
@@ -13,7 +14,7 @@ class DataScreen extends StatefulWidget {
   State<DataScreen> createState() => _DataScreenState();
 }
 
-enum _View { table, diagram }
+enum _View { table, diagram, outputsTree }
 
 class _DataScreenState extends State<DataScreen> {
   bool _busy = false;
@@ -152,6 +153,11 @@ class _DataScreenState extends State<DataScreen> {
                 label: Text('Diagram'),
                 icon: Icon(Icons.schema),
               ),
+              ButtonSegment(
+                value: _View.outputsTree,
+                label: Text('Outputs Tree'),
+                icon: Icon(Icons.account_tree),
+              ),
             ],
             selected: {_view},
             onSelectionChanged: (s) => setState(() => _view = s.first),
@@ -174,13 +180,15 @@ class _DataScreenState extends State<DataScreen> {
             ),
             const SizedBox(height: 8),
             Expanded(child: _TableView(future: _rows)),
-          ] else
+          ] else if (_view == _View.diagram)
             Expanded(
               child: Card(
                 clipBehavior: Clip.antiAlias,
                 child: schemaView(),
               ),
-            ),
+            )
+          else
+            const Expanded(child: OutputsTree()),
         ],
       ),
     );

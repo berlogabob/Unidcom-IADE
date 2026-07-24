@@ -40,6 +40,7 @@ const dbTables = [
   'objectives',
   'collaborations',
   'tags',
+  'output_taxonomy',
   // link tables (FK into the above)
   'output_authors',
   'project_members',
