@@ -209,6 +209,11 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                       valueOf: (o) => o['type'] as String?,
                     ),
                     QueueFilter(
+                      label: 'Issue',
+                      valuesOf: (o) => (o['issue_codes'] as List<dynamic>? ?? [])
+                          .cast<String>(),
+                    ),
+                    QueueFilter(
                       label: 'Severity',
                       valueOf: (o) => (o['error_count'] as int? ?? 0) > 0
                           ? 'Errors'

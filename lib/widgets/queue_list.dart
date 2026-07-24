@@ -5,10 +5,16 @@ import 'search_bar.dart';
 /// A per-tab filter dropdown. Options are auto-derived from the distinct
 /// non-null values of [valueOf] across the loaded rows.
 class QueueFilter {
-  const QueueFilter({required this.label, required this.valueOf});
+  const QueueFilter({required this.label, this.valueOf, this.valuesOf})
+    : assert(valueOf != null || valuesOf != null);
 
   final String label;
-  final String? Function(Map<String, dynamic>) valueOf;
+
+  /// Single-valued field accessor (exact-match filter).
+  final String? Function(Map<String, dynamic>)? valueOf;
+
+  /// List-valued field accessor (list-membership filter, e.g. `issue_codes`).
+  final List<String> Function(Map<String, dynamic>)? valuesOf;
 }
 
 /// A "Group by" option: rows sharing the same [keyOf] value get a section header.
@@ -62,7 +68,10 @@ class _QueueListState extends State<QueueList> {
     for (final filter in widget.filters) {
       final selected = _filterValues[filter.label];
       if (selected != null) {
-        result = result.where((r) => filter.valueOf(r) == selected).toList();
+        result = result.where((r) {
+          if (filter.valuesOf != null) return filter.valuesOf!(r).contains(selected);
+          return filter.valueOf!(r) == selected;
+        }).toList();
       }
     }
 
@@ -147,7 +156,10 @@ class _QueueListState extends State<QueueList> {
                   items: [
                     const DropdownMenuItem(value: null, child: Text('All')),
                     for (final option in options)
-                      DropdownMenuItem(value: option, child: Text(option)),
+                      DropdownMenuItem(
+                        value: option,
+                        child: Text(option.replaceAll('_', ' ')),
+                      ),
                   ],
                   onChanged: (v) =>
                       setState(() => _filterValues[filter.label] = v),
@@ -180,13 +192,10 @@ class _QueueListState extends State<QueueList> {
     QueueFilter filter,
     List<Map<String, dynamic>> rows,
   ) {
-    final values = rows
-        .map(filter.valueOf)
-        .whereType<String>()
-        .where((v) => v.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
+    final Iterable<String> raw = filter.valuesOf != null
+        ? rows.expand(filter.valuesOf!)
+        : rows.map(filter.valueOf!).whereType<String>();
+    final values = raw.where((v) => v.isNotEmpty).toSet().toList()..sort();
     return values;
   }
 
