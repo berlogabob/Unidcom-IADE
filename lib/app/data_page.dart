@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../csv_download.dart';
 import '../data/supabase.dart';
-import '../widgets/outputs_tree.dart';
 import '../widgets/schema_view.dart';
 
 class DataScreen extends StatefulWidget {
@@ -188,7 +187,12 @@ class _DataScreenState extends State<DataScreen> {
               ),
             )
           else
-            const Expanded(child: OutputsTree()),
+            Expanded(
+              child: Card(
+                clipBehavior: Clip.antiAlias,
+                child: schemaView(page: 'schema.html?src=outputs.mmd'),
+              ),
+            ),
         ],
       ),
     );

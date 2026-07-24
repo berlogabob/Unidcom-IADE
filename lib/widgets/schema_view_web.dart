@@ -5,20 +5,20 @@ import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
 
-const _viewType = 'unidcom-schema-diagram';
-bool _registered = false;
+final _registered = <String>{};
 
-/// Embeds web/schema.html (bundled mermaid + generated schema.mmd) in an iframe.
-Widget schemaView() {
-  if (!_registered) {
-    ui_web.platformViewRegistry.registerViewFactory(_viewType, (int _) {
+/// Embeds a mermaid diagram host page (web/schema.html, which fetches a `.mmd`
+/// via its `?src=` param) in an iframe. Defaults to the DB schema diagram.
+Widget schemaView({String page = 'schema.html'}) {
+  final viewType = 'unidcom-diagram:$page';
+  if (_registered.add(viewType)) {
+    ui_web.platformViewRegistry.registerViewFactory(viewType, (int _) {
       return html.IFrameElement()
-        ..src = 'schema.html'
+        ..src = page
         ..style.border = 'none'
         ..style.width = '100%'
         ..style.height = '100%';
     });
-    _registered = true;
   }
-  return const HtmlElementView(viewType: _viewType);
+  return HtmlElementView(viewType: viewType);
 }

@@ -38,7 +38,8 @@
   const scroll = document.getElementById('scroll');
   const err = document.getElementById('err');
   try {
-    const text = await (await fetch('schema.mmd', { cache: 'no-store' })).text();
+    const src = new URLSearchParams(location.search).get('src') || 'schema.mmd';
+    const text = await (await fetch(src, { cache: 'no-store' })).text();
     const m = text.match(/generated\s+(\d{4}-\d{2}-\d{2})/);
     if (m) document.getElementById('stamp').textContent = 'Schema as of ' + m[1];
     mermaid.initialize({
