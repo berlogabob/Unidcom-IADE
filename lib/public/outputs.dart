@@ -21,6 +21,7 @@ class _OutputsScreenState extends State<OutputsScreen> {
   String? _type;
   String? _quartile;
   String? _approvalStatus;
+  bool _hasIssues = false;
   late Future<List<Map<String, dynamic>>> _outputs = fetchOutputs();
   late final Future<List<String>> _types = fetchDistinctOutputTypes();
 
@@ -90,7 +91,16 @@ class _OutputsScreenState extends State<OutputsScreen> {
                 if (snapshot.hasError) {
                   return Center(child: Text(snapshot.error.toString()));
                 }
-                final outputs = snapshot.data ?? [];
+                final allOutputs = snapshot.data ?? [];
+                final outputs = _hasIssues
+                    ? allOutputs
+                          .where(
+                            (o) =>
+                                (o['issue_codes'] as List<dynamic>? ?? [])
+                                    .isNotEmpty,
+                          )
+                          .toList()
+                    : allOutputs;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -133,6 +143,16 @@ class _OutputsScreenState extends State<OutputsScreen> {
                                   year: output['reporting_year'] as int?,
                                   type: output['type'] as String?,
                                   detail: authors,
+                                  issueCodes: isAdmin
+                                      ? (output['issue_codes']
+                                                as List<dynamic>? ??
+                                            [])
+                                          .cast<String>()
+                                      : null,
+                                  errorCount:
+                                      output['error_count'] as int? ?? 0,
+                                  warningCount:
+                                      output['warning_count'] as int? ?? 0,
                                   onTap: () => context.go(
                                     '/outputs/${output['id']}',
                                   ),
@@ -175,6 +195,12 @@ class _OutputsScreenState extends State<OutputsScreen> {
             _load();
           },
         ),
+        if (isAdmin)
+          FilterChip(
+            label: const Text('Has issues'),
+            selected: _hasIssues,
+            onSelected: (value) => setState(() => _hasIssues = value),
+          ),
       ],
     );
   }

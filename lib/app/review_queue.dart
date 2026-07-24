@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
 import '../widgets/output_row.dart';
@@ -20,6 +21,8 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
   late Future<List<Map<String, dynamic>>> _pendingSuggestions =
       fetchPendingSuggestions();
   late Future<List<Map<String, dynamic>>> _changeLog = fetchChangeLog();
+  late Future<List<Map<String, dynamic>>> _flaggedOutputs =
+      fetchFlaggedOutputs();
 
   void _refresh() {
     setState(() {
@@ -28,6 +31,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
       _stalePeople = fetchStalePeople();
       _pendingSuggestions = fetchPendingSuggestions();
       _changeLog = fetchChangeLog();
+      _flaggedOutputs = fetchFlaggedOutputs();
     });
   }
 
@@ -56,7 +60,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
     if (!isAdmin) return const Center(child: Text('Admin access required'));
 
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Column(
         children: [
           const TabBar(
@@ -67,6 +71,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
               Tab(text: 'Needs re-verification'),
               Tab(text: 'Suggestions'),
               Tab(text: 'Activity'),
+              Tab(text: 'Needs attention'),
             ],
           ),
           Expanded(
@@ -192,6 +197,32 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                     ),
                   ],
                   itemBuilder: _changeTile,
+                ),
+                QueueList(
+                  future: _flaggedOutputs,
+                  emptyText: 'No outputs need attention',
+                  searchOf: (o) => o['title'] as String? ?? '',
+                  timeOf: (o) => o['created_at'] as String? ?? '',
+                  groups: [
+                    QueueGroup(
+                      label: 'Issue',
+                      keyOf: (o) =>
+                          ((o['issue_codes'] as List<dynamic>? ?? [])
+                                  .cast<String>()
+                                  .firstOrNull) ??
+                          '—',
+                    ),
+                  ],
+                  itemBuilder: (output) => OutputRow(
+                    title: output['title'] as String? ?? 'Untitled',
+                    year: output['reporting_year'] as int?,
+                    type: output['type'] as String?,
+                    issueCodes: (output['issue_codes'] as List<dynamic>? ?? [])
+                        .cast<String>(),
+                    errorCount: output['error_count'] as int? ?? 0,
+                    warningCount: output['warning_count'] as int? ?? 0,
+                    onTap: () => context.go('/outputs/${output['id']}'),
+                  ),
                 ),
               ],
             ),

@@ -642,7 +642,117 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
     final rows = await request
         .order('reporting_year', ascending: false)
         .order('title');
-    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+    final outputs = rows.map((row) => Map<String, dynamic>.from(row)).toList();
+    await _mergeQuality(outputs);
+    return outputs;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Fetches `v_output_quality` for [outputs] and merges `issue_codes` /
+/// `error_count` / `warning_count` into each row in place. The view has no
+/// PostgREST FK relationship to `outputs`, so it can't be embedded in a
+/// `select()` — it's fetched separately and merged here by `output_id`.
+/// Best-effort: a quality-fetch failure never blocks the outputs list.
+Future<void> _mergeQuality(List<Map<String, dynamic>> outputs) async {
+  final ids = outputs.map((o) => o['id'] as String).toList();
+  if (ids.isEmpty) return;
+  try {
+    final quality = await db
+        .from('v_output_quality')
+        .select('output_id,issue_codes,error_count,warning_count')
+        .inFilter('output_id', ids);
+    final byId = <String, Map<String, dynamic>>{
+      for (final row in quality) row['output_id'] as String: row,
+    };
+    for (final output in outputs) {
+      final q = byId[output['id']];
+      output['issue_codes'] = (q?['issue_codes'] as List<dynamic>? ?? [])
+          .cast<String>();
+      output['error_count'] = q?['error_count'] as int? ?? 0;
+      output['warning_count'] = q?['warning_count'] as int? ?? 0;
+    }
+  } catch (_) {
+    // ponytail: quality badges are best-effort; never fail the outputs list.
+  }
+}
+
+/// Outputs with at least one open error or warning in `v_output_quality`,
+/// newest first, merged with quality the same way [fetchOutputs] does — same
+/// shape, so they render with `OutputRow` unchanged.
+Future<List<Map<String, dynamic>>> fetchFlaggedOutputs() async {
+  try {
+    final flagged = await db
+        .from('v_output_quality')
+        .select('output_id,issue_codes,error_count,warning_count')
+        .or('error_count.gt.0,warning_count.gt.0');
+    if (flagged.isEmpty) return [];
+    final qualityById = <String, Map<String, dynamic>>{
+      for (final row in flagged)
+        row['output_id'] as String: Map<String, dynamic>.from(row),
+    };
+    final rows = await db
+        .from('outputs')
+        .select(
+          'id, title, reporting_year, type, subtype, doi, url, approval_status, created_at, output_authors(people(id,preferred_name))',
+        )
+        .inFilter('id', qualityById.keys.toList())
+        .order('created_at', ascending: false);
+    final outputs = rows.map((row) => Map<String, dynamic>.from(row)).toList();
+    for (final output in outputs) {
+      final q = qualityById[output['id']];
+      output['issue_codes'] = (q?['issue_codes'] as List<dynamic>? ?? [])
+          .cast<String>();
+      output['error_count'] = q?['error_count'] as int? ?? 0;
+      output['warning_count'] = q?['warning_count'] as int? ?? 0;
+    }
+    return outputs;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Waives a data-quality issue for an output: records the waiver and logs it
+/// to change_log the same way updateOutput/acceptSuggestion do.
+Future<void> waiveIssue(
+  String outputId,
+  String issueCode,
+  String reason,
+) async {
+  try {
+    await db.from('quality_waivers').insert({
+      'output_id': outputId,
+      'issue_code': issueCode,
+      'reason': reason,
+      'waived_by': db.auth.currentUser?.id,
+    });
+    await logChanges('output', outputId, {'waive:$issueCode': null}, {
+      'waive:$issueCode': reason,
+    });
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Removes a waiver, letting the issue show up again in quality checks.
+Future<void> unwaiveIssue(String outputId, String issueCode) async {
+  try {
+    await db
+        .from('quality_waivers')
+        .delete()
+        .eq('output_id', outputId)
+        .eq('issue_code', issueCode);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Deletes an output outright — the resolution for a genuine duplicate.
+/// RLS admin-gates the write.
+Future<void> deleteOutput(String id) async {
+  try {
+    await db.from('outputs').delete().eq('id', id);
   } catch (error) {
     throw Exception(_error(error));
   }
@@ -655,12 +765,27 @@ Future<Map<String, dynamic>> fetchOutput(String id) async {
         .select(
           'id, title, reporting_year, type, subtype, category_path, doi, url, approval_status, '
           'full_reference, fct_selected, verified_online, macro_type, output_status, source, '
+          'doi_status, doi_checked_at, '
           'output_authors(role, author_position, people(id, preferred_name, membership_type, status)), '
           'project_outputs(projects(id, title, status))',
         )
         .eq('id', id)
         .single();
     return Map<String, dynamic>.from(row);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Active (non-waived) quality issues for a single output, from
+/// `v_output_issues`: `issue_code` + `severity` ('error'|'warning').
+Future<List<Map<String, dynamic>>> fetchOutputIssues(String outputId) async {
+  try {
+    final rows = await db
+        .from('v_output_issues')
+        .select('issue_code,severity')
+        .eq('output_id', outputId);
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {
     throw Exception(_error(error));
   }

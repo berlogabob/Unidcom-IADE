@@ -6,10 +6,27 @@ import '../data/supabase.dart';
 import '../widgets/output_row.dart';
 import '../widgets/person_card.dart';
 
-class OutputPageScreen extends StatelessWidget {
+class OutputPageScreen extends StatefulWidget {
   const OutputPageScreen({super.key, required this.id});
 
   final String id;
+
+  @override
+  State<OutputPageScreen> createState() => _OutputPageScreenState();
+}
+
+class _OutputPageScreenState extends State<OutputPageScreen> {
+  late Future<Map<String, dynamic>> _output = fetchOutput(widget.id);
+  late Future<List<Map<String, dynamic>>> _issues = fetchOutputIssues(
+    widget.id,
+  );
+
+  void _refresh() {
+    setState(() {
+      _output = fetchOutput(widget.id);
+      _issues = fetchOutputIssues(widget.id);
+    });
+  }
 
   Future<void> _open(BuildContext context, String url) async {
     final ok = await launchUrl(
@@ -23,10 +40,56 @@ class OutputPageScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _edit(Map<String, dynamic> output) async {
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => _OutputEditDialog(output: output),
+    );
+    if (saved ?? false) _refresh();
+  }
+
+  Future<void> _waive(String issueCode) async {
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => _WaiveDialog(issueCode: issueCode),
+    );
+    if (reason == null) return;
+    await waiveIssue(widget.id, issueCode, reason);
+    if (mounted) _refresh();
+  }
+
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete output?'),
+        content: const Text(
+          'This permanently removes the output. Use this to resolve a genuine duplicate.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await deleteOutput(widget.id);
+    if (mounted) context.go('/outputs');
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
-      future: fetchOutput(id),
+      future: _output,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -36,6 +99,7 @@ class OutputPageScreen extends StatelessWidget {
         }
 
         final output = snapshot.data ?? {};
+        final admin = isAdmin;
         final authors = (output['output_authors'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>()
             .toList()
@@ -54,8 +118,9 @@ class OutputPageScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _header(context, output),
+                _header(context, output, admin),
                 const SizedBox(height: 24),
+                if (admin) _issuesSection(context, admin),
                 _sectionTitle(context, 'Authors · ${authors.length}'),
                 const SizedBox(height: 8),
                 if (authors.isEmpty)
@@ -77,14 +142,16 @@ class OutputPageScreen extends StatelessWidget {
     );
   }
 
-  Widget _header(BuildContext context, Map<String, dynamic> output) {
+  Widget _header(BuildContext context, Map<String, dynamic> output, bool admin) {
     final theme = Theme.of(context);
     final category = (output['category_path'] as String? ?? '').trim();
     final reference = (output['full_reference'] as String? ?? '').trim();
-    final link = resolveOutputUrl(
-      output['url'] as String?,
-      output['doi'] as String?,
-    );
+    final doi = (output['doi'] as String? ?? '').trim();
+    final doiStatus = output['doi_status'] as String?;
+    final doiCheckedAt = (output['doi_checked_at'] as String? ?? '')
+        .split('T')
+        .first;
+    final link = resolveOutputUrl(output['url'] as String?, doi);
     final chips = [
       output['reporting_year']?.toString(),
       output['macro_type'] as String?,
@@ -141,21 +208,135 @@ class OutputPageScreen extends StatelessWidget {
                 ),
               ),
             ],
+            if (doi.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  SelectableText('DOI: $doi', style: theme.textTheme.bodySmall),
+                  if (doiStatus != null && doiStatus.isNotEmpty)
+                    Icon(
+                      switch (doiStatus) {
+                        'ok' => Icons.check_circle,
+                        'dead' => Icons.error,
+                        _ => Icons.help_outline,
+                      },
+                      size: 14,
+                      color: switch (doiStatus) {
+                        'ok' => Colors.green,
+                        'dead' => theme.colorScheme.error,
+                        _ => theme.colorScheme.onSurfaceVariant,
+                      },
+                    ),
+                  if (doiStatus != null && doiStatus.isNotEmpty)
+                    Text(doiStatus, style: theme.textTheme.bodySmall),
+                  if (doiCheckedAt.isNotEmpty)
+                    Text(
+                      '(checked $doiCheckedAt)',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            ],
             if (category.isNotEmpty) ...[
               const SizedBox(height: 8),
               _muted(context, category),
             ],
-            if (link != null) ...[
+            if (link != null || admin) ...[
               const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () => _open(context, link),
-                icon: const Icon(Icons.open_in_new, size: 18),
-                label: const Text('Open paper'),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (link != null)
+                    OutlinedButton.icon(
+                      onPressed: () => _open(context, link),
+                      icon: const Icon(Icons.open_in_new, size: 18),
+                      label: const Text('Open paper'),
+                    ),
+                  if (admin) ...[
+                    FilledButton.icon(
+                      onPressed: () => _edit(output),
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Edit'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: _delete,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: theme.colorScheme.error,
+                      ),
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Delete'),
+                    ),
+                  ],
+                ],
               ),
             ],
           ],
         ),
       ),
+    );
+  }
+
+  Widget _issuesSection(BuildContext context, bool admin) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _issues,
+      builder: (context, snapshot) {
+        final issues = snapshot.data ?? [];
+        if (issues.isEmpty) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionTitle(context, 'Data quality · ${issues.length}'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final issue in issues) _issueTile(context, issue, admin),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _issueTile(
+    BuildContext context,
+    Map<String, dynamic> issue,
+    bool admin,
+  ) {
+    final theme = Theme.of(context);
+    final code = issue['issue_code'] as String? ?? '';
+    final severity = issue['severity'] as String? ?? 'warning';
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Chip(
+          avatar: Icon(
+            Icons.warning_amber_rounded,
+            size: 16,
+            color: severity == 'error'
+                ? theme.colorScheme.error
+                : Colors.amber,
+          ),
+          label: Text(code.replaceAll('_', ' ')),
+          visualDensity: VisualDensity.compact,
+        ),
+        if (admin)
+          TextButton(
+            onPressed: () => _waive(code),
+            child: const Text('Waive…'),
+          ),
+      ],
     );
   }
 
@@ -193,4 +374,197 @@ class OutputPageScreen extends StatelessWidget {
       color: Theme.of(context).colorScheme.onSurfaceVariant,
     ),
   );
+}
+
+class _WaiveDialog extends StatefulWidget {
+  const _WaiveDialog({required this.issueCode});
+
+  final String issueCode;
+
+  @override
+  State<_WaiveDialog> createState() => _WaiveDialogState();
+}
+
+class _WaiveDialogState extends State<_WaiveDialog> {
+  final _reason = TextEditingController();
+
+  @override
+  void dispose() {
+    _reason.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Waive "${widget.issueCode.replaceAll('_', ' ')}"'),
+      content: TextField(
+        controller: _reason,
+        autofocus: true,
+        maxLines: 3,
+        decoration: const InputDecoration(
+          labelText: 'Reason',
+          border: OutlineInputBorder(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final reason = _reason.text.trim();
+            Navigator.of(context).pop(reason.isEmpty ? null : reason);
+          },
+          child: const Text('Waive'),
+        ),
+      ],
+    );
+  }
+}
+
+class _OutputEditDialog extends StatefulWidget {
+  const _OutputEditDialog({required this.output});
+
+  final Map<String, dynamic> output;
+
+  @override
+  State<_OutputEditDialog> createState() => _OutputEditDialogState();
+}
+
+class _OutputEditDialogState extends State<_OutputEditDialog> {
+  late final _doi = _controller('doi');
+  late final _fullReference = _controller('full_reference');
+  late final _type = _controller('type');
+  late final _subtype = _controller('subtype');
+  late final _reportingYear = _controller('reporting_year');
+  late final _outputStatus = _controller('output_status');
+  late bool _verifiedOnline =
+      widget.output['verified_online'] as bool? ?? false;
+  bool _saving = false;
+
+  TextEditingController _controller(String key) => TextEditingController(
+    text: widget.output[key]?.toString() ?? '',
+  );
+
+  @override
+  void dispose() {
+    for (final c in [
+      _doi,
+      _fullReference,
+      _type,
+      _subtype,
+      _reportingYear,
+      _outputStatus,
+    ]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  String? _text(TextEditingController c) {
+    final value = c.text.trim();
+    return value.isEmpty ? null : value;
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      final fields = {
+        'doi': _text(_doi),
+        'full_reference': _text(_fullReference),
+        'type': _text(_type),
+        'subtype': _text(_subtype),
+        'reporting_year': _reportingYear.text.trim().isEmpty
+            ? null
+            : int.tryParse(_reportingYear.text.trim()),
+        'output_status': _text(_outputStatus),
+        'verified_online': _verifiedOnline,
+      };
+      await updateOutput(widget.output['id'] as String, fields);
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit output'),
+      content: SizedBox(
+        width: 520,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _field(_doi, 'DOI'),
+              _field(_fullReference, 'Full reference', maxLines: 4),
+              Row(
+                children: [
+                  Expanded(child: _field(_type, 'Type')),
+                  const SizedBox(width: 12),
+                  Expanded(child: _field(_subtype, 'Subtype')),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _field(
+                      _reportingYear,
+                      'Reporting year',
+                      keyboardType: TextInputType.number,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: _field(_outputStatus, 'Output status')),
+                ],
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Verified online'),
+                value: _verifiedOnline,
+                onChanged: (v) => setState(() => _verifiedOnline = v),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: Text(_saving ? 'Saving...' : 'Save'),
+        ),
+      ],
+    );
+  }
+
+  Widget _field(
+    TextEditingController controller,
+    String label, {
+    int maxLines = 1,
+    TextInputType? keyboardType,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        maxLines: maxLines,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
 }

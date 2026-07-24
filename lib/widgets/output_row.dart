@@ -19,6 +19,9 @@ class OutputRow extends StatelessWidget {
     this.detail,
     this.trailing,
     this.onTap,
+    this.issueCodes,
+    this.errorCount = 0,
+    this.warningCount = 0,
   });
 
   final String title;
@@ -28,6 +31,12 @@ class OutputRow extends StatelessWidget {
   final Widget? trailing;
   final VoidCallback? onTap;
 
+  /// Data-quality issue codes from `v_output_quality` (e.g. `missing_doi`).
+  /// When non-empty, a warning badge is rendered alongside [trailing].
+  final List<String>? issueCodes;
+  final int errorCount;
+  final int warningCount;
+
   @override
   Widget build(BuildContext context) {
     final meta = [
@@ -36,10 +45,38 @@ class OutputRow extends StatelessWidget {
       if (detail != null && detail!.isNotEmpty) detail!,
     ].join(' · ');
 
+    final codes = issueCodes ?? const [];
+    Widget? trailingWidget = trailing;
+    if (codes.isNotEmpty) {
+      final badge = Tooltip(
+        message: codes.map((c) => c.replaceAll('_', ' ')).join(', '),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.warning_amber_rounded,
+              color: errorCount > 0
+                  ? Theme.of(context).colorScheme.error
+                  : Colors.amber,
+              size: 20,
+            ),
+            const SizedBox(width: 2),
+            Text('${errorCount + warningCount}'),
+          ],
+        ),
+      );
+      trailingWidget = trailing == null
+          ? badge
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [badge, const SizedBox(width: 8), trailing!],
+            );
+    }
+
     return ListTile(
       title: Text(title),
       subtitle: meta.isEmpty ? null : Text(meta),
-      trailing: trailing,
+      trailing: trailingWidget,
       onTap: onTap,
     );
   }
