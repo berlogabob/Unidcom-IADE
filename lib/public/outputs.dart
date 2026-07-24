@@ -21,7 +21,7 @@ class _OutputsScreenState extends State<OutputsScreen> {
   String? _type;
   String? _quartile;
   String? _approvalStatus;
-  bool _hasIssues = false;
+  String? _severity; // null = All · 'Any issue' · 'Errors' · 'Warnings'
   late Future<List<Map<String, dynamic>>> _outputs = fetchOutputs();
   late final Future<List<String>> _types = fetchDistinctOutputTypes();
 
@@ -92,15 +92,20 @@ class _OutputsScreenState extends State<OutputsScreen> {
                   return Center(child: Text(snapshot.error.toString()));
                 }
                 final allOutputs = snapshot.data ?? [];
-                final outputs = _hasIssues
+                final outputs = _severity == null
                     ? allOutputs
-                          .where(
-                            (o) =>
-                                (o['issue_codes'] as List<dynamic>? ?? [])
-                                    .isNotEmpty,
-                          )
-                          .toList()
-                    : allOutputs;
+                    : allOutputs.where((o) {
+                        final errors = o['error_count'] as int? ?? 0;
+                        final warnings = o['warning_count'] as int? ?? 0;
+                        switch (_severity) {
+                          case 'Errors':
+                            return errors > 0;
+                          case 'Warnings':
+                            return errors == 0 && warnings > 0;
+                          default: // 'Any issue'
+                            return errors > 0 || warnings > 0;
+                        }
+                      }).toList();
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -196,10 +201,11 @@ class _OutputsScreenState extends State<OutputsScreen> {
           },
         ),
         if (isAdmin)
-          FilterChip(
-            label: const Text('Has issues'),
-            selected: _hasIssues,
-            onSelected: (value) => setState(() => _hasIssues = value),
+          _dropdown(
+            'Issues',
+            _severity,
+            const ['Any issue', 'Errors', 'Warnings'],
+            (value) => setState(() => _severity = value),
           ),
       ],
     );

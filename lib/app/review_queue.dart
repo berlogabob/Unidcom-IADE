@@ -203,6 +203,20 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                   emptyText: 'No outputs need attention',
                   searchOf: (o) => o['title'] as String? ?? '',
                   timeOf: (o) => o['created_at'] as String? ?? '',
+                  filters: [
+                    QueueFilter(
+                      label: 'Type',
+                      valueOf: (o) => o['type'] as String?,
+                    ),
+                    QueueFilter(
+                      label: 'Severity',
+                      valueOf: (o) => (o['error_count'] as int? ?? 0) > 0
+                          ? 'Errors'
+                          : (o['warning_count'] as int? ?? 0) > 0
+                          ? 'Warnings'
+                          : null,
+                    ),
+                  ],
                   groups: [
                     QueueGroup(
                       label: 'Issue',
@@ -211,6 +225,10 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                                   .cast<String>()
                                   .firstOrNull) ??
                           '—',
+                    ),
+                    QueueGroup(
+                      label: 'Type',
+                      keyOf: (o) => o['type'] as String? ?? '—',
                     ),
                   ],
                   itemBuilder: (output) => OutputRow(
