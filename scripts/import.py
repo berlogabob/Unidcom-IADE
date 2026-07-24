@@ -378,11 +378,16 @@ def load_supabase(
         existing_id = people_by_email.get(person["email"]) or people_by_id.get(person["id"])
         person_ids[person["id"]] = update_or_insert(client.table("people"), {**person, "id": existing_id or person["id"]}, existing_id)
 
-    existing_outputs = client.table("outputs").select("id,doi").execute().data or []
+    existing_outputs = client.table("outputs").select("id,doi,merged_into").execute().data or []
+    merged = {o["id"]: o["merged_into"] for o in existing_outputs if o.get("merged_into")}
     outputs_by_doi = {o["doi"]: o["id"] for o in existing_outputs if o.get("doi")}
     outputs_by_id = {o["id"]: o["id"] for o in existing_outputs}
     output_ids = {}
     for output in outputs:
+        if output["id"] in merged:
+            # ponytail: one merged_into hop, no deep chains expected
+            output_ids[output["id"]] = merged[output["id"]]
+            continue
         existing_id = outputs_by_doi.get(output["doi"]) or outputs_by_id.get(output["id"])
         output_ids[output["id"]] = update_or_insert(client.table("outputs"), {**output, "id": existing_id or output["id"]}, existing_id)
 
@@ -449,11 +454,15 @@ def backfill_supabase(people: list[dict], outputs: list[dict]) -> None:
 
     client = create_client(*env)
 
-    existing = client.table("outputs").select("id,doi").execute().data or []
+    existing = client.table("outputs").select("id,doi,merged_into").execute().data or []
+    merged = {o["id"]: o["merged_into"] for o in existing if o.get("merged_into")}
     by_doi = {o["doi"]: o["id"] for o in existing if o.get("doi")}
     live_ids = {o["id"] for o in existing}
     out_updated = 0
     for output in outputs:
+        if output["id"] in merged:
+            # ponytail: one merged_into hop, no deep chains expected
+            continue
         oid = by_doi.get(output["doi"]) or (output["id"] if output["id"] in live_ids else None)
         if not oid:
             continue

@@ -258,6 +258,106 @@ Future<void> mergePeople(
   }
 }
 
+Future<void> mergeOutputs(
+  String survivorId,
+  List<String> loserIds,
+  Map<String, dynamic> fields,
+) async {
+  try {
+    await db.rpc(
+      'merge_outputs',
+      params: {
+        'p_survivor': survivorId,
+        'p_losers': loserIds,
+        'p_fields': fields,
+      },
+    );
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Rows shown in the outputs merge matrix — the fields the RPC accepts plus
+/// author names for the reviewer's context.
+const _outputMergeSelect =
+    'id, title, reporting_year, type, subtype, doi, url, macro_type, '
+    'output_status, full_reference, output_authors(people(preferred_name))';
+
+Future<List<Map<String, dynamic>>> _fetchOutputsByIds(
+  Iterable<String> ids,
+) async {
+  final idList = ids.toList();
+  if (idList.isEmpty) return [];
+  final rows = await db
+      .from('outputs')
+      .select(_outputMergeSelect)
+      .inFilter('id', idList)
+      .filter('merged_into', 'is', null);
+  return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+}
+
+/// Groups live duplicate outputs (from `v_output_duplicate_pairs`) into
+/// clusters via union-find over the pair edges — same pattern as
+/// [groupMergeCandidates], but the edges come straight from the view instead
+/// of a name-similarity scan.
+Future<List<List<Map<String, dynamic>>>> fetchOutputDuplicateGroups() async {
+  try {
+    final pairs = await db.from('v_output_duplicate_pairs').select('a_id,b_id');
+    if (pairs.isEmpty) return [];
+
+    final ids = <String>{};
+    for (final row in pairs) {
+      ids.add(row['a_id'] as String);
+      ids.add(row['b_id'] as String);
+    }
+    final idList = ids.toList();
+    final index = {for (var i = 0; i < idList.length; i++) idList[i]: i};
+
+    final parent = List<int>.generate(idList.length, (i) => i);
+    int find(int x) {
+      while (parent[x] != x) {
+        parent[x] = parent[parent[x]];
+        x = parent[x];
+      }
+      return x;
+    }
+
+    for (final row in pairs) {
+      final i = index[row['a_id'] as String]!;
+      final j = index[row['b_id'] as String]!;
+      parent[find(i)] = find(j);
+    }
+
+    final byId = {
+      for (final output in await _fetchOutputsByIds(idList))
+        output['id'] as String: output,
+    };
+    final groups = <int, List<Map<String, dynamic>>>{};
+    for (var i = 0; i < idList.length; i++) {
+      final output = byId[idList[i]];
+      if (output == null) continue; // merged/removed since the view ran
+      groups.putIfAbsent(find(i), () => []).add(output);
+    }
+    final candidates = groups.values.where((group) => group.length > 1).toList()
+      ..sort((a, b) => b.length.compareTo(a.length));
+    return candidates;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// The single duplicate cluster containing [outputId] (empty if it has no
+/// live duplicates). Reuses [fetchOutputDuplicateGroups] rather than
+/// duplicating the union-find — outputs are lab-scale, so re-scanning all
+/// pairs per lookup is cheap.
+Future<List<Map<String, dynamic>>> fetchOutputCluster(String outputId) async {
+  final groups = await fetchOutputDuplicateGroups();
+  for (final group in groups) {
+    if (group.any((output) => output['id'] == outputId)) return group;
+  }
+  return [];
+}
+
 String _normalizeName(String? value) {
   const from = 'áàãâäåāăąçćčďéèêëēėęěíìîïīįłñńňóòõôöōőřśšșťúùûüūůűýÿžźż';
   const to = 'aaaaaaaaacccdeeeeeeeeiiiiiilnnnooooooorssstuuuuuuyyzzz';
@@ -341,34 +441,38 @@ Future<List<Map<String, dynamic>>> fetchChangeLog({int limit = 200}) async {
 
     final names = <String, String>{};
     if (personIds.isNotEmpty) {
-      for (final p in await db
-          .from('people')
-          .select('id, preferred_name')
-          .inFilter('id', personIds.toList())) {
+      for (final p
+          in await db
+              .from('people')
+              .select('id, preferred_name')
+              .inFilter('id', personIds.toList())) {
         names['person:${p['id']}'] = p['preferred_name'] as String? ?? '';
       }
     }
     if (outputIds.isNotEmpty) {
-      for (final o in await db
-          .from('outputs')
-          .select('id, title')
-          .inFilter('id', outputIds.toList())) {
+      for (final o
+          in await db
+              .from('outputs')
+              .select('id, title')
+              .inFilter('id', outputIds.toList())) {
         names['output:${o['id']}'] = o['title'] as String? ?? '';
       }
     }
     final actors = <String, String>{};
     if (actorIds.isNotEmpty) {
-      for (final p in await db
-          .from('people')
-          .select('auth_user_id, preferred_name')
-          .inFilter('auth_user_id', actorIds.toList())) {
+      for (final p
+          in await db
+              .from('people')
+              .select('auth_user_id, preferred_name')
+              .inFilter('auth_user_id', actorIds.toList())) {
         final au = p['auth_user_id'] as String?;
         if (au != null) actors[au] = p['preferred_name'] as String? ?? '';
       }
     }
 
     for (final row in rows) {
-      row['subject_name'] = names['${row['subject_type']}:${row['subject_id']}'];
+      row['subject_name'] =
+          names['${row['subject_type']}:${row['subject_id']}'];
       row['actor_name'] = actors[row['actor']];
     }
     return rows;
@@ -592,6 +696,7 @@ Future<List<Map<String, dynamic>>> fetchOutputsForStats() async {
         .select(
           'id, type, subtype, reporting_year, fct_selected, verified_online',
         )
+        .filter('merged_into', 'is', null)
         .order('type');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {
@@ -623,7 +728,8 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
         .from('outputs')
         .select(
           'id, title, reporting_year, type, subtype, doi, url, approval_status, output_authors(people(id,preferred_name))',
-        );
+        )
+        .filter('merged_into', 'is', null);
     if (q != null && q.isNotEmpty) {
       request = request.ilike('title', '%$q%');
     }
@@ -698,6 +804,7 @@ Future<List<Map<String, dynamic>>> fetchFlaggedOutputs() async {
           'id, title, reporting_year, type, subtype, doi, url, approval_status, created_at, output_authors(people(id,preferred_name))',
         )
         .inFilter('id', qualityById.keys.toList())
+        .filter('merged_into', 'is', null)
         .order('created_at', ascending: false);
     final outputs = rows.map((row) => Map<String, dynamic>.from(row)).toList();
     for (final output in outputs) {
@@ -727,9 +834,12 @@ Future<void> waiveIssue(
       'reason': reason,
       'waived_by': db.auth.currentUser?.id,
     });
-    await logChanges('output', outputId, {'waive:$issueCode': null}, {
-      'waive:$issueCode': reason,
-    });
+    await logChanges(
+      'output',
+      outputId,
+      {'waive:$issueCode': null},
+      {'waive:$issueCode': reason},
+    );
   } catch (error) {
     throw Exception(_error(error));
   }
@@ -770,6 +880,7 @@ Future<Map<String, dynamic>> fetchOutput(String id) async {
           'project_outputs(projects(id, title, status))',
         )
         .eq('id', id)
+        .filter('merged_into', 'is', null)
         .single();
     return Map<String, dynamic>.from(row);
   } catch (error) {
@@ -833,7 +944,8 @@ Future<List<Map<String, dynamic>>> fetchOutputsForReport({
         .from('outputs')
         .select(
           'id, title, reporting_year, type, subtype, doi, url, output_authors(people(preferred_name))',
-        );
+        )
+        .filter('merged_into', 'is', null);
     if (year != null) {
       request = request.eq('reporting_year', year);
     }
@@ -1409,7 +1521,10 @@ Future<void> _syncMembershipCache(
 ) async {
   if (!isAdmin || kind != 'membership' || year != DateTime.now().year) return;
   try {
-    await db.from('people').update({'membership_type': label}).eq('id', personId);
+    await db
+        .from('people')
+        .update({'membership_type': label})
+        .eq('id', personId);
   } catch (_) {
     // Cache sync is best-effort; the logbook row is the source of truth.
   }

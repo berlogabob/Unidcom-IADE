@@ -3,8 +3,24 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/supabase.dart';
+import '../widgets/merge_matrix.dart';
 import '../widgets/output_row.dart';
 import '../widgets/person_card.dart';
+
+const _outputMergeFields = <MergeFieldSpec>[
+  (key: 'title', label: 'Title', tall: true),
+  (key: 'doi', label: 'DOI', tall: false),
+  (key: 'url', label: 'URL', tall: false),
+  (key: 'type', label: 'Type', tall: false),
+  (key: 'subtype', label: 'Subtype', tall: false),
+  (key: 'reporting_year', label: 'Reporting year', tall: false),
+  (key: 'macro_type', label: 'Macro type', tall: false),
+  (key: 'output_status', label: 'Output status', tall: false),
+  (key: 'full_reference', label: 'Full reference', tall: true),
+];
+
+String _outputMergeName(Map<String, dynamic> output) =>
+    output['title'] as String? ?? 'Untitled';
 
 class OutputPageScreen extends StatefulWidget {
   const OutputPageScreen({super.key, required this.id});
@@ -86,6 +102,36 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
     if (mounted) context.go('/outputs');
   }
 
+  Future<void> _mergeDuplicates() async {
+    final cluster = await fetchOutputCluster(widget.id);
+    if (cluster.length < 2) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('No duplicates found')));
+      return;
+    }
+    if (!mounted) return;
+    final merged = await showDialog<bool>(
+      context: context,
+      builder: (context) => MergeMatrixDialog(
+        title: 'Merge outputs',
+        records: cluster,
+        fields: _outputMergeFields,
+        nameOf: _outputMergeName,
+        onMerge: mergeOutputs,
+      ),
+    );
+    if (merged != true || !mounted) return;
+    try {
+      await fetchOutput(widget.id);
+      if (mounted) _refresh();
+    } catch (_) {
+      // This output became a hidden loser (merged into another survivor).
+      if (mounted) context.go('/outputs');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
@@ -100,14 +146,15 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
 
         final output = snapshot.data ?? {};
         final admin = isAdmin;
-        final authors = (output['output_authors'] as List<dynamic>? ?? [])
-            .cast<Map<String, dynamic>>()
-            .toList()
-          ..sort(
-            (a, b) => (a['author_position'] as int? ?? 0).compareTo(
-              b['author_position'] as int? ?? 0,
-            ),
-          );
+        final authors =
+            (output['output_authors'] as List<dynamic>? ?? [])
+                .cast<Map<String, dynamic>>()
+                .toList()
+              ..sort(
+                (a, b) => (a['author_position'] as int? ?? 0).compareTo(
+                  b['author_position'] as int? ?? 0,
+                ),
+              );
         final projects = (output['project_outputs'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
 
@@ -142,7 +189,11 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
     );
   }
 
-  Widget _header(BuildContext context, Map<String, dynamic> output, bool admin) {
+  Widget _header(
+    BuildContext context,
+    Map<String, dynamic> output,
+    bool admin,
+  ) {
     final theme = Theme.of(context);
     final category = (output['category_path'] as String? ?? '').trim();
     final reference = (output['full_reference'] as String? ?? '').trim();
@@ -180,10 +231,7 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 for (final chip in chips)
-                  Chip(
-                    label: Text(chip),
-                    visualDensity: VisualDensity.compact,
-                  ),
+                  Chip(label: Text(chip), visualDensity: VisualDensity.compact),
                 if (fctSelected)
                   Chip(
                     avatar: const Icon(Icons.flag, size: 16),
@@ -265,12 +313,27 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
                       label: const Text('Edit'),
                     ),
                     OutlinedButton.icon(
-                      onPressed: _delete,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: theme.colorScheme.error,
-                      ),
-                      icon: const Icon(Icons.delete_outline),
-                      label: const Text('Delete'),
+                      onPressed: _mergeDuplicates,
+                      icon: const Icon(Icons.merge),
+                      label: const Text('Merge duplicates'),
+                    ),
+                    PopupMenuButton<void>(
+                      icon: const Icon(Icons.more_vert),
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          onTap: _delete,
+                          child: ListTile(
+                            leading: Icon(
+                              Icons.delete_outline,
+                              color: theme.colorScheme.error,
+                            ),
+                            title: Text(
+                              'Delete',
+                              style: TextStyle(color: theme.colorScheme.error),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ],
@@ -324,9 +387,7 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
           avatar: Icon(
             Icons.warning_amber_rounded,
             size: 16,
-            color: severity == 'error'
-                ? theme.colorScheme.error
-                : Colors.amber,
+            color: severity == 'error' ? theme.colorScheme.error : Colors.amber,
           ),
           label: Text(code.replaceAll('_', ' ')),
           visualDensity: VisualDensity.compact,
@@ -444,9 +505,8 @@ class _OutputEditDialogState extends State<_OutputEditDialog> {
       widget.output['verified_online'] as bool? ?? false;
   bool _saving = false;
 
-  TextEditingController _controller(String key) => TextEditingController(
-    text: widget.output[key]?.toString() ?? '',
-  );
+  TextEditingController _controller(String key) =>
+      TextEditingController(text: widget.output[key]?.toString() ?? '');
 
   @override
   void dispose() {

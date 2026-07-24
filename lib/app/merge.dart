@@ -3,8 +3,40 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/supabase.dart';
-import '../widgets/pick_matrix.dart';
+import '../widgets/merge_matrix.dart';
 import '../widgets/search_bar.dart';
+
+enum _MergeSection { people, outputs }
+
+const _personFields = <MergeFieldSpec>[
+  (key: 'preferred_name', label: 'Preferred name', tall: false),
+  (key: 'legal_name', label: 'Legal name', tall: false),
+  (key: 'email', label: 'Email', tall: false),
+  (key: 'orcid', label: 'ORCID', tall: false),
+  (key: 'ciencia_id', label: 'Ciencia ID', tall: false),
+  (key: 'membership_type', label: 'Membership type', tall: false),
+  (key: 'status', label: 'Status', tall: false),
+  (key: 'bio', label: 'Bio', tall: true),
+  (key: 'photo_url', label: 'Photo URL', tall: false),
+];
+
+const _outputFields = <MergeFieldSpec>[
+  (key: 'title', label: 'Title', tall: true),
+  (key: 'doi', label: 'DOI', tall: false),
+  (key: 'url', label: 'URL', tall: false),
+  (key: 'type', label: 'Type', tall: false),
+  (key: 'subtype', label: 'Subtype', tall: false),
+  (key: 'reporting_year', label: 'Reporting year', tall: false),
+  (key: 'macro_type', label: 'Macro type', tall: false),
+  (key: 'output_status', label: 'Output status', tall: false),
+  (key: 'full_reference', label: 'Full reference', tall: true),
+];
+
+String _personName(Map<String, dynamic> person) =>
+    person['preferred_name'] as String? ?? 'Unnamed';
+
+String _outputName(Map<String, dynamic> output) =>
+    output['title'] as String? ?? 'Untitled';
 
 class MergeScreen extends StatefulWidget {
   const MergeScreen({super.key});
@@ -14,6 +46,53 @@ class MergeScreen extends StatefulWidget {
 }
 
 class _MergeScreenState extends State<MergeScreen> {
+  _MergeSection _section = _MergeSection.people;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isAdmin) return const Center(child: Text('Admin access required'));
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: SegmentedButton<_MergeSection>(
+            segments: const [
+              ButtonSegment(
+                value: _MergeSection.people,
+                label: Text('People'),
+                icon: Icon(Icons.people_outline),
+              ),
+              ButtonSegment(
+                value: _MergeSection.outputs,
+                label: Text('Outputs'),
+                icon: Icon(Icons.article_outlined),
+              ),
+            ],
+            selected: {_section},
+            onSelectionChanged: (selection) =>
+                setState(() => _section = selection.first),
+          ),
+        ),
+        Expanded(
+          child: switch (_section) {
+            _MergeSection.people => const _PeopleMergeSection(),
+            _MergeSection.outputs => const _OutputMergeSection(),
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _PeopleMergeSection extends StatefulWidget {
+  const _PeopleMergeSection();
+
+  @override
+  State<_PeopleMergeSection> createState() => _PeopleMergeSectionState();
+}
+
+class _PeopleMergeSectionState extends State<_PeopleMergeSection> {
   late Future<List<List<Map<String, dynamic>>>> _candidates =
       fetchMergeCandidates();
   late Future<List<Map<String, dynamic>>> _people = fetchPeople();
@@ -41,7 +120,13 @@ class _MergeScreenState extends State<MergeScreen> {
   Future<void> _openMatrix(List<Map<String, dynamic>> people) async {
     final merged = await showDialog<bool>(
       context: context,
-      builder: (context) => _MergeMatrixDialog(people: people),
+      builder: (context) => MergeMatrixDialog(
+        title: 'Merge people',
+        records: people,
+        fields: _personFields,
+        nameOf: _personName,
+        onMerge: mergePeople,
+      ),
     );
     if (merged != true || !mounted) return;
     setState(() {
@@ -53,8 +138,6 @@ class _MergeScreenState extends State<MergeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!isAdmin) return const Center(child: Text('Admin access required'));
-
     return DefaultTabController(
       length: 2,
       child: Column(
@@ -105,8 +188,7 @@ class _MergeScreenState extends State<MergeScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
-                      for (final person in group)
-                        Text(person['preferred_name'] as String? ?? 'Unnamed'),
+                      for (final person in group) Text(_personName(person)),
                       const SizedBox(height: 12),
                       Align(
                         alignment: Alignment.centerRight,
@@ -142,7 +224,7 @@ class _MergeScreenState extends State<MergeScreen> {
                 children: [
                   for (final person in _selected.values)
                     InputChip(
-                      label: Text(person['preferred_name'] as String? ?? ''),
+                      label: Text(_personName(person)),
                       onDeleted: () =>
                           setState(() => _selected.remove(person['id'])),
                     ),
@@ -183,9 +265,7 @@ class _MergeScreenState extends State<MergeScreen> {
                     final selected = _selected.containsKey(id);
                     return CheckboxListTile(
                       value: selected,
-                      title: Text(
-                        person['preferred_name'] as String? ?? 'Unnamed',
-                      ),
+                      title: Text(_personName(person)),
                       subtitle: Text(person['email'] as String? ?? ''),
                       onChanged: (value) => setState(() {
                         if (value == true) {
@@ -206,259 +286,208 @@ class _MergeScreenState extends State<MergeScreen> {
   }
 }
 
-class _MergeMatrixDialog extends StatefulWidget {
-  const _MergeMatrixDialog({required this.people});
-
-  final List<Map<String, dynamic>> people;
+class _OutputMergeSection extends StatefulWidget {
+  const _OutputMergeSection();
 
   @override
-  State<_MergeMatrixDialog> createState() => _MergeMatrixDialogState();
+  State<_OutputMergeSection> createState() => _OutputMergeSectionState();
 }
 
-class _MergeMatrixDialogState extends State<_MergeMatrixDialog> {
-  static const _fields = [
-    ('preferred_name', 'Preferred name'),
-    ('legal_name', 'Legal name'),
-    ('email', 'Email'),
-    ('orcid', 'ORCID'),
-    ('ciencia_id', 'Ciencia ID'),
-    ('membership_type', 'Membership type'),
-    ('status', 'Status'),
-    ('bio', 'Bio'),
-    ('photo_url', 'Photo URL'),
-  ];
+class _OutputMergeSectionState extends State<_OutputMergeSection> {
+  late Future<List<List<Map<String, dynamic>>>> _candidates =
+      fetchOutputDuplicateGroups();
+  late Future<List<Map<String, dynamic>>> _outputs = fetchOutputs();
+  final _selected = <String, Map<String, dynamic>>{};
+  Timer? _debounce;
 
-  late String _survivorId = widget.people.first['id'] as String;
-  late final _choice = {
-    for (final field in _fields) field.$1: _defaultChoice(field.$1),
-  };
-  bool _saving = false;
-
-  String _defaultChoice(String field) {
-    final survivor = widget.people.firstWhere((p) => p['id'] == _survivorId);
-    if (_value(survivor, field).isNotEmpty) return _survivorId;
-    return (widget.people.firstWhere(
-          (person) => _value(person, field).isNotEmpty,
-          orElse: () => survivor,
-        )['id']
-        as String);
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
   }
 
-  String _value(Map<String, dynamic> person, String field) =>
-      (person[field] as String?)?.trim() ?? '';
-
-  String _name(Map<String, dynamic> person) =>
-      person['preferred_name'] as String? ?? 'Unnamed';
-
-  void _setSurvivor(String id) {
-    setState(() {
-      _survivorId = id;
-      for (final field in _fields) {
-        _choice[field.$1] = _defaultChoice(field.$1);
-      }
-    });
+  void _refreshCandidates() {
+    setState(() => _candidates = fetchOutputDuplicateGroups());
   }
 
-  Future<void> _merge() async {
-    final survivor = widget.people.firstWhere((p) => p['id'] == _survivorId);
-    final losers = widget.people.where((p) => p['id'] != _survivorId).toList();
-    final confirmed = await showDialog<bool>(
+  void _search(String query) {
+    _debounce?.cancel();
+    _debounce = Timer(
+      const Duration(milliseconds: 300),
+      () => setState(() => _outputs = fetchOutputs(query: query)),
+    );
+  }
+
+  Future<void> _openMatrix(List<Map<String, dynamic>> outputs) async {
+    final merged = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Merge records?'),
-        content: Text(
-          'This merges ${losers.map(_name).join(', ')} into ${_name(survivor)}. '
-          'The others become hidden (reversible). Continue?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Continue'),
-          ),
-        ],
+      builder: (context) => MergeMatrixDialog(
+        title: 'Merge outputs',
+        records: outputs,
+        fields: _outputFields,
+        nameOf: _outputName,
+        onMerge: mergeOutputs,
       ),
     );
-    if (confirmed != true) return;
-
-    setState(() => _saving = true);
-    try {
-      final fields = {
-        for (final field in _fields)
-          field.$1: _value(
-            widget.people.firstWhere((p) => p['id'] == _choice[field.$1]),
-            field.$1,
-          ),
-      };
-      await mergePeople(
-        _survivorId,
-        losers.map((p) => p['id'] as String).toList(),
-        fields,
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Merged ${widget.people.length} records into ${_name(survivor)}',
-          ),
-        ),
-      );
-      Navigator.of(context).pop(true);
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
-      setState(() => _saving = false);
-    }
+    if (merged != true || !mounted) return;
+    setState(() {
+      _selected.clear();
+      _candidates = fetchOutputDuplicateGroups();
+      _outputs = fetchOutputs();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 760),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Merge people',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Scrollbar(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: SingleChildScrollView(
-                            child: DataTable(
-                              columns: [
-                                const DataColumn(label: Text('Field')),
-                                for (final person in widget.people)
-                                  DataColumn(
-                                    label: SizedBox(
-                                      width: 180,
-                                      child: Text(
-                                        _name(person),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                              rows: [
-                                DataRow(
-                                  cells: [
-                                    const DataCell(Text('SURVIVOR')),
-                                    for (final person in widget.people)
-                                      DataCell(
-                                        RadioChoice(
-                                          selected:
-                                              person['id'] as String ==
-                                              _survivorId,
-                                          onTap: _saving
-                                              ? null
-                                              : () => _setSurvivor(
-                                                  person['id'] as String,
-                                                ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                for (final field in _fields)
-                                  DataRow(
-                                    cells: [
-                                      DataCell(Text(field.$2)),
-                                      for (final person in widget.people)
-                                        DataCell(
-                                          SizedBox(
-                                            width: 220,
-                                            child: RadioChoice(
-                                              selected:
-                                                  person['id'] as String ==
-                                                  _choice[field.$1],
-                                              onTap: _saving
-                                                  ? null
-                                                  : () => setState(
-                                                      () => _choice[field.$1] =
-                                                          person['id']
-                                                              as String,
-                                                    ),
-                                              child: Text(
-                                                _value(person, field.$1).isEmpty
-                                                    ? '-'
-                                                    : _value(person, field.$1),
-                                                maxLines: field.$1 == 'bio'
-                                                    ? 4
-                                                    : 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    SizedBox(
-                      width: 280,
-                      child: ResultPreview(
-                        fields: _fields,
-                        tallField: 'bio',
-                        values: {
-                          for (final field in _fields)
-                            field.$1: _value(
-                              widget.people.firstWhere(
-                                (p) => p['id'] == _choice[field.$1],
-                              ),
-                              field.$1,
-                            ),
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: _saving
-                        ? null
-                        : () => Navigator.of(context).pop(false),
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: _saving ? null : _merge,
-                    child: Text(
-                      _saving
-                          ? 'Merging...'
-                          : 'Merge ${widget.people.length} records',
-                    ),
-                  ),
-                ],
-              ),
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          const TabBar(
+            tabs: [
+              Tab(text: 'Suggested'),
+              Tab(text: 'Manual'),
             ],
           ),
-        ),
+          Expanded(
+            child: TabBarView(children: [_suggestedTab(), _manualTab()]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _suggestedTab() {
+    return FutureBuilder<List<List<Map<String, dynamic>>>>(
+      future: _candidates,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text(snapshot.error.toString()));
+        }
+        final groups = snapshot.data ?? [];
+        if (groups.isEmpty) {
+          return const Center(child: Text('No duplicate candidates found'));
+        }
+        return RefreshIndicator(
+          onRefresh: () async => _refreshCandidates(),
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: groups.length,
+            itemBuilder: (context, index) {
+              final group = groups[index];
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${group.length} possible duplicates',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      for (final output in group) Text(_outputName(output)),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton(
+                          onPressed: () => _openMatrix(group),
+                          child: const Text('Review & merge'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _manualTab() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          SearchBarField(label: 'Search outputs', onChanged: _search),
+          const SizedBox(height: 12),
+          if (_selected.isNotEmpty)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final output in _selected.values)
+                    InputChip(
+                      label: Text(_outputName(output)),
+                      onDeleted: () =>
+                          setState(() => _selected.remove(output['id'])),
+                    ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: _selected.length < 2
+                  ? null
+                  : () => _openMatrix(_selected.values.toList()),
+              icon: const Icon(Icons.merge),
+              label: const Text('Merge selected'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _outputs,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text(snapshot.error.toString()));
+                }
+                final outputs = snapshot.data ?? [];
+                if (outputs.isEmpty) {
+                  return const Center(child: Text('No outputs found'));
+                }
+                return ListView.builder(
+                  itemCount: outputs.length,
+                  itemBuilder: (context, index) {
+                    final output = outputs[index];
+                    final id = output['id'] as String;
+                    final selected = _selected.containsKey(id);
+                    return CheckboxListTile(
+                      value: selected,
+                      title: Text(_outputName(output)),
+                      subtitle: Text(
+                        [
+                          output['reporting_year']?.toString(),
+                          output['type'] as String?,
+                        ].whereType<String>().join(' · '),
+                      ),
+                      onChanged: (value) => setState(() {
+                        if (value == true) {
+                          _selected[id] = output;
+                        } else {
+                          _selected.remove(id);
+                        }
+                      }),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
-
