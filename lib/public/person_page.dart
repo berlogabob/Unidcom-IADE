@@ -18,6 +18,13 @@ List<String> featuredOf(Map<String, dynamic> person) =>
         .whereType<String>()
         .toList();
 
+/// Rows with no affiliation recorded are UNIDCOM's — that's the column default,
+/// so every pre-import output lands here.
+bool _isUnidcom(Map<String, dynamic> author) {
+  final output = author['outputs'] as Map<String, dynamic>?;
+  return (output?['affiliation'] as String? ?? 'unidcom') == 'unidcom';
+}
+
 String? outputIdOf(Map<String, dynamic> author) =>
     (author['outputs'] as Map<String, dynamic>?)?['id'] as String?;
 
@@ -396,7 +403,13 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
         final outputAuthors = (person['output_authors'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
         final featured = featuredOf(person);
-        final ordered = orderByFeatured(outputAuthors, featured);
+        // Work from a prior affiliation stays on the profile but out of the
+        // UNIDCOM list — and out of every count, which the DB enforces.
+        final ordered = orderByFeatured(
+          outputAuthors.where(_isUnidcom).toList(),
+          featured,
+        );
+        final external = outputAuthors.where((a) => !_isUnidcom(a)).toList();
         final labMemberships = (person['lab_members'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>()
             .where((m) => m['labs'] is Map)
@@ -469,6 +482,22 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                     ),
                 const SizedBox(height: 24),
                 _rolesSection(admin, isOwner),
+                if (external.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  _sectionTitle('Other affiliations · ${external.length}'),
+                  const SizedBox(height: 4),
+                  _muted('Published before or outside IADE/UNIDCOM. '
+                      'Not counted in unit reports.'),
+                  const SizedBox(height: 8),
+                  for (final author in external)
+                    _outputRow(
+                      author,
+                      isFeatured: false,
+                      canEdit: false,
+                      featured: featured,
+                      person: person,
+                    ),
+                ],
               ],
             ),
           ),

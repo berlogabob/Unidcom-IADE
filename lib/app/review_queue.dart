@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../widgets/candidate_tile.dart';
 import '../widgets/output_row.dart';
 import '../widgets/queue_list.dart';
 import '../widgets/suggestion_tile.dart';
@@ -23,6 +24,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
   late Future<List<Map<String, dynamic>>> _changeLog = fetchChangeLog();
   late Future<List<Map<String, dynamic>>> _flaggedOutputs =
       fetchFlaggedOutputs();
+  late Future<List<Map<String, dynamic>>> _candidates = fetchOutputCandidates();
 
   void _refresh() {
     setState(() {
@@ -32,6 +34,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
       _pendingSuggestions = fetchPendingSuggestions();
       _changeLog = fetchChangeLog();
       _flaggedOutputs = fetchFlaggedOutputs();
+      _candidates = fetchOutputCandidates();
     });
   }
 
@@ -55,12 +58,29 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
     _refresh();
   }
 
+  Future<void> _promoteCandidate(String id, String affiliation) async {
+    try {
+      await promoteCandidate(id, affiliation: affiliation);
+      _refresh();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
+  }
+
+  Future<void> _rejectCandidate(String id) async {
+    await rejectCandidate(id);
+    _refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!isAdmin) return const Center(child: Text('Admin access required'));
 
     return DefaultTabController(
-      length: 6,
+      length: 7,
       child: Column(
         children: [
           const TabBar(
@@ -72,6 +92,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
               Tab(text: 'Suggestions'),
               Tab(text: 'Activity'),
               Tab(text: 'Needs attention'),
+              Tab(text: 'ORCID works'),
             ],
           ),
           Expanded(
@@ -245,6 +266,41 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                     errorCount: output['error_count'] as int? ?? 0,
                     warningCount: output['warning_count'] as int? ?? 0,
                     onTap: () => context.go('/outputs/${output['id']}'),
+                  ),
+                ),
+                QueueList(
+                  future: _candidates,
+                  emptyText: 'No ORCID works waiting for review',
+                  searchOf: (c) =>
+                      '${c['person_name'] ?? ''} ${c['title'] ?? ''}',
+                  timeOf: (c) => c['created_at'] as String? ?? '',
+                  confidenceOf: (c) =>
+                      num.parse(c['affiliation_score'].toString()),
+                  filters: [
+                    QueueFilter(
+                      label: 'Affiliation',
+                      valueOf: (c) => c['affiliation'] as String?,
+                    ),
+                    QueueFilter(
+                      label: 'Researcher',
+                      valueOf: (c) => c['person_name'] as String?,
+                    ),
+                  ],
+                  groups: [
+                    QueueGroup(
+                      label: 'Researcher',
+                      keyOf: (c) => c['person_name'] as String? ?? '—',
+                    ),
+                    QueueGroup(
+                      label: 'Affiliation',
+                      keyOf: (c) => c['affiliation'] as String? ?? '—',
+                    ),
+                  ],
+                  itemBuilder: (candidate) => CandidateTile(
+                    candidate: candidate,
+                    onImport: (affiliation) =>
+                        _promoteCandidate(candidate['id'] as String, affiliation),
+                    onDismiss: () => _rejectCandidate(candidate['id'] as String),
                   ),
                 ),
               ],

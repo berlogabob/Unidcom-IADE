@@ -159,7 +159,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
           'join_date, exit_date, phd, notes, integration_year, auth_user_id, '
           'featured_outputs, '
-          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url)), '
+          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation)), '
           'lab_members(is_coordinator, year, labs(id, code, name)), '
           'person_tags(tags(name))',
         )
@@ -677,6 +677,56 @@ Future<void> rejectSuggestion(String id) async {
   }
 }
 
+/// Works pulled from ORCID and waiting for an admin to import or dismiss.
+/// Highest affiliation confidence first — 'external' rows stay in the list so a
+/// profile showing no outputs has a visible explanation.
+Future<List<Map<String, dynamic>>> fetchOutputCandidates() async {
+  try {
+    final rows = await db
+        .from('output_candidates')
+        .select('*, people(preferred_name)')
+        .eq('status', 'pending')
+        .order('affiliation_score', ascending: false);
+    return rows.map((row) {
+      final map = Map<String, dynamic>.from(row);
+      final person = map.remove('people') as Map<String, dynamic>?;
+      map['person_name'] = person?['preferred_name'] as String? ?? 'Unknown';
+      return map;
+    }).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Imports a candidate into `outputs` and links its author. [affiliation]
+/// overrides the classifier's call when the reviewer disagrees.
+Future<String> promoteCandidate(String id, {String? affiliation}) async {
+  try {
+    final result = await db.rpc(
+      'promote_output_candidate',
+      params: {'p_candidate': id, 'p_affiliation': affiliation},
+    );
+    return result as String;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> rejectCandidate(String id) async {
+  try {
+    await db
+        .from('output_candidates')
+        .update({
+          'status': 'rejected',
+          'reviewed_by': db.auth.currentUser?.id,
+          'reviewed_at': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<List<Map<String, dynamic>>> fetchPeopleForStats() async {
   try {
     final rows = await db
@@ -698,6 +748,8 @@ Future<List<Map<String, dynamic>>> fetchOutputsForStats() async {
           'id, type, subtype, reporting_year, fct_selected, verified_online',
         )
         .filter('merged_into', 'is', null)
+        // Prior-career work sits on profiles but must not inflate UNIDCOM's counts.
+        .eq('affiliation', 'unidcom')
         .order('type');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {
@@ -722,15 +774,21 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
   String? type,
   String? quartile,
   String? approvalStatus,
+  /// Defaults to UNIDCOM-affiliated work only. Pass 'external', 'unknown', or
+  /// null (all) to widen it.
+  String? affiliation = 'unidcom',
 }) async {
   try {
     final q = query?.trim();
     var request = db
         .from('outputs')
         .select(
-          'id, title, reporting_year, type, subtype, doi, url, approval_status, output_authors(people(id,preferred_name))',
+          'id, title, reporting_year, type, subtype, doi, url, approval_status, affiliation, output_authors(people(id,preferred_name))',
         )
         .filter('merged_into', 'is', null);
+    if (affiliation != null) {
+      request = request.eq('affiliation', affiliation);
+    }
     if (q != null && q.isNotEmpty) {
       request = request.ilike('title', '%$q%');
     }
@@ -946,7 +1004,8 @@ Future<List<Map<String, dynamic>>> fetchOutputsForReport({
         .select(
           'id, title, reporting_year, type, subtype, doi, url, output_authors(people(preferred_name))',
         )
-        .filter('merged_into', 'is', null);
+        .filter('merged_into', 'is', null)
+        .eq('affiliation', 'unidcom');
     if (year != null) {
       request = request.eq('reporting_year', year);
     }

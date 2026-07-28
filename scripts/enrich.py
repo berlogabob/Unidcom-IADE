@@ -20,7 +20,14 @@ from supabase import Client, create_client
 CROSSREF_UA = "UNIDCOM-Directory/1.0 (mailto:andre.berloga@gmail.com)"
 
 # Institution tokens used to disambiguate ORCID homonyms (normalized).
-ORG_TOKENS = ["iade", "unidcom", "universidade europeia"]
+ORG_TOKENS = [
+    "iade",
+    "unidcom",
+    "universidade europeia",
+    # IADE's full legal name, which is how ORCID actually stores the employment.
+    # Kept in sync with _orgTokens in lib/data/enrich_client.dart.
+    "instituto de artes visuais",
+]
 
 
 def clean(value: str | None) -> str:
