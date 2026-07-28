@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -109,6 +110,13 @@ ThemeData _unidcomTheme() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ponytail: Flutter web draws to a canvas, so UI tests see nothing until the
+  // semantics tree exists. Build with --dart-define=E2E=true for Maestro runs;
+  // off in production, where an always-on semantics tree is wasted work.
+  if (const bool.fromEnvironment('E2E')) {
+    SemanticsBinding.instance.ensureSemantics();
+  }
 
   const supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
