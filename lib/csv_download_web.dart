@@ -2,6 +2,7 @@
 
 import 'dart:async';
 import 'dart:html' as html;
+import 'dart:typed_data';
 
 bool downloadText(String filename, String content, String mime) {
   final blob = html.Blob([content], mime);
@@ -15,6 +16,17 @@ bool downloadText(String filename, String content, String mime) {
 
 bool downloadCsv(String filename, String csv) =>
     downloadText(filename, csv, 'text/csv;charset=utf-8');
+
+/// Same blob-and-anchor trick as [downloadText], for binary payloads (the report PDF).
+bool downloadBytes(String filename, Uint8List bytes, String mime) {
+  final blob = html.Blob([bytes], mime);
+  final url = html.Url.createObjectUrlFromBlob(blob);
+  html.AnchorElement(href: url)
+    ..download = filename
+    ..click();
+  html.Url.revokeObjectUrl(url);
+  return true;
+}
 
 /// Opens the browser file picker and returns the chosen file's text, or null
 /// on non-web / no selection. Cancelling the dialog fires no event, so the

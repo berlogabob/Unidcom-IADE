@@ -1,0 +1,5 @@
+# Local preview artefacts. All regenerable:
+#   deno run -A preview.ts outputs 2025    (refetches fixtures + fonts, writes out/)
+.fonts/
+out/
+fixtures/

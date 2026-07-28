@@ -1,0 +1,7 @@
+{
+  "imports": {
+    "@myriaddreamin/typst.ts": "npm:@myriaddreamin/typst.ts@0.7.0",
+    "@myriaddreamin/typst.ts/options.init": "npm:@myriaddreamin/typst.ts@0.7.0/options.init",
+    "@myriaddreamin/typst-ts-web-compiler": "npm:@myriaddreamin/typst-ts-web-compiler@0.7.0"
+  }
+}
