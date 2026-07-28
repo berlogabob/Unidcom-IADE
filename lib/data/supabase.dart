@@ -158,6 +158,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, '
           'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
           'join_date, exit_date, phd, notes, integration_year, auth_user_id, '
+          'featured_outputs, '
           'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url)), '
           'lab_members(is_coordinator, year, labs(id, code, name)), '
           'person_tags(tags(name))',

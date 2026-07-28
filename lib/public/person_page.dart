@@ -8,6 +8,40 @@ import '../data/supabase.dart';
 import '../widgets/output_row.dart';
 import '../widgets/suggestion_tile.dart';
 
+/// Max outputs a person may pin to their profile. Mirrors the
+/// `people_featured_outputs_max` check constraint.
+const maxFeaturedOutputs = 5;
+
+/// Ids of the outputs a person pinned, in the order they starred them.
+List<String> featuredOf(Map<String, dynamic> person) =>
+    (person['featured_outputs'] as List<dynamic>? ?? const [])
+        .whereType<String>()
+        .toList();
+
+String? outputIdOf(Map<String, dynamic> author) =>
+    (author['outputs'] as Map<String, dynamic>?)?['id'] as String?;
+
+/// Pinned outputs first in [featured] order, everything else in its original
+/// order. Partition rather than sort: Dart's List.sort isn't stable, so sorting
+/// would scramble the unpinned tail. Featured ids with no matching row (output
+/// deleted or unlinked) simply drop out — the array is not FK-enforced.
+List<Map<String, dynamic>> orderByFeatured(
+  List<Map<String, dynamic>> authors,
+  List<String> featured,
+) => [
+  for (final id in featured) ...authors.where((a) => outputIdOf(a) == id),
+  ...authors.where((a) => !featured.contains(outputIdOf(a))),
+];
+
+/// Toggles [outputId] in [featured]. Unstarring always works; starring is
+/// refused at the cap, signalled by returning [featured] itself unchanged.
+List<String> nextFeatured(List<String> featured, String outputId) {
+  final next = List<String>.from(featured);
+  if (next.remove(outputId)) return next;
+  if (next.length >= maxFeaturedOutputs) return featured;
+  return next..add(outputId);
+}
+
 Future<bool> showPersonEditor(
   BuildContext context, {
   Map<String, dynamic>? person,
@@ -361,6 +395,8 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
             person['auth_user_id'] == db.auth.currentUser?.id;
         final outputAuthors = (person['output_authors'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
+        final featured = featuredOf(person);
+        final ordered = orderByFeatured(outputAuthors, featured);
         final labMemberships = (person['lab_members'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>()
             .where((m) => m['labs'] is Map)
@@ -418,12 +454,19 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                   ),
                   const SizedBox(height: 24),
                 ],
-                _sectionTitle('Outputs · ${outputAuthors.length}'),
+                _sectionTitle('Outputs · ${ordered.length}'),
                 const SizedBox(height: 8),
-                if (outputAuthors.isEmpty)
+                if (ordered.isEmpty)
                   _muted('No outputs found')
                 else
-                  for (final author in outputAuthors) _outputRow(author),
+                  for (final author in ordered)
+                    _outputRow(
+                      author,
+                      isFeatured: featured.contains(outputIdOf(author)),
+                      canEdit: admin || isOwner,
+                      featured: featured,
+                      person: person,
+                    ),
                 const SizedBox(height: 24),
                 _rolesSection(admin, isOwner),
               ],
@@ -617,16 +660,68 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     );
   }
 
-  Widget _outputRow(Map<String, dynamic> author) {
+  /// Stars/unstars an output, keeping the array's order = display order.
+  Future<void> _toggleFeatured(
+    Map<String, dynamic> person,
+    List<String> featured,
+    String outputId,
+  ) async {
+    final next = nextFeatured(featured, outputId);
+    if (identical(next, featured)) {
+      _snack('Up to $maxFeaturedOutputs highlights');
+      return;
+    }
+    try {
+      await updatePerson(widget.id, {'featured_outputs': next});
+      await logChanges('person', widget.id, person, {'featured_outputs': next});
+      _refresh();
+    } catch (error) {
+      _snack(error.toString());
+    }
+  }
+
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Widget _outputRow(
+    Map<String, dynamic> author, {
+    required bool isFeatured,
+    required bool canEdit,
+    required List<String> featured,
+    required Map<String, dynamic> person,
+  }) {
     final output = author['outputs'] as Map<String, dynamic>?;
     if (output == null) return const SizedBox.shrink();
+    final id = output['id'] as String;
     return OutputRow(
       title: output['title'] as String? ?? 'Untitled',
       year: output['reporting_year'] as int?,
       type: output['type'] as String?,
       detail: author['role'] as String?,
-      trailing: const Icon(Icons.chevron_right, size: 18),
-      onTap: () => context.go('/outputs/${output['id']}'),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (canEdit)
+            IconButton(
+              // The tooltip doubles as the UI-test handle: it reaches the web
+              // semantics tree as text, and encodes which state we're in.
+              tooltip: isFeatured ? 'Remove highlight' : 'Highlight on profile',
+              icon: Icon(isFeatured ? Icons.star : Icons.star_border, size: 20),
+              onPressed: () => _toggleFeatured(person, featured, id),
+            )
+          else if (isFeatured)
+            const Tooltip(
+              message: 'Highlighted',
+              child: Icon(Icons.star, size: 20),
+            ),
+          const Icon(Icons.chevron_right, size: 18),
+        ],
+      ),
+      onTap: () => context.go('/outputs/$id'),
     );
   }
 
