@@ -10,12 +10,19 @@ class SuggestionTile extends StatelessWidget {
     required this.onAccept,
     required this.onReject,
     this.showTitle = true,
+    this.onOpenClash,
+    this.clashTitle,
   });
 
   final Map<String, dynamic> suggestion;
   final VoidCallback onAccept;
   final VoidCallback onReject;
   final bool showTitle;
+
+  /// Set for a `duplicate_of` suggestion: the found DOI already belongs to
+  /// another output, so there is nothing to accept — the admin goes and merges.
+  final VoidCallback? onOpenClash;
+  final String? clashTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -25,9 +32,12 @@ class SuggestionTile extends StatelessWidget {
     final confidenceText = confidence == null
         ? ''
         : ' · ${(num.parse(confidence.toString()) * 100).round()}%';
-    final detail =
-        '${suggestion['field']}: ${current ?? 'empty'} -> $value\n'
-        '${suggestion['source']}$confidenceText';
+    final isClash = suggestion['field'] == 'duplicate_of';
+    final detail = isClash
+        ? 'DOI already belongs to: ${clashTitle ?? value}\n'
+              'possible duplicate — merge instead${confidenceText.isEmpty ? '' : confidenceText}'
+        : '${suggestion['field']}: ${current ?? 'empty'} -> $value\n'
+              '${suggestion['source']}$confidenceText';
 
     return ListTile(
       title: showTitle
@@ -38,8 +48,20 @@ class SuggestionTile extends StatelessWidget {
       trailing: Wrap(
         spacing: 8,
         children: [
-          OutlinedButton(onPressed: onReject, child: const Text('Reject')),
-          FilledButton(onPressed: onAccept, child: const Text('Accept')),
+          OutlinedButton(
+            onPressed: onReject,
+            child: Text(isClash ? 'Dismiss' : 'Reject'),
+          ),
+          if (isClash)
+            if (onOpenClash != null)
+              FilledButton(
+                onPressed: onOpenClash,
+                child: const Text('Open duplicate'),
+              )
+            else
+              const SizedBox.shrink()
+          else
+            FilledButton(onPressed: onAccept, child: const Text('Accept')),
         ],
       ),
     );

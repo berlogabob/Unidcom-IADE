@@ -437,3 +437,158 @@ Future<Map<String, dynamic>?> fetchOrcidSyncStatus(String personId) async {
     'worksCount': worksCount,
   };
 }
+
+// --- reverse DOI lookup ------------------------------------------------------
+//
+// Port of scripts/find_dois.py; keep the two ladders in sync. Two signals,
+// because neither alone works: Crossref's own `score` does not discriminate
+// (a true match scored 63, a false one 55), and title similarity alone lets a
+// 0.52 false positive through, above the 0.58 of a real but awkward match.
+
+/// Lowercase, strip accents and punctuation, collapse whitespace last.
+String _searchKey(String? value) => _normalize(value)
+    .replaceAll(RegExp(r'[^a-z0-9 ]'), ' ')
+    .split(RegExp(r'\s+'))
+    .where((p) => p.isNotEmpty)
+    .join(' ');
+
+/// Reduce a full APA citation to something comparable with a bare title.
+String _probeOf(String? reference) {
+  var text = (reference ?? '').replaceAll(RegExp(r'https?://\S+'), ' ');
+  text = text.replaceAll(RegExp(r'10\.\d{4,9}/\S+'), ' ');
+  text = text.replaceFirst(RegExp(r'^.*?\(\s*\d{4}[a-z]?\s*\)\.?\s*'), '');
+  return _searchKey(text);
+}
+
+/// Ratio of the longest common subsequence to the longer string — a cheap
+/// stand-in for difflib's SequenceMatcher, which Dart has no equivalent of.
+double _ratio(String a, String b) {
+  if (a.isEmpty || b.isEmpty) return 0;
+  final previous = List<int>.filled(b.length + 1, 0);
+  final current = List<int>.filled(b.length + 1, 0);
+  for (var i = 1; i <= a.length; i++) {
+    for (var j = 1; j <= b.length; j++) {
+      current[j] = a[i - 1] == b[j - 1]
+          ? previous[j - 1] + 1
+          : (previous[j] > current[j - 1] ? previous[j] : current[j - 1]);
+    }
+    previous.setAll(0, current);
+  }
+  return 2 * previous[b.length] / (a.length + b.length);
+}
+
+double _titleSimilarity(String probe, String? title) {
+  final target = _searchKey(title);
+  if (target.isEmpty || probe.isEmpty) return 0;
+  // The leading-span term lets a bare title match a citation that keeps going
+  // into journal name and page numbers.
+  final head = probe.length > target.length + 10
+      ? probe.substring(0, target.length + 10)
+      : probe;
+  final a = _ratio(head, target);
+  final b = _ratio(probe, target);
+  return a > b ? a : b;
+}
+
+Set<String> _referenceFamilies(String? reference) {
+  final head = (reference ?? '').split(RegExp(r'\(\s*\d{4}')).first;
+  return RegExp(r'[A-ZÀ-Ý][a-zà-ÿ]{2,}')
+      .allMatches(head)
+      .map((m) => _searchKey(m.group(0)))
+      .where((w) => w.isNotEmpty)
+      .toSet();
+}
+
+int _authorOverlap(String? reference, Map<String, dynamic> item) {
+  final theirs = ((item['author'] as List<dynamic>?) ?? [])
+      .whereType<Map<String, dynamic>>()
+      .map((a) => _searchKey(a['family'] as String?))
+      .where((w) => w.isNotEmpty)
+      .toSet();
+  return _referenceFamilies(reference).intersection(theirs).length;
+}
+
+/// Searches Crossref by citation for an output's DOI.
+///
+/// Returns null when nothing is confident enough — the common and correct
+/// outcome, since most DOI-less outputs genuinely have no DOI. When the DOI
+/// found already belongs to another output, `clashWith` is set instead of
+/// `doi`: the rows may be duplicates, or Crossref may have matched the wrong
+/// paper, and either way writing it would break outputs.doi's unique index.
+Future<Map<String, dynamic>?> findDoiForOutput(String outputId) async {
+  final row = await db
+      .from('outputs')
+      .select('id, title, full_reference, reporting_year')
+      .eq('id', outputId)
+      .single();
+
+  final reference = _clean(row['full_reference'] as String?).isNotEmpty
+      ? _clean(row['full_reference'] as String?)
+      : _clean(row['title'] as String?);
+  if (reference.isEmpty) return null;
+
+  final year = row['reporting_year'] as int?;
+  final params = {
+    'query.bibliographic': reference.length > 250
+        ? reference.substring(0, 250)
+        : reference,
+    'rows': '5',
+    if (year != null)
+      'filter': 'from-pub-date:${year - 1}-01-01,until-pub-date:${year + 1}-12-31',
+  };
+  final payload = await _getJson(
+    Uri.https('api.crossref.org', '/works', params),
+    headers: {'User-Agent': _crossrefUa},
+  );
+  final items = ((payload?['message'] as Map<String, dynamic>?)?['items']
+          as List<dynamic>? ??
+      [])
+      .whereType<Map<String, dynamic>>();
+
+  final probe = _probeOf(reference);
+  Map<String, dynamic>? best;
+  var bestSimilarity = 0.0;
+  for (final item in items) {
+    final titles = item['title'] as List<dynamic>? ?? [];
+    if (titles.isEmpty) continue;
+    final similarity = _titleSimilarity(probe, titles.first as String?);
+    if (best == null || similarity > bestSimilarity) {
+      best = item;
+      bestSimilarity = similarity;
+    }
+  }
+  if (best == null) return null;
+
+  final overlap = _authorOverlap(reference, best);
+  final percent = (bestSimilarity * 100).round();
+  double confidence;
+  String reason;
+  if (bestSimilarity >= 0.85) {
+    confidence = 0.90;
+    reason = 'title matches Crossref ($percent%)';
+  } else if (bestSimilarity >= 0.50 && overlap >= 1) {
+    confidence = 0.70;
+    reason =
+        'partial title match ($percent%) confirmed by $overlap shared '
+        'author${overlap > 1 ? 's' : ''}';
+  } else {
+    return null;
+  }
+
+  final doi = _cleanDoi(best['DOI'] as String?);
+  if (doi == null) return null;
+
+  final owner = await db.rpc(
+    'match_existing_output',
+    params: {'p_doi': doi, 'p_title': row['title']},
+  );
+  final clash = owner != null && owner != outputId;
+
+  return {
+    'doi': doi,
+    'title': (best['title'] as List<dynamic>).first as String?,
+    'confidence': confidence,
+    'reason': reason,
+    'clashWith': clash ? owner as String : null,
+  };
+}

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../data/enrich_client.dart';
 import '../data/supabase.dart';
 import '../widgets/merge_matrix.dart';
 import '../widgets/output_row.dart';
 import '../widgets/person_card.dart';
+import '../widgets/suggestion_tile.dart';
 
 const _outputMergeFields = <MergeFieldSpec>[
   (key: 'title', label: 'Title', tall: true),
@@ -36,12 +38,102 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
   late Future<List<Map<String, dynamic>>> _issues = fetchOutputIssues(
     widget.id,
   );
+  late Future<List<Map<String, dynamic>>> _suggestions =
+      fetchSuggestionsForOutput(widget.id);
+  bool _findingDoi = false;
 
   void _refresh() {
     setState(() {
       _output = fetchOutput(widget.id);
       _issues = fetchOutputIssues(widget.id);
+      _suggestions = fetchSuggestionsForOutput(widget.id);
     });
+  }
+
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _acceptSuggestion(String id) async {
+    try {
+      await acceptSuggestion(id);
+      _refresh();
+    } catch (error) {
+      _snack(error.toString());
+    }
+  }
+
+  Future<void> _rejectSuggestion(String id) async {
+    await rejectSuggestion(id);
+    _refresh();
+  }
+
+  /// Searches Crossref by citation. Finding nothing is the normal outcome for
+  /// outputs that genuinely have no DOI, so say so plainly rather than failing.
+  Future<void> _findDoi(Map<String, dynamic> output) async {
+    setState(() => _findingDoi = true);
+    try {
+      final match = await findDoiForOutput(widget.id);
+      if (!mounted) return;
+      if (match == null) {
+        _snack('No confident Crossref match');
+        return;
+      }
+      if (match['clashWith'] != null) {
+        _snack(
+          'That DOI already belongs to another output — possible duplicate. '
+          'Use Merge duplicates.',
+        );
+        return;
+      }
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Use this DOI?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(match['doi'] as String),
+              const SizedBox(height: 8),
+              Text(match['title'] as String? ?? ''),
+              const SizedBox(height: 8),
+              Text(
+                match['reason'] as String,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Save DOI'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+      await updateOutput(widget.id, {'doi': match['doi']});
+      await logChanges(
+        'output',
+        widget.id,
+        output,
+        {'doi': match['doi']},
+        source: 'crossref',
+      );
+      _refresh();
+    } catch (error) {
+      _snack(error.toString());
+    } finally {
+      if (mounted) setState(() => _findingDoi = false);
+    }
   }
 
   Future<void> _open(BuildContext context, String url) async {
@@ -168,6 +260,7 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
                 _header(context, output, admin),
                 const SizedBox(height: 24),
                 if (admin) _issuesSection(context, admin),
+                if (admin) _suggestionsSection(context),
                 _sectionTitle(context, 'Authors · ${authors.length}'),
                 const SizedBox(height: 8),
                 if (authors.isEmpty)
@@ -313,6 +406,17 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
                       label: const Text('Edit'),
                     ),
                     OutlinedButton.icon(
+                      onPressed: _findingDoi ? null : () => _findDoi(output),
+                      icon: _findingDoi
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.travel_explore, size: 18),
+                      label: const Text('Find DOI'),
+                    ),
+                    OutlinedButton.icon(
                       onPressed: _mergeDuplicates,
                       icon: const Icon(Icons.merge),
                       label: const Text('Merge duplicates'),
@@ -342,6 +446,39 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _suggestionsSection(BuildContext context) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _suggestions,
+      builder: (context, snapshot) {
+        final suggestions = snapshot.data ?? const [];
+        if (suggestions.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionTitle(context, 'Suggestions · ${suggestions.length}'),
+            const SizedBox(height: 8),
+            for (final suggestion in suggestions)
+              SuggestionTile(
+                suggestion: suggestion,
+                showTitle: false,
+                onAccept: () => _acceptSuggestion(suggestion['id'] as String),
+                onReject: () => _rejectSuggestion(suggestion['id'] as String),
+                // A duplicate_of clash names another output, not a column
+                // value — accepting it would write a field that doesn't exist.
+                onOpenClash: suggestion['field'] == 'duplicate_of'
+                    ? () => context.go(
+                        '/outputs/${suggestion['suggested_value']}',
+                      )
+                    : null,
+                clashTitle: suggestion['clash_title'] as String?,
+              ),
+            const SizedBox(height: 24),
+          ],
+        );
+      },
     );
   }
 

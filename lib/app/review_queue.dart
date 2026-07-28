@@ -49,8 +49,18 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
   }
 
   Future<void> _acceptSuggestion(String id) async {
-    await acceptSuggestion(id);
-    _refresh();
+    // A suggested DOI can collide with outputs.doi's unique constraint. Without
+    // this catch the write throws, the suggestion stays pending, and the admin
+    // sees nothing at all.
+    try {
+      await acceptSuggestion(id);
+      _refresh();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
   }
 
   Future<void> _rejectSuggestion(String id) async {

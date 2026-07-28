@@ -91,8 +91,12 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
   }
 
   Future<void> _acceptSuggestion(String id) async {
-    await acceptSuggestion(id);
-    _refresh();
+    try {
+      await acceptSuggestion(id);
+      _refresh();
+    } catch (error) {
+      _snack(error.toString());
+    }
   }
 
   Future<void> _rejectSuggestion(String id) async {

@@ -491,8 +491,23 @@ Future<String> createPerson(Map<String, dynamic> fields) async {
   }
 }
 
+/// Extracts the bare `10.x/y` from a pasted DOI or doi.org URL. Mirrors
+/// clean_doi in scripts/enrich.py. Returns null when there's no DOI in there.
+String? cleanDoi(String? value) {
+  final match = RegExp(r'10\.[^\s"<>]+').firstMatch(value ?? '');
+  return match
+      ?.group(0)
+      ?.replaceAll(RegExp(r'[).,;]+$'), '')
+      .toLowerCase();
+}
+
 Future<void> updateOutput(String id, Map<String, dynamic> fields) async {
   try {
+    // A pasted https://doi.org/10.x/y would otherwise become an invalid_doi
+    // error the moment it's saved.
+    if (fields.containsKey('doi')) {
+      fields = {...fields, 'doi': cleanDoi(fields['doi'] as String?)};
+    }
     await db.from('outputs').update(fields).eq('id', id);
   } catch (error) {
     throw Exception(_error(error));
@@ -629,6 +644,37 @@ Future<List<Map<String, dynamic>>> fetchSuggestionsForPerson(
         .eq('status', 'pending')
         .order('created_at');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Pending suggestions about one output, with `duplicate_of` values resolved to
+/// the other output's title so the tile can show something readable.
+Future<List<Map<String, dynamic>>> fetchSuggestionsForOutput(
+  String outputId,
+) async {
+  try {
+    final rows = await db
+        .from('enrichment_suggestions')
+        .select()
+        .eq('subject_type', 'output')
+        .eq('subject_id', outputId)
+        .eq('status', 'pending')
+        .order('created_at');
+    final suggestions = rows
+        .map((row) => Map<String, dynamic>.from(row))
+        .toList();
+    for (final suggestion in suggestions) {
+      if (suggestion['field'] != 'duplicate_of') continue;
+      final other = await db
+          .from('outputs')
+          .select('title')
+          .eq('id', suggestion['suggested_value'] as String)
+          .maybeSingle();
+      suggestion['clash_title'] = other?['title'] as String?;
+    }
+    return suggestions;
   } catch (error) {
     throw Exception(_error(error));
   }
