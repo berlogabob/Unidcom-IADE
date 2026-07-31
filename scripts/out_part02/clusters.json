@@ -1,0 +1,42 @@
+[
+  {
+    "id": "ed43a144-9f44-5fde-8730-a208f5779d6e",
+    "code": "E3",
+    "name": "E3: Exploring Economic Ethos",
+    "concern": "Design in a capitalist world",
+    "notes": "Temas: empreendedorismo sustentável, novos paradigmas económicos, mercados justos, bem-estar + sustentabilidade.",
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "c88c4f56-2aa2-5caa-a211-d93055ea7fee",
+    "code": "T3",
+    "name": "T3: Thoughtfulness Technology for Thrive",
+    "concern": "Design in a sociotechnical world",
+    "notes": "Temas: ética em tecnologia, IA, AR/VR, educação, saúde, sociedade. Priorizar impacto positivo e mitigação de riscos.",
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "2ea6b5e1-988b-58f0-97b3-a6b132a3fd65",
+    "code": "C3",
+    "name": "C3: Crafting Cooperation and Coexistence",
+    "concern": "Design in a world of tension",
+    "notes": "Temas: diálogo, tolerância, democracia, paz, inclusão, mediação, justiça social. Priorizar projetos que respondam a tensões e fragmentação.",
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "efed1184-f795-5202-8906-90add4e9bde3",
+    "code": "R3",
+    "name": "R3: Rethinking for Regeneration and Resilience",
+    "concern": "Design in an unsustainable world",
+    "notes": "Temas: sustentabilidade, circularidade, biodesign, regenerative design, descarbonização, smart cities, biodiversidade.",
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "fa0a2a6a-391b-5976-9f3e-0d693be62f2c",
+    "code": "F3",
+    "name": "F3: Finding Flourishing Futures",
+    "concern": "Design for a flourishing world",
+    "notes": "Temas: teoria/filosofia/prática do design, cultura, narrativas, comunicação, bem-estar, inclusão, longo prazo.",
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  }
+]

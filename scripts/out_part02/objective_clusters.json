@@ -1,0 +1,142 @@
+[
+  {
+    "objective_id": "ac0befd5-67ce-57c2-9eaf-29635b749a75",
+    "cluster_id": "2ea6b5e1-988b-58f0-97b3-a6b132a3fd65"
+  },
+  {
+    "objective_id": "ac0befd5-67ce-57c2-9eaf-29635b749a75",
+    "cluster_id": "efed1184-f795-5202-8906-90add4e9bde3"
+  },
+  {
+    "objective_id": "ac0befd5-67ce-57c2-9eaf-29635b749a75",
+    "cluster_id": "c88c4f56-2aa2-5caa-a211-d93055ea7fee"
+  },
+  {
+    "objective_id": "ac0befd5-67ce-57c2-9eaf-29635b749a75",
+    "cluster_id": "ed43a144-9f44-5fde-8730-a208f5779d6e"
+  },
+  {
+    "objective_id": "ac0befd5-67ce-57c2-9eaf-29635b749a75",
+    "cluster_id": "fa0a2a6a-391b-5976-9f3e-0d693be62f2c"
+  },
+  {
+    "objective_id": "6cddacc9-f35d-53cd-861f-4393d42f6e1f",
+    "cluster_id": "2ea6b5e1-988b-58f0-97b3-a6b132a3fd65"
+  },
+  {
+    "objective_id": "6cddacc9-f35d-53cd-861f-4393d42f6e1f",
+    "cluster_id": "c88c4f56-2aa2-5caa-a211-d93055ea7fee"
+  },
+  {
+    "objective_id": "6cddacc9-f35d-53cd-861f-4393d42f6e1f",
+    "cluster_id": "ed43a144-9f44-5fde-8730-a208f5779d6e"
+  },
+  {
+    "objective_id": "c7eda972-74d4-552c-8821-e276d601e656",
+    "cluster_id": "2ea6b5e1-988b-58f0-97b3-a6b132a3fd65"
+  },
+  {
+    "objective_id": "c7eda972-74d4-552c-8821-e276d601e656",
+    "cluster_id": "efed1184-f795-5202-8906-90add4e9bde3"
+  },
+  {
+    "objective_id": "c7eda972-74d4-552c-8821-e276d601e656",
+    "cluster_id": "c88c4f56-2aa2-5caa-a211-d93055ea7fee"
+  },
+  {
+    "objective_id": "c7eda972-74d4-552c-8821-e276d601e656",
+    "cluster_id": "ed43a144-9f44-5fde-8730-a208f5779d6e"
+  },
+  {
+    "objective_id": "c7eda972-74d4-552c-8821-e276d601e656",
+    "cluster_id": "fa0a2a6a-391b-5976-9f3e-0d693be62f2c"
+  },
+  {
+    "objective_id": "f6fdba8e-2da5-5911-9856-8ad29eca75c4",
+    "cluster_id": "ed43a144-9f44-5fde-8730-a208f5779d6e"
+  },
+  {
+    "objective_id": "f6fdba8e-2da5-5911-9856-8ad29eca75c4",
+    "cluster_id": "c88c4f56-2aa2-5caa-a211-d93055ea7fee"
+  },
+  {
+    "objective_id": "f6fdba8e-2da5-5911-9856-8ad29eca75c4",
+    "cluster_id": "efed1184-f795-5202-8906-90add4e9bde3"
+  },
+  {
+    "objective_id": "bec75079-1d4c-594a-b2d9-17e7277c0b3c",
+    "cluster_id": "2ea6b5e1-988b-58f0-97b3-a6b132a3fd65"
+  },
+  {
+    "objective_id": "bec75079-1d4c-594a-b2d9-17e7277c0b3c",
+    "cluster_id": "efed1184-f795-5202-8906-90add4e9bde3"
+  },
+  {
+    "objective_id": "bec75079-1d4c-594a-b2d9-17e7277c0b3c",
+    "cluster_id": "c88c4f56-2aa2-5caa-a211-d93055ea7fee"
+  },
+  {
+    "objective_id": "bec75079-1d4c-594a-b2d9-17e7277c0b3c",
+    "cluster_id": "ed43a144-9f44-5fde-8730-a208f5779d6e"
+  },
+  {
+    "objective_id": "bec75079-1d4c-594a-b2d9-17e7277c0b3c",
+    "cluster_id": "fa0a2a6a-391b-5976-9f3e-0d693be62f2c"
+  },
+  {
+    "objective_id": "bf1563b6-b059-5126-ad60-5498d48662fe",
+    "cluster_id": "ed43a144-9f44-5fde-8730-a208f5779d6e"
+  },
+  {
+    "objective_id": "bf1563b6-b059-5126-ad60-5498d48662fe",
+    "cluster_id": "2ea6b5e1-988b-58f0-97b3-a6b132a3fd65"
+  },
+  {
+    "objective_id": "bf1563b6-b059-5126-ad60-5498d48662fe",
+    "cluster_id": "fa0a2a6a-391b-5976-9f3e-0d693be62f2c"
+  },
+  {
+    "objective_id": "d81e155a-8306-5834-8196-139b47d8a211",
+    "cluster_id": "2ea6b5e1-988b-58f0-97b3-a6b132a3fd65"
+  },
+  {
+    "objective_id": "d81e155a-8306-5834-8196-139b47d8a211",
+    "cluster_id": "efed1184-f795-5202-8906-90add4e9bde3"
+  },
+  {
+    "objective_id": "d81e155a-8306-5834-8196-139b47d8a211",
+    "cluster_id": "c88c4f56-2aa2-5caa-a211-d93055ea7fee"
+  },
+  {
+    "objective_id": "d81e155a-8306-5834-8196-139b47d8a211",
+    "cluster_id": "ed43a144-9f44-5fde-8730-a208f5779d6e"
+  },
+  {
+    "objective_id": "d81e155a-8306-5834-8196-139b47d8a211",
+    "cluster_id": "fa0a2a6a-391b-5976-9f3e-0d693be62f2c"
+  },
+  {
+    "objective_id": "64476851-caea-5ea4-a06b-63d034a82003",
+    "cluster_id": "2ea6b5e1-988b-58f0-97b3-a6b132a3fd65"
+  },
+  {
+    "objective_id": "64476851-caea-5ea4-a06b-63d034a82003",
+    "cluster_id": "c88c4f56-2aa2-5caa-a211-d93055ea7fee"
+  },
+  {
+    "objective_id": "64476851-caea-5ea4-a06b-63d034a82003",
+    "cluster_id": "fa0a2a6a-391b-5976-9f3e-0d693be62f2c"
+  },
+  {
+    "objective_id": "a4d577da-b281-59f3-864b-361f0eb3a04c",
+    "cluster_id": "2ea6b5e1-988b-58f0-97b3-a6b132a3fd65"
+  },
+  {
+    "objective_id": "a4d577da-b281-59f3-864b-361f0eb3a04c",
+    "cluster_id": "c88c4f56-2aa2-5caa-a211-d93055ea7fee"
+  },
+  {
+    "objective_id": "a4d577da-b281-59f3-864b-361f0eb3a04c",
+    "cluster_id": "fa0a2a6a-391b-5976-9f3e-0d693be62f2c"
+  }
+]

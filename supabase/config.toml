@@ -385,6 +385,11 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# ORCID's browser redirect carries no Authorization header; without this the
+# functions gateway 401s the OAuth callback.
+[functions.orcid-auth]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

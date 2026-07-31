@@ -1,0 +1,98 @@
+[
+  {
+    "id": "ac0befd5-67ce-57c2-9eaf-29635b749a75",
+    "code": "UNID.9",
+    "name": "UNID.9: Projetos por cluster (exemplos)",
+    "description": "Nota: usar como base para mapear projetos/outputs atuais e lacunas por cluster (C3, R3, T3, E3, F3).",
+    "kpis": null,
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "6cddacc9-f35d-53cd-861f-4393d42f6e1f",
+    "code": "UNID.8",
+    "name": "UNID.8: Desenvolvimento institucional e compliance",
+    "description": "Medidas: DPO e proteção de dados, canais e regulação anti-assédio, política de equidade de género, infraestruturas, prémios de excelência, critérios de avaliação, guidelines com entidade gestora.",
+    "kpis": null,
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "c7eda972-74d4-552c-8821-e276d601e656",
+    "code": "UNID.6",
+    "name": "UNID.6: Disseminação e outreach",
+    "description": "Medidas: Annual Research Chronicle (IADE Press), conferências, exposições, equipa de ciência-comunicação, advocacy, UNreleased, DRIW.",
+    "kpis": null,
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "f6fdba8e-2da5-5911-9856-8ad29eca75c4",
+    "code": "UNID.7",
+    "name": "UNID.7: Sustentabilidade financeira",
+    "description": "Medidas: diversificar funding, equipa de grant writing, revenue (consultoria, licensing/commercialização), otimização, planeamento financeiro, formação.",
+    "kpis": null,
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "bec75079-1d4c-594a-b2d9-17e7277c0b3c",
+    "code": "UNID.2",
+    "name": "UNID.2: Inter e transdisciplinaridade",
+    "description": "Medidas: eventos de partilha, toolkits/recursos, lançamento de revista peer-reviewed, financiamento de projetos-piloto.",
+    "kpis": null,
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "bf1563b6-b059-5126-ad60-5498d48662fe",
+    "code": "UNID.3",
+    "name": "UNID.3: Parcerias com sociedade e mercado",
+    "description": "Medidas: investGATE (incubadora), dinamização/revisão de labs, ciência cidadã, eventos públicos, ciência-comunicação.",
+    "kpis": null,
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "d81e155a-8306-5834-8196-139b47d8a211",
+    "code": "UNID.4",
+    "name": "UNID.4: Internacionalização e redes (incl. “peripheral worldviews”)",
+    "description": "Medidas: reforço de parcerias (ex.: POLIMI, PUC), workshops internacionais, visiting researchers, plataformas online, funding para colaborações.",
+    "kpis": null,
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "64476851-caea-5ea4-a06b-63d034a82003",
+    "code": "UNID.1",
+    "name": "UNID.1: Research on Design Theory, Philosophy, and Practice",
+    "description": "Medidas: integrar investigação no ensino, guest lectures, longitudinal studies, grants, contratação (FCT Tenure), parcerias.",
+    "kpis": null,
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "a4d577da-b281-59f3-864b-361f0eb3a04c",
+    "code": "UNID.5",
+    "name": "UNID.5: Educação, formação e talento",
+    "description": "Medidas: DDC como Summer Doctoral Consortium, Summer School, bem-estar e work-life balance, fundo apoio PhD, sUPport.",
+    "kpis": null,
+    "source": "FCT | Avaliação (https://app.notion.com/p/FCT-Avalia-o-300ab831f0e98020aa4ee268f9991491?pvs=21)"
+  },
+  {
+    "id": "c6590e2e-82c4-58fc-84cf-62f553e237ea",
+    "code": "SDI.2",
+    "name": "SDI.2: Create Knowledge",
+    "description": "Develop research activities bridging academia and industry to address key business and societal challenges.",
+    "kpis": null,
+    "source": "SDI Activity Plan (https://app.notion.com/p/SDI-Activity-Plan-318ab831f0e98081b2eecc9b9ab911e5?pvs=21)"
+  },
+  {
+    "id": "73a9d72a-3ca0-5adc-980d-f11475ecc9d2",
+    "code": "SDI.1",
+    "name": "SDI.1: Engage Stakeholders",
+    "description": "Provide opportunities for professors, students, and researchers to engage in academic and applied projects with companies, public institutions, and NGOs.",
+    "kpis": null,
+    "source": "SDI Activity Plan (https://app.notion.com/p/SDI-Activity-Plan-318ab831f0e98081b2eecc9b9ab911e5?pvs=21)"
+  },
+  {
+    "id": "f97ccd96-6297-5289-bfe1-f3fee5ba3fcb",
+    "code": "SDI.3",
+    "name": "SDI.3: Disseminate Knowledge",
+    "description": "Share research findings and tools through publications, seminars, training courses, workshops, and social media.",
+    "kpis": null,
+    "source": "SDI Activity Plan (https://app.notion.com/p/SDI-Activity-Plan-318ab831f0e98081b2eecc9b9ab911e5?pvs=21)"
+  }
+]

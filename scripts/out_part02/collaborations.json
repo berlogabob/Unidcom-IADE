@@ -1,0 +1,308 @@
+[
+  {
+    "id": "4fad1c2b-2ce0-5916-a4eb-bd897d83c948",
+    "name": "Hospital de Cascais",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "2e2da66b-78c1-5b7f-afa2-0203722e2012",
+    "name": "CMIN – Centro Materno Infantil do Norte",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "c1af05a8-5f46-5c5d-b7e8-16553cd1e1bc",
+    "name": "CineLab (IFILNOVA)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "ec14eafb-4ffc-5177-be2f-ee8e615d39ac",
+    "name": "Cultura",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "1d919ee9-c654-58a8-a582-0907f507b27b",
+    "name": "Mediação e Artes (ICNOVA)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "89e12589-4eba-514a-a318-2214f277d6b3",
+    "name": "InovaMedia Lab (ICNOVA)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "01cbfded-be5b-5dd5-ac7c-9a7ecfc57829",
+    "name": "Universidade Europeia Madrid (UEMadrid)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "564076e1-0293-5065-8eef-638ac6969373",
+    "name": "CICANT",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "97cc7b98-98e2-50c2-8beb-18d93a218d28",
+    "name": "Apordoc",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "fed34143-726a-55dd-b1cc-e5372d4d0a46",
+    "name": "Biblioteca Nacional de Portugal",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "c95aa6c5-f146-508c-964f-067c1dda3aa4",
+    "name": "Os Espacialistas",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "48b4f301-230a-5ee8-b287-808a08d09eba",
+    "name": "ChallengeEU Alliance",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "ae8d60c3-8b06-5429-96f1-6395d58e6a4b",
+    "name": "Hanze University of Applied Sciences",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "57627d03-e121-5b81-89ec-71b07bf46c55",
+    "name": "Hochschule der Medien (HdM Stuttgart)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "6eecc247-fb9a-5b04-9205-21c5e3f00732",
+    "name": "Accademia delle Arti",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "994170bf-946e-54f9-8889-53e502a04366",
+    "name": "Algebra University",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "df1a55e5-7a4d-5774-b084-b3f0bd121a1b",
+    "name": "Universidade Metodista de São Paulo",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "76e8d932-d842-5c80-a838-fe73dc0216db",
+    "name": "UNESCO Chair in Communication at Universidade Metodista de São Paulo",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "d40ffe0c-35fc-558b-bdac-b0d00fbeab06",
+    "name": "Semio Humanitas",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "33ffc9e5-a272-5ccc-bd44-3ced9dcf6e78",
+    "name": "LeapFrog (Portugal)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "7140ee89-0400-56e2-832e-8c4452339679",
+    "name": "NGOs and community design hubs in Portugal and Europe",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "6a65e8ea-67e8-508a-a94c-2bae0132c7bc",
+    "name": "Universidade de Masterdão",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "a1bc82e7-1cdf-5939-8d9e-3d479b859001",
+    "name": "Universidade de Amsterdão",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "22b4542e-0f5d-5625-b8f2-e7e8f14df1a7",
+    "name": "Ministerio da Cultura",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "1ba8b3a1-e874-539e-9f52-f826ce65011f",
+    "name": "TechLab",
+    "kind": "internal",
+    "notes": null
+  },
+  {
+    "id": "a45bf6a1-99e1-5016-bb9e-a7ef81123225",
+    "name": "Câmara Municipal de Sesimbra",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "c9d689d5-d01d-5acd-a97c-227bb06cbb78",
+    "name": "Museu Marítimo de Sesimbra",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "4d768eda-926d-5006-9db4-6c490f60750b",
+    "name": "Associação dos Armadores de Pesca Artesanal Centro e Sul",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "4920a4f5-d068-5d93-8af9-7de3c5dc9301",
+    "name": "Delegação Marítima de Sesimbra",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "e9cce156-40f7-504e-aa10-cee809a94bca",
+    "name": "Capitania do Porto de Setúbal",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "8f9d53e1-2f5a-5dc8-a092-3380c71f35f6",
+    "name": "Administração dos Portos de Setúbal e Sesimbra SA",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "c11d9697-9ccb-5808-8e17-ca986354ea53",
+    "name": "DocaPesca",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "1ef21802-fee0-5b95-9262-ff83a42b377d",
+    "name": "Anthia Diving Center",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "5315145c-ad5b-521a-b33e-01272e6b433f",
+    "name": "Cascaisea",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "51007997-33c4-50e5-be79-e7294e777c03",
+    "name": "Fisherman community of Sesimbra",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "2a03af06-73b8-526e-9ec9-2060efd11405",
+    "name": "BioLab Lisboa",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "1c1d1773-b073-5814-a40b-4c870b7cede8",
+    "name": "Oficina do Cego",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "aad4e82f-485b-57ce-80f8-1ef05bbadc60",
+    "name": "PrintLab-IADE",
+    "kind": "internal",
+    "notes": "Movido de External Collaborations: colaboração interna (IADE) para o projeto BiD “Natural pigments…” (BID Activity Plan, 2022)."
+  },
+  {
+    "id": "62c8cab4-9639-50d4-80e0-ce485451edeb",
+    "name": "University of Antwerp / Faculty of Design Sciences",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "8b6d2983-fe12-59f1-82d6-e8d081c2660b",
+    "name": "Royal Academy of Fine Arts Antwerp",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "49cc149e-2705-55c9-a2ad-cd20be7ad31e",
+    "name": "UTIL",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "092f0d30-5f44-55e5-8231-a3871dc6bd1e",
+    "name": "IE University (School of Architecture and Design)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "9f76ed23-8305-5217-b043-334c59a7366c",
+    "name": "Faculdade de Belas Artes",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "8d4b5b43-8de4-518f-8777-49e42391bbbe",
+    "name": "Lisbon University (FBAUL)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "946fd4dc-9413-54f2-9c53-5df41877aaa0",
+    "name": "University of Gothenburg (Academy of Art and Design)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "1e0c0c4d-ed47-5b11-b46e-91d34b2aff13",
+    "name": "Chalmers University of Technology (Dept of Architecture)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "5e821579-a561-53ff-b492-e1d01a2d9443",
+    "name": "Aalto University (School of Arts",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "83adec04-a739-514f-ac92-f8aad2e88072",
+    "name": "Design and Architecture)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "b2490ba7-a2c0-572d-8a2e-f941657af6ec",
+    "name": "Politecnico di Milano (School of Design)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "4a395218-465f-5065-b9f6-cd8c60312bf0",
+    "name": "University of Arts and Design Karlsruhe (Bio Design Lab)",
+    "kind": "external",
+    "notes": null
+  },
+  {
+    "id": "2a5f475a-58d7-5263-bdc1-19460750f3c2",
+    "name": "University of the Arts London (London College of Fashion)",
+    "kind": "external",
+    "notes": null
+  }
+]

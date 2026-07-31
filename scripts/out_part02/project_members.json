@@ -1,0 +1,327 @@
+[
+  {
+    "project_id": "ce19906d-11e7-5213-92ec-54deb067fab5",
+    "person_id": "e322d8d0-6aa2-5fb5-8798-4cd18d6d05f9",
+    "role": "pi"
+  },
+  {
+    "project_id": "ce19906d-11e7-5213-92ec-54deb067fab5",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "75ecd8bd-c3c6-59e8-b52f-d11e0ae7fb4d",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "75ca3581-5fc3-520b-a33b-a7f991ede097",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "d91aa3b7-2401-5ad4-8768-343fefc2fcab",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "d91aa3b7-2401-5ad4-8768-343fefc2fcab",
+    "person_id": "206009dd-1ce9-5eaf-a739-a92946fd05ca",
+    "role": "responsible"
+  },
+  {
+    "project_id": "d91aa3b7-2401-5ad4-8768-343fefc2fcab",
+    "person_id": "42d51369-4104-5412-9c6a-cc4d628460d0",
+    "role": "responsible"
+  },
+  {
+    "project_id": "bccd7230-7549-5ee5-b6e5-0fa20d046b34",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "39242c62-35fd-57e6-a8bb-b62d6a282101",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "08f4b6f1-b1c0-5843-bf51-df7c27408489",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "b49947df-3148-5e9f-99a1-956001dad511",
+    "person_id": "781eb82a-8824-5dfd-838d-eaaa675bb027",
+    "role": "pi"
+  },
+  {
+    "project_id": "50b4368c-5366-551a-b7bc-d02336626b24",
+    "person_id": "781eb82a-8824-5dfd-838d-eaaa675bb027",
+    "role": "pi"
+  },
+  {
+    "project_id": "0c01b97c-0d9a-5f4f-b063-6e72a1f04e7c",
+    "person_id": "781eb82a-8824-5dfd-838d-eaaa675bb027",
+    "role": "pi"
+  },
+  {
+    "project_id": "a6733aa1-738c-5b1e-8f87-94b181e115e7",
+    "person_id": "88bbc3ed-12ef-50fa-997f-86e2c2f49f44",
+    "role": "pi"
+  },
+  {
+    "project_id": "d18f935c-eb5f-5e32-b0be-cfcf4df9531a",
+    "person_id": "206009dd-1ce9-5eaf-a739-a92946fd05ca",
+    "role": "pi"
+  },
+  {
+    "project_id": "d18f935c-eb5f-5e32-b0be-cfcf4df9531a",
+    "person_id": "8e128e6f-d721-51b6-990d-fd1b5a3d35ad",
+    "role": "member"
+  },
+  {
+    "project_id": "d18f935c-eb5f-5e32-b0be-cfcf4df9531a",
+    "person_id": "f76e7d5d-d521-5b26-923d-8b2f03db3bec",
+    "role": "member"
+  },
+  {
+    "project_id": "d18f935c-eb5f-5e32-b0be-cfcf4df9531a",
+    "person_id": "331d6675-602e-55a0-ad95-c43a2c243ae5",
+    "role": "member"
+  },
+  {
+    "project_id": "d18f935c-eb5f-5e32-b0be-cfcf4df9531a",
+    "person_id": "fc3c6dce-b724-5c84-bdef-fe26b61238c1",
+    "role": "member"
+  },
+  {
+    "project_id": "273e0ced-a5ad-55be-8083-03b8e3a6669f",
+    "person_id": "88bbc3ed-12ef-50fa-997f-86e2c2f49f44",
+    "role": "pi"
+  },
+  {
+    "project_id": "b37b328b-dfbf-5274-8ec4-6e9f7b6a4d7e",
+    "person_id": "88bbc3ed-12ef-50fa-997f-86e2c2f49f44",
+    "role": "pi"
+  },
+  {
+    "project_id": "6d00bd0e-86f5-551f-bc4e-6372643be45b",
+    "person_id": "4a260ce7-6cc2-5e54-9606-d7b40dcea10d",
+    "role": "member"
+  },
+  {
+    "project_id": "6d00bd0e-86f5-551f-bc4e-6372643be45b",
+    "person_id": "97d5554e-b324-53a1-bd6a-75982a7521f6",
+    "role": "member"
+  },
+  {
+    "project_id": "6d00bd0e-86f5-551f-bc4e-6372643be45b",
+    "person_id": "2ca1da21-a00a-5a82-9219-864c068418f0",
+    "role": "member"
+  },
+  {
+    "project_id": "5c6c94fb-2bc0-50ad-8ba8-27c373cb9bd4",
+    "person_id": "4a260ce7-6cc2-5e54-9606-d7b40dcea10d",
+    "role": "member"
+  },
+  {
+    "project_id": "5c6c94fb-2bc0-50ad-8ba8-27c373cb9bd4",
+    "person_id": "6df019a5-bb7f-509c-bae5-c0c091725163",
+    "role": "member"
+  },
+  {
+    "project_id": "5c6c94fb-2bc0-50ad-8ba8-27c373cb9bd4",
+    "person_id": "96da1d34-58f6-5fa4-a397-fa904e3de591",
+    "role": "member"
+  },
+  {
+    "project_id": "5c6c94fb-2bc0-50ad-8ba8-27c373cb9bd4",
+    "person_id": "2cd0784c-1b9f-59f2-ac99-75fb0df38ac5",
+    "role": "member"
+  },
+  {
+    "project_id": "fb69af63-58d2-588b-96b0-461668a21234",
+    "person_id": "4a260ce7-6cc2-5e54-9606-d7b40dcea10d",
+    "role": "member"
+  },
+  {
+    "project_id": "fb69af63-58d2-588b-96b0-461668a21234",
+    "person_id": "10b24f9f-d392-56ba-96e5-05cf28437cf5",
+    "role": "member"
+  },
+  {
+    "project_id": "6b4cf9d8-49c0-5516-a218-a115ca0e74ff",
+    "person_id": "4a260ce7-6cc2-5e54-9606-d7b40dcea10d",
+    "role": "pi"
+  },
+  {
+    "project_id": "3331d9d0-770e-55df-b33a-88189d6f9b2b",
+    "person_id": "4a260ce7-6cc2-5e54-9606-d7b40dcea10d",
+    "role": "member"
+  },
+  {
+    "project_id": "3331d9d0-770e-55df-b33a-88189d6f9b2b",
+    "person_id": "0240b95e-5540-5b4c-974e-a460f2264eb0",
+    "role": "member"
+  },
+  {
+    "project_id": "3331d9d0-770e-55df-b33a-88189d6f9b2b",
+    "person_id": "e322d8d0-6aa2-5fb5-8798-4cd18d6d05f9",
+    "role": "member"
+  },
+  {
+    "project_id": "e48ea15d-4bad-5bbb-93da-e5ce4b0ee2bf",
+    "person_id": "4a260ce7-6cc2-5e54-9606-d7b40dcea10d",
+    "role": "member"
+  },
+  {
+    "project_id": "e48ea15d-4bad-5bbb-93da-e5ce4b0ee2bf",
+    "person_id": "cc438ad3-081c-5909-9d5c-e749e75315be",
+    "role": "member"
+  },
+  {
+    "project_id": "e48ea15d-4bad-5bbb-93da-e5ce4b0ee2bf",
+    "person_id": "cbf74146-78b2-50e5-93e0-2f97913e25da",
+    "role": "member"
+  },
+  {
+    "project_id": "e48ea15d-4bad-5bbb-93da-e5ce4b0ee2bf",
+    "person_id": "66721eab-1e88-5991-bb23-de3c4e990552",
+    "role": "member"
+  },
+  {
+    "project_id": "e48ea15d-4bad-5bbb-93da-e5ce4b0ee2bf",
+    "person_id": "ae521346-293f-54cd-a90f-68e827f7ce0d",
+    "role": "member"
+  },
+  {
+    "project_id": "e48ea15d-4bad-5bbb-93da-e5ce4b0ee2bf",
+    "person_id": "546995dd-b95d-58db-aa6b-b1b9b84d2f8a",
+    "role": "member"
+  },
+  {
+    "project_id": "e48ea15d-4bad-5bbb-93da-e5ce4b0ee2bf",
+    "person_id": "6ba09834-5b66-58ff-826f-eec69f36f714",
+    "role": "member"
+  },
+  {
+    "project_id": "e48ea15d-4bad-5bbb-93da-e5ce4b0ee2bf",
+    "person_id": "dd71b170-efbf-585b-9b25-10ad1f4e71ac",
+    "role": "member"
+  },
+  {
+    "project_id": "e48ea15d-4bad-5bbb-93da-e5ce4b0ee2bf",
+    "person_id": "f5ff833b-e47b-526a-8166-653fb158b47d",
+    "role": "member"
+  },
+  {
+    "project_id": "e48ea15d-4bad-5bbb-93da-e5ce4b0ee2bf",
+    "person_id": "8dc119c8-f23e-5cb4-a6be-139e03f5b4ca",
+    "role": "member"
+  },
+  {
+    "project_id": "e48ea15d-4bad-5bbb-93da-e5ce4b0ee2bf",
+    "person_id": "e6759946-d299-5e1e-b19a-eb8980f25364",
+    "role": "member"
+  },
+  {
+    "project_id": "c193bd80-2379-5a3d-84ab-bd5e9844b23b",
+    "person_id": "4a260ce7-6cc2-5e54-9606-d7b40dcea10d",
+    "role": "member"
+  },
+  {
+    "project_id": "c193bd80-2379-5a3d-84ab-bd5e9844b23b",
+    "person_id": "216fb294-1217-5481-8b63-5dad235ed3bb",
+    "role": "member"
+  },
+  {
+    "project_id": "aee473a5-c5be-5296-af4e-561f54947458",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "aee473a5-c5be-5296-af4e-561f54947458",
+    "person_id": "984f5c3d-0d68-51ae-8a63-731b452cac79",
+    "role": "responsible"
+  },
+  {
+    "project_id": "aee473a5-c5be-5296-af4e-561f54947458",
+    "person_id": "f0853d45-98f3-5142-86ba-2b04c560c3b4",
+    "role": "responsible"
+  },
+  {
+    "project_id": "aee473a5-c5be-5296-af4e-561f54947458",
+    "person_id": "ba87b5fb-bc11-5242-8b8b-1cd39360a2fa",
+    "role": "responsible"
+  },
+  {
+    "project_id": "aee473a5-c5be-5296-af4e-561f54947458",
+    "person_id": "10b24f9f-d392-56ba-96e5-05cf28437cf5",
+    "role": "responsible"
+  },
+  {
+    "project_id": "aee473a5-c5be-5296-af4e-561f54947458",
+    "person_id": "8f9a84b5-52ad-5e10-842f-e8b1a0d363a2",
+    "role": "responsible"
+  },
+  {
+    "project_id": "aee473a5-c5be-5296-af4e-561f54947458",
+    "person_id": "0c4efe04-afc3-5b79-8edc-6f686fc0dee8",
+    "role": "responsible"
+  },
+  {
+    "project_id": "87431d75-247e-5327-a1fd-f6f6133c95fc",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "87431d75-247e-5327-a1fd-f6f6133c95fc",
+    "person_id": "ba87b5fb-bc11-5242-8b8b-1cd39360a2fa",
+    "role": "responsible"
+  },
+  {
+    "project_id": "87431d75-247e-5327-a1fd-f6f6133c95fc",
+    "person_id": "da0cd0d3-60f6-5b42-980d-b4a324ff0fdc",
+    "role": "responsible"
+  },
+  {
+    "project_id": "12e2b37f-fd53-55f5-80ce-612936c63bcd",
+    "person_id": "206009dd-1ce9-5eaf-a739-a92946fd05ca",
+    "role": "pi"
+  },
+  {
+    "project_id": "12e2b37f-fd53-55f5-80ce-612936c63bcd",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "12e2b37f-fd53-55f5-80ce-612936c63bcd",
+    "person_id": "10b24f9f-d392-56ba-96e5-05cf28437cf5",
+    "role": "member"
+  },
+  {
+    "project_id": "35122457-958d-51bb-892b-802c76b27cb0",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "35122457-958d-51bb-892b-802c76b27cb0",
+    "person_id": "f3172c68-891e-5241-bc81-0c78fee82f93",
+    "role": "responsible"
+  },
+  {
+    "project_id": "01905127-d23f-5158-b971-68f587340625",
+    "person_id": "886605d4-a4e3-567a-a2a7-d39c44846e56",
+    "role": "responsible"
+  },
+  {
+    "project_id": "01905127-d23f-5158-b971-68f587340625",
+    "person_id": "206009dd-1ce9-5eaf-a739-a92946fd05ca",
+    "role": "responsible"
+  },
+  {
+    "project_id": "01905127-d23f-5158-b971-68f587340625",
+    "person_id": "42d51369-4104-5412-9c6a-cc4d628460d0",
+    "role": "responsible"
+  }
+]

@@ -1,0 +1,37 @@
+[
+  {
+    "id": "e9e4427a-d634-5dc7-bfa7-225da992076e",
+    "code": "SDI",
+    "name": "SDI: Strategic Design and Innovation Lab",
+    "overview": "SDI.Lab is a strategic design and innovation research lab hosted by UNIDCOM/IADE – Universidade Europeia, in partnership with the Department of Design/CILAB at Politecnico di Milano. It aims to increase the business and social impact of design research by addressing complex challenges through breakthrough approaches, accelerating innovation capabilities, and enhancing talent development.",
+    "notes": "FCT: knowledge transfer; patient experience e design innovation (intersecção design + business). Nota (SDI Activity Report 2025–2029): Pedro Alegria surge em \"PhD Student Contributions\", mas não está listado como \"Member\"; não foi adicionado a Members. As Research Lines parecem ser campos disciplinares Talvez as relações com clusters e labs sejam tabelas separadas - pois as justificações posicionam a transdisciplinaridade do LAB ver onde colocar: “Integration into the R&D Unit SDI.Lab will actively participate in the annual mapping and monitoring of cluster projects, contributing to the Scientific Council’s strategic planning. Its flexible, project-based structure allows it to respond swiftly to emerging challenges and collaborate across disciplines. Through its doctoral and master-level research, SDI.Lab will also support talent development and knowledge transfer within the UNIDCOM ecosystem.” Rui poatricio era o coordenador em 2025 mas deixou de ser e passou a helder - confirmar se para a fct fica um ou o outro"
+  },
+  {
+    "id": "47c7eb81-e902-524e-99eb-1256e072d83b",
+    "code": "DTN",
+    "name": "DTN: Design-Tech Nexus Lab",
+    "overview": "The DTN.Lab (Design-Tech Nexus Lab) operates at the intersection of engineering, computer science, technology, art, and design, with the primary aim of developing ethical, fair, and responsible technology-based solutions. Its core mission is to address the pressing challenges of the digital age while promoting human dignity, protecting natural and built heritage, supporting democracy, and fostering peace. Through an interdisciplinary approach, the lab engages in the creation of innovative technologies that have a positive impact on society, focusing on solutions that contribute to a flourishing future for humanity. The DTN.Lab collaborates with industry leaders, research institutions, and technology developers, adopting frameworks such as human-centered design, responsible innovation, and sustainable development, to ensure that its outcomes promote social good and respect for the environment.",
+    "notes": "FCT: tecnologia ética (IA, AR/VR), UX/usability/emotional design; infra e equipamento específico. DTN Activity Plan (PDF): Members incluem também Nathan Campos (PhD Student) e Rita Malaquias (PhD Student), mas não encontrei registos correspondentes em UNIDCOM | Researchers para relacionar (pendente confirmar/criar registos)."
+  },
+  {
+    "id": "bcbfc5d1-27b7-55e8-883a-1daeed083486",
+    "code": "BiD",
+    "name": "BiD: Bio-Inspired Design Lab",
+    "overview": "The Bio-Inspired Design Lab aims to bring together an interdisciplinary team working at the intersection of biological sciences, design, art, and technology, fostering the application of biological concepts, processes, structures, and materials in the development of sustainable and regenerative artefacts and systems that operatein synergy with the environment. Its main concern is the generation and dissemination of knowledge in the areas of nature inspired/based design, biodesign, sustainability and related areas, through research, education and action activities, as well as the promotion of the transfer of knowledge and results to the relevant players in society. The BID.Lab is also be open to the wider community, welcoming the collaboration of diﬀerent stakeholders, namely, but not only, companies and brands, research institutes, local communities, independent designers and artists, and environmental associations.",
+    "notes": "FCT: biodesign, biomateriais, regenerative design; experimentação e parcerias. pensar onde colocar isto: KEY ONGOING RESEARCH THEMES Bio-materials: natural inks, paper, bio-polymers, bio-composites, biofabricated Nature-inspired design and biomimicry, biomechanics, biophilic design Sustainable and regenerative design, eco-design Comunity-engagement, promotion of scientific/ecological literacy Bio-inspired approaches to computational design EMERGING AREAS TO EXPLORE Bio-inspired adaptive and interactive design Engineered biomaterials, living systems in design, hybrid systems"
+  },
+  {
+    "id": "2bd45537-9ccd-585c-86c9-a6985b3cee14",
+    "code": "MADx",
+    "name": "MADx: Media Arts and Design Lab",
+    "overview": "MADx.Lab - Media Arts and Design is a laboratory of the UNIDCOM-IADE research center that works at the intersection of artistic and cultural fields in an experimental and speculative way in the areas of Image Studies, Digital Art, Design, Multimedia, Cinema, Video, Photography, Drawing and Game Design, critically investigating symbolic and representational issues related to the context of visual culture, heritage and entertainment.",
+    "notes": "FCT: media arts, cultura digital, preservação/arquivo, experimental e especulativo."
+  },
+  {
+    "id": "f478cd46-8a5a-5a03-91b7-dc09c29fe4aa",
+    "code": "DFH",
+    "name": "DFH: Design for Humanity Lab",
+    "overview": "The DFH.Lab envisions design as a transformative practice for social well-being and collective flourishing. Grounded in ethics, inclusion, and conviviality, it advances a vision of design that restores the human dimension to systemic challenges, bridging policy, culture, and lived experience.",
+    "notes": "FCT: social design e inovação social; living labs; trabalho com comunidades. DFH Activity Plan (PDF): Coordinators = Rodrigo Morais; António Gorgel. DFH Activity Plan (PDF): Camila Jordão e Nuno Simões (Student) foram indicados como membros deste lab, mas não existem como investigadores UNIDCOM (registos criados na BD Pessoas apenas para ligação ao Lab). Colocou em internal colaborations isto: “Master in Design and Advertising; Master in Art Direction; Doctoral Program in Design; One World Academic Pillar (Universidade Europeia); Push (internally funded project)” Antonio moved to MADx"
+  }
+]
