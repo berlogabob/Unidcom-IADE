@@ -24,6 +24,21 @@ const admin = {
   "Content-Type": "application/json",
 };
 
+// Env first (supabase secrets set), else Vault via the service-role-only
+// public.orcid_credentials() RPC.
+async function orcidCredentials(): Promise<{ id: string; secret: string }> {
+  const id = Deno.env.get("ORCID_CLIENT_ID");
+  const secret = Deno.env.get("ORCID_CLIENT_SECRET");
+  if (id && secret) return { id, secret };
+  const res = await fetch(`${SB}/rest/v1/rpc/orcid_credentials`, {
+    method: "POST",
+    headers: admin,
+    body: "{}",
+  });
+  const [row] = await res.json();
+  return { id: row.client_id, secret: row.client_secret };
+}
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const state = url.searchParams.get("state") ?? "";
@@ -42,6 +57,7 @@ Deno.serve(async (req) => {
   }
 
   // 1. code -> verified iD. The `orcid` field of the token response IS the proof.
+  const creds = await orcidCredentials();
   const tok = await fetch("https://orcid.org/oauth/token", {
     method: "POST",
     headers: {
@@ -49,8 +65,8 @@ Deno.serve(async (req) => {
       Accept: "application/json",
     },
     body: new URLSearchParams({
-      client_id: Deno.env.get("ORCID_CLIENT_ID")!,
-      client_secret: Deno.env.get("ORCID_CLIENT_SECRET")!,
+      client_id: creds.id,
+      client_secret: creds.secret,
       grant_type: "authorization_code",
       redirect_uri: `${SB}/functions/v1/orcid-auth`, // must byte-match ORCID registration
       code,
