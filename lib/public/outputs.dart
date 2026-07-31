@@ -1,10 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/output_row.dart';
+import '../widgets/queue_list.dart';
 import '../widgets/search_bar.dart';
 
 class OutputsScreen extends StatefulWidget {
@@ -15,7 +15,6 @@ class OutputsScreen extends StatefulWidget {
 }
 
 class _OutputsScreenState extends State<OutputsScreen> {
-  Timer? _debounce;
   String _query = '';
   String _year = '';
   String? _type;
@@ -24,12 +23,6 @@ class _OutputsScreenState extends State<OutputsScreen> {
   String? _severity; // null = All · 'Any issue' · 'Errors' · 'Warnings'
   late Future<List<Map<String, dynamic>>> _outputs = fetchOutputs();
   late final Future<List<String>> _types = fetchDistinctOutputTypes();
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
 
   void _load() {
     final year = int.tryParse(_year);
@@ -46,8 +39,7 @@ class _OutputsScreenState extends State<OutputsScreen> {
 
   void _search(String value) {
     _query = value;
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), _load);
+    _load();
   }
 
   @override
@@ -82,16 +74,9 @@ class _OutputsScreenState extends State<OutputsScreen> {
           ),
           const SizedBox(height: 12),
           Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
+            child: AsyncView<List<Map<String, dynamic>>>(
               future: _outputs,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text(snapshot.error.toString()));
-                }
-                final allOutputs = snapshot.data ?? [];
+              builder: (context, allOutputs) {
                 final outputs = _severity == null
                     ? allOutputs
                     : allOutputs.where((o) {
@@ -181,17 +166,17 @@ class _OutputsScreenState extends State<OutputsScreen> {
       runSpacing: 12,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        _dropdown('Type', _type, types, (value) {
+        filterDropdown('Type', _type, types, (value) {
           _type = value;
           _load();
         }, width: 240),
-        _dropdown('Quartile', _quartile, const ['Q1', 'Q2', 'Q3', 'Q4'], (
+        filterDropdown('Quartile', _quartile, const ['Q1', 'Q2', 'Q3', 'Q4'], (
           value,
         ) {
           _quartile = value;
           _load();
-        }),
-        _dropdown(
+        }, width: 160),
+        filterDropdown(
           'Approval',
           _approvalStatus,
           const ['pending', 'approved', 'rejected'],
@@ -199,40 +184,22 @@ class _OutputsScreenState extends State<OutputsScreen> {
             _approvalStatus = value;
             _load();
           },
+          width: 160,
         ),
         if (isAdmin)
-          _dropdown(
+          filterDropdown(
             'Issues',
             _severity,
             const ['Any issue', 'Errors', 'Warnings'],
             (value) => setState(() => _severity = value),
+            width: 160,
           ),
-      ],
-    );
-  }
-
-  Widget _dropdown(
-    String label,
-    String? value,
-    List<String> values,
-    ValueChanged<String?> onChanged, {
-    double width = 160,
-  }) {
-    return SizedBox(
-      width: width,
-      child: DropdownButtonFormField<String?>(
-        initialValue: value,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
+        TextButton.icon(
+          onPressed: () => context.go('/conferences'),
+          icon: const Icon(Icons.event),
+          label: const Text('Conferences'),
         ),
-        items: [
-          const DropdownMenuItem(value: null, child: Text('All')),
-          for (final item in values)
-            DropdownMenuItem(value: item, child: Text(item)),
-        ],
-        onChanged: onChanged,
-      ),
+      ],
     );
   }
 }

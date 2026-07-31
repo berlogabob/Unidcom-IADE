@@ -1,6 +1,41 @@
 import 'package:flutter/material.dart';
 
+import 'detail_scaffold.dart';
 import 'search_bar.dart';
+
+/// Standard filter dropdown with an "All" (null) option.
+Widget filterDropdown(
+  String label,
+  String? value,
+  List<String> values,
+  ValueChanged<String?> onChanged, {
+  double width = 180,
+}) {
+  return SizedBox(
+    width: width,
+    child: DropdownButtonFormField<String?>(
+      initialValue: value,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      items: [
+        const DropdownMenuItem(value: null, child: Text('All')),
+        for (final item in values)
+          DropdownMenuItem(value: item, child: Text(item.replaceAll('_', ' '))),
+      ],
+      onChanged: onChanged,
+    ),
+  );
+}
+
+/// Distinct, sorted, non-empty option values for [filter] across [rows].
+List<String> filterOptions(QueueFilter filter, List<Map<String, dynamic>> rows) {
+  final Iterable<String> raw = filter.valuesOf != null
+      ? rows.expand(filter.valuesOf!)
+      : rows.map(filter.valueOf!).whereType<String>();
+  return raw.where((v) => v.isNotEmpty).toSet().toList()..sort();
+}
 
 /// A per-tab filter dropdown. Options are auto-derived from the distinct
 /// non-null values of [valueOf] across the loaded rows.
@@ -141,29 +176,15 @@ class _QueueListState extends State<QueueList> {
           ),
           for (final filter in widget.filters)
             () {
-              final options = _optionsFor(filter, rows);
+              final options = filterOptions(filter, rows);
               final selected = _filterValues[filter.label];
               // Selection may have vanished after a refresh — fall back to All.
               final value = options.contains(selected) ? selected : null;
-              return SizedBox(
-                width: 180,
-                child: DropdownButtonFormField<String?>(
-                  initialValue: value,
-                  decoration: InputDecoration(
-                    labelText: filter.label,
-                    border: const OutlineInputBorder(),
-                  ),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('All')),
-                    for (final option in options)
-                      DropdownMenuItem(
-                        value: option,
-                        child: Text(option.replaceAll('_', ' ')),
-                      ),
-                  ],
-                  onChanged: (v) =>
-                      setState(() => _filterValues[filter.label] = v),
-                ),
+              return filterDropdown(
+                filter.label,
+                value,
+                options,
+                (v) => setState(() => _filterValues[filter.label] = v),
               );
             }(),
           if (widget.groups.isNotEmpty)
@@ -186,17 +207,6 @@ class _QueueListState extends State<QueueList> {
         ],
       ),
     );
-  }
-
-  List<String> _optionsFor(
-    QueueFilter filter,
-    List<Map<String, dynamic>> rows,
-  ) {
-    final Iterable<String> raw = filter.valuesOf != null
-        ? rows.expand(filter.valuesOf!)
-        : rows.map(filter.valueOf!).whereType<String>();
-    final values = raw.where((v) => v.isNotEmpty).toSet().toList()..sort();
-    return values;
   }
 
   /// Buckets [rows] by the group key (first-seen order preserved) and emits a
@@ -226,16 +236,9 @@ class _QueueListState extends State<QueueList> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
+    return AsyncView<List<Map<String, dynamic>>>(
       future: widget.future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-        final rows = snapshot.data ?? [];
+      builder: (context, rows) {
         final visible = _apply(rows);
         return Column(
           children: [

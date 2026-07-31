@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../data/supabase.dart';
 import '../widgets/chart_palette.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/stat_tile.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -89,16 +90,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_DashboardData>(
+    return AsyncView<_DashboardData>(
       future: _data,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-        final data = snapshot.data!;
+      builder: (context, data) {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../widgets/detail_scaffold.dart';
 
 // Resolver: the profile icon lands here, then redirects to the signed-in
 // user's own public person page (/people/:id). Only the "no profile linked"
@@ -26,6 +27,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
   Future<void> _resolve() async {
     try {
+      // Self-heals when an admin fills people.orcid after first ORCID login.
+      await claimPersonByOrcid();
       final person = await fetchMyPerson();
       if (!mounted) return;
       if (person != null) {
@@ -106,16 +109,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             },
           ),
           const SizedBox(height: 8),
-          FutureBuilder<List<Map<String, dynamic>>>(
+          AsyncView<List<Map<String, dynamic>>>(
             future: _people,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Text(snapshot.error.toString());
-              }
-              final people = snapshot.data ?? [];
+            builder: (context, people) {
               return Column(
                 children: [
                   for (final person in people.take(20))

@@ -1,11 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
 import 'person_page.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/person_card.dart';
+import '../widgets/queue_list.dart';
 import '../widgets/search_bar.dart';
 
 class PeopleListScreen extends StatefulWidget {
@@ -16,7 +16,6 @@ class PeopleListScreen extends StatefulWidget {
 }
 
 class _PeopleListScreenState extends State<PeopleListScreen> {
-  Timer? _debounce;
   String _query = '';
   String? _membershipType;
   String? _status;
@@ -26,16 +25,9 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
   bool _hasOutputs = false;
   late Future<List<Map<String, dynamic>>> _people = fetchPeople();
 
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
-
   void _search(String value) {
     _query = value;
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), _load);
+    _load();
   }
 
   void _load() {
@@ -84,17 +76,9 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
           _filters(),
           const SizedBox(height: 12),
           Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
+            child: AsyncView<List<Map<String, dynamic>>>(
               future: _people,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text(snapshot.error.toString()));
-                }
-                final people = snapshot.data ?? [];
-
+              builder: (context, people) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -139,7 +123,7 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
       runSpacing: 12,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        _dropdown(
+        filterDropdown(
           'Membership',
           _membershipType,
           membershipTypes, // Layer-1 values (integrated/collaborator/external)
@@ -148,7 +132,7 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
             _load();
           },
         ),
-        _dropdown(
+        filterDropdown(
           'Status',
           _status,
           const ['a_confirmar', 'active', 'inactive'],
@@ -157,7 +141,7 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
             _load();
           },
         ),
-        _dropdown(
+        filterDropdown(
           'Profile',
           _profileStatus,
           const ['draft', 'pending_review', 'approved'],
@@ -191,30 +175,6 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
           },
         ),
       ],
-    );
-  }
-
-  Widget _dropdown(
-    String label,
-    String? value,
-    List<String> values,
-    ValueChanged<String?> onChanged,
-  ) {
-    return SizedBox(
-      width: 180,
-      child: DropdownButtonFormField<String?>(
-        initialValue: value,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-        items: [
-          const DropdownMenuItem(value: null, child: Text('All')),
-          for (final item in values)
-            DropdownMenuItem(value: item, child: Text(item)),
-        ],
-        onChanged: onChanged,
-      ),
     );
   }
 }

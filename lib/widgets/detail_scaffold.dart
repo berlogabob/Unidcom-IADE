@@ -1,9 +1,196 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Shared building blocks for the entity detail pages (labs, clusters,
-/// objectives). Keeps those three files thin instead of copy-pasting the
-/// header card, section headers and a generic editor into each.
+/// Shared building blocks for the entity detail pages. Keeps them thin
+/// instead of copy-pasting the header card, section headers, async
+/// preamble and a generic editor into each.
+
+/// FutureBuilder with the standard spinner/error preamble.
+class AsyncView<T> extends StatelessWidget {
+  const AsyncView({super.key, required this.future, required this.builder});
+
+  final Future<T> future;
+  final Widget Function(BuildContext, T) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<T>(
+      future: future,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text(snapshot.error.toString()));
+        }
+        return builder(context, snapshot.data as T);
+      },
+    );
+  }
+}
+
+/// Snackbar helper safe to call after awaits.
+void showSnack(BuildContext context, String message) {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(message)));
+}
+
+/// Compact chips for the non-empty values — feeds [EntityHeaderCard.chips].
+List<Widget> statusChips(Iterable<Object?> values) => [
+  for (final v in values)
+    if (v != null && v.toString().trim().isNotEmpty)
+      Chip(
+        label: Text(v.toString()),
+        visualDensity: VisualDensity.compact,
+      ),
+];
+
+/// Titled chip wrap of collaborations (internal/external icon per kind).
+Widget collaborationChips(
+  BuildContext context,
+  List<Map<String, dynamic>> items, {
+  double bottomPadding = 8,
+}) {
+  if (items.isEmpty) return const SizedBox.shrink();
+  return Padding(
+    padding: EdgeInsets.only(bottom: bottomPadding),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Collaborations', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final c in items)
+              Chip(
+                avatar: Icon(
+                  (c['kind'] as String?) == 'internal'
+                      ? Icons.groups
+                      : Icons.public,
+                  size: 16,
+                ),
+                label: Text(c['name'] as String? ?? '—'),
+                visualDensity: VisualDensity.compact,
+              ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+/// Year a project started, parsed from its ISO start_date.
+int? projectStartYear(Map<String, dynamic> project) =>
+    int.tryParse((project['start_date'] as String? ?? '').split('-').first);
+
+/// Standard project row: title, status, chevron, navigates to the project.
+class ProjectTile extends StatelessWidget {
+  const ProjectTile({super.key, required this.project});
+
+  final Map<String, dynamic> project;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        title: Text(project['title'] as String? ?? 'Untitled'),
+        subtitle: Text(project['status'] as String? ?? ''),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => context.go('/projects/${project['id']}'),
+      ),
+    );
+  }
+}
+
+/// Round avatar showing a short entity code (lab/cluster/objective).
+class CodeAvatar extends StatelessWidget {
+  const CodeAvatar({super.key, required this.code, this.radius = 24});
+
+  final String code;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: theme.colorScheme.primaryContainer,
+      child: Text(
+        code,
+        style: TextStyle(
+          fontSize: code.length > 3 ? 10 : 13,
+          fontWeight: FontWeight.w700,
+          color: theme.colorScheme.onPrimaryContainer,
+        ),
+      ),
+    );
+  }
+}
+
+/// Standard editor-dialog text field with bottom spacing.
+Widget editField(
+  TextEditingController controller,
+  String label, {
+  int maxLines = 1,
+  TextInputType? keyboardType,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: TextField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+    ),
+  );
+}
+
+/// Standard editor-dialog dropdown with bottom spacing.
+Widget editDropdown(
+  String label,
+  String value,
+  List<String> values,
+  ValueChanged<String?> onChanged,
+) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: DropdownButtonFormField<String>(
+      initialValue: values.contains(value) ? value : values.first,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
+      items: [
+        for (final item in values)
+          DropdownMenuItem(value: item, child: Text(item)),
+      ],
+      onChanged: onChanged,
+    ),
+  );
+}
+
+/// Standard Cancel/Save actions for editor dialogs.
+List<Widget> editorActions(
+  BuildContext context, {
+  required bool saving,
+  required VoidCallback onSave,
+}) => [
+  TextButton(
+    onPressed: saving ? null : () => Navigator.of(context).pop(false),
+    child: const Text('Cancel'),
+  ),
+  FilledButton(
+    onPressed: saving ? null : onSave,
+    child: Text(saving ? 'Saving...' : 'Save'),
+  ),
+];
 
 /// Centered, width-capped scrolling column — the standard detail layout.
 class DetailBody extends StatelessWidget {
@@ -27,18 +214,30 @@ class EntityHeaderCard extends StatelessWidget {
   const EntityHeaderCard({
     super.key,
     this.code,
+    this.leading,
     required this.title,
     this.subtitle,
     this.body,
     this.chips = const [],
+    this.extra = const [],
+    this.actions = const [],
     this.onEdit,
   });
 
   final String? code;
+
+  /// Custom leading widget (e.g. a photo avatar); overrides [code].
+  final Widget? leading;
   final String title;
   final String? subtitle;
   final String? body;
   final List<Widget> chips;
+
+  /// Extra widgets below the body (references, DOI rows, notes…).
+  final List<Widget> extra;
+
+  /// Footer action buttons; rendered alongside the [onEdit] button.
+  final List<Widget> actions;
   final VoidCallback? onEdit;
 
   @override
@@ -55,19 +254,11 @@ class EntityHeaderCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (code != null) ...[
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    child: Text(
-                      code!,
-                      style: TextStyle(
-                        fontSize: code!.length > 3 ? 10 : 13,
-                        fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
+                if (leading != null) ...[
+                  leading!,
+                  const SizedBox(width: 16),
+                ] else if (code != null) ...[
+                  CodeAvatar(code: code!),
                   const SizedBox(width: 16),
                 ],
                 Expanded(
@@ -98,12 +289,24 @@ class EntityHeaderCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(bodyText),
             ],
-            if (onEdit != null) ...[
+            for (final widget in extra) ...[
+              const SizedBox(height: 8),
+              widget,
+            ],
+            if (onEdit != null || actions.isNotEmpty) ...[
               const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit),
-                label: const Text('Edit'),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (onEdit != null)
+                    FilledButton.icon(
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Edit'),
+                    ),
+                  ...actions,
+                ],
               ),
             ],
           ],
@@ -115,10 +318,10 @@ class EntityHeaderCard extends StatelessWidget {
 
 Widget sectionHeader(
   BuildContext context,
-  String text,
+  String text, {
   VoidCallback? onAdd,
-  String addLabel,
-) {
+  String addLabel = 'Add',
+}) {
   return Row(
     children: [
       Expanded(
@@ -168,7 +371,7 @@ Widget linkChipsSection(
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      sectionHeader(context, title, admin ? onAdd : null, 'Add'),
+      sectionHeader(context, title, onAdd: admin ? onAdd : null),
       const SizedBox(height: 8),
       if (items.isEmpty)
         mutedText(context, 'None linked')
@@ -268,9 +471,7 @@ class _EntityEditDialogState extends State<_EntityEditDialog> {
   Future<void> _save() async {
     final name = _controllers['name']?.text.trim() ?? '';
     if (name.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Name is required')));
+      showSnack(context, 'Name is required');
       return;
     }
     setState(() => _saving = true);
@@ -289,9 +490,7 @@ class _EntityEditDialogState extends State<_EntityEditDialog> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      showSnack(context, error.toString());
       setState(() => _saving = false);
     }
   }
@@ -307,31 +506,12 @@ class _EntityEditDialogState extends State<_EntityEditDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               for (final f in widget.fields)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: TextField(
-                    controller: _controllers[f.key],
-                    maxLines: f.maxLines,
-                    decoration: InputDecoration(
-                      labelText: f.label,
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                ),
+                editField(_controllers[f.key]!, f.label, maxLines: f.maxLines),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: Text(_saving ? 'Saving...' : 'Save'),
-        ),
-      ],
+      actions: editorActions(context, saving: _saving, onSave: _save),
     );
   }
 }

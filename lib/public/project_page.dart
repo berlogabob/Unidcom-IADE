@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/output_row.dart';
 import '../widgets/person_card.dart';
 import '../widgets/search_picker.dart';
+import '../widgets/timeline_section.dart';
 
 Future<bool> showProjectEditor(
   BuildContext context, {
@@ -90,193 +92,148 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
+    return AsyncView<Map<String, dynamic>>(
       future: _project,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-
-        final project = snapshot.data ?? {};
+      builder: (context, project) {
         final admin = isAdmin;
         final members = (project['project_members'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
         final outputs = (project['project_outputs'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
-        final clusters = _embedded(project, 'project_clusters', 'clusters');
-        final labs = _embedded(project, 'project_labs', 'labs');
-        final objectives =
-            _embedded(project, 'project_objectives', 'objectives');
+        final clusters = embedded(project, 'project_clusters', 'clusters');
+        final labs = embedded(project, 'project_labs', 'labs');
+        final objectives = embedded(project, 'project_objectives', 'objectives');
 
-        return Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _header(project, admin),
-                const SizedBox(height: 24),
-                _linkChips(
-                  'Clusters',
-                  clusters,
-                  '/clusters',
-                  admin,
-                  onAdd: () => _linkEntity(
-                    title: 'Link cluster',
-                    fetch: fetchClusters,
-                    link: linkProjectCluster,
-                  ),
-                  onRemove: (id) async {
-                    await unlinkProjectCluster(widget.id, id);
-                    _refresh();
-                  },
-                ),
-                _linkChips(
-                  'Labs',
-                  labs,
-                  '/labs',
-                  admin,
-                  onAdd: () => _linkEntity(
-                    title: 'Link lab',
-                    fetch: fetchLabs,
-                    link: linkProjectLab,
-                  ),
-                  onRemove: (id) async {
-                    await unlinkProjectLab(widget.id, id);
-                    _refresh();
-                  },
-                ),
-                _linkChips(
-                  'Objectives',
-                  objectives,
-                  '/objectives',
-                  admin,
-                  onAdd: () => _linkEntity(
-                    title: 'Link objective',
-                    fetch: fetchObjectives,
-                    link: linkProjectObjective,
-                  ),
-                  onRemove: (id) async {
-                    await unlinkProjectObjective(widget.id, id);
-                    _refresh();
-                  },
-                ),
-                _collaborations(
-                  _embedded(project, 'project_collaborations', 'collaborations'),
-                ),
-                const SizedBox(height: 24),
-                _sectionHeader(
-                  'Members · ${members.length}',
-                  admin ? _addMember : null,
-                  'Add member',
-                ),
-                const SizedBox(height: 8),
-                if (members.isEmpty)
-                  _muted('No members yet')
-                else
-                  for (final member in members) _memberRow(member, admin),
-                const SizedBox(height: 24),
-                _sectionHeader(
-                  'Outputs · ${outputs.length}',
-                  admin ? _linkOutput : null,
-                  'Link output',
-                ),
-                const SizedBox(height: 8),
-                if (outputs.isEmpty)
-                  _muted('No outputs linked')
-                else
-                  for (final link in outputs) _outputRow(link, admin),
-              ],
+        return DetailBody(
+          children: [
+            _header(project, admin),
+            const SizedBox(height: 24),
+            linkChipsSection(
+              context,
+              title: 'Clusters',
+              items: clusters,
+              basePath: '/clusters',
+              admin: admin,
+              onAdd: () => _linkEntity(
+                title: 'Link cluster',
+                fetch: fetchClusters,
+                link: linkProjectCluster,
+              ),
+              onRemove: (id) async {
+                await unlinkProjectCluster(widget.id, id);
+                _refresh();
+              },
             ),
-          ),
+            const SizedBox(height: 8),
+            linkChipsSection(
+              context,
+              title: 'Labs',
+              items: labs,
+              basePath: '/labs',
+              admin: admin,
+              onAdd: () => _linkEntity(
+                title: 'Link lab',
+                fetch: fetchLabs,
+                link: linkProjectLab,
+              ),
+              onRemove: (id) async {
+                await unlinkProjectLab(widget.id, id);
+                _refresh();
+              },
+            ),
+            const SizedBox(height: 8),
+            linkChipsSection(
+              context,
+              title: 'Objectives',
+              items: objectives,
+              basePath: '/objectives',
+              admin: admin,
+              onAdd: () => _linkEntity(
+                title: 'Link objective',
+                fetch: fetchObjectives,
+                link: linkProjectObjective,
+              ),
+              onRemove: (id) async {
+                await unlinkProjectObjective(widget.id, id);
+                _refresh();
+              },
+            ),
+            const SizedBox(height: 8),
+            collaborationChips(
+              context,
+              embedded(project, 'project_collaborations', 'collaborations'),
+            ),
+            const SizedBox(height: 24),
+            sectionHeader(
+              context,
+              'Members · ${members.length}',
+              onAdd: admin ? _addMember : null,
+              addLabel: 'Add member',
+            ),
+            const SizedBox(height: 8),
+            if (members.isEmpty)
+              mutedText(context, 'No members yet')
+            else
+              for (final member in members) _memberRow(member, admin),
+            const SizedBox(height: 24),
+            TimelineSection(
+              title: 'Outputs · ${outputs.length}',
+              items: outputs,
+              yearOf: (link) =>
+                  (link['outputs'] as Map<String, dynamic>?)?['reporting_year']
+                      as int?,
+              groupOf: (link) =>
+                  (link['outputs'] as Map<String, dynamic>?)?['type']
+                      as String? ??
+                  '',
+              itemBuilder: (link) => _outputRow(link, admin),
+              emptyText: 'No outputs linked',
+              onAdd: admin ? _linkOutput : null,
+              addLabel: 'Link output',
+            ),
+          ],
         );
       },
     );
   }
 
   Widget _header(Map<String, dynamic> project, bool admin) {
-    final theme = Theme.of(context);
-    final acronym = (project['acronym'] as String? ?? '').trim();
-    final description = (project['description'] as String? ?? '').trim();
     final category = (project['category'] as String? ?? '').trim();
     final funding = (project['funding'] as String? ?? '').trim();
+    final notes = (project['notes'] as String? ?? '').trim();
     final dates = [project['start_date'], project['end_date']]
         .map((d) => (d as String?)?.trim())
         .where((d) => d != null && d.isNotEmpty)
         .join(' – ');
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              project['title'] as String? ?? 'Untitled',
-              style: theme.textTheme.headlineSmall,
-            ),
-            if (acronym.isNotEmpty)
-              Text(
-                acronym,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                if (project['status'] != null)
-                  Chip(
-                    label: Text(project['status'] as String),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                if (category.isNotEmpty)
-                  Chip(
-                    avatar: const Icon(Icons.category_outlined, size: 16),
-                    label: Text(category),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                if (funding.isNotEmpty)
-                  Chip(
-                    avatar: const Icon(Icons.euro, size: 16),
-                    label: Text(funding),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                if ((project['risk'] as String? ?? '').trim().isNotEmpty)
-                  Chip(
-                    avatar: const Icon(Icons.warning_amber, size: 16),
-                    label: Text('Risk: ${project['risk']}'),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                if (dates.isNotEmpty) _muted(dates),
-              ],
-            ),
-            if (description.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(description),
-            ],
-            if ((project['notes'] as String? ?? '').trim().isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _muted(project['notes'] as String),
-            ],
-            if (admin) ...[
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () => _edit(project),
-                icon: const Icon(Icons.edit),
-                label: const Text('Edit'),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return EntityHeaderCard(
+      title: project['title'] as String? ?? 'Untitled',
+      subtitle: project['acronym'] as String?,
+      body: project['description'] as String?,
+      chips: [
+        ...statusChips([project['status']]),
+        if (category.isNotEmpty)
+          Chip(
+            avatar: const Icon(Icons.category_outlined, size: 16),
+            label: Text(category),
+            visualDensity: VisualDensity.compact,
+          ),
+        if (funding.isNotEmpty)
+          Chip(
+            avatar: const Icon(Icons.euro, size: 16),
+            label: Text(funding),
+            visualDensity: VisualDensity.compact,
+          ),
+        if ((project['risk'] as String? ?? '').trim().isNotEmpty)
+          Chip(
+            avatar: const Icon(Icons.warning_amber, size: 16),
+            label: Text('Risk: ${project['risk']}'),
+            visualDensity: VisualDensity.compact,
+          ),
+        if (dates.isNotEmpty) mutedText(context, dates),
+      ],
+      extra: [if (notes.isNotEmpty) mutedText(context, notes)],
+      onEdit: admin ? () => _edit(project) : null,
     );
   }
 
@@ -335,118 +292,6 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
     );
   }
 
-  List<Map<String, dynamic>> _embedded(
-    Map<String, dynamic> row,
-    String join,
-    String embed,
-  ) {
-    return (row[join] as List<dynamic>? ?? [])
-        .map((e) => (e as Map<String, dynamic>)[embed] as Map<String, dynamic>?)
-        .whereType<Map<String, dynamic>>()
-        .toList();
-  }
-
-  Widget _linkChips(
-    String title,
-    List<Map<String, dynamic>> items,
-    String basePath,
-    bool admin, {
-    required VoidCallback onAdd,
-    required Future<void> Function(String id) onRemove,
-  }) {
-    if (items.isEmpty && !admin) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionHeader(title, admin ? onAdd : null, 'Add'),
-          const SizedBox(height: 8),
-          if (items.isEmpty)
-            _muted('None linked')
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final item in items)
-                  InputChip(
-                    label: Tooltip(
-                      message: item['name'] as String? ?? '',
-                      child: Text(
-                        item['code'] as String? ??
-                            item['name'] as String? ??
-                            '—',
-                      ),
-                    ),
-                    onPressed: () => context.go('$basePath/${item['id']}'),
-                    onDeleted: admin
-                        ? () => onRemove(item['id'] as String)
-                        : null,
-                  ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _collaborations(List<Map<String, dynamic>> items) {
-    if (items.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Collaborations',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final c in items)
-                Chip(
-                  avatar: Icon(
-                    (c['kind'] as String?) == 'internal'
-                        ? Icons.groups
-                        : Icons.public,
-                    size: 16,
-                  ),
-                  label: Text(c['name'] as String? ?? '—'),
-                  visualDensity: VisualDensity.compact,
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionHeader(String text, VoidCallback? onAdd, String addLabel) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(text, style: Theme.of(context).textTheme.titleLarge),
-        ),
-        if (onAdd != null)
-          TextButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.add),
-            label: Text(addLabel),
-          ),
-      ],
-    );
-  }
-
-  Widget _muted(String text) => Text(
-    text,
-    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    ),
-  );
 }
 
 class _ProjectEditDialog extends StatefulWidget {
@@ -518,9 +363,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
 
   Future<void> _save() async {
     if (_title.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Title is required')));
+      showSnack(context, 'Title is required');
       return;
     }
     setState(() => _saving = true);
@@ -549,9 +392,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      showSnack(context, error.toString());
       setState(() => _saving = false);
     }
   }
@@ -566,25 +407,25 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _field(_title, 'Title'),
-              _field(_acronym, 'Acronym'),
-              _field(_description, 'Description', maxLines: 4),
-              _field(_startDate, 'Start date (YYYY-MM-DD)'),
-              _field(_endDate, 'End date (YYYY-MM-DD)'),
+              editField(_title, 'Title'),
+              editField(_acronym, 'Acronym'),
+              editField(_description, 'Description', maxLines: 4),
+              editField(_startDate, 'Start date (YYYY-MM-DD)'),
+              editField(_endDate, 'End date (YYYY-MM-DD)'),
               Row(
                 children: [
                   Expanded(
-                    child: _field(
+                    child: editField(
                       _budget,
                       'Total budget',
                       keyboardType: TextInputType.number,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  SizedBox(width: 120, child: _field(_currency, 'Currency')),
+                  SizedBox(width: 120, child: editField(_currency, 'Currency')),
                 ],
               ),
-              _field(_funding, 'Funding (e.g. FCT, Interno, Outro)'),
+              editField(_funding, 'Funding (e.g. FCT, Interno, Outro)'),
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: DropdownButtonFormField<String?>(
@@ -603,13 +444,13 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
                   onChanged: (v) => setState(() => _category = v),
                 ),
               ),
-              _dropdown(
+              editDropdown(
                 'Status',
                 _status,
                 _statuses,
                 (v) => setState(() => _status = v!),
               ),
-              _dropdown(
+              editDropdown(
                 'Approval status',
                 _approvalStatus,
                 _approvalStatuses,
@@ -625,59 +466,7 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: Text(_saving ? 'Saving...' : 'Save'),
-        ),
-      ],
-    );
-  }
-
-  Widget _field(
-    TextEditingController controller,
-    String label, {
-    int maxLines = 1,
-    TextInputType? keyboardType,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-      ),
-    );
-  }
-
-  Widget _dropdown(
-    String label,
-    String value,
-    List<String> values,
-    ValueChanged<String?> onChanged,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DropdownButtonFormField<String>(
-        initialValue: values.contains(value) ? value : values.first,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-        items: [
-          for (final item in values)
-            DropdownMenuItem(value: item, child: Text(item)),
-        ],
-        onChanged: onChanged,
-      ),
+      actions: editorActions(context, saving: _saving, onSave: _save),
     );
   }
 }

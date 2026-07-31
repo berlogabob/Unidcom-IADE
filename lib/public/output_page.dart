@@ -4,22 +4,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../data/enrich_client.dart';
 import '../data/supabase.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/merge_matrix.dart';
 import '../widgets/output_row.dart';
 import '../widgets/person_card.dart';
 import '../widgets/suggestion_tile.dart';
-
-const _outputMergeFields = <MergeFieldSpec>[
-  (key: 'title', label: 'Title', tall: true),
-  (key: 'doi', label: 'DOI', tall: false),
-  (key: 'url', label: 'URL', tall: false),
-  (key: 'type', label: 'Type', tall: false),
-  (key: 'subtype', label: 'Subtype', tall: false),
-  (key: 'reporting_year', label: 'Reporting year', tall: false),
-  (key: 'macro_type', label: 'Macro type', tall: false),
-  (key: 'output_status', label: 'Output status', tall: false),
-  (key: 'full_reference', label: 'Full reference', tall: true),
-];
 
 String _outputMergeName(Map<String, dynamic> output) =>
     output['title'] as String? ?? 'Untitled';
@@ -51,10 +40,7 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
   }
 
   void _snack(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    if (mounted) showSnack(context, message);
   }
 
   Future<void> _acceptSuggestion(String id) async {
@@ -141,11 +127,7 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
       Uri.parse(url),
       mode: LaunchMode.externalApplication,
     );
-    if (!ok && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Couldn't open link")));
-    }
+    if (!ok && context.mounted) showSnack(context, "Couldn't open link");
   }
 
   Future<void> _edit(Map<String, dynamic> output) async {
@@ -197,10 +179,7 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
   Future<void> _mergeDuplicates() async {
     final cluster = await fetchOutputCluster(widget.id);
     if (cluster.length < 2) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No duplicates found')));
+      _snack('No duplicates found');
       return;
     }
     if (!mounted) return;
@@ -209,7 +188,7 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
       builder: (context) => MergeMatrixDialog(
         title: 'Merge outputs',
         records: cluster,
-        fields: _outputMergeFields,
+        fields: outputMergeFields,
         nameOf: _outputMergeName,
         onMerge: mergeOutputs,
       ),
@@ -226,17 +205,9 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
+    return AsyncView<Map<String, dynamic>>(
       future: _output,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-
-        final output = snapshot.data ?? {};
+      builder: (context, output) {
         final admin = isAdmin;
         final authors =
             (output['output_authors'] as List<dynamic>? ?? [])
@@ -250,33 +221,30 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
         final projects = (output['project_outputs'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
 
-        return Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _header(context, output, admin),
-                const SizedBox(height: 24),
-                if (admin) _issuesSection(context, admin),
-                if (admin) _suggestionsSection(context),
-                _sectionTitle(context, 'Authors · ${authors.length}'),
-                const SizedBox(height: 8),
-                if (authors.isEmpty)
-                  _muted(context, 'No authors listed')
-                else
-                  for (final author in authors) _authorCard(context, author),
-                const SizedBox(height: 24),
-                _sectionTitle(context, 'Projects · ${projects.length}'),
-                const SizedBox(height: 8),
-                if (projects.isEmpty)
-                  _muted(context, 'Not linked to a project')
-                else
-                  for (final link in projects) _projectTile(context, link),
-              ],
-            ),
-          ),
+        return DetailBody(
+          children: [
+            _header(context, output, admin),
+            const SizedBox(height: 24),
+            if (admin) _issuesSection(context, admin),
+            if (admin) _suggestionsSection(context),
+            sectionHeader(context, 'Authors · ${authors.length}'),
+            const SizedBox(height: 8),
+            if (authors.isEmpty)
+              mutedText(context, 'No authors listed')
+            else
+              for (final author in authors) _authorCard(context, author),
+            const SizedBox(height: 24),
+            sectionHeader(context, 'Projects · ${projects.length}'),
+            const SizedBox(height: 8),
+            if (projects.isEmpty)
+              mutedText(context, 'Not linked to a project')
+            else
+              for (final link in projects)
+                if (link['projects'] is Map<String, dynamic>)
+                  ProjectTile(
+                    project: link['projects'] as Map<String, dynamic>,
+                  ),
+          ],
         );
       },
     );
@@ -307,145 +275,115 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
     final fctSelected = output['fct_selected'] as bool? ?? false;
     final verified = output['verified_online'] as bool? ?? false;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              output['title'] as String? ?? 'Untitled',
-              style: theme.textTheme.headlineSmall,
+    return EntityHeaderCard(
+      title: output['title'] as String? ?? 'Untitled',
+      chips: [
+        ...statusChips(chips),
+        if (fctSelected)
+          Chip(
+            avatar: const Icon(Icons.flag, size: 16),
+            label: const Text('FCT selected'),
+            visualDensity: VisualDensity.compact,
+            backgroundColor: theme.colorScheme.primaryContainer,
+          ),
+        if (verified)
+          const Chip(
+            avatar: Icon(Icons.verified, size: 16),
+            label: Text('Verified online'),
+            visualDensity: VisualDensity.compact,
+          ),
+      ],
+      extra: [
+        if (reference.isNotEmpty)
+          SelectableText(
+            reference,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontStyle: FontStyle.italic,
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                for (final chip in chips)
-                  Chip(label: Text(chip), visualDensity: VisualDensity.compact),
-                if (fctSelected)
-                  Chip(
-                    avatar: const Icon(Icons.flag, size: 16),
-                    label: const Text('FCT selected'),
-                    visualDensity: VisualDensity.compact,
-                    backgroundColor: theme.colorScheme.primaryContainer,
+          ),
+        if (doi.isNotEmpty)
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              SelectableText('DOI: $doi', style: theme.textTheme.bodySmall),
+              if (doiStatus != null && doiStatus.isNotEmpty)
+                Icon(
+                  switch (doiStatus) {
+                    'ok' => Icons.check_circle,
+                    'dead' => Icons.error,
+                    _ => Icons.help_outline,
+                  },
+                  size: 14,
+                  color: switch (doiStatus) {
+                    'ok' => Colors.green,
+                    'dead' => theme.colorScheme.error,
+                    _ => theme.colorScheme.onSurfaceVariant,
+                  },
+                ),
+              if (doiStatus != null && doiStatus.isNotEmpty)
+                Text(doiStatus, style: theme.textTheme.bodySmall),
+              if (doiCheckedAt.isNotEmpty)
+                Text(
+                  '(checked $doiCheckedAt)',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                if (verified)
-                  const Chip(
-                    avatar: Icon(Icons.verified, size: 16),
-                    label: Text('Verified online'),
-                    visualDensity: VisualDensity.compact,
+                ),
+            ],
+          ),
+        if (category.isNotEmpty) mutedText(context, category),
+      ],
+      actions: [
+        if (link != null)
+          OutlinedButton.icon(
+            onPressed: () => _open(context, link),
+            icon: const Icon(Icons.open_in_new, size: 18),
+            label: const Text('Open paper'),
+          ),
+        if (admin) ...[
+          FilledButton.icon(
+            onPressed: () => _edit(output),
+            icon: const Icon(Icons.edit),
+            label: const Text('Edit'),
+          ),
+          OutlinedButton.icon(
+            onPressed: _findingDoi ? null : () => _findDoi(output),
+            icon: _findingDoi
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.travel_explore, size: 18),
+            label: const Text('Find DOI'),
+          ),
+          OutlinedButton.icon(
+            onPressed: _mergeDuplicates,
+            icon: const Icon(Icons.merge),
+            label: const Text('Merge duplicates'),
+          ),
+          PopupMenuButton<void>(
+            icon: const Icon(Icons.more_vert),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                onTap: _delete,
+                child: ListTile(
+                  leading: Icon(
+                    Icons.delete_outline,
+                    color: theme.colorScheme.error,
                   ),
-              ],
-            ),
-            if (reference.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              SelectableText(
-                reference,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontStyle: FontStyle.italic,
+                  title: Text(
+                    'Delete',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
                 ),
               ),
             ],
-            if (doi.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  SelectableText('DOI: $doi', style: theme.textTheme.bodySmall),
-                  if (doiStatus != null && doiStatus.isNotEmpty)
-                    Icon(
-                      switch (doiStatus) {
-                        'ok' => Icons.check_circle,
-                        'dead' => Icons.error,
-                        _ => Icons.help_outline,
-                      },
-                      size: 14,
-                      color: switch (doiStatus) {
-                        'ok' => Colors.green,
-                        'dead' => theme.colorScheme.error,
-                        _ => theme.colorScheme.onSurfaceVariant,
-                      },
-                    ),
-                  if (doiStatus != null && doiStatus.isNotEmpty)
-                    Text(doiStatus, style: theme.textTheme.bodySmall),
-                  if (doiCheckedAt.isNotEmpty)
-                    Text(
-                      '(checked $doiCheckedAt)',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
-              ),
-            ],
-            if (category.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _muted(context, category),
-            ],
-            if (link != null || admin) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (link != null)
-                    OutlinedButton.icon(
-                      onPressed: () => _open(context, link),
-                      icon: const Icon(Icons.open_in_new, size: 18),
-                      label: const Text('Open paper'),
-                    ),
-                  if (admin) ...[
-                    FilledButton.icon(
-                      onPressed: () => _edit(output),
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Edit'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: _findingDoi ? null : () => _findDoi(output),
-                      icon: _findingDoi
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.travel_explore, size: 18),
-                      label: const Text('Find DOI'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: _mergeDuplicates,
-                      icon: const Icon(Icons.merge),
-                      label: const Text('Merge duplicates'),
-                    ),
-                    PopupMenuButton<void>(
-                      icon: const Icon(Icons.more_vert),
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          onTap: _delete,
-                          child: ListTile(
-                            leading: Icon(
-                              Icons.delete_outline,
-                              color: theme.colorScheme.error,
-                            ),
-                            title: Text(
-                              'Delete',
-                              style: TextStyle(color: theme.colorScheme.error),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -458,7 +396,7 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sectionTitle(context, 'Suggestions · ${suggestions.length}'),
+            sectionHeader(context, 'Suggestions · ${suggestions.length}'),
             const SizedBox(height: 8),
             for (final suggestion in suggestions)
               SuggestionTile(
@@ -493,7 +431,7 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _sectionTitle(context, 'Data quality · ${issues.length}'),
+              sectionHeader(context, 'Data quality · ${issues.length}'),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -550,28 +488,6 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
     );
   }
 
-  Widget _projectTile(BuildContext context, Map<String, dynamic> link) {
-    final project = link['projects'] as Map<String, dynamic>?;
-    if (project == null) return const SizedBox.shrink();
-    return Card(
-      child: ListTile(
-        title: Text(project['title'] as String? ?? 'Untitled'),
-        subtitle: Text(project['status'] as String? ?? ''),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.go('/projects/${project['id']}'),
-      ),
-    );
-  }
-
-  Widget _sectionTitle(BuildContext context, String text) =>
-      Text(text, style: Theme.of(context).textTheme.titleLarge);
-
-  Widget _muted(BuildContext context, String text) => Text(
-    text,
-    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    ),
-  );
 }
 
 class _WaiveDialog extends StatefulWidget {
@@ -683,9 +599,7 @@ class _OutputEditDialogState extends State<_OutputEditDialog> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      showSnack(context, error.toString());
       setState(() => _saving = false);
     }
   }
@@ -700,26 +614,26 @@ class _OutputEditDialogState extends State<_OutputEditDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _field(_doi, 'DOI'),
-              _field(_fullReference, 'Full reference', maxLines: 4),
+              editField(_doi, 'DOI'),
+              editField(_fullReference, 'Full reference', maxLines: 4),
               Row(
                 children: [
-                  Expanded(child: _field(_type, 'Type')),
+                  Expanded(child: editField(_type, 'Type')),
                   const SizedBox(width: 12),
-                  Expanded(child: _field(_subtype, 'Subtype')),
+                  Expanded(child: editField(_subtype, 'Subtype')),
                 ],
               ),
               Row(
                 children: [
                   Expanded(
-                    child: _field(
+                    child: editField(
                       _reportingYear,
                       'Reporting year',
                       keyboardType: TextInputType.number,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(child: _field(_outputStatus, 'Output status')),
+                  Expanded(child: editField(_outputStatus, 'Output status')),
                 ],
               ),
               SwitchListTile(
@@ -732,36 +646,7 @@ class _OutputEditDialogState extends State<_OutputEditDialog> {
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: Text(_saving ? 'Saving...' : 'Save'),
-        ),
-      ],
-    );
-  }
-
-  Widget _field(
-    TextEditingController controller,
-    String label, {
-    int maxLines = 1,
-    TextInputType? keyboardType,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-      ),
+      actions: editorActions(context, saving: _saving, onSave: _save),
     );
   }
 }

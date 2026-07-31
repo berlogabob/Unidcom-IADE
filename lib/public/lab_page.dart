@@ -5,6 +5,7 @@ import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/person_card.dart';
 import '../widgets/search_picker.dart';
+import '../widgets/timeline_section.dart';
 
 class LabPageScreen extends StatefulWidget {
   const LabPageScreen({super.key, required this.id});
@@ -73,16 +74,9 @@ class _LabPageScreenState extends State<LabPageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
+    return AsyncView<Map<String, dynamic>>(
       future: _lab,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-        final lab = snapshot.data ?? {};
+      builder: (context, lab) {
         final admin = isAdmin;
         final allMembers = (lab['lab_members'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
@@ -90,9 +84,6 @@ class _LabPageScreenState extends State<LabPageScreen> {
             {_year, ...allMembers.map((m) => m['year'] as int? ?? _year)}
                 .toList()
               ..sort((a, b) => b.compareTo(a));
-        final members = allMembers
-            .where((m) => (m['year'] as int? ?? _year) == _year)
-            .toList();
         final objectives = embedded(lab, 'lab_objectives', 'objectives');
         final projects = embedded(lab, 'project_labs', 'projects');
 
@@ -105,31 +96,30 @@ class _LabPageScreenState extends State<LabPageScreen> {
               onEdit: admin ? () => _edit(lab) : null,
             ),
             const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: sectionHeader(
-                    context,
-                    'Members · ${members.length}',
-                    admin ? _addMember : null,
-                    'Add member',
-                  ),
-                ),
-                DropdownButton<int>(
-                  value: _year,
-                  items: [
-                    for (final y in years)
-                      DropdownMenuItem(value: y, child: Text('$y')),
-                  ],
-                  onChanged: (v) => setState(() => _year = v ?? _year),
-                ),
-              ],
+            TimelineSection(
+              title: 'Members · ${allMembers.length}',
+              items: allMembers,
+              yearOf: (m) => m['year'] as int?,
+              groupOf: (m) => (m['is_coordinator'] as bool? ?? false)
+                  ? 'Coordinators'
+                  : 'Members',
+              groupLabel: 'By role',
+              itemBuilder: (m) => _memberRow(m, admin),
+              emptyText: 'No members yet',
+              onAdd: admin ? _addMember : null,
+              addLabel: 'Add member',
+              // Year the "Add member" button writes to.
+              headerTrailing: admin
+                  ? DropdownButton<int>(
+                      value: _year,
+                      items: [
+                        for (final y in years)
+                          DropdownMenuItem(value: y, child: Text('$y')),
+                      ],
+                      onChanged: (v) => setState(() => _year = v ?? _year),
+                    )
+                  : null,
             ),
-            const SizedBox(height: 8),
-            if (members.isEmpty)
-              mutedText(context, 'No members in $_year')
-            else
-              for (final member in members) _memberRow(member, admin),
             const SizedBox(height: 24),
             linkChipsSection(
               context,
@@ -144,60 +134,20 @@ class _LabPageScreenState extends State<LabPageScreen> {
               },
             ),
             const SizedBox(height: 16),
-            _collaborations(
+            collaborationChips(
+              context,
               embedded(lab, 'lab_collaborations', 'collaborations'),
+              bottomPadding: 16,
             ),
-            sectionHeader(context, 'Projects · ${projects.length}', null, ''),
+            sectionHeader(context, 'Projects · ${projects.length}'),
             const SizedBox(height: 8),
             if (projects.isEmpty)
               mutedText(context, 'No projects yet')
             else
-              for (final project in projects)
-                Card(
-                  child: ListTile(
-                    title: Text(project['title'] as String? ?? 'Untitled'),
-                    subtitle: Text(project['status'] as String? ?? ''),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.go('/projects/${project['id']}'),
-                  ),
-                ),
+              for (final project in projects) ProjectTile(project: project),
           ],
         );
       },
-    );
-  }
-
-  Widget _collaborations(List<Map<String, dynamic>> items) {
-    if (items.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Collaborations',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final c in items)
-                Chip(
-                  avatar: Icon(
-                    (c['kind'] as String?) == 'internal'
-                        ? Icons.groups
-                        : Icons.public,
-                    size: 16,
-                  ),
-                  label: Text(c['name'] as String? ?? '—'),
-                  visualDensity: VisualDensity.compact,
-                ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -206,6 +156,8 @@ class _LabPageScreenState extends State<LabPageScreen> {
     if (person == null) return const SizedBox.shrink();
     final personId = person['id'] as String;
     final isCoordinator = member['is_coordinator'] as bool? ?? false;
+    // Writes target the row's own year, not the add-member picker.
+    final memberYear = member['year'] as int? ?? _year;
     return Row(
       children: [
         Expanded(
@@ -227,7 +179,7 @@ class _LabPageScreenState extends State<LabPageScreen> {
                 widget.id,
                 personId,
                 isCoordinator: !isCoordinator,
-                year: _year,
+                year: memberYear,
               );
               _refresh();
             },
@@ -236,7 +188,7 @@ class _LabPageScreenState extends State<LabPageScreen> {
             tooltip: 'Remove member',
             icon: const Icon(Icons.close),
             onPressed: () async {
-              await removeLabMember(widget.id, personId, year: _year);
+              await removeLabMember(widget.id, personId, year: memberYear);
               _refresh();
             },
           ),

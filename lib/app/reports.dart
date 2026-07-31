@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../csv_download.dart';
 import '../data/supabase.dart';
+import '../widgets/detail_scaffold.dart';
 
 /// The report kinds the `report` Edge Function can render. `kind` is sent verbatim;
 /// `usesTypeFilter` decides whether the Type dropdown applies to this report.
@@ -85,22 +86,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  void _snack(String message) => ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(message)));
+  void _snack(String message) => showSnack(context, message);
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
+    return AsyncView<List<Map<String, dynamic>>>(
       future: _outputs,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-        final outputs = snapshot.data ?? [];
+      builder: (context, outputs) {
         final years =
             outputs
                 .map((output) => output['reporting_year'] as int?)

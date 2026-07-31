@@ -1,16 +1,19 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'app/admin_page.dart';
 import 'app/dashboard.dart';
 import 'app/my_profile.dart';
 import 'data/supabase.dart' as data;
 import 'public/cluster_page.dart';
+import 'public/conferences.dart';
 import 'public/lab_page.dart';
 import 'public/objective_page.dart';
 import 'public/outputs.dart';
@@ -108,6 +111,23 @@ ThemeData _unidcomTheme() {
   );
 }
 
+const _supabaseUrl = String.fromEnvironment(
+  'SUPABASE_URL',
+  defaultValue: 'https://nmghxkhstlnxypmfmfhk.supabase.co',
+);
+const _supabaseAnonKey = String.fromEnvironment(
+  'SUPABASE_ANON_KEY',
+  defaultValue: 'sb_publishable_uCvM2dlnxkS3gqCsyaANVQ_RswEP6Zm',
+);
+// ORCID client IDs are public, like the anon key above.
+const _orcidClientId = String.fromEnvironment(
+  'ORCID_CLIENT_ID',
+  defaultValue: 'APP-XXXXXXXXXXXXXXXX',
+);
+
+// Set in main() when an ORCID sign-in just completed; read once by _router.
+bool _orcidSignedIn = false;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -118,17 +138,26 @@ Future<void> main() async {
     SemanticsBinding.instance.ensureSemantics();
   }
 
-  const supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://nmghxkhstlnxypmfmfhk.supabase.co',
-  );
-  const supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    defaultValue: 'sb_publishable_uCvM2dlnxkS3gqCsyaANVQ_RswEP6Zm',
-  );
-
   // ignore: deprecated_member_use
-  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+  await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseAnonKey);
+
+  // Hash URL strategy => the orcid-auth broker's ?token_hash sits before the
+  // '#', invisible to go_router; Uri.base is the only place it exists. Never
+  // name this param `code` — supabase_flutter's URL auto-detection would try
+  // a PKCE exchange on it and throw.
+  final tokenHash = Uri.base.queryParameters['token_hash'];
+  if (tokenHash != null) {
+    try {
+      await Supabase.instance.client.auth.verifyOTP(
+        type: OtpType.magiclink,
+        tokenHash: tokenHash,
+      );
+      await data.claimPersonByOrcid();
+      _orcidSignedIn = true;
+    } catch (_) {
+      // F5 replays the consumed one-time token; the persisted session wins.
+    }
+  }
 
   runApp(const UnidcomApp());
 }
@@ -138,7 +167,8 @@ Future<void> main() async {
 const _loginDisabled = true;
 
 final _router = GoRouter(
-  initialLocation: '/people',
+  // Fresh ORCID sign-in lands on the (just-claimed) own profile.
+  initialLocation: _orcidSignedIn ? '/app/profile' : '/people',
   refreshListenable: GoRouterRefreshStream(
     Supabase.instance.client.auth.onAuthStateChange,
   ),
@@ -178,6 +208,15 @@ final _router = GoRouter(
           path: '/outputs/:id',
           builder: (_, state) =>
               OutputPageScreen(id: state.pathParameters['id']!),
+        ),
+        GoRoute(
+          path: '/conferences',
+          builder: (_, _) => const ConferencesScreen(),
+        ),
+        GoRoute(
+          path: '/conferences/:key',
+          builder: (_, state) =>
+              ConferencePageScreen(confKey: state.pathParameters['key']!),
         ),
         GoRoute(path: '/structure', builder: (_, _) => const StructureScreen()),
         GoRoute(
@@ -247,7 +286,12 @@ class AppShell extends StatelessWidget {
     final hasSession = Supabase.instance.client.auth.currentSession != null;
     final destinations = [
       _NavItem('/people', Icons.people, 'People'),
-      _NavItem('/outputs', Icons.article, 'Outputs'),
+      _NavItem(
+        '/outputs',
+        Icons.article,
+        'Outputs',
+        prefixes: ['/outputs', '/conferences'],
+      ),
       _NavItem('/projects', Icons.work, 'Projects'),
       _NavItem(
         '/structure',
@@ -334,6 +378,33 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Broker failures come back as ?orcid_error= before the '#' (hash routing),
+    // so go_router never sees it — Uri.base does.
+    final orcidError = Uri.base.queryParameters['orcid_error'];
+    if (orcidError != null) _error = orcidError;
+  }
+
+  void _signInWithOrcid() {
+    // state = where the broker redirects back to; must match the edge
+    // function's allowlist exactly (origin + base path, trailing slash).
+    final returnTo = kIsWeb
+        ? '${Uri.base.origin}${Uri.base.path}'
+        : 'https://berlogabob.github.io/Unidcom-IADE/'; // mobile deep links: follow-up
+    launchUrl(
+      Uri.https('orcid.org', '/oauth/authorize', {
+        'client_id': _orcidClientId,
+        'response_type': 'code',
+        'scope': 'openid',
+        'redirect_uri': '$_supabaseUrl/functions/v1/orcid-auth',
+        'state': returnTo,
+      }),
+      webOnlyWindowName: '_self', // not a popup — the session must land in this tab
+    );
+  }
+
+  @override
   void dispose() {
     _email.dispose();
     _password.dispose();
@@ -404,6 +475,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 FilledButton(
                   onPressed: _loading ? null : _signIn,
                   child: Text(_loading ? 'Signing in...' : 'Sign in'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: _signInWithOrcid,
+                  child: const Text('Sign in with ORCID iD'),
                 ),
               ],
             ),

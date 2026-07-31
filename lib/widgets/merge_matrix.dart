@@ -6,6 +6,30 @@ import 'pick_matrix.dart';
 /// cell's maxLines for long text (title, bio, full_reference, ...).
 typedef MergeFieldSpec = ({String key, String label, bool tall});
 
+const personMergeFields = <MergeFieldSpec>[
+  (key: 'preferred_name', label: 'Preferred name', tall: false),
+  (key: 'legal_name', label: 'Legal name', tall: false),
+  (key: 'email', label: 'Email', tall: false),
+  (key: 'orcid', label: 'ORCID', tall: false),
+  (key: 'ciencia_id', label: 'Ciencia ID', tall: false),
+  (key: 'membership_type', label: 'Membership type', tall: false),
+  (key: 'status', label: 'Status', tall: false),
+  (key: 'bio', label: 'Bio', tall: true),
+  (key: 'photo_url', label: 'Photo URL', tall: false),
+];
+
+const outputMergeFields = <MergeFieldSpec>[
+  (key: 'title', label: 'Title', tall: true),
+  (key: 'doi', label: 'DOI', tall: false),
+  (key: 'url', label: 'URL', tall: false),
+  (key: 'type', label: 'Type', tall: false),
+  (key: 'subtype', label: 'Subtype', tall: false),
+  (key: 'reporting_year', label: 'Reporting year', tall: false),
+  (key: 'macro_type', label: 'Macro type', tall: false),
+  (key: 'output_status', label: 'Output status', tall: false),
+  (key: 'full_reference', label: 'Full reference', tall: true),
+];
+
 /// Shared merge-review dialog: a DataTable with a SURVIVOR radio row plus one
 /// radio row per [fields] entry, a live [ResultPreview] side panel, and a
 /// confirmation step before calling [onMerge]. Generalizes the original

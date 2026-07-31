@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/timeline_section.dart';
 
 class ObjectivePageScreen extends StatefulWidget {
   const ObjectivePageScreen({super.key, required this.id});
@@ -39,16 +39,9 @@ class _ObjectivePageScreenState extends State<ObjectivePageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
+    return AsyncView<Map<String, dynamic>>(
       future: _objective,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-        final objective = snapshot.data ?? {};
+      builder: (context, objective) {
         final admin = isAdmin;
         final clusters = embedded(objective, 'objective_clusters', 'clusters');
         final labs = embedded(objective, 'lab_objectives', 'labs');
@@ -65,7 +58,7 @@ class _ObjectivePageScreenState extends State<ObjectivePageScreen> {
             ),
             if (kpis.isNotEmpty) ...[
               const SizedBox(height: 24),
-              sectionHeader(context, 'KPIs', null, ''),
+              sectionHeader(context, 'KPIs'),
               const SizedBox(height: 8),
               Text(kpis),
             ],
@@ -86,20 +79,15 @@ class _ObjectivePageScreenState extends State<ObjectivePageScreen> {
               admin: false,
             ),
             const SizedBox(height: 16),
-            sectionHeader(context, 'Projects · ${projects.length}', null, ''),
-            const SizedBox(height: 8),
-            if (projects.isEmpty)
-              mutedText(context, 'No projects yet')
-            else
-              for (final project in projects)
-                Card(
-                  child: ListTile(
-                    title: Text(project['title'] as String? ?? 'Untitled'),
-                    subtitle: Text(project['status'] as String? ?? ''),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.go('/projects/${project['id']}'),
-                  ),
-                ),
+            TimelineSection(
+              title: 'Projects · ${projects.length}',
+              items: projects,
+              yearOf: projectStartYear,
+              groupOf: (p) => p['status'] as String? ?? '',
+              groupLabel: 'By status',
+              itemBuilder: (p) => ProjectTile(project: p),
+              emptyText: 'No projects yet',
+            ),
           ],
         );
       },

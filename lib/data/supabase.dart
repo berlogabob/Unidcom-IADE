@@ -549,6 +549,14 @@ Future<Map<String, dynamic>?> fetchMyPerson() async {
   }
 }
 
+/// Links people.orcid -> auth user via the ORCID iD verified at sign-in.
+/// Server-side no-op when already linked / no match / not an ORCID login.
+Future<void> claimPersonByOrcid() async {
+  try {
+    await db.rpc('claim_person_by_orcid');
+  } catch (_) {/* best-effort; profile UI has a manual fallback */}
+}
+
 Future<void> linkPersonToMe(String personId) async {
   try {
     final userId = db.auth.currentUser?.id;
@@ -1313,7 +1321,7 @@ Future<Map<String, dynamic>> fetchCluster(String id) async {
         .select(
           'id, code, name, concern, notes, '
           'objective_clusters(objectives(id, code, name)), '
-          'project_clusters(projects(id, title, status))',
+          'project_clusters(projects(id, title, status, start_date))',
         )
         .eq('id', id)
         .single();
@@ -1373,7 +1381,7 @@ Future<Map<String, dynamic>> fetchObjective(String id) async {
           'id, code, name, description, kpis, source, '
           'objective_clusters(clusters(id, code, name)), '
           'lab_objectives(labs(id, code, name)), '
-          'project_objectives(projects(id, title, status))',
+          'project_objectives(projects(id, title, status, start_date))',
         )
         .eq('id', id)
         .single();
@@ -1682,6 +1690,73 @@ Future<Map<String, int>> fetchMembershipByYear(int year) async {
       if (label != null) counts.update(label, (n) => n + 1, ifAbsent: () => 1);
     }
     return counts;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Output types that represent conference participation/organisation.
+/// Conferences have no table of their own — their pages are derived by
+/// grouping these outputs by a normalized title key.
+const conferenceOutputTypes = [
+  'Conferência em congressos (sem publicação)',
+  'Organização de Seminários e Conferências',
+  'conference-paper',
+];
+
+final _conferenceNoise = RegExp(
+  r'membro|comiss[aã]o|chair|organiz|scientific committee|presentation'
+  r'|publication|keynote',
+  caseSensitive: false,
+);
+
+/// Human-readable conference name: the first title segment that isn't role
+/// noise ("Membro da comissão científica", "Presentation:", ...).
+String conferenceNameOf(Map<String, dynamic> output) {
+  var text = (output['title'] as String? ?? '')
+      .replaceAll(RegExp(r'\([^)]*\)'), ' ')
+      .trim();
+  final segments = text
+      .split(RegExp(r'\s+[—–]\s+'))
+      .where((s) => s.trim().isNotEmpty && !_conferenceNoise.hasMatch(s))
+      .toList();
+  var name = (segments.isEmpty ? text : segments.first).trim();
+  // "Presentation: X" style prefixes.
+  final colon = name.indexOf(':');
+  if (colon > 0 && _conferenceNoise.hasMatch(name.substring(0, colon))) {
+    name = name.substring(colon + 1).trim();
+  }
+  return name.replaceAll(RegExp(r'\s+'), ' ');
+}
+
+const _diacritics = 'áàâãäåéèêëíìîïóòôõöúùûüçñ';
+const _diacriticsPlain = 'aaaaaaeeeeiiiiooooouuuucn';
+
+/// Normalized grouping key (lowercase, no diacritics/punctuation). Imperfect
+/// by design — titles are free text; fix bad groupings by editing the title.
+String conferenceKeyOf(Map<String, dynamic> output) {
+  var key = conferenceNameOf(output).toLowerCase();
+  for (var i = 0; i < _diacritics.length; i++) {
+    key = key.replaceAll(_diacritics[i], _diacriticsPlain[i]);
+  }
+  return key
+      .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+      .trim()
+      .replaceAll(' ', '-');
+}
+
+Future<List<Map<String, dynamic>>> fetchConferenceOutputs() async {
+  try {
+    final rows = await db
+        .from('outputs')
+        .select(
+          'id, title, type, subtype, reporting_year, full_reference, '
+          'output_authors(people(id, preferred_name, membership_type, status))',
+        )
+        .inFilter('type', conferenceOutputTypes)
+        .filter('merged_into', 'is', null)
+        .order('reporting_year', ascending: false);
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {
     throw Exception(_error(error));
   }

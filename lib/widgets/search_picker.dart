@@ -1,7 +1,6 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
+import 'detail_scaffold.dart';
 import 'search_bar.dart';
 
 /// Search-and-pick dialog reused for people, outputs, clusters, labs and
@@ -42,20 +41,10 @@ class _SearchPickerDialog extends StatefulWidget {
 }
 
 class _SearchPickerDialogState extends State<_SearchPickerDialog> {
-  Timer? _debounce;
   late Future<List<Map<String, dynamic>>> _results = widget.search('');
 
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
-
   void _onChanged(String value) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 300), () {
-      setState(() => _results = widget.search(value));
-    });
+    setState(() => _results = widget.search(value));
   }
 
   @override
@@ -70,16 +59,9 @@ class _SearchPickerDialogState extends State<_SearchPickerDialog> {
             SearchBarField(onChanged: _onChanged),
             const SizedBox(height: 12),
             Expanded(
-              child: FutureBuilder<List<Map<String, dynamic>>>(
+              child: AsyncView<List<Map<String, dynamic>>>(
                 future: _results,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return Center(child: Text(snapshot.error.toString()));
-                  }
-                  final rows = snapshot.data ?? [];
+                builder: (context, rows) {
                   if (rows.isEmpty) {
                     return const Center(child: Text('No results'));
                   }

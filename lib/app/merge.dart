@@ -1,36 +1,11 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../data/supabase.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/merge_matrix.dart';
 import '../widgets/search_bar.dart';
 
 enum _MergeSection { people, outputs }
-
-const _personFields = <MergeFieldSpec>[
-  (key: 'preferred_name', label: 'Preferred name', tall: false),
-  (key: 'legal_name', label: 'Legal name', tall: false),
-  (key: 'email', label: 'Email', tall: false),
-  (key: 'orcid', label: 'ORCID', tall: false),
-  (key: 'ciencia_id', label: 'Ciencia ID', tall: false),
-  (key: 'membership_type', label: 'Membership type', tall: false),
-  (key: 'status', label: 'Status', tall: false),
-  (key: 'bio', label: 'Bio', tall: true),
-  (key: 'photo_url', label: 'Photo URL', tall: false),
-];
-
-const _outputFields = <MergeFieldSpec>[
-  (key: 'title', label: 'Title', tall: true),
-  (key: 'doi', label: 'DOI', tall: false),
-  (key: 'url', label: 'URL', tall: false),
-  (key: 'type', label: 'Type', tall: false),
-  (key: 'subtype', label: 'Subtype', tall: false),
-  (key: 'reporting_year', label: 'Reporting year', tall: false),
-  (key: 'macro_type', label: 'Macro type', tall: false),
-  (key: 'output_status', label: 'Output status', tall: false),
-  (key: 'full_reference', label: 'Full reference', tall: true),
-];
 
 String _personName(Map<String, dynamic> person) =>
     person['preferred_name'] as String? ?? 'Unnamed';
@@ -76,8 +51,31 @@ class _MergeScreenState extends State<MergeScreen> {
         ),
         Expanded(
           child: switch (_section) {
-            _MergeSection.people => const _PeopleMergeSection(),
-            _MergeSection.outputs => const _OutputMergeSection(),
+            _MergeSection.people => _MergeSectionView(
+              key: const ValueKey('people'),
+              title: 'Merge people',
+              searchLabel: 'Search people',
+              candidates: fetchMergeCandidates,
+              search: (query) => fetchPeople(query: query),
+              fields: personMergeFields,
+              nameOf: _personName,
+              subtitleOf: (p) => p['email'] as String? ?? '',
+              onMerge: mergePeople,
+            ),
+            _MergeSection.outputs => _MergeSectionView(
+              key: const ValueKey('outputs'),
+              title: 'Merge outputs',
+              searchLabel: 'Search outputs',
+              candidates: fetchOutputDuplicateGroups,
+              search: (query) => fetchOutputs(query: query),
+              fields: outputMergeFields,
+              nameOf: _outputName,
+              subtitleOf: (o) => [
+                o['reporting_year']?.toString(),
+                o['type'] as String?,
+              ].whereType<String>().join(' · '),
+              onMerge: mergeOutputs,
+            ),
           },
         ),
       ],
@@ -85,54 +83,69 @@ class _MergeScreenState extends State<MergeScreen> {
   }
 }
 
-class _PeopleMergeSection extends StatefulWidget {
-  const _PeopleMergeSection();
+/// Suggested/Manual merge tabs, parameterized by record type — people and
+/// outputs share the exact same interaction.
+class _MergeSectionView extends StatefulWidget {
+  const _MergeSectionView({
+    super.key,
+    required this.title,
+    required this.searchLabel,
+    required this.candidates,
+    required this.search,
+    required this.fields,
+    required this.nameOf,
+    required this.subtitleOf,
+    required this.onMerge,
+  });
+
+  final String title;
+  final String searchLabel;
+  final Future<List<List<Map<String, dynamic>>>> Function() candidates;
+  final Future<List<Map<String, dynamic>>> Function(String query) search;
+  final List<MergeFieldSpec> fields;
+  final String Function(Map<String, dynamic>) nameOf;
+  final String Function(Map<String, dynamic>) subtitleOf;
+  final Future<void> Function(
+    String survivorId,
+    List<String> loserIds,
+    Map<String, dynamic> fields,
+  )
+  onMerge;
 
   @override
-  State<_PeopleMergeSection> createState() => _PeopleMergeSectionState();
+  State<_MergeSectionView> createState() => _MergeSectionViewState();
 }
 
-class _PeopleMergeSectionState extends State<_PeopleMergeSection> {
+class _MergeSectionViewState extends State<_MergeSectionView> {
   late Future<List<List<Map<String, dynamic>>>> _candidates =
-      fetchMergeCandidates();
-  late Future<List<Map<String, dynamic>>> _people = fetchPeople();
+      widget.candidates();
+  late Future<List<Map<String, dynamic>>> _rows = widget.search('');
   final _selected = <String, Map<String, dynamic>>{};
-  Timer? _debounce;
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
 
   void _refreshCandidates() {
-    setState(() => _candidates = fetchMergeCandidates());
+    setState(() => _candidates = widget.candidates());
   }
 
   void _search(String query) {
-    _debounce?.cancel();
-    _debounce = Timer(
-      const Duration(milliseconds: 300),
-      () => setState(() => _people = fetchPeople(query: query)),
-    );
+    setState(() => _rows = widget.search(query));
   }
 
-  Future<void> _openMatrix(List<Map<String, dynamic>> people) async {
+  Future<void> _openMatrix(List<Map<String, dynamic>> records) async {
     final merged = await showDialog<bool>(
       context: context,
       builder: (context) => MergeMatrixDialog(
-        title: 'Merge people',
-        records: people,
-        fields: _personFields,
-        nameOf: _personName,
-        onMerge: mergePeople,
+        title: widget.title,
+        records: records,
+        fields: widget.fields,
+        nameOf: widget.nameOf,
+        onMerge: widget.onMerge,
       ),
     );
     if (merged != true || !mounted) return;
     setState(() {
       _selected.clear();
-      _candidates = fetchMergeCandidates();
-      _people = fetchPeople();
+      _candidates = widget.candidates();
+      _rows = widget.search('');
     });
   }
 
@@ -157,16 +170,9 @@ class _PeopleMergeSectionState extends State<_PeopleMergeSection> {
   }
 
   Widget _suggestedTab() {
-    return FutureBuilder<List<List<Map<String, dynamic>>>>(
+    return AsyncView<List<List<Map<String, dynamic>>>>(
       future: _candidates,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-        final groups = snapshot.data ?? [];
+      builder: (context, groups) {
         if (groups.isEmpty) {
           return const Center(child: Text('No duplicate candidates found'));
         }
@@ -188,7 +194,7 @@ class _PeopleMergeSectionState extends State<_PeopleMergeSection> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
-                      for (final person in group) Text(_personName(person)),
+                      for (final record in group) Text(widget.nameOf(record)),
                       const SizedBox(height: 12),
                       Align(
                         alignment: Alignment.centerRight,
@@ -213,7 +219,7 @@ class _PeopleMergeSectionState extends State<_PeopleMergeSection> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          SearchBarField(label: 'Search people', onChanged: _search),
+          SearchBarField(label: widget.searchLabel, onChanged: _search),
           const SizedBox(height: 12),
           if (_selected.isNotEmpty)
             Align(
@@ -222,11 +228,11 @@ class _PeopleMergeSectionState extends State<_PeopleMergeSection> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (final person in _selected.values)
+                  for (final record in _selected.values)
                     InputChip(
-                      label: Text(_personName(person)),
+                      label: Text(widget.nameOf(record)),
                       onDeleted: () =>
-                          setState(() => _selected.remove(person['id'])),
+                          setState(() => _selected.remove(record['id'])),
                     ),
                 ],
               ),
@@ -244,238 +250,25 @@ class _PeopleMergeSectionState extends State<_PeopleMergeSection> {
           ),
           const SizedBox(height: 12),
           Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _people,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text(snapshot.error.toString()));
-                }
-                final people = snapshot.data ?? [];
-                if (people.isEmpty) {
-                  return const Center(child: Text('No people found'));
+            child: AsyncView<List<Map<String, dynamic>>>(
+              future: _rows,
+              builder: (context, rows) {
+                if (rows.isEmpty) {
+                  return const Center(child: Text('No results'));
                 }
                 return ListView.builder(
-                  itemCount: people.length,
+                  itemCount: rows.length,
                   itemBuilder: (context, index) {
-                    final person = people[index];
-                    final id = person['id'] as String;
+                    final record = rows[index];
+                    final id = record['id'] as String;
                     final selected = _selected.containsKey(id);
                     return CheckboxListTile(
                       value: selected,
-                      title: Text(_personName(person)),
-                      subtitle: Text(person['email'] as String? ?? ''),
+                      title: Text(widget.nameOf(record)),
+                      subtitle: Text(widget.subtitleOf(record)),
                       onChanged: (value) => setState(() {
                         if (value == true) {
-                          _selected[id] = person;
-                        } else {
-                          _selected.remove(id);
-                        }
-                      }),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OutputMergeSection extends StatefulWidget {
-  const _OutputMergeSection();
-
-  @override
-  State<_OutputMergeSection> createState() => _OutputMergeSectionState();
-}
-
-class _OutputMergeSectionState extends State<_OutputMergeSection> {
-  late Future<List<List<Map<String, dynamic>>>> _candidates =
-      fetchOutputDuplicateGroups();
-  late Future<List<Map<String, dynamic>>> _outputs = fetchOutputs();
-  final _selected = <String, Map<String, dynamic>>{};
-  Timer? _debounce;
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  void _refreshCandidates() {
-    setState(() => _candidates = fetchOutputDuplicateGroups());
-  }
-
-  void _search(String query) {
-    _debounce?.cancel();
-    _debounce = Timer(
-      const Duration(milliseconds: 300),
-      () => setState(() => _outputs = fetchOutputs(query: query)),
-    );
-  }
-
-  Future<void> _openMatrix(List<Map<String, dynamic>> outputs) async {
-    final merged = await showDialog<bool>(
-      context: context,
-      builder: (context) => MergeMatrixDialog(
-        title: 'Merge outputs',
-        records: outputs,
-        fields: _outputFields,
-        nameOf: _outputName,
-        onMerge: mergeOutputs,
-      ),
-    );
-    if (merged != true || !mounted) return;
-    setState(() {
-      _selected.clear();
-      _candidates = fetchOutputDuplicateGroups();
-      _outputs = fetchOutputs();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Column(
-        children: [
-          const TabBar(
-            tabs: [
-              Tab(text: 'Suggested'),
-              Tab(text: 'Manual'),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(children: [_suggestedTab(), _manualTab()]),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _suggestedTab() {
-    return FutureBuilder<List<List<Map<String, dynamic>>>>(
-      future: _candidates,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-        final groups = snapshot.data ?? [];
-        if (groups.isEmpty) {
-          return const Center(child: Text('No duplicate candidates found'));
-        }
-        return RefreshIndicator(
-          onRefresh: () async => _refreshCandidates(),
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: groups.length,
-            itemBuilder: (context, index) {
-              final group = groups[index];
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${group.length} possible duplicates',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      for (final output in group) Text(_outputName(output)),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: FilledButton(
-                          onPressed: () => _openMatrix(group),
-                          child: const Text('Review & merge'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _manualTab() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          SearchBarField(label: 'Search outputs', onChanged: _search),
-          const SizedBox(height: 12),
-          if (_selected.isNotEmpty)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final output in _selected.values)
-                    InputChip(
-                      label: Text(_outputName(output)),
-                      onDeleted: () =>
-                          setState(() => _selected.remove(output['id'])),
-                    ),
-                ],
-              ),
-            ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              onPressed: _selected.length < 2
-                  ? null
-                  : () => _openMatrix(_selected.values.toList()),
-              icon: const Icon(Icons.merge),
-              label: const Text('Merge selected'),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: _outputs,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text(snapshot.error.toString()));
-                }
-                final outputs = snapshot.data ?? [];
-                if (outputs.isEmpty) {
-                  return const Center(child: Text('No outputs found'));
-                }
-                return ListView.builder(
-                  itemCount: outputs.length,
-                  itemBuilder: (context, index) {
-                    final output = outputs[index];
-                    final id = output['id'] as String;
-                    final selected = _selected.containsKey(id);
-                    return CheckboxListTile(
-                      value: selected,
-                      title: Text(_outputName(output)),
-                      subtitle: Text(
-                        [
-                          output['reporting_year']?.toString(),
-                          output['type'] as String?,
-                        ].whereType<String>().join(' · '),
-                      ),
-                      onChanged: (value) => setState(() {
-                        if (value == true) {
-                          _selected[id] = output;
+                          _selected[id] = record;
                         } else {
                           _selected.remove(id);
                         }

@@ -5,8 +5,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../app/orcid_update.dart';
 import '../data/enrich_client.dart';
 import '../data/supabase.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/output_row.dart';
+import '../widgets/queue_list.dart';
 import '../widgets/suggestion_tile.dart';
+import '../widgets/timeline_section.dart';
 
 /// Max outputs a person may pin to their profile. Mirrors the
 /// `people_featured_outputs_max` check constraint.
@@ -78,7 +81,6 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
   late Future<List<Map<String, dynamic>>> _suggestions =
       fetchSuggestionsForPerson(widget.id);
   late Future<List<Map<String, dynamic>>> _roles = fetchPersonRoles(widget.id);
-  bool _rolesByTag = false; // false = group by year, true = group by tag/kind
   bool _enriching = false;
   bool _syncing = false;
 
@@ -108,9 +110,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     await approvePerson(widget.id);
     if (!mounted) return;
     _refresh();
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Profile approved')));
+    _snack('Profile approved');
   }
 
   Future<void> _edit(
@@ -131,9 +131,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
       final incoming = await fetchOrcidValues(widget.id);
       if (!mounted) return;
       if (incoming == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No ORCID profile found to pull from')),
-        );
+        _snack('No ORCID profile found to pull from');
         return;
       }
       final applied = await showOrcidUpdateDialog(
@@ -144,10 +142,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
       );
       if (applied && mounted) _refresh();
     } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      _snack(error.toString());
     } finally {
       if (mounted) setState(() => _enriching = false);
     }
@@ -159,9 +154,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
       final status = await fetchOrcidSyncStatus(widget.id);
       if (!mounted) return;
       if (status == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No ORCID on this profile to check')),
-        );
+        _snack('No ORCID on this profile to check');
         return;
       }
       await showDialog<void>(
@@ -169,10 +162,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
         builder: (context) => _OrcidSyncDialog(status: status),
       );
     } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      _snack(error.toString());
     } finally {
       if (mounted) setState(() => _syncing = false);
     }
@@ -183,11 +173,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
       Uri.parse(url),
       mode: LaunchMode.externalApplication,
     );
-    if (!ok && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Couldn't open link")));
-    }
+    if (!ok) _snack("Couldn't open link");
   }
 
   Widget _suggestionsSection() {
@@ -235,99 +221,85 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
 
   int _order(Map<String, dynamic> role) => _kindOrder[role['kind']] ?? 9;
 
-  Widget _rolesSection(bool admin, bool isOwner) {
+  /// One merged year-grouped timeline: roles/tags/mentorships, UNIDCOM
+  /// outputs (star toggles intact) and lab memberships.
+  Widget _timelineSection(
+    Map<String, dynamic> person,
+    List<Map<String, dynamic>> authors,
+    List<Map<String, dynamic>> labMemberships,
+    List<String> featured,
+    bool admin,
+    bool isOwner,
+  ) {
     final canEdit = admin || isOwner;
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _roles,
       builder: (context, snapshot) {
         final roles = snapshot.data ?? [];
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(child: _sectionTitle('Roles & tags · ${roles.length}')),
-                if (canEdit)
-                  TextButton.icon(
-                    onPressed: _addRole,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Add'),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (roles.isNotEmpty)
-              SegmentedButton<bool>(
-                segments: const [
-                  ButtonSegment(value: false, label: Text('By year')),
-                  ButtonSegment(value: true, label: Text('By tag')),
-                ],
-                selected: {_rolesByTag},
-                onSelectionChanged: (s) =>
-                    setState(() => _rolesByTag = s.first),
-              ),
-            const SizedBox(height: 8),
-            if (roles.isEmpty)
-              _muted('No roles or tags recorded')
-            else if (_rolesByTag)
-              ..._rolesByTagView(roles, admin, isOwner)
-            else
-              ..._rolesByYearView(roles, admin, isOwner),
+        // Roles first (membership pinned), then outputs, then labs — the
+        // year buckets keep this insertion order.
+        final items = <Map<String, dynamic>>[
+          for (final role in [...roles]
+            ..sort((a, b) => _order(a).compareTo(_order(b))))
+            {...role, '_kind': _kindLabels[role['kind']] ?? 'Role'},
+          for (final author in authors) {...author, '_kind': 'Output'},
+          for (final m in labMemberships) {...m, '_kind': 'Lab'},
+        ];
+        return TimelineSection(
+          title: 'Timeline · ${items.length}',
+          items: items,
+          yearOf: (item) => switch (item['_kind']) {
+            'Output' =>
+              (item['outputs'] as Map<String, dynamic>?)?['reporting_year']
+                  as int?,
+            _ => item['year'] as int?,
+          },
+          groupOf: (item) => switch (item['_kind']) {
+            'Output' =>
+              (item['outputs'] as Map<String, dynamic>?)?['type'] as String? ??
+                  'Output',
+            'Lab' =>
+              'Lab · ${(item['labs'] as Map<String, dynamic>?)?['code'] ?? '—'}',
+            _ => '${item['_kind']} · ${_roleValue(item)}',
+          },
+          groupLabel: 'By tag',
+          filters: [
+            QueueFilter(label: 'Kind', valueOf: (i) => i['_kind'] as String?),
           ],
+          itemBuilder: (item) => switch (item['_kind']) {
+            'Output' => _outputRow(
+              item,
+              isFeatured: featured.contains(outputIdOf(item)),
+              canEdit: canEdit,
+              featured: featured,
+              person: person,
+            ),
+            'Lab' => _labRow(item),
+            _ => _roleRow(item, admin, isOwner, showValue: true),
+          },
+          emptyText: 'Nothing recorded yet',
+          onAdd: canEdit ? _addRole : null,
         );
       },
     );
   }
 
-  List<Widget> _rolesByYearView(
-    List<Map<String, dynamic>> roles,
-    bool admin,
-    bool isOwner,
-  ) {
-    final byYear = <int?, List<Map<String, dynamic>>>{};
-    for (final role in roles) {
-      (byYear[role['year'] as int?] ??= []).add(role);
-    }
-    final years = byYear.keys.toList()
-      ..sort((a, b) => (b ?? -1).compareTo(a ?? -1));
-    return [
-      for (final year in years) ...[
-        Text(
-          year?.toString() ?? 'Undated',
-          style: Theme.of(context).textTheme.titleSmall,
-        ),
-        // Membership pinned first, then role/tag/mentorship.
-        for (final role in byYear[year]!..sort((a, b) => _order(a).compareTo(_order(b))))
-          _roleRow(role, admin, isOwner, showValue: true),
-      ],
-    ];
-  }
-
-  List<Widget> _rolesByTagView(
-    List<Map<String, dynamic>> roles,
-    bool admin,
-    bool isOwner,
-  ) {
-    final byKey = <String, List<Map<String, dynamic>>>{};
-    for (final role in roles) {
-      final key = '${_kindLabels[role['kind']] ?? role['kind']} · '
-          '${_roleValue(role)}';
-      (byKey[key] ??= []).add(role);
-    }
-    // Order groups membership-first, then alphabetically within a kind.
-    final keys = byKey.keys.toList()
-      ..sort((a, b) {
-        final oa = _order(byKey[a]!.first), ob = _order(byKey[b]!.first);
-        return oa != ob ? oa.compareTo(ob) : a.compareTo(b);
-      });
-    return [
-      for (final key in keys) ...[
-        Text(key, style: Theme.of(context).textTheme.titleSmall),
-        // Rows show only the year here — the value is already the group header.
-        for (final role in byKey[key]!)
-          _roleRow(role, admin, isOwner, showValue: false),
-      ],
-    ];
+  Widget _labRow(Map<String, dynamic> membership) {
+    final lab = membership['labs'] as Map<String, dynamic>?;
+    if (lab == null) return const SizedBox.shrink();
+    final coordinator = membership['is_coordinator'] as bool? ?? false;
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(coordinator ? Icons.star : Icons.science_outlined,
+          size: 20),
+      title: Text(
+        'Lab · ${lab['code'] ?? lab['name'] ?? '—'}'
+        '${coordinator ? ' (coordinator)' : ''}',
+      ),
+      trailing: const Icon(Icons.chevron_right, size: 18),
+      onTap: () => context.go('/labs/${lab['id']}'),
+    );
   }
 
   Widget _roleRow(
@@ -389,17 +361,9 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
+    return AsyncView<Map<String, dynamic>>(
       future: _person,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-
-        final person = snapshot.data ?? {};
+      builder: (context, person) {
         final admin = isAdmin;
         final isOwner =
             person['auth_user_id'] != null &&
@@ -419,92 +383,105 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
             .where((m) => m['labs'] is Map)
             .toList();
 
-        return Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _header(person, admin, isOwner),
-                if (admin) _suggestionsSection(),
-                const SizedBox(height: 24),
-                _sectionTitle('Identifiers'),
-                const SizedBox(height: 8),
-                _identifiers(person),
-                const SizedBox(height: 24),
-                _sectionTitle('About'),
-                const SizedBox(height: 8),
-                _bio(person),
-                const SizedBox(height: 24),
-                if (labMemberships.isNotEmpty) ...[
-                  _sectionTitle('Labs'),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final m in labMemberships)
-                        () {
-                          final lab = m['labs'] as Map<String, dynamic>;
-                          final coordinator =
-                              m['is_coordinator'] as bool? ?? false;
-                          final year = m['year'] as int?;
-                          final code =
-                              lab['code'] as String? ??
-                              lab['name'] as String? ??
-                              '—';
-                          return InputChip(
-                            avatar: coordinator
-                                ? const Icon(Icons.star, size: 16)
-                                : null,
-                            label: Tooltip(
-                              message: coordinator
-                                  ? '${lab['name']} (coordinator, $year)'
-                                  : '${lab['name']} ($year)',
-                              child: Text(year == null ? code : '$code · $year'),
-                            ),
-                            onPressed: () => context.go('/labs/${lab['id']}'),
-                          );
-                        }(),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+        return DetailBody(
+          children: [
+            _header(person, admin, isOwner),
+            if (admin) _suggestionsSection(),
+            const SizedBox(height: 24),
+            sectionHeader(context, 'Identifiers'),
+            const SizedBox(height: 8),
+            _identifiers(person),
+            const SizedBox(height: 24),
+            sectionHeader(context, 'About'),
+            const SizedBox(height: 8),
+            _bio(person),
+            const SizedBox(height: 24),
+            if (labMemberships.isNotEmpty) ...[
+              sectionHeader(context, 'Labs'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final m in labMemberships)
+                    () {
+                      final lab = m['labs'] as Map<String, dynamic>;
+                      final coordinator =
+                          m['is_coordinator'] as bool? ?? false;
+                      final year = m['year'] as int?;
+                      final code =
+                          lab['code'] as String? ??
+                          lab['name'] as String? ??
+                          '—';
+                      return InputChip(
+                        avatar: coordinator
+                            ? const Icon(Icons.star, size: 16)
+                            : null,
+                        label: Tooltip(
+                          message: coordinator
+                              ? '${lab['name']} (coordinator, $year)'
+                              : '${lab['name']} ($year)',
+                          child: Text(year == null ? code : '$code · $year'),
+                        ),
+                        onPressed: () => context.go('/labs/${lab['id']}'),
+                      );
+                    }(),
                 ],
-                _sectionTitle('Outputs · ${ordered.length}'),
-                const SizedBox(height: 8),
-                if (ordered.isEmpty)
-                  _muted('No outputs found')
-                else
-                  for (final author in ordered)
-                    _outputRow(
-                      author,
-                      isFeatured: featured.contains(outputIdOf(author)),
-                      canEdit: admin || isOwner,
-                      featured: featured,
-                      person: person,
-                    ),
-                const SizedBox(height: 24),
-                _rolesSection(admin, isOwner),
-                if (external.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  _sectionTitle('Other affiliations · ${external.length}'),
-                  const SizedBox(height: 4),
-                  _muted('Published before or outside IADE/UNIDCOM. '
-                      'Not counted in unit reports.'),
+              ),
+              const SizedBox(height: 24),
+            ],
+            () {
+              final highlights = ordered
+                  .where((a) => featured.contains(outputIdOf(a)))
+                  .toList();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  sectionHeader(context, 'Highlights · ${highlights.length}'),
                   const SizedBox(height: 8),
-                  for (final author in external)
-                    _outputRow(
-                      author,
-                      isFeatured: false,
-                      canEdit: false,
-                      featured: featured,
-                      person: person,
-                    ),
+                  if (highlights.isEmpty)
+                    mutedText(
+                      context,
+                      'No highlights yet — star outputs in the timeline below',
+                    )
+                  else
+                    for (final author in highlights)
+                      _outputRow(
+                        author,
+                        isFeatured: true,
+                        canEdit: admin || isOwner,
+                        featured: featured,
+                        person: person,
+                      ),
                 ],
-              ],
+              );
+            }(),
+            const SizedBox(height: 24),
+            _timelineSection(
+              person,
+              ordered,
+              labMemberships,
+              featured,
+              admin,
+              isOwner,
             ),
-          ),
+            if (external.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              sectionHeader(context, 'Other affiliations · ${external.length}'),
+              const SizedBox(height: 4),
+              mutedText(context, 'Published before or outside IADE/UNIDCOM. '
+                  'Not counted in unit reports.'),
+              const SizedBox(height: 8),
+              for (final author in external)
+                _outputRow(
+                  author,
+                  isFeatured: false,
+                  canEdit: false,
+                  featured: featured,
+                  person: person,
+                ),
+            ],
+          ],
         );
       },
     );
@@ -512,111 +489,63 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
 
   Widget _header(Map<String, dynamic> person, bool admin, bool isOwner) {
     final name = person['preferred_name'] as String? ?? 'Unnamed';
-    final legal = person['legal_name'] as String?;
     final photo = (person['photo_url'] as String? ?? '').trim();
     final theme = Theme.of(context);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 36,
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  foregroundImage: photo.isEmpty ? null : NetworkImage(photo),
-                  child: Text(
-                    _initials(name),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(name, style: theme.textTheme.headlineSmall),
-                      if (legal != null && legal.trim().isNotEmpty)
-                        Text(
-                          legal,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final value in [
-                            person['membership_type'],
-                            person['status'],
-                            person['profile_status'],
-                          ])
-                            if (value != null)
-                              Chip(
-                                label: Text(value as String),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (admin || isOwner) ...[
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () => _edit(person, canEditGovernance: admin),
-                    icon: const Icon(Icons.edit),
-                    label: const Text('Edit'),
-                  ),
-                  if (admin)
-                    FilledButton.icon(
-                      onPressed: _enriching ? null : () => _autoFill(person),
-                      icon: _enriching
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.auto_fix_high),
-                      label: Text(_enriching ? 'Loading...' : 'Auto-fill'),
-                    ),
-                  if (admin)
-                    OutlinedButton.icon(
-                      onPressed: _syncing ? null : _checkOrcidSync,
-                      icon: _syncing
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.sync),
-                      label: Text(_syncing ? 'Checking...' : 'ORCID sync'),
-                    ),
-                  if (admin)
-                    FilledButton.icon(
-                      onPressed: _approve,
-                      icon: const Icon(Icons.check),
-                      label: const Text('Approve'),
-                    ),
-                ],
-              ),
-            ],
-          ],
+    return EntityHeaderCard(
+      leading: CircleAvatar(
+        radius: 36,
+        backgroundColor: theme.colorScheme.primaryContainer,
+        foregroundImage: photo.isEmpty ? null : NetworkImage(photo),
+        child: Text(
+          _initials(name),
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
         ),
       ),
+      title: name,
+      subtitle: person['legal_name'] as String?,
+      chips: statusChips([
+        person['membership_type'],
+        person['status'],
+        person['profile_status'],
+      ]),
+      onEdit: (admin || isOwner)
+          ? () => _edit(person, canEditGovernance: admin)
+          : null,
+      actions: [
+        if (admin)
+          FilledButton.icon(
+            onPressed: _enriching ? null : () => _autoFill(person),
+            icon: _enriching
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.auto_fix_high),
+            label: Text(_enriching ? 'Loading...' : 'Auto-fill'),
+          ),
+        if (admin)
+          OutlinedButton.icon(
+            onPressed: _syncing ? null : _checkOrcidSync,
+            icon: _syncing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.sync),
+            label: Text(_syncing ? 'Checking...' : 'ORCID sync'),
+          ),
+        if (admin)
+          FilledButton.icon(
+            onPressed: _approve,
+            icon: const Icon(Icons.check),
+            label: const Text('Approve'),
+          ),
+      ],
     );
   }
 
@@ -714,10 +643,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
   }
 
   void _snack(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    if (mounted) showSnack(context, message);
   }
 
   Widget _outputRow(
@@ -758,15 +684,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     );
   }
 
-  Widget _sectionTitle(String text) =>
-      Text(text, style: Theme.of(context).textTheme.titleLarge);
-
-  Widget _muted(String text) => Text(
-    text,
-    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    ),
-  );
+  Widget _muted(String text) => mutedText(context, text);
 
   Widget _link(String text, String url) => InkWell(
     onTap: () => _open(url),
@@ -933,9 +851,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      showSnack(context, error.toString());
       setState(() => _saving = false);
     }
   }
@@ -950,32 +866,32 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _field(_preferredName, 'Preferred name'),
-              _field(_legalName, 'Legal name'),
-              _field(_bio, 'Bio', maxLines: 4),
-              _field(_photoUrl, 'Photo URL'),
-              _field(_email, 'Email'),
-              _field(_orcid, 'ORCID'),
-              _field(_cienciaId, 'Ciencia ID'),
-              _field(_phd, 'PhD'),
+              editField(_preferredName, 'Preferred name'),
+              editField(_legalName, 'Legal name'),
+              editField(_bio, 'Bio', maxLines: 4),
+              editField(_photoUrl, 'Photo URL'),
+              editField(_email, 'Email'),
+              editField(_orcid, 'ORCID'),
+              editField(_cienciaId, 'Ciencia ID'),
+              editField(_phd, 'PhD'),
               // ponytail: ISO text fields; swap to showDatePicker if typos bite.
-              _field(_joinDate, 'Join date (YYYY-MM-DD)'),
-              _field(_exitDate, 'Exit date (YYYY-MM-DD)'),
-              _field(_integrationYear, 'Integration year'),
+              editField(_joinDate, 'Join date (YYYY-MM-DD)'),
+              editField(_exitDate, 'Exit date (YYYY-MM-DD)'),
+              editField(_integrationYear, 'Integration year'),
               if (widget.canEditGovernance) ...[
-                _dropdown(
+                editDropdown(
                   'Membership type',
                   _membershipType,
                   _membershipTypes,
                   (value) => setState(() => _membershipType = value!),
                 ),
-                _dropdown(
+                editDropdown(
                   'Status',
                   _status,
                   _statuses,
                   (value) => setState(() => _status = value!),
                 ),
-                _dropdown(
+                editDropdown(
                   'Profile status',
                   _profileStatus,
                   _profileStatuses,
@@ -1001,57 +917,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: Text(_saving ? 'Saving...' : 'Save'),
-        ),
-      ],
-    );
-  }
-
-  Widget _field(
-    TextEditingController controller,
-    String label, {
-    int maxLines = 1,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(),
-        ),
-      ),
-    );
-  }
-
-  Widget _dropdown(
-    String label,
-    String value,
-    List<String> values,
-    ValueChanged<String?> onChanged,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: DropdownButtonFormField<String>(
-        initialValue: values.contains(value) ? value : values.first,
-        decoration: InputDecoration(
-          labelText: label,
-          border: OutlineInputBorder(),
-        ),
-        items: [
-          for (final item in values)
-            DropdownMenuItem(value: item, child: Text(item)),
-        ],
-        onChanged: onChanged,
-      ),
+      actions: editorActions(context, saving: _saving, onSave: _save),
     );
   }
 }
@@ -1115,17 +981,13 @@ class _RoleDialogState extends State<_RoleDialog> {
   Future<void> _save() async {
     final label = _kind == 'membership' ? _membership : _value.trim();
     if (label.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('A value is required')));
+      showSnack(context, 'A value is required');
       return;
     }
     final yearText = _year.text.trim();
     final year = yearText.isEmpty ? null : int.tryParse(yearText);
     if (yearText.isNotEmpty && year == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Year must be a number')));
+      showSnack(context, 'Year must be a number');
       return;
     }
     // For a mentorship, link the student to a person if the name matches one.
@@ -1151,9 +1013,7 @@ class _RoleDialogState extends State<_RoleDialog> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      showSnack(context, error.toString());
       setState(() => _saving = false);
     }
   }

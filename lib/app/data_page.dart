@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../csv_download.dart';
 import '../data/supabase.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/schema_view.dart';
 
 class DataScreen extends StatefulWidget {
@@ -206,16 +207,9 @@ class _TableView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
+    return AsyncView<List<Map<String, dynamic>>>(
       future: future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-        final rows = snapshot.data ?? [];
+      builder: (context, rows) {
         if (rows.isEmpty) return const Center(child: Text('No rows'));
         // Column set = union of keys across rows, minus the noisy tsvector.
         final columns =

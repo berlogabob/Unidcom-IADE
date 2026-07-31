@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/timeline_section.dart';
 
 class ClusterPageScreen extends StatefulWidget {
   const ClusterPageScreen({super.key, required this.id});
@@ -38,16 +38,9 @@ class _ClusterPageScreenState extends State<ClusterPageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, dynamic>>(
+    return AsyncView<Map<String, dynamic>>(
       future: _cluster,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
-        }
-        final cluster = snapshot.data ?? {};
+      builder: (context, cluster) {
         final admin = isAdmin;
         final objectives =
             embedded(cluster, 'objective_clusters', 'objectives');
@@ -71,20 +64,15 @@ class _ClusterPageScreenState extends State<ClusterPageScreen> {
               admin: false,
             ),
             const SizedBox(height: 16),
-            sectionHeader(context, 'Projects · ${projects.length}', null, ''),
-            const SizedBox(height: 8),
-            if (projects.isEmpty)
-              mutedText(context, 'No projects yet')
-            else
-              for (final project in projects)
-                Card(
-                  child: ListTile(
-                    title: Text(project['title'] as String? ?? 'Untitled'),
-                    subtitle: Text(project['status'] as String? ?? ''),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => context.go('/projects/${project['id']}'),
-                  ),
-                ),
+            TimelineSection(
+              title: 'Projects · ${projects.length}',
+              items: projects,
+              yearOf: projectStartYear,
+              groupOf: (p) => p['status'] as String? ?? '',
+              groupLabel: 'By status',
+              itemBuilder: (p) => ProjectTile(project: p),
+              emptyText: 'No projects yet',
+            ),
           ],
         );
       },
