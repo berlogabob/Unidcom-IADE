@@ -122,7 +122,7 @@ const _supabaseAnonKey = String.fromEnvironment(
 // ORCID client IDs are public, like the anon key above.
 const _orcidClientId = String.fromEnvironment(
   'ORCID_CLIENT_ID',
-  defaultValue: 'APP-XXXXXXXXXXXXXXXX',
+  defaultValue: 'APP-L64W8QJWLPH4MUEM',
 );
 
 // Set in main() when an ORCID sign-in just completed; read once by _router.
