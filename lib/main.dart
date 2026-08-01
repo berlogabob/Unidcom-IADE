@@ -158,6 +158,15 @@ Future<void> main() async {
       // F5 replays the consumed one-time token; the persisted session wins.
     }
   }
+  // Back from the Connect ORCID link flow: land on the (now-linked) profile.
+  // The session predates the redirect, but its JWT lacks the fresh
+  // app_metadata.orcid — refresh so hasLinkedOrcid reads true immediately.
+  if (Uri.base.queryParameters['orcid_linked'] == '1') {
+    try {
+      await Supabase.instance.client.auth.refreshSession();
+    } catch (_) {}
+    _orcidSignedIn = true;
+  }
 
   runApp(const UnidcomApp());
 }

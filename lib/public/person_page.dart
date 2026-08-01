@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -174,6 +175,19 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
       mode: LaunchMode.externalApplication,
     );
     if (!ok) _snack("Couldn't open link");
+  }
+
+  /// Adds ORCID as a login method for the signed-in account (broker link flow).
+  Future<void> _connectOrcid() async {
+    try {
+      final returnTo = kIsWeb
+          ? '${Uri.base.origin}${Uri.base.path}'
+          : 'https://berlogabob.github.io/Unidcom-IADE/';
+      final url = await startOrcidLink(returnTo);
+      await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+    } catch (error) {
+      _snack(error.toString());
+    }
   }
 
   Widget _suggestionsSection() {
@@ -515,6 +529,12 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
           ? () => _edit(person, canEditGovernance: admin)
           : null,
       actions: [
+        if (isOwner && !hasLinkedOrcid)
+          OutlinedButton.icon(
+            onPressed: _connectOrcid,
+            icon: const Icon(Icons.badge_outlined),
+            label: const Text('Connect ORCID'),
+          ),
         if (admin)
           FilledButton.icon(
             onPressed: _enriching ? null : () => _autoFill(person),

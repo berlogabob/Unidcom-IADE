@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
@@ -42,6 +44,20 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   }
 
   void _refresh() => _resolve();
+
+  /// Adds ORCID as a login method for the signed-in account; if the person
+  /// registry lists this iD, the profile is claimed server-side too.
+  Future<void> _connectOrcid() async {
+    try {
+      final returnTo = kIsWeb
+          ? '${Uri.base.origin}${Uri.base.path}'
+          : 'https://berlogabob.github.io/Unidcom-IADE/';
+      final url = await startOrcidLink(returnTo);
+      await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
+    }
+  }
 
   Future<void> _link(Map<String, dynamic> person) async {
     final name = person['preferred_name'] as String? ?? 'this profile';
@@ -91,6 +107,17 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             title: Text('No researcher profile is linked to your account.'),
           ),
         ),
+        if (!hasLinkedOrcid) ...[
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: _connectOrcid,
+              icon: const Icon(Icons.badge_outlined),
+              label: const Text('Connect ORCID'),
+            ),
+          ),
+        ],
         if (isAdmin) ...[
           const SizedBox(height: 16),
           Text(

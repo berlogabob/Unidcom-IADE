@@ -1761,3 +1761,21 @@ Future<List<Map<String, dynamic>>> fetchConferenceOutputs() async {
     throw Exception(_error(error));
   }
 }
+
+/// Asks the orcid-auth broker for an authorize URL that will link the
+/// currently signed-in account to the ORCID iD it authenticates (CSRF-bound
+/// server-side). Returns the URL to open.
+Future<String> startOrcidLink(String returnTo) async {
+  final res = await db.functions.invoke(
+    'orcid-auth?action=start&return_to=${Uri.encodeComponent(returnTo)}',
+    method: HttpMethod.get,
+  );
+  final data = res.data;
+  final url = data is Map ? data['url'] as String? : null;
+  if (url == null) throw Exception('Could not start ORCID linking');
+  return url;
+}
+
+/// True when the signed-in account already has an ORCID login method.
+bool get hasLinkedOrcid =>
+    db.auth.currentUser?.appMetadata['orcid'] != null;
