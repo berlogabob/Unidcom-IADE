@@ -13,13 +13,32 @@
 //   state = link|user|exp|return|sig  -> link flow
 //
 // verify_jwt = false (config.toml): ORCID's redirect carries no JWT; the
-// start action validates its JWT itself. No CORS beyond the start action.
+// start action validates its JWT itself. CORS applies only to the start
+// action — it is called via fetch from the app origin; the OAuth callback
+// is a top-level navigation and needs none.
 
 const ALLOWED_RETURN = [
   /^https:\/\/berlogabob\.github\.io\/Unidcom-IADE\/$/,
   /^http:\/\/localhost(:\d+)?\/$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?\/$/,
 ];
+
+const ALLOWED_ORIGIN = [
+  /^https:\/\/berlogabob\.github\.io$/,
+  /^http:\/\/localhost(:\d+)?$/,
+  /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+];
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("Origin") ?? "";
+  if (!ALLOWED_ORIGIN.some((re) => re.test(origin))) return {};
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Headers":
+      "authorization, apikey, content-type, x-client-info",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+  };
+}
 
 const SB = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -98,7 +117,7 @@ async function handleStart(req: Request, url: URL): Promise<Response> {
   const json = (status: number, body: unknown) =>
     new Response(JSON.stringify(body), {
       status,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...corsHeaders(req) },
     });
   const returnTo = url.searchParams.get("return_to") ?? "";
   if (!ALLOWED_RETURN.some((re) => re.test(returnTo))) {
@@ -151,6 +170,9 @@ async function handleLink(
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders(req) });
+  }
   if (url.searchParams.get("action") === "start") return handleStart(req, url);
 
   const state = url.searchParams.get("state") ?? "";
