@@ -58,9 +58,9 @@ Task row format: `- [ ] task — owner — acceptance check`
 ### W2 (Aug 11–17) — Researcher Profile Admin
 
 - [ ] "Confirm my profile" flow in `/app/profile`: researcher reviews data, hits Validate → `profile_status = pending_review` — codex — Dart test + manual flow on production — ⏳ code done 2026-08-04 (Codex, reviewed; analyze + 33 tests green); tick after manual check on deployed site
-- [ ] Publication claim UI: researcher selects from their `output_candidates` → promoted to `outputs` (pending approval) with authorship link — codex — claimed candidate appears in `outputs` linked via `output_authors`
-- [ ] Selected/featured publications management from own profile — codex — featured flag settable by owning researcher only (RLS test)
-- [ ] Onboarding note for cohort (how to log in with ORCID, validate, claim) — codex — one-page doc in repo
+- [ ] Publication claim UI: researcher selects from their `output_candidates` → promoted to `outputs` (pending approval) with authorship link — codex — claimed candidate appears in `outputs` linked via `output_authors` — ⏳ 2026-08-04 backend live + SQL-verified (owner promote/reject, cross-owner blocked, audited; migration `20260805090000_claim_own_candidates.sql`); UI code done (Codex, reviewed, 34 tests green); tick after manual check on deployed site
+- [x] Selected/featured publications management from own profile — codex — ✅ 2026-08-04: already shipped in earlier UI; owner-only RLS + 5-cap verified by rolled-back SQL test on live DB
+- [x] Onboarding note for cohort (how to log in with ORCID, validate, claim) — codex — ✅ 2026-08-04: `ONBOARDING.md` at repo root
 
 **W2 KPI:** ≥1 real researcher completes ORCID login → profile validation → publication claim end-to-end on production.
 
