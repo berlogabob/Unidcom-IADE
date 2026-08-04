@@ -17,7 +17,7 @@ Corrections vs the PDF (agreed 2026-08-04):
   Supabase Postgres** under RLS — not Hugo, not Sanity. "Automatic
   synchronisation with the website" therefore means **approval-driven RLS
   visibility**: anonymous visitors see only approved/validated content. No push
-  pipeline needed. A Sanity swap stays a Phase-2 option (§6).
+  pipeline needed. A Sanity swap stays a Phase-2 option (§7).
 - **Ciência Vitae** direct integration is descoped for the pilot: ORCID is the
   single publication source (ResearchGate/Scopus deposit into ORCID; Ciência
   ids are already scraped from ORCID profiles into `people.ciencia_id`).
@@ -48,16 +48,16 @@ Task row format: `- [ ] task — owner — acceptance check`
 ### W1 (Aug 4–10) — Workflow foundation
 
 - [ ] Define pilot cohort (names + target size N) with Hande/Rui — claude — cohort list committed to this file (§5)
-- [ ] Output approval state machine: `pending → approved | rejected` transitions logged to `change_log` via trigger — claude (migration) — updating `approval_status` inserts a `change_log` row; test SQL in migration comment passes
-- [ ] Profile validation states on `people.profile_status`: `draft → validated_by_researcher → approved` with transition guard — claude (migration) — invalid transition raises; valid path works
-- [ ] RLS design note: approval-driven public visibility replacing `public_read_test_period` — claude — design section appended to this file, reviewed
+- [x] Output approval state machine: `pending → approved | rejected` (vocab check constraint; admin-only via existing RLS) audited to `change_log` via trigger — claude (migration `20260804120000_status_workflow.sql`) — ✅ 2026-08-04: rollback-tested on live DB; invalid value raises `outputs_approval_status_chk`; approval writes `change_log` row with actor
+- [x] Profile validation states on `people.profile_status`: `draft → pending_review` (owner self-submit, stamps `last_verified_at`) `→ approved` (admin); all other non-admin writes reset by protect trigger — claude (same migration) — ✅ 2026-08-04: self-submit works + audited; self-approve blocked
+- [x] RLS design note: approval-driven public visibility replacing `public_read_test_period` — claude — ✅ design section §6 below
 - [ ] Stage ORCID works for all cohort members with ORCID (`scripts/orcid_works.py`) — codex — `output_candidates` has rows for 100% of cohort-with-ORCID
 
 **W1 KPI:** migrations merged and deployed; cohort N fixed.
 
 ### W2 (Aug 11–17) — Researcher Profile Admin
 
-- [ ] "Confirm my profile" flow in `/app/profile`: researcher reviews data, hits Validate → `profile_status = validated_by_researcher` — codex — Dart test + manual flow on production
+- [ ] "Confirm my profile" flow in `/app/profile`: researcher reviews data, hits Validate → `profile_status = pending_review` — codex — Dart test + manual flow on production
 - [ ] Publication claim UI: researcher selects from their `output_candidates` → promoted to `outputs` (pending approval) with authorship link — codex — claimed candidate appears in `outputs` linked via `output_authors`
 - [ ] Selected/featured publications management from own profile — codex — featured flag settable by owning researcher only (RLS test)
 - [ ] Onboarding note for cohort (how to log in with ORCID, validate, claim) — codex — one-page doc in repo
@@ -96,7 +96,7 @@ Task row format: `- [ ] task — owner — acceptance check`
 | Criterion | Baseline (Aug 4) | Target (Sep 30) | Measurement |
 |---|---|---|---|
 | Researcher ORCID login | 3 linked accounts | ≥ N (cohort size) | `select count(*) from people where auth_user_id is not null;` |
-| Profile validation | 0 validated | ≥ 80% of cohort | `select count(*) from people where profile_status in ('validated_by_researcher','approved');` |
+| Profile validation | 0 validated | ≥ 80% of cohort | `select count(*) from people where profile_status in ('pending_review','approved');` |
 | Publications management | 5 staged candidates | 100% of cohort-with-ORCID staged; claims flowing | `select count(distinct person_id) from output_candidates;` |
 | Editorial approval workflow | 0/362 approved | ≥ 50 approved; queue in routine use | `select approval_status, count(*) from outputs group by 1;` |
 | Website sync | blanket public read | 100% of anonymously visible outputs approved | anonymous PostgREST query vs `approval_status` |
@@ -109,7 +109,31 @@ Task row format: `- [ ] task — owner — acceptance check`
 
 _To be fixed in W1 (names + N). Placeholder: N = 10 researchers with ORCID iDs._
 
-## 6. Out of scope / Phase 2+
+## 6. RLS design note — website "sync" (W1 deliverable, executes in W3)
+
+The original approval-driven policies already exist, commented out, in
+`supabase/migrations/20260722160000_public_read_test_period.sql`; init wrote
+them first (`20260721230000_init.sql:127-132`). The W3 swap is:
+
+1. Drop the blanket `using (true)`-style test-period read policies on
+   `people` / `outputs` / `projects`.
+2. Restore the init policies: anonymous sees only
+   `people` with `public_visibility and profile_status = 'approved'`,
+   `outputs` with `approval_status = 'approved'`,
+   `projects` with `public_visibility and approval_status = 'approved'`;
+   any authenticated user sees everything.
+3. `report_data()` and `v_output_report` already filter on
+   `approval_status = 'approved'` / run `security_invoker`, so reports follow
+   automatically. Check the orcid_works candidate views for the same property
+   before the swap (`20260729090000_orcid_works.sql` notes they ignore
+   approval_status during the test period).
+4. Timing: swap only after ≥50 outputs are approved (W3 editorial session),
+   otherwise the public site goes visibly empty.
+
+Acceptance: anonymous PostgREST request returns only approved/validated rows;
+authenticated still sees all.
+
+## 7. Out of scope / Phase 2+
 
 - Sanity CMS as website layer (swap point: replace the Flutter SPA's PostgREST
   reads with a RIMS→Sanity push; the approval-driven RLS boundary is the API
