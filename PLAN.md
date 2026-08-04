@@ -51,13 +51,13 @@ Task row format: `- [ ] task — owner — acceptance check`
 - [x] Output approval state machine: `pending → approved | rejected` (vocab check constraint; admin-only via existing RLS) audited to `change_log` via trigger — claude (migration `20260804120000_status_workflow.sql`) — ✅ 2026-08-04: rollback-tested on live DB; invalid value raises `outputs_approval_status_chk`; approval writes `change_log` row with actor
 - [x] Profile validation states on `people.profile_status`: `draft → pending_review` (owner self-submit, stamps `last_verified_at`) `→ approved` (admin); all other non-admin writes reset by protect trigger — claude (same migration) — ✅ 2026-08-04: self-submit works + audited; self-approve blocked
 - [x] RLS design note: approval-driven public visibility replacing `public_read_test_period` — claude — ✅ design section §6 below
-- [ ] Stage ORCID works for all cohort members with ORCID (`scripts/orcid_works.py`) — codex — `output_candidates` has rows for 100% of cohort-with-ORCID
+- [x] Stage ORCID works for all cohort members with ORCID (`scripts/orcid_works.py`) — codex — ✅ 2026-08-04: 1,456 candidates staged covering 26/26 people with ORCID (superset of any cohort choice)
 
 **W1 KPI:** migrations merged and deployed; cohort N fixed.
 
 ### W2 (Aug 11–17) — Researcher Profile Admin
 
-- [ ] "Confirm my profile" flow in `/app/profile`: researcher reviews data, hits Validate → `profile_status = pending_review` — codex — Dart test + manual flow on production
+- [ ] "Confirm my profile" flow in `/app/profile`: researcher reviews data, hits Validate → `profile_status = pending_review` — codex — Dart test + manual flow on production — ⏳ code done 2026-08-04 (Codex, reviewed; analyze + 33 tests green); tick after manual check on deployed site
 - [ ] Publication claim UI: researcher selects from their `output_candidates` → promoted to `outputs` (pending approval) with authorship link — codex — claimed candidate appears in `outputs` linked via `output_authors`
 - [ ] Selected/featured publications management from own profile — codex — featured flag settable by owning researcher only (RLS test)
 - [ ] Onboarding note for cohort (how to log in with ORCID, validate, claim) — codex — one-page doc in repo
