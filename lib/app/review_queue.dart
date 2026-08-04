@@ -48,6 +48,41 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
     _refresh();
   }
 
+  Future<void> _rejectOutput(String id) async {
+    await rejectOutput(id);
+    _refresh();
+  }
+
+  Future<void> _approveAllPendingOutputs(int count) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Approve all $count pending outputs?'),
+        content: const Text(
+          'They become publicly visible once approval-driven visibility is on.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Approve all'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final approved = await approveAllPendingOutputs();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Approved $approved pending outputs')),
+    );
+    _refresh();
+  }
+
   Future<void> _acceptSuggestion(String id) async {
     // A suggested DOI can collide with outputs.doi's unique constraint. Without
     // this catch the write throws, the suggestion stays pending, and the admin
@@ -130,27 +165,65 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                     ),
                   ),
                 ),
-                QueueList(
+                FutureBuilder<List<Map<String, dynamic>>>(
                   future: _pendingOutputs,
-                  emptyText: 'No outputs waiting for approval',
-                  searchOf: (o) => o['title'] as String? ?? '',
-                  timeOf: (o) => o['created_at'] as String? ?? '',
-                  filters: [
-                    QueueFilter(
-                      label: 'Type',
-                      valueOf: (o) => o['type'] as String?,
-                    ),
-                  ],
-                  itemBuilder: (output) => OutputRow(
-                    title: output['title'] as String? ?? 'Untitled',
-                    year: output['reporting_year'] as int?,
-                    type: output['type'] as String?,
-                    detail: output['approval_status'] as String?,
-                    trailing: FilledButton(
-                      onPressed: () => _approveOutput(output['id'] as String),
-                      child: const Text('Approve'),
-                    ),
-                  ),
+                  builder: (context, snapshot) {
+                    final count =
+                        snapshot.connectionState == ConnectionState.done
+                        ? snapshot.data?.length ?? 0
+                        : 0;
+                    return Column(
+                      children: [
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                            child: FilledButton(
+                              onPressed: count == 0
+                                  ? null
+                                  : () => _approveAllPendingOutputs(count),
+                              child: Text('Approve all pending ($count)'),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: QueueList(
+                            future: _pendingOutputs,
+                            emptyText: 'No outputs waiting for approval',
+                            searchOf: (o) => o['title'] as String? ?? '',
+                            timeOf: (o) => o['created_at'] as String? ?? '',
+                            filters: [
+                              QueueFilter(
+                                label: 'Type',
+                                valueOf: (o) => o['type'] as String?,
+                              ),
+                            ],
+                            itemBuilder: (output) => OutputRow(
+                              title: output['title'] as String? ?? 'Untitled',
+                              year: output['reporting_year'] as int?,
+                              type: output['type'] as String?,
+                              detail: output['approval_status'] as String?,
+                              trailing: Wrap(
+                                spacing: 8,
+                                children: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        _rejectOutput(output['id'] as String),
+                                    child: const Text('Reject'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        _approveOutput(output['id'] as String),
+                                    child: const Text('Approve'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 QueueList(
                   future: _stalePeople,
@@ -343,4 +416,3 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
     );
   }
 }
-

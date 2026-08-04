@@ -533,6 +533,30 @@ Future<void> approveOutput(String id) async {
   }
 }
 
+Future<void> rejectOutput(String id) async {
+  try {
+    await db
+        .from('outputs')
+        .update({'approval_status': 'rejected'})
+        .eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<int> approveAllPendingOutputs() async {
+  try {
+    final rows = await db
+        .from('outputs')
+        .update({'approval_status': 'approved'})
+        .eq('approval_status', 'pending')
+        .select('id');
+    return rows.length;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<Map<String, dynamic>?> fetchMyPerson() async {
   try {
     final userId = db.auth.currentUser?.id;
@@ -815,6 +839,45 @@ Future<List<Map<String, dynamic>>> fetchPeopleForStats() async {
         .filter('merged_into', 'is', null)
         .order('preferred_name');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<Map<String, int>> fetchPilotKpis() async {
+  try {
+    final rows = await Future.wait([
+      db
+          .from('people')
+          .select('orcid, profile_status')
+          .filter('merged_into', 'is', null),
+      db
+          .from('outputs')
+          .select('doi, approval_status')
+          .filter('merged_into', 'is', null),
+    ]);
+    final people = rows[0];
+    final outputs = rows[1];
+    bool hasText(Map<String, dynamic> row, String field) =>
+        (row[field] as String?)?.trim().isNotEmpty ?? false;
+
+    return {
+      'people': people.length,
+      'orcidLinked': people.where((row) => hasText(row, 'orcid')).length,
+      'profilesValidated': people
+          .where(
+            (row) => const {
+              'pending_review',
+              'approved',
+            }.contains(row['profile_status']),
+          )
+          .length,
+      'outputs': outputs.length,
+      'outputsApproved': outputs
+          .where((row) => row['approval_status'] == 'approved')
+          .length,
+      'doiCoverage': outputs.where((row) => hasText(row, 'doi')).length,
+    };
   } catch (error) {
     throw Exception(_error(error));
   }

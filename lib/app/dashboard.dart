@@ -24,10 +24,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   });
 
   Future<_DashboardData> _loadDashboard() async {
-    final rows = await Future.wait([
+    final stats = await Future.wait<Object>([
       fetchPeopleForStats(),
       fetchOutputsForStats(),
       fetchAuthorCounts(),
+      fetchPilotKpis(),
     ]);
     final counts = await Future.wait([
       fetchCount('labs'),
@@ -49,10 +50,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ? null
         : await fetchMembershipByYear(_year!);
     return _DashboardData.fromRows(
-      rows[0],
-      rows[1],
-      rows[2],
+      stats[0] as List<Map<String, dynamic>>,
+      stats[1] as List<Map<String, dynamic>>,
+      stats[2] as List<Map<String, dynamic>>,
       year: _year,
+      pilotKpis: stats[3] as Map<String, int>,
       labCount: counts[0],
       projectCount: counts[1],
       clusterCount: counts[2],
@@ -100,6 +102,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               _yearSelector(),
               const SizedBox(height: 12),
+              _StatTilesRow(data: data, pilot: true),
+              const SizedBox(height: 12),
               _StatTilesRow(data: data),
               const SizedBox(height: 16),
               _ResponsiveCharts(data: data),
@@ -112,12 +116,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
 }
 
 class _StatTilesRow extends StatelessWidget {
-  const _StatTilesRow({required this.data});
+  const _StatTilesRow({required this.data, this.pilot = false});
 
   final _DashboardData data;
+  final bool pilot;
 
   @override
   Widget build(BuildContext context) {
+    if (pilot) {
+      return _buildTiles([
+        StatTile(
+          label: 'ORCID linked',
+          value:
+              '${data.pilotKpis['orcidLinked']} / ${data.pilotKpis['people']}',
+          icon: Icons.badge_outlined,
+        ),
+        StatTile(
+          label: 'Profiles validated',
+          value:
+              '${data.pilotKpis['profilesValidated']} / ${data.pilotKpis['people']}',
+          icon: Icons.person_search,
+        ),
+        StatTile(
+          label: 'Outputs approved',
+          value:
+              '${data.pilotKpis['outputsApproved']} / ${data.pilotKpis['outputs']}',
+          icon: Icons.check_circle_outline,
+        ),
+        StatTile(
+          label: 'DOI coverage',
+          value:
+              '${data.pilotKpis['doiCoverage']} / ${data.pilotKpis['outputs']}',
+          icon: Icons.link,
+        ),
+      ]);
+    }
     final tiles = [
       StatTile(
         label: 'Researchers',
@@ -176,6 +209,10 @@ class _StatTilesRow extends StatelessWidget {
       ),
     ];
 
+    return _buildTiles(tiles);
+  }
+
+  Widget _buildTiles(List<StatTile> tiles) {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= 700) {
@@ -527,6 +564,7 @@ class _MembershipChart extends StatelessWidget {
 class _DashboardData {
   const _DashboardData({
     required this.year,
+    required this.pilotKpis,
     required this.peopleCount,
     required this.outputCount,
     required this.journalCount,
@@ -547,6 +585,7 @@ class _DashboardData {
   });
 
   final int? year;
+  final Map<String, int> pilotKpis;
   final int peopleCount;
   final int outputCount;
   final int journalCount;
@@ -570,6 +609,7 @@ class _DashboardData {
     List<Map<String, dynamic>> allOutputs,
     List<Map<String, dynamic>> authors, {
     int? year,
+    required Map<String, int> pilotKpis,
     required int labCount,
     required int projectCount,
     required int clusterCount,
@@ -599,6 +639,7 @@ class _DashboardData {
 
     return _DashboardData(
       year: year,
+      pilotKpis: pilotKpis,
       peopleCount: people.length,
       outputCount: outputs.length,
       journalCount: journalOutputs.length,

@@ -24,6 +24,9 @@ jobs:
           channel: stable
           flutter-version: 3.44.7
       - run: flutter pub get
+      # Gate the deploy on analyzer + tests: a red suite must not reach production.
+      - run: flutter analyze
+      - run: flutter test
       # Supabase URL + publishable (anon) key are baked into main.dart as safe defaults,
       # so no secrets are needed here. base-href must match the repo name for project Pages.
       - run: flutter build web --release --base-href /Unidcom-IADE/
