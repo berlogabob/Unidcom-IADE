@@ -1,0 +1,19 @@
+name: ORCID works staging
+
+# Keeps ONBOARDING.md's promise: "RIMS syncs with ORCID periodically".
+# Stages new works into output_candidates only — researchers claim, UNIDCOM approves.
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+jobs:
+  stage-orcid-works:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv run --project scripts scripts/orcid_works.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
