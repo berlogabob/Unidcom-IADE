@@ -539,11 +539,30 @@ Future<Map<String, dynamic>?> fetchMyPerson() async {
     if (userId == null) return null;
     final rows = await db
         .from('people')
-        .select('id, preferred_name, bio, photo_url, email, orcid, ciencia_id')
+        .select(
+          'id, preferred_name, bio, photo_url, email, orcid, ciencia_id, profile_status',
+        )
         .eq('auth_user_id', userId)
         .limit(1);
     if (rows.isEmpty) return null;
     return Map<String, dynamic>.from(rows.first);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> submitMyProfileForReview(String personId) async {
+  try {
+    final userId = db.auth.currentUser?.id;
+    if (userId == null) throw Exception('Not signed in');
+    await db
+        .from('people')
+        .update({'profile_status': 'pending_review'})
+        .eq('id', personId)
+        .eq('auth_user_id', userId)
+        .eq('profile_status', 'draft')
+        .select('id')
+        .single();
   } catch (error) {
     throw Exception(_error(error));
   }

@@ -1,14 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/supabase.dart';
+import '../public/person_page.dart';
 import '../widgets/detail_scaffold.dart';
 
-// Resolver: the profile icon lands here, then redirects to the signed-in
-// user's own public person page (/people/:id). Only the "no profile linked"
-// fallback renders on-screen; editing lives on the person page itself.
+String profileStatusLabel(String? status) => switch (status) {
+  'pending_review' => 'Awaiting UNIDCOM approval',
+  'approved' => 'Approved',
+  _ => 'Profile not confirmed',
+};
+
 class MyProfileScreen extends StatefulWidget {
   const MyProfileScreen({super.key});
 
@@ -18,7 +21,9 @@ class MyProfileScreen extends StatefulWidget {
 
 class _MyProfileScreenState extends State<MyProfileScreen> {
   late Future<List<Map<String, dynamic>>> _people = fetchPeople();
+  Map<String, dynamic>? _person;
   bool _resolved = false;
+  bool _submitting = false;
   String? _error;
 
   @override
@@ -33,17 +38,34 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       await claimPersonByOrcid();
       final person = await fetchMyPerson();
       if (!mounted) return;
-      if (person != null) {
-        context.go('/people/${person['id']}');
-      } else {
-        setState(() => _resolved = true);
-      }
+      setState(() {
+        _person = person;
+        _resolved = true;
+      });
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
     }
   }
 
   void _refresh() => _resolve();
+
+  Future<void> _submitProfile() async {
+    final person = _person;
+    if (person == null || _submitting) return;
+    setState(() => _submitting = true);
+    try {
+      await submitMyProfileForReview(person['id'] as String);
+      if (!mounted) return;
+      setState(() {
+        _person = {...person, 'profile_status': 'pending_review'};
+      });
+      showSnack(context, 'Profile submitted for approval');
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
 
   /// Adds ORCID as a login method for the signed-in account; if the person
   /// registry lists this iD, the profile is claimed server-side too.
@@ -98,6 +120,46 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     // Wrapped by AppShell (Scaffold + app bar + bottom nav) — no Scaffold here.
     if (_error != null) return Center(child: Text(_error!));
     if (!_resolved) return const Center(child: CircularProgressIndicator());
+
+    final person = _person;
+    if (person != null) {
+      final status = person['profile_status'] as String? ?? 'draft';
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Chip(
+                    label: Text(profileStatusLabel(status)),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  if (status == 'draft') ...[
+                    const Text('Check your data below, then confirm'),
+                    FilledButton(
+                      onPressed: _submitting ? null : _submitProfile,
+                      child: const Text('Confirm my profile'),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          // ponytail: reuse the detail page; split only if own-profile UI diverges.
+          Expanded(
+            child: PersonPageScreen(
+              key: ValueKey(status),
+              id: person['id'] as String,
+            ),
+          ),
+        ],
+      );
+    }
 
     return ListView(
       padding: const EdgeInsets.all(16),
