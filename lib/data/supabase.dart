@@ -771,6 +771,20 @@ Future<List<Map<String, dynamic>>> fetchOutputCandidates() async {
   }
 }
 
+Future<List<Map<String, dynamic>>> fetchMyCandidates(String personId) async {
+  try {
+    final rows = await db
+        .from('output_candidates')
+        .select()
+        .eq('person_id', personId)
+        .eq('status', 'pending')
+        .order('affiliation_score', ascending: false);
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 /// Imports a candidate into `outputs` and links its author. [affiliation]
 /// overrides the classifier's call when the reviewer disagrees.
 Future<String> promoteCandidate(String id, {String? affiliation}) async {
@@ -787,14 +801,7 @@ Future<String> promoteCandidate(String id, {String? affiliation}) async {
 
 Future<void> rejectCandidate(String id) async {
   try {
-    await db
-        .from('output_candidates')
-        .update({
-          'status': 'rejected',
-          'reviewed_by': db.auth.currentUser?.id,
-          'reviewed_at': DateTime.now().toUtc().toIso8601String(),
-        })
-        .eq('id', id);
+    await db.rpc('reject_output_candidate', params: {'p_candidate': id});
   } catch (error) {
     throw Exception(_error(error));
   }

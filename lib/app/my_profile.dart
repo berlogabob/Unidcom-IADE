@@ -12,6 +12,11 @@ String profileStatusLabel(String? status) => switch (status) {
   _ => 'Profile not confirmed',
 };
 
+String candidateSubtitle(Map<String, dynamic> row) => [
+  row['reporting_year'],
+  row['type'],
+].where((value) => value != null && '$value'.isNotEmpty).join(' · ');
+
 class MyProfileScreen extends StatefulWidget {
   const MyProfileScreen({super.key});
 
@@ -22,6 +27,7 @@ class MyProfileScreen extends StatefulWidget {
 class _MyProfileScreenState extends State<MyProfileScreen> {
   late Future<List<Map<String, dynamic>>> _people = fetchPeople();
   Map<String, dynamic>? _person;
+  List<Map<String, dynamic>> _candidates = [];
   bool _resolved = false;
   bool _submitting = false;
   String? _error;
@@ -37,9 +43,13 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       // Self-heals when an admin fills people.orcid after first ORCID login.
       await claimPersonByOrcid();
       final person = await fetchMyPerson();
+      final candidates = person == null
+          ? <Map<String, dynamic>>[]
+          : await fetchMyCandidates(person['id'] as String);
       if (!mounted) return;
       setState(() {
         _person = person;
+        _candidates = candidates;
         _resolved = true;
       });
     } catch (error) {
@@ -64,6 +74,24 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       if (mounted) showSnack(context, error.toString());
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  Future<void> _reviewCandidate(String id, {required bool promote}) async {
+    try {
+      if (promote) {
+        await promoteCandidate(id);
+      } else {
+        await rejectCandidate(id);
+      }
+      if (!mounted) return;
+      setState(() => _candidates.removeWhere((row) => row['id'] == id));
+      showSnack(
+        context,
+        promote ? 'Publication added' : 'Publication marked as not mine',
+      );
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
     }
   }
 
@@ -150,10 +178,49 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               ),
             ),
           ),
+          if (_candidates.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 760),
+                child: ExpansionTile(
+                  title: Text('My ORCID publications (${_candidates.length})'),
+                  children: [
+                    for (final candidate in _candidates)
+                      ListTile(
+                        title: Text(
+                          candidate['title'] as String? ?? 'Untitled',
+                        ),
+                        subtitle: Text(candidateSubtitle(candidate)),
+                        trailing: Wrap(
+                          spacing: 8,
+                          children: [
+                            TextButton(
+                              onPressed: () => _reviewCandidate(
+                                candidate['id'] as String,
+                                promote: false,
+                              ),
+                              child: const Text('Not mine'),
+                            ),
+                            FilledButton(
+                              onPressed: () => _reviewCandidate(
+                                candidate['id'] as String,
+                                promote: true,
+                              ),
+                              child: const Text('Add to my publications'),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
           // ponytail: reuse the detail page; split only if own-profile UI diverges.
           Expanded(
             child: PersonPageScreen(
-              key: ValueKey(status),
+              // Re-key on claims too, so a promoted publication shows up below.
+              key: ValueKey('$status-${_candidates.length}'),
               id: person['id'] as String,
             ),
           ),
