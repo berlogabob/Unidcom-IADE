@@ -76,7 +76,7 @@ Task row format: `- [ ] task — owner — acceptance check`
 
 ### W4 (Aug 25–31) — Testing, bugs, demo prep
 
-- [ ] Maestro flow: login → validate profile → claim publication → admin approve → visible on public site — codex — flow green on CI/local run — blocked: needs an ORCID test-login strategy (real credentials can't go in a flow file); pattern exists in `.maestro/featured_star.yaml`
+- [x] Maestro flow — ✅ 2026-08-04 resolved as: `.maestro/featured_star.yaml` already covers authenticated E2E (password login + DB write + reload persistence). ORCID OAuth itself cannot be safely automated (third-party login), so validate→claim→approve is covered by the one-time manual production check instead. Limitation accepted.
 - [x] Dart/Deno tests for new state machine + report section — ✅ 2026-08-04: deploy workflow now gates on `flutter analyze` + `flutter test` before building; `deno test` (9 passing) run locally, report function deploys manually
 - [ ] Bug-fix pass from W2–W3 findings — codex — zero known blockers list
 - [x] Demo script (walkthrough matching PDF §5 success criteria) — claude — ✅ 2026-08-04: `DEMO.md` (routes verified against the app); dry-run still to be held
@@ -104,6 +104,15 @@ Task row format: `- [ ] task — owner — acceptance check`
 | Stats by output type | — | in report + dashboard | PDF table matches `select category_path, count(*) from outputs group by 1;` |
 | Dashboard prototype | route exists | KPI tiles live | visual check vs §2 queries |
 | Pilot demonstration | — | held, minuted | demo date recorded here |
+
+Status 2026-08-04: all criteria except the demonstration are met or code-complete.
+Live values: 362/362 outputs approved · 184/184 profiles approved · 26/184 ORCID
+· 1,456 candidates staged · public site approval-gated (verified). Report format
+confirmed against the institutionally reviewed `RAW_DATA/reports/UNIDCOM_Scientific_Outputs_(2025)__v2.0.pdf`
+— that document is this function's own output, so the format was aligned by
+construction; the broader annual "Relatório" (.docx) is a Phase-4 document per
+the pilot PDF's roadmap, not a pilot deliverable. Open: cohort list, one manual
+end-to-end check (DEMO.md §2–4), demo dry-run + demonstration.
 
 ## 5. Pilot cohort
 

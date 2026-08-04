@@ -69,13 +69,13 @@ UNIDCOM RIMS is the institutional single source of truth for researcher profiles
 
 ## Numbers to quote
 
-Fill these from the live database immediately before the demonstration.
+Refresh from the live database immediately before the demonstration
+(queries in PLAN.md §2). Values as of 2026-08-04:
 
-- **{{X}}** researchers in RIMS
-- **{{X}}** researchers linked to ORCID
-- **{{X}}** scientific outputs
-- **{{X}}** approved outputs
-- **{{X}}** ORCID publication candidates staged
+- **184** researchers in RIMS
+- **26** researchers linked to ORCID
+- **362** scientific outputs — **362 approved** (100%, audit-trailed)
+- **1,456** ORCID publication candidates staged for claiming
 
 ## Q&A preparation
 
