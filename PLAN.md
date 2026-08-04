@@ -114,6 +114,14 @@ construction; the broader annual "Relatório" (.docx) is a Phase-4 document per
 the pilot PDF's roadmap, not a pilot deliverable. Open: cohort list, one manual
 end-to-end check (DEMO.md §2–4), demo dry-run + demonstration.
 
+### September readiness (done 2026-08-04)
+
+- [x] Security advisor sweep — migration `20260806090000_advisor_fixes.sql`: search_path pinned on pre-pilot functions, anon revoked from admin RPCs, trigger-only helpers unexposed. Regression-tested (promote/audit/is_admin). Remaining warnings accepted: authenticated-callable RPCs are gated in-body; pg_trgm/unaccent stay in `public` (dep churn, zero gain at this scale).
+- [x] Performance advisors reviewed — all 155 findings are noise at ≤362 rows (policy-per-role double-counting, unused indexes on a young DB, 8 `auth_rls_initplan`). Revisit `auth_rls_initplan` (`(select auth.uid())` wrapping) only if tables reach ~10k rows.
+- [x] Weekly ORCID staging — `.github/workflows/orcid-sync.yml` (Mon 05:00 + manual), keeps ONBOARDING.md's periodic-sync promise.
+- [x] Backup routine — day-one snapshot taken (`scripts/out/*.json`, EXPORT: PASS). Weekly: `uv run --project scripts scripts/export.py` locally; `restore.py` restores. Do NOT upload exports as CI artifacts — public repo, `people` contains emails.
+- [ ] Enable leaked-password protection — Supabase dashboard → Auth → Passwords (manual toggle, can't be done in SQL).
+
 ## 5. Pilot cohort
 
 _To be fixed in W1 (names + N). Placeholder: N = 10 researchers with ORCID iDs._
