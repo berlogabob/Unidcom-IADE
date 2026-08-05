@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -23,93 +22,7 @@ import 'public/person_page.dart';
 import 'public/projects.dart';
 import 'public/project_page.dart';
 import 'public/structure.dart';
-
-const _brandRed = Color(0xFFFF2A13);
-const _brandDeep = Color(0xFFEF2201);
-const _brandDark = Color(0xFFA71000);
-const _ink = Color(0xFF272727);
-const _grey = Color(0xFF666666);
-const _mist = Color(0xFFF3F3F3);
-const _line = Color(0xFFEAEAEA);
-
-const ColorScheme _scheme = ColorScheme(
-  brightness: Brightness.light,
-  primary: _brandRed,
-  onPrimary: Colors.white,
-  primaryContainer: _mist,
-  onPrimaryContainer: _ink,
-  secondary: _ink,
-  onSecondary: Colors.white,
-  secondaryContainer: _mist,
-  onSecondaryContainer: _ink,
-  tertiary: _grey,
-  onTertiary: Colors.white,
-  tertiaryContainer: _mist,
-  onTertiaryContainer: _ink,
-  error: _brandDark,
-  onError: Colors.white,
-  errorContainer: _mist,
-  onErrorContainer: _brandDark,
-  surface: Colors.white,
-  onSurface: _ink,
-  onSurfaceVariant: _grey,
-  outline: Color(0xFFBDBDBD),
-  outlineVariant: _line,
-  surfaceContainerLowest: Colors.white,
-  surfaceContainerLow: Color(0xFFFAFAFA),
-  surfaceContainer: _mist,
-  surfaceContainerHigh: Color(0xFFEDEDED),
-  surfaceContainerHighest: _line,
-  inverseSurface: _ink,
-  onInverseSurface: Colors.white,
-  inversePrimary: _brandRed,
-  shadow: Colors.black,
-  scrim: Colors.black,
-  surfaceTint: Colors.transparent,
-);
-
-ThemeData _unidcomTheme() {
-  final base = ThemeData(colorScheme: _scheme, useMaterial3: true);
-
-  return base.copyWith(
-    scaffoldBackgroundColor: Colors.white,
-    dividerColor: _line,
-    textTheme: GoogleFonts.latoTextTheme(
-      base.textTheme,
-    ).apply(bodyColor: _ink, displayColor: _ink),
-    appBarTheme: AppBarTheme(
-      backgroundColor: Colors.white,
-      foregroundColor: _ink,
-      elevation: 0,
-      scrolledUnderElevation: 0.5,
-      shape: const Border(bottom: BorderSide(color: Color(0xFFEAEAEA))),
-      titleTextStyle: GoogleFonts.lato(
-        color: _ink,
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 1.5,
-      ),
-    ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: Colors.white,
-      indicatorColor: _brandRed.withValues(alpha: 0.12),
-      iconTheme: WidgetStateProperty.resolveWith(
-        (states) => IconThemeData(
-          color: states.contains(WidgetState.selected) ? _brandRed : _ink,
-        ),
-      ),
-      labelTextStyle: WidgetStatePropertyAll(
-        GoogleFonts.lato(fontSize: 12, fontWeight: FontWeight.w600),
-      ),
-    ),
-    filledButtonTheme: FilledButtonThemeData(
-      style: FilledButton.styleFrom(
-        backgroundColor: _brandDeep,
-        foregroundColor: Colors.white,
-      ),
-    ),
-  );
-}
+import 'theme/app_theme.dart';
 
 const _supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
@@ -263,7 +176,7 @@ class UnidcomApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'Unidcom IADE',
-      theme: _unidcomTheme(),
+      theme: unidcomTheme(),
       routerConfig: _router,
     );
   }
