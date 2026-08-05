@@ -31,6 +31,7 @@ import 'public/structure.dart';
 import 'theme/app_theme.dart';
 import 'theme/tokens.dart';
 import 'widgets/app_shell.dart';
+import 'widgets/portal_shell.dart';
 
 const _supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
@@ -180,26 +181,32 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/app/profile',
-          builder: (_, _) => const MyProfileScreen(),
+          builder: (_, _) => const PortalShell(child: MyProfileScreen()),
         ),
-        GoRoute(path: '/app/requests', builder: (_, _) => const RequestsPage()),
+        GoRoute(
+          path: '/app/requests',
+          builder: (_, _) => const PortalShell(child: RequestsPage()),
+        ),
         GoRoute(
           path: '/app/requests/new',
-          builder: (_, _) => const RequestFormPage(),
+          builder: (_, _) => const PortalShell(child: RequestFormPage()),
         ),
         GoRoute(
           path: '/app/requests/:id',
-          builder: (_, state) =>
-              RequestFormPage(requestId: state.pathParameters['id']),
+          builder: (_, state) => PortalShell(
+            child: RequestFormPage(requestId: state.pathParameters['id']),
+          ),
         ),
         GoRoute(
           path: '/app/home',
-          builder: (_, _) => const ResearcherHomePage(),
+          builder: (_, _) => const PortalShell(child: ResearcherHomePage()),
         ),
         GoRoute(
           path: '/app/welcome/:section',
-          builder: (_, state) => WelcomePackPage(
-            section: state.pathParameters['section'] ?? 'start',
+          builder: (_, state) => PortalShell(
+            child: WelcomePackPage(
+              section: state.pathParameters['section'] ?? 'start',
+            ),
           ),
         ),
         GoRoute(
