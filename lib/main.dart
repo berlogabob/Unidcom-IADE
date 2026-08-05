@@ -8,8 +8,11 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'app/admin_page.dart';
+import 'app/admin_requests.dart';
 import 'app/dashboard.dart';
 import 'app/my_profile.dart';
+import 'app/request_form.dart';
+import 'app/requests_page.dart';
 import 'data/supabase.dart' as data;
 import 'public/cluster_page.dart';
 import 'public/conferences.dart';
@@ -107,6 +110,9 @@ final _router = GoRouter(
     if (state.matchedLocation == '/app/admin' && !data.isAdmin) {
       return '/people';
     }
+    if (state.matchedLocation == '/app/admin/requests' && !data.isAdmin) {
+      return '/people';
+    }
     if (state.matchedLocation == '/app/settings' && !data.isAdmin) {
       return '/people';
     }
@@ -166,8 +172,26 @@ final _router = GoRouter(
         ),
         GoRoute(path: '/app/admin', builder: (_, _) => const AdminScreen()),
         GoRoute(
+          path: '/app/admin/requests',
+          builder: (_, _) => const AdminRequestsPage(),
+        ),
+        GoRoute(
           path: '/app/profile',
           builder: (_, _) => const MyProfileScreen(),
+        ),
+        GoRoute(
+          path: '/app/requests',
+          builder: (_, _) => const RequestsPage(),
+        ),
+        GoRoute(
+          path: '/app/requests/new',
+          builder: (_, _) => const RequestFormPage(),
+        ),
+        GoRoute(
+          path: '/app/requests/:id',
+          builder: (_, state) => RequestFormPage(
+            requestId: state.pathParameters['id'],
+          ),
         ),
         GoRoute(
           path: '/app/home',
