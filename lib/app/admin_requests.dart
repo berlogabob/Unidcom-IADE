@@ -167,44 +167,54 @@ class _AdminRequestsPageState extends State<AdminRequestsPage> {
                               ),
                             ),
                           )
-                        : SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              horizontalMargin: 0,
-                              columnSpacing: 24,
-                              headingRowHeight: 36,
-                              dataRowMinHeight: 52,
-                              dataRowMaxHeight: 64,
-                              dividerThickness: 1,
-                              headingTextStyle: const TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              dataTextStyle: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 12,
-                              ),
-                              columns: const [
-                                DataColumn(label: Text('RESEARCHER')),
-                                DataColumn(label: Text('REQUEST TITLE')),
-                                DataColumn(label: Text('TYPE')),
-                                DataColumn(label: Text('AMOUNT')),
-                                DataColumn(label: Text('SUBMITTED DATE')),
-                                DataColumn(label: Text('EVENT DATE')),
-                                DataColumn(label: Text('DOCS PROGRESS')),
-                                DataColumn(label: Text('STATUS')),
-                                DataColumn(label: Text('ACTIONS')),
-                              ],
-                              rows: [
-                                for (final request in filtered)
-                                  _requestRow(
-                                    request,
-                                    onSetStatus: _setStatus,
-                                    onReject: _reject,
+                        : LayoutBuilder(
+                            builder: (context, constraints) {
+                              final includeEventDateAndDocsProgress =
+                                  constraints.maxWidth >= 1400;
+                              return SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: DataTable(
+                                  horizontalMargin: 0,
+                                  columnSpacing: 24,
+                                  headingRowHeight: 36,
+                                  dataRowMinHeight: 52,
+                                  dataRowMaxHeight: 64,
+                                  dividerThickness: 1,
+                                  headingTextStyle: const TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                              ],
-                            ),
+                                  dataTextStyle: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 12,
+                                  ),
+                                  columns: [
+                                    const DataColumn(label: Text('RESEARCHER')),
+                                    const DataColumn(label: Text('REQUEST TITLE')),
+                                    const DataColumn(label: Text('TYPE')),
+                                    const DataColumn(label: Text('AMOUNT')),
+                                    const DataColumn(label: Text('SUBMITTED DATE')),
+                                    if (includeEventDateAndDocsProgress)
+                                      const DataColumn(label: Text('EVENT DATE')),
+                                    if (includeEventDateAndDocsProgress)
+                                      const DataColumn(label: Text('DOCS PROGRESS')),
+                                    const DataColumn(label: Text('STATUS')),
+                                    const DataColumn(label: Text('ACTIONS')),
+                                  ],
+                                  rows: [
+                                    for (final request in filtered)
+                                      _requestRow(
+                                        request,
+                                        onSetStatus: _setStatus,
+                                        onReject: _reject,
+                                        includeEventDateAndDocsProgress:
+                                            includeEventDateAndDocsProgress,
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                   ),
                 ),
@@ -221,6 +231,7 @@ DataRow _requestRow(
   Map<String, dynamic> request, {
   required void Function(String id, String status) onSetStatus,
   required void Function(String id) onReject,
+  required bool includeEventDateAndDocsProgress,
 }) {
   final id = request['id'] as String? ?? '';
   final status = request['status'] as String? ?? 'draft';
@@ -269,24 +280,26 @@ DataRow _requestRow(
           child: Text(_dateOnly(request['created_at'] as String?)),
         ),
       ),
-      DataCell(
-        MergeSemantics(
-          child: Text(_dateOnly(request['event_date'] as String?)),
+      if (includeEventDateAndDocsProgress)
+        DataCell(
+          MergeSemantics(
+            child: Text(_dateOnly(request['event_date'] as String?)),
+          ),
         ),
-      ),
-      DataCell(
-        MergeSemantics(
-          child: Text(
-            '$done/$total',
-            style: TextStyle(
-              color: total > 0 && done < total
-                  ? AppColors.warn
-                  : AppColors.textMuted,
-              fontWeight: FontWeight.w600,
+      if (includeEventDateAndDocsProgress)
+        DataCell(
+          MergeSemantics(
+            child: Text(
+              '$done/$total',
+              style: TextStyle(
+                color: total > 0 && done < total
+                    ? AppColors.warn
+                    : AppColors.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
-      ),
       DataCell(
         MergeSemantics(
           child: StatusPill(_capitalize(status), tone: _statusTone(status)),
