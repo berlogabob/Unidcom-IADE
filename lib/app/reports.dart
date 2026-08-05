@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../csv_download.dart';
 import '../data/supabase.dart';
-import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
 
@@ -222,6 +221,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Expanded(
                 child: Panel(
                   title: 'Outputs (${filtered.length})',
+                  padding: const EdgeInsets.all(0),
                   child: filtered.isEmpty
                       ? const Center(child: Text('No outputs found'))
                       : Scrollbar(
@@ -273,7 +273,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             ),
                           ),
                         ),
-                  padding: const EdgeInsets.all(0),
                 ),
               ),
             ],
