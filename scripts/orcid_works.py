@@ -23,7 +23,7 @@ from typing import Any
 
 import httpx
 
-from enrich import (
+from common import (
     CROSSREF_UA,
     ORG_TOKENS,
     clean,

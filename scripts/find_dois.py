@@ -31,7 +31,7 @@ from typing import Any
 
 import httpx
 
-from enrich import CROSSREF_UA, clean, clean_doi, get_json, insert_suggestion, load_client
+from common import CROSSREF_UA, clean, clean_doi, get_json, insert_suggestion, load_client
 
 CROSSREF_SEARCH = "https://api.crossref.org/works"
 
