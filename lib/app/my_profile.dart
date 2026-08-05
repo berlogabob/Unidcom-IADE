@@ -2,8 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../data/enrich_client.dart';
 import '../data/supabase.dart';
+import '../public/person/orcid_sync_dialog.dart';
 import '../public/person_page.dart';
+import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
 
@@ -59,6 +62,20 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   }
 
   void _refresh() => _resolve();
+
+  Future<void> _checkOrcidSync(String personId) async {
+    try {
+      final status = await fetchOrcidSyncStatus(personId);
+      if (!mounted) return;
+      if (status == null) {
+        showSnack(context, 'No ORCID on this profile to check');
+        return;
+      }
+      await showOrcidSyncDialog(context, status);
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
+    }
+  }
 
   Future<void> _submitProfile() async {
     final person = _person;
@@ -217,6 +234,49 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 ),
               ),
             ),
+          // ORCID sync banner above publications
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.tealTint,
+                  border: Border.all(
+                    color: AppColors.teal.withValues(alpha: 0.3),
+                  ),
+                  borderRadius: BorderRadius.circular(AppDims.radiusSm),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.sync,
+                      size: 18,
+                      color: AppColors.tealDark,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        person['orcid'] != null && (person['orcid'] as String).isNotEmpty
+                            ? 'ORCID connected — outputs sync automatically'
+                            : 'Connect your ORCID iD to sync outputs automatically',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.tealDark,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    if (person['orcid'] != null && (person['orcid'] as String).isNotEmpty)
+                      TextButton(
+                        onPressed: () => _checkOrcidSync(person['id'] as String),
+                        child: const Text('Sync now'),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           // ponytail: reuse the detail page; split only if own-profile UI diverges.
           Expanded(
             child: PersonPageScreen(
