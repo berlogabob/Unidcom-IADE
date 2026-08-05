@@ -292,24 +292,24 @@ DataRow _requestRow(
           child: StatusPill(_capitalize(status), tone: _statusTone(status)),
         ),
       ),
+      // ponytail: no MergeSemantics here — buttons must stay individual
+      // semantics nodes or web E2E/screen readers can't target them.
       DataCell(
-        MergeSemantics(
-          child: Wrap(
-            spacing: 8,
-            children: [
-              for (final next in adminNextStatuses(status))
-                if (next == 'rejected')
-                  TextButton(
-                    onPressed: () => onReject(id),
-                    child: const Text('Reject'),
-                  )
-                else
-                  FilledButton(
-                    onPressed: () => onSetStatus(id, next),
-                    child: Text(_actionLabel(next)),
-                  ),
-            ],
-          ),
+        Wrap(
+          spacing: 8,
+          children: [
+            for (final next in adminNextStatuses(status))
+              if (next == 'rejected')
+                TextButton(
+                  onPressed: () => onReject(id),
+                  child: const Text('Reject'),
+                )
+              else
+                FilledButton(
+                  onPressed: () => onSetStatus(id, next),
+                  child: Text(_actionLabel(next)),
+                ),
+          ],
         ),
       ),
     ],
