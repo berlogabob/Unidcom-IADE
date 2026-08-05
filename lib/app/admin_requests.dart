@@ -167,22 +167,44 @@ class _AdminRequestsPageState extends State<AdminRequestsPage> {
                               ),
                             ),
                           )
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              for (var i = 0; i < filtered.length; i++) ...[
-                                if (i > 0)
-                                  const Divider(
-                                    height: 24,
-                                    color: AppColors.cardBorder,
-                                  ),
-                                _RequestRow(
-                                  request: filtered[i],
-                                  onSetStatus: _setStatus,
-                                  onReject: _reject,
-                                ),
+                        : SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: DataTable(
+                              horizontalMargin: 0,
+                              columnSpacing: 24,
+                              headingRowHeight: 36,
+                              dataRowMinHeight: 52,
+                              dataRowMaxHeight: 64,
+                              dividerThickness: 1,
+                              headingTextStyle: const TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              dataTextStyle: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 12,
+                              ),
+                              columns: const [
+                                DataColumn(label: Text('RESEARCHER')),
+                                DataColumn(label: Text('REQUEST TITLE')),
+                                DataColumn(label: Text('TYPE')),
+                                DataColumn(label: Text('AMOUNT')),
+                                DataColumn(label: Text('SUBMITTED DATE')),
+                                DataColumn(label: Text('EVENT DATE')),
+                                DataColumn(label: Text('DOCS PROGRESS')),
+                                DataColumn(label: Text('STATUS')),
+                                DataColumn(label: Text('ACTIONS')),
                               ],
-                            ],
+                              rows: [
+                                for (final request in filtered)
+                                  _requestRow(
+                                    request,
+                                    onSetStatus: _setStatus,
+                                    onReject: _reject,
+                                  ),
+                              ],
+                            ),
                           ),
                   ),
                 ),
@@ -195,103 +217,95 @@ class _AdminRequestsPageState extends State<AdminRequestsPage> {
   }
 }
 
-class _RequestRow extends StatelessWidget {
-  const _RequestRow({
-    required this.request,
-    required this.onSetStatus,
-    required this.onReject,
-  });
+DataRow _requestRow(
+  Map<String, dynamic> request, {
+  required void Function(String id, String status) onSetStatus,
+  required void Function(String id) onReject,
+}) {
+  final id = request['id'] as String? ?? '';
+  final status = request['status'] as String? ?? 'draft';
+  final type = request['type'] as String? ?? '';
+  final title = request['title'] as String? ?? 'Untitled request';
+  final amountTotal = request['amount_total'];
+  final checklist = request['checklist'] as List<dynamic>? ?? const [];
+  final done = checklist
+      .where((item) => item is Map && item['done'] == true)
+      .length;
+  final total = checklist.length;
+  final (typeLabel, typeTone) = _typeBadge(type);
 
-  final Map<String, dynamic> request;
-  final void Function(String id, String status) onSetStatus;
-  final void Function(String id) onReject;
-
-  @override
-  Widget build(BuildContext context) {
-    final id = request['id'] as String? ?? '';
-    final status = request['status'] as String? ?? 'draft';
-    final type = request['type'] as String? ?? '';
-    final title = request['title'] as String? ?? 'Untitled request';
-    final personId = request['person_id'] as String?;
-    final eventName = request['event_name'] as String?;
-    final eventDate = request['event_date'] as String?;
-    final amountTotal = request['amount_total'];
-
-    final (typeLabel, typeTone) = _typeBadge(type);
-
-    final metaParts = <String>[
-      if (personId != null && personId.isNotEmpty)
-        'Person #${personId.length > 8 ? personId.substring(0, 8) : personId}',
-      if (eventName != null && eventName.isNotEmpty) eventName,
-      if (eventDate != null && eventDate.isNotEmpty) eventDate,
-      if (amountTotal != null) '€ ${_formatAmount(amountTotal)}',
-    ];
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    TypeBadge(typeLabel, tone: typeTone),
-                    const SizedBox(width: 8),
-                    StatusPill(
-                      _capitalize(status),
-                      tone: _statusTone(status),
-                    ),
-                  ],
-                ),
-                if (metaParts.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    metaParts.join(' · '),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Wrap(
-            spacing: 8,
-            children: [
-              for (final next in adminNextStatuses(status))
-                if (next == 'rejected')
-                  TextButton(
-                    onPressed: () => onReject(id),
-                    child: const Text('Reject'),
-                  )
-                else
-                  FilledButton(
-                    onPressed: () => onSetStatus(id, next),
-                    child: Text(_actionLabel(next)),
-                  ),
-            ],
-          ),
-        ],
+  return DataRow(
+    cells: [
+      DataCell(
+        SizedBox(width: 120, child: Text(_researcherLabel(request))),
       ),
-    );
-  }
+      DataCell(
+        SizedBox(
+          width: 180,
+          child: Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
+      DataCell(TypeBadge(typeLabel, tone: typeTone)),
+      DataCell(
+        Text(amountTotal == null ? '—' : '€ ${_formatAmount(amountTotal)}'),
+      ),
+      DataCell(Text(_dateOnly(request['created_at'] as String?))),
+      DataCell(Text(_dateOnly(request['event_date'] as String?))),
+      DataCell(
+        Text(
+          '$done/$total',
+          style: TextStyle(
+            color: total > 0 && done < total
+                ? AppColors.warn
+                : AppColors.textMuted,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      DataCell(
+        StatusPill(_capitalize(status), tone: _statusTone(status)),
+      ),
+      DataCell(
+        Wrap(
+          spacing: 8,
+          children: [
+            for (final next in adminNextStatuses(status))
+              if (next == 'rejected')
+                TextButton(
+                  onPressed: () => onReject(id),
+                  child: const Text('Reject'),
+                )
+              else
+                FilledButton(
+                  onPressed: () => onSetStatus(id, next),
+                  child: Text(_actionLabel(next)),
+                ),
+          ],
+        ),
+      ),
+    ],
+  );
 }
+
+String _researcherLabel(Map<String, dynamic> request) {
+  final person = request['people'];
+  if (person is Map) {
+    final name = (person['preferred_name'] ?? person['legal_name'])
+        ?.toString()
+        .trim();
+    if (name != null && name.isNotEmpty) return name;
+  }
+  final id = request['person_id'] as String? ?? '';
+  return id.isEmpty ? '—' : (id.length > 8 ? id.substring(0, 8) : id);
+}
+
+String _dateOnly(String? iso) =>
+    (iso == null || iso.isEmpty) ? '—' : iso.split('T').first;
 
 int _countByStatus(List<Map<String, dynamic>> requests, String status) =>
     requests.where((r) => r['status'] == status).length;

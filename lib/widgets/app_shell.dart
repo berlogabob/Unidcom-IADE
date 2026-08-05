@@ -16,7 +16,11 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   // Fetched once per shell mount (not on every rebuild/navigation) — see M2.
+  late final Future<int> _pendingPeople = data.fetchPendingPeople().then(
+    (people) => people.length,
+  );
   late final Future<int> _pendingRequests = data.countPendingRequests();
+  late final Future<Map<String, dynamic>?> _person = data.fetchMyPerson();
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +80,6 @@ class _AppShellState extends State<AppShell> {
         ? [
             PopupMenuButton<String>(
               tooltip: 'My profile',
-              icon: const Icon(Icons.account_circle),
               onSelected: (value) {
                 if (value == 'overview') context.go('/app/home');
                 if (value == 'requests') context.go('/app/requests');
@@ -96,6 +99,61 @@ class _AppShellState extends State<AppShell> {
                 PopupMenuItem(value: 'profile', child: Text('My profile')),
                 PopupMenuItem(value: 'signout', child: Text('Sign out')),
               ],
+              child: FutureBuilder<Map<String, dynamic>?>(
+                future: _person,
+                builder: (context, snapshot) {
+                  final personName =
+                      (snapshot.data?['preferred_name'] as String? ?? '')
+                          .trim();
+                  final email =
+                      (snapshot.data?['email'] as String? ??
+                              session.user.email ??
+                              '')
+                          .trim();
+                  final name = personName.isEmpty
+                      ? email.split('@').first
+                      : personName;
+                  return Container(
+                    margin: const EdgeInsets.only(right: 16),
+                    padding: const EdgeInsets.fromLTRB(4, 4, 10, 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor: AppColors.teal,
+                          child: Text(
+                            _initials(name),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 160),
+                          child: Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textOnDark,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ]
         : [
@@ -350,9 +408,12 @@ class _AppShellState extends State<AppShell> {
                                     ),
                                   ),
                                 ),
-                                if (item.path == '/app/admin/requests')
+                                if (item.path == '/people' ||
+                                    item.path == '/app/admin/requests')
                                   FutureBuilder<int>(
-                                    future: _pendingRequests,
+                                    future: item.path == '/people'
+                                        ? _pendingPeople
+                                        : _pendingRequests,
                                     builder: (context, snapshot) {
                                       final count = snapshot.data ?? 0;
                                       if (count <= 0) {
@@ -396,13 +457,18 @@ class _AppShellState extends State<AppShell> {
             if (session != null)
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: Text(
-                  session.user.email ?? '',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textOnDarkMuted,
-                    fontSize: 12,
+                child: FutureBuilder<Map<String, dynamic>?>(
+                  future: _person,
+                  builder: (context, snapshot) => Text(
+                    snapshot.data?['email'] as String? ??
+                        session.user.email ??
+                        '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textOnDarkMuted,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ),
@@ -424,4 +490,12 @@ class _NavItem {
   /// Path prefixes that map to this tab (detail routes included). Defaults to
   /// [path] so single-section tabs keep their existing startsWith behavior.
   final List<String> prefixes;
+}
+
+String _initials(String name) {
+  final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+  return (parts.first.characters.first + parts.last.characters.first)
+      .toUpperCase();
 }
