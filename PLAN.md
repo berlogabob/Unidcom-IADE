@@ -120,7 +120,7 @@ end-to-end check (DEMO.md §2–4), demo dry-run + demonstration.
 - [x] Performance advisors reviewed — all 155 findings are noise at ≤362 rows (policy-per-role double-counting, unused indexes on a young DB, 8 `auth_rls_initplan`). Revisit `auth_rls_initplan` (`(select auth.uid())` wrapping) only if tables reach ~10k rows.
 - [x] Weekly ORCID staging — `.github/workflows/orcid-sync.yml` (Mon 05:00 + manual), keeps ONBOARDING.md's periodic-sync promise.
 - [x] Backup routine — day-one snapshot taken (`scripts/out/*.json`, EXPORT: PASS). Weekly: `uv run --project scripts scripts/export.py` locally; `restore.py` restores. Do NOT upload exports as CI artifacts — public repo, `people` contains emails.
-- [ ] Enable leaked-password protection — Supabase dashboard → Auth → Passwords (manual toggle, can't be done in SQL).
+- [x] Leaked-password protection — 2026-08-05 resolved: feature is Pro-plan-only (Free tier blocks it with an error). Mitigation applied in dashboard instead: min password length 12, complexity requirements, secure password change + current-password-required. Acceptable: password auth covers only the 3 staff accounts; researchers use ORCID OAuth.
 
 ## 5. Pilot cohort
 
