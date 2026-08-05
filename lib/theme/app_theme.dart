@@ -23,7 +23,7 @@ ThemeData unidcomTheme() {
     scaffoldBackgroundColor: AppColors.pageBg,
     textTheme: inter.copyWith(
       bodyMedium: inter.bodyMedium?.copyWith(
-        fontSize: 13,
+        fontSize: 14,
         height: 1.45,
         color: AppColors.textPrimary,
       ),
@@ -32,11 +32,15 @@ ThemeData unidcomTheme() {
         color: AppColors.textMuted,
       ),
       titleMedium: inter.titleMedium?.copyWith(
-        fontSize: 15,
-        fontWeight: FontWeight.w700,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
       ),
       titleLarge: inter.titleLarge?.copyWith(
-        fontSize: 18,
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+      ),
+      headlineMedium: inter.headlineMedium?.copyWith(
+        fontSize: 32,
         fontWeight: FontWeight.w700,
       ),
       labelSmall: inter.labelSmall?.copyWith(
