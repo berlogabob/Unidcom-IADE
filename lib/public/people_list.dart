@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../theme/tokens.dart';
 import 'person_page.dart';
 import '../widgets/detail_scaffold.dart';
-import '../widgets/person_card.dart';
+import '../widgets/panels.dart';
 import '../widgets/queue_list.dart';
 import '../widgets/search_bar.dart';
 
@@ -90,21 +91,100 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
                     Expanded(
                       child: people.isEmpty
                           ? const Center(child: Text('No people found'))
-                          : ListView.builder(
-                              itemCount: people.length,
-                              itemBuilder: (context, index) {
-                                final person = people[index];
-                                return PersonCard(
-                                  name:
-                                      person['preferred_name'] as String? ??
-                                      'Unnamed',
-                                  membershipType:
-                                      person['membership_type'] as String?,
-                                  status: person['status'] as String?,
-                                  onTap: () =>
-                                      context.go('/people/${person['id']}'),
-                                );
-                              },
+                          : Container(
+                              clipBehavior: Clip.antiAlias,
+                              decoration: const BoxDecoration(
+                                color: AppColors.cardBg,
+                                border: Border.fromBorderSide(
+                                  BorderSide(color: AppColors.cardBorder),
+                                ),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(AppDims.radius),
+                                ),
+                                boxShadow: AppDims.shadowCard,
+                              ),
+                              child: ListView.builder(
+                                itemCount: people.length,
+                                itemBuilder: (context, index) {
+                                  final person = people[index];
+                                  final membershipType =
+                                      person['membership_type'] as String?;
+                                  final status = person['status'] as String?;
+                                  final email = person['email'] as String?;
+                                  return Material(
+                                    color: AppColors.cardBg,
+                                    child: InkWell(
+                                      onTap: () =>
+                                          context.go('/people/${person['id']}'),
+                                      hoverColor: AppColors.sandHover,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 13,
+                                        ),
+                                        decoration: const BoxDecoration(
+                                          border: Border(
+                                            bottom: BorderSide(
+                                              color: AppColors.cardBorder,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    person['preferred_name']
+                                                            as String? ??
+                                                        'Unnamed',
+                                                    style: const TextStyle(
+                                                      color:
+                                                          AppColors.textPrimary,
+                                                      fontSize: 14,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                  if (email != null) ...[
+                                                    const SizedBox(height: 2),
+                                                    Text(
+                                                      email,
+                                                      style: const TextStyle(
+                                                        color:
+                                                            AppColors.textMuted,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ),
+                                            if (membershipType != null) ...[
+                                              const SizedBox(width: 12),
+                                              TypeBadge(membershipType),
+                                            ],
+                                            if (status != null) ...[
+                                              const SizedBox(width: 12),
+                                              StatusPill(
+                                                status,
+                                                tone: switch (status) {
+                                                  'active' => PillTone.teal,
+                                                  'a_confirmar' =>
+                                                    PillTone.amber,
+                                                  _ => PillTone.grey,
+                                                },
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                     ),
                   ],
@@ -150,27 +230,27 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
             _load();
           },
         ),
-        FilterChip(
-          label: const Text('Missing ORCID'),
+        FilterPill(
+          'Missing ORCID',
           selected: _missingOrcid,
-          onSelected: (value) {
-            _missingOrcid = value;
+          onTap: () {
+            _missingOrcid = !_missingOrcid;
             _load();
           },
         ),
-        FilterChip(
-          label: const Text('Needs verification'),
+        FilterPill(
+          'Needs verification',
           selected: _needsVerification,
-          onSelected: (value) {
-            _needsVerification = value;
+          onTap: () {
+            _needsVerification = !_needsVerification;
             _load();
           },
         ),
-        FilterChip(
-          label: const Text('Has outputs'),
+        FilterPill(
+          'Has outputs',
           selected: _hasOutputs,
-          onSelected: (value) {
-            _hasOutputs = value;
+          onTap: () {
+            _hasOutputs = !_hasOutputs;
             _load();
           },
         ),

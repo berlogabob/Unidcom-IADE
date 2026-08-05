@@ -4,6 +4,14 @@ final db = Supabase.instance.client;
 
 bool get isAdmin => db.auth.currentUser?.appMetadata['role'] == 'admin';
 
+Future<int> countPendingRequests() async {
+  try {
+    return await db.from('support_requests').count().eq('status', 'submitted');
+  } catch (_) {
+    return 0;
+  }
+}
+
 /// Layer 1 — mandatory membership (one per person/year): the single source
 /// shared by the person editor, the logbook, and the dashboard.
 const membershipTypes = ['integrated', 'collaborator', 'external'];
@@ -1868,3 +1876,100 @@ Future<String> startOrcidLink(String returnTo) async {
 /// True when the signed-in account already has an ORCID login method.
 bool get hasLinkedOrcid =>
     db.auth.currentUser?.appMetadata['orcid'] != null;
+
+/// Resolves the signed-in user's own `people.id`, or null when there is no
+/// session or no matching person row. Shared by [fetchMyRequests] and
+/// [createRequest] so both look up the caller's person the same way.
+Future<String?> _myPersonId() async {
+  final userId = db.auth.currentUser?.id;
+  if (userId == null) return null;
+  final person = await db
+      .from('people')
+      .select('id')
+      .eq('auth_user_id', userId)
+      .maybeSingle();
+  return person?['id'] as String?;
+}
+
+/// Support requests (funding/DPD/open-access/mission asks) for the
+/// signed-in researcher's own person record, newest first.
+Future<List<Map<String, dynamic>>> fetchMyRequests() async {
+  try {
+    final personId = await _myPersonId();
+    if (personId == null) return [];
+    final rows = await db
+        .from('support_requests')
+        .select()
+        .eq('person_id', personId)
+        .order('created_at', ascending: false);
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Admin list of all support requests, newest first, optionally filtered
+/// to a single [status].
+Future<List<Map<String, dynamic>>> fetchAllRequests({String? status}) async {
+  try {
+    var query = db.from('support_requests').select();
+    if (status != null) query = query.eq('status', status);
+    final rows = await query.order('created_at', ascending: false);
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<Map<String, dynamic>> createRequest(Map<String, dynamic> fields) async {
+  try {
+    final personId = await _myPersonId();
+    if (personId == null) {
+      throw StateError(
+        'No researcher profile is linked to this account — cannot create a request.',
+      );
+    }
+    final row = await db
+        .from('support_requests')
+        .insert({...fields, 'person_id': personId})
+        .select()
+        .single();
+    return Map<String, dynamic>.from(row);
+  } catch (error) {
+    if (error is StateError) throw Exception(error.message);
+    throw Exception(_error(error));
+  }
+}
+
+Future<Map<String, dynamic>> updateRequest(
+  String id,
+  Map<String, dynamic> fields,
+) async {
+  try {
+    final row = await db
+        .from('support_requests')
+        .update(fields)
+        .eq('id', id)
+        .select()
+        .single();
+    return Map<String, dynamic>.from(row);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Owner-side draft -> submitted transition (the only one RLS allows them).
+Future<Map<String, dynamic>> submitRequest(String id) async {
+  return updateRequest(id, {'status': 'submitted'});
+}
+
+/// Admin status transition, optionally leaving a note.
+Future<Map<String, dynamic>> setRequestStatus(
+  String id,
+  String status, {
+  String? adminNote,
+}) async {
+  final fields = <String, dynamic>{'status': status};
+  if (adminNote != null) fields['admin_note'] = adminNote;
+  return updateRequest(id, fields);
+}

@@ -164,7 +164,91 @@ reviews. Tick only on measured acceptance.
 - [x] Re-run graph update + health check — claude — 2026-08-05 measured: graph 1,466 nodes / 2,119 edges / 126 communities; both cohesion scores above baseline (✅); dangling 135 and collapsed 247 exceed the ≤129/≤225 absolute targets because the graph grew (+71 nodes) — residue *rate* flat at 6.4% of edges. Absolute targets were mis-specified; tracking rate (≤6.5%) going forward.
 - No-fix (informational): 650 weakly-connected nodes are package-import leaves (supabase, XCTest, build) — expected for an AST graph; 17 zero-node files are JSON configs; `dashboard.dart` (752 lines) not flagged by cohesion — backlog only.
 
-## 8. Out of scope / Phase 2+
+## 8. UI redesign — Carmela templates (2026-08-05)
+
+Source of truth: `RAW_DATA/TemplatesFromCarmela/unidcom-{admin,researcher}.html`.
+Figma (same design, added 2026-08-05): https://www.figma.com/design/Ai1eR4QkCBlY57xQVpwbCT/UNIDCOM?node-id=0-1&m=dev
+— not machine-readable without Figma MCP/API token; templates drive implementation.
+Branch `redesign/carmela-ui`. Executors: codex CLI + haiku subagents; orchestrator
+reviews diffs and runs acceptance checks. Full plan + design decisions:
+`~/.claude/plans/implement-new-ui-design-expressive-pony.md`. Tick only after
+the acceptance command passes.
+
+### P0 — Tokens + theme
+- [x] T0.1 `lib/theme/tokens.dart` — haiku — ✅ 893cd97, analyze clean
+- [x] T0.2 `lib/theme/app_theme.dart` — codex — ✅ 73e2756, analyze clean (codex sandbox couldn't commit; orch committed)
+- [x] T0.3 main.dart theme swap, red deleted — haiku — ✅ c207d5e, grep = 0, analyze clean, 34/34 tests
+- [x] T0.4 chart_palette swap — haiku — ✅ 8ae090e, analyze clean, slotColor signature untouched
+- [x] T0.5 bundle-size baseline — orch — ✅ main.dart.js = 3,536,514 bytes (M7 ceiling: 3,890,165)
+
+### P1 — Shell + navigation
+- [x] T1.1 extract AppShell → lib/widgets/app_shell.dart — haiku — ✅ 1f3db7c, pure move, tests green
+- [x] T1.2 dark top-nav (≥760px) — codex — ✅ f3f61f2, Maestro anonymous smoke green (people list, person page, nav); full featured_star deferred to P6 (needs .maestro/.env credentials — file missing locally)
+- [x] T1.3 admin sidebar variant — codex — ✅ 24d7b66, analyze/tests green
+- [x] T1.4 LoginScreen restyle — haiku — ✅ cf9e094, Maestro sees Email/Password fields; brand card verified by screenshot
+- [x] T1.5 placeholder routes — haiku — ✅ b003e5f, render, /app/settings admin-gated
+- Note: DB drifted 184→183 people; featured_star.yaml's "184 people" login-proof assert needs a regex patch in P6.
+
+### P2 — Restyle existing pages
+- [ ] T2.1 lib/widgets/panels.dart (Panel/AccentStatCard/StatusPill/TypeBadge/FilterPill) — codex — analyze + smoke test
+- [ ] T2.2 stat_tile restyle — haiku — dashboard renders
+- [ ] T2.3 detail_scaffold panel pass — codex — analyze/test green
+- [ ] T2.4 people_list — codex — renders
+- [ ] T2.5 outputs + output_row — codex — renders
+- [ ] T2.6 projects/structure/conferences — codex — render
+- [ ] T2.7 person_page dark profile band — codex — Maestro star green
+- [ ] T2.8 dashboard — codex — renders admin+anon
+- [ ] T2.9 admin_page/review_queue/merge — codex — render
+- [ ] T2.10 my_profile (pinned strings) — codex — grep hits unchanged
+- [ ] T2.11 reports/data_page — haiku — render
+
+### P3 — Support requests
+- [x] T3.1 migration support_requests + RLS — codex draft, orch line-by-line review — ✅ 5aaae96, applied via MCP, advisors: pre-existing warnings only
+- [x] T3.2 data layer queries — sonnet — ✅ c4b8226, 7 transition unit tests green (42/42 total)
+- [x] T3.3 requests_page (researcher) — sonnet — ✅ fcbce20, analyze clean; anon-CTA render check pending rebuild
+- [x] T3.4 request_form — sonnet — ✅ 238f1e5, analyze clean; live round-trip deferred to P6 (needs login credentials)
+- [x] T3.5 admin_requests + badge wire — sonnet — ✅ b73763d + 6540448 (routes), analyze clean; change_log check deferred to P6
+- [ ] T3.6 .maestro/support_request.yaml — orch, P6 — authored + validated live once .maestro/.env credentials are available
+
+### P4 — Researcher portal
+- [x] T4.1 researcher_home /app/home — codex — ✅ 1a23c9f, anon CTA verified in crawl
+- [x] T4.2 welcome_pack shell /app/welcome/:section — codex — ✅ 68a4092, path-param sections, crawl green
+- [x] T4.3+T4.4 welcome content — codex — ✅ 6887ba4, transcribed verbatim; DOI 10.54499/UID/00711/2025 verified on-screen (EN+PT)
+- [x] T4.5 ORCID banner on my-profile — haiku — ✅ 3a92581, pinned strings intact
+
+### P5 — Admin settings
+- [x] T5.1 settings_page — codex — ✅ 6752053 + 273d788, anon redirect verified in crawl
+
+### P7 — Figma parity (source: Figma UNIDCOM file, Design System page + 10 frames; Figma is newer than the HTML export and wins on conflict)
+- [x] P7.1 token alignment to Figma DS — haiku — ✅ 5eb6b8c, analyze + 42/42
+- [x] P7.2 typography scale (Body 14, H2 22, H3 16) — codex — ✅ 8a549f2
+- [x] P7.3 researcher portal tab shell — codex — ✅ 1b1ad57, portal crawl green
+- [x] P7.4 top-nav user chip — codex — ✅ e4be636
+- [x] P7.5 admin People badge + requests table columns — codex — ✅ e4be636 (badge via existing fetchPendingPeople)
+- [x] P7.6 gate re-run — orch — ✅ analyze 0, 45/45 tests, crawl green, E2E bundle 3,690,219 B < 3,890,165 ceiling; pinned strings intact
+
+### P8 — ornith (local ollama) executor — bite-sized single-file tasks via pi-delegate
+- [x] O1 extend test/panels_test.dart — haiku (ornith benched: 4 pi attempts, zero edits emitted) — ✅ 768b14a, 4/4 targeted tests (orch re-verified)
+- [x] O2 featured_star.yaml "184 people" → `1\d\d people` regex — haiku — ✅ 768b14a
+- [x] O3 README "Run the E2E" section — haiku — ✅ 768b14a, grep verified
+- ornith/pi infra: model never calls its edit tool (thinks → "done"); needs separate debugging before it can execute tasks. Verify lesson recorded: assert the new artifact exists, not just that checks pass.
+(labs/cluster/objective pages checked: already token-clean via detail_scaffold — no task needed)
+
+### P6 — Verification + merge
+- [x] T6.1 analyze 0 / tests 100% — ✅ 0 issues, 42/42
+- [ ] T6.2 both Maestro flows green — BLOCKED on .maestro/.env credentials (user)
+- [x] T6.3 route crawl all routes — ✅ public + portal + welcome sections + admin redirects, Maestro crawl green (note: stale-browser-cache false alarm; clearState needed after redeploys)
+- [x] T6.4 metrics gate — ✅ 6/7 (M4 credential-blocked); key screens visually verified via Maestro during crawl
+- [x] T6.4c final whole-branch review — ✅ 8 findings (1 Critical: request insert missing person_id; 1 Important: portal unreachable from nav; 6 minor) — all fixed in 531e0e9; scoped re-review: all ADDRESSED, no new breakage
+- [ ] T6.4b Figma parity pass — orch+user — needs Figma MCP/token or exported frames
+- [ ] T6.5 PR → CI green → merge
+
+Metrics gate (2026-08-05): M1 ✅ 0 refs (one "Relatorio" substring false-positive
+noted) · M2 ✅ crawl green · M3 ✅ 0 issues / 42 tests · M4 ⏳ blocked on
+.maestro/.env · M5 ✅ pinned greps unchanged · M6 ✅ advisors: pre-existing only ·
+M7 ✅ 3,678,947 B = +4.0% (ceiling +10%).
+
+## 9. Out of scope / Phase 2+
 
 - Sanity CMS as website layer (swap point: replace the Flutter SPA's PostgREST
   reads with a RIMS→Sanity push; the approval-driven RLS boundary is the API

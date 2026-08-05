@@ -2,9 +2,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../data/enrich_client.dart';
 import '../data/supabase.dart';
+import '../public/person/orcid_sync_dialog.dart';
 import '../public/person_page.dart';
+import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/panels.dart';
 
 String profileStatusLabel(String? status) => switch (status) {
   'pending_review' => 'Awaiting UNIDCOM approval',
@@ -58,6 +62,20 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   }
 
   void _refresh() => _resolve();
+
+  Future<void> _checkOrcidSync(String personId) async {
+    try {
+      final status = await fetchOrcidSyncStatus(personId);
+      if (!mounted) return;
+      if (status == null) {
+        showSnack(context, 'No ORCID on this profile to check');
+        return;
+      }
+      await showOrcidSyncDialog(context, status);
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
+    }
+  }
 
   Future<void> _submitProfile() async {
     final person = _person;
@@ -163,9 +181,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Chip(
-                    label: Text(profileStatusLabel(status)),
-                    visualDensity: VisualDensity.compact,
+                  StatusPill(
+                    profileStatusLabel(status),
+                    tone: status == 'approved' ? PillTone.teal : PillTone.amber,
                   ),
                   if (status == 'draft') ...[
                     const Text('Check your data below, then confirm'),
@@ -216,6 +234,49 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 ),
               ),
             ),
+          // ORCID sync banner above publications
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 760),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.tealTint,
+                  border: Border.all(
+                    color: AppColors.teal.withValues(alpha: 0.3),
+                  ),
+                  borderRadius: BorderRadius.circular(AppDims.radiusSm),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.sync,
+                      size: 18,
+                      color: AppColors.tealDark,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        person['orcid'] != null && (person['orcid'] as String).isNotEmpty
+                            ? 'ORCID connected — outputs sync automatically'
+                            : 'Connect your ORCID iD to sync outputs automatically',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.tealDark,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                    if (person['orcid'] != null && (person['orcid'] as String).isNotEmpty)
+                      TextButton(
+                        onPressed: () => _checkOrcidSync(person['id'] as String),
+                        child: const Text('Sync now'),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           // ponytail: reuse the detail page; split only if own-profile UI diverges.
           Expanded(
             child: PersonPageScreen(
@@ -249,39 +310,41 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         ],
         if (isAdmin) ...[
           const SizedBox(height: 16),
-          Text(
-            'Link a profile',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            decoration: const InputDecoration(
-              labelText: 'Search people',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
+          Panel(
+            title: 'Link a profile',
+            child: Column(
+              children: [
+                TextField(
+                  decoration: const InputDecoration(
+                    labelText: 'Search people',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    setState(() => _people = fetchPeople(query: value));
+                  },
+                ),
+                const SizedBox(height: 12),
+                AsyncView<List<Map<String, dynamic>>>(
+                  future: _people,
+                  builder: (context, people) {
+                    return Column(
+                      children: [
+                        for (final person in people.take(20))
+                          ListTile(
+                            title: Text(
+                              person['preferred_name'] as String? ?? 'Unnamed',
+                            ),
+                            subtitle: Text(person['email'] as String? ?? ''),
+                            trailing: const Icon(Icons.link),
+                            onTap: () => _link(person),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ),
-            onChanged: (value) {
-              setState(() => _people = fetchPeople(query: value));
-            },
-          ),
-          const SizedBox(height: 8),
-          AsyncView<List<Map<String, dynamic>>>(
-            future: _people,
-            builder: (context, people) {
-              return Column(
-                children: [
-                  for (final person in people.take(20))
-                    ListTile(
-                      title: Text(
-                        person['preferred_name'] as String? ?? 'Unnamed',
-                      ),
-                      subtitle: Text(person['email'] as String? ?? ''),
-                      trailing: const Icon(Icons.link),
-                      onTap: () => _link(person),
-                    ),
-                ],
-              );
-            },
           ),
         ],
       ],

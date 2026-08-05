@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/output_row.dart';
-import '../widgets/queue_list.dart';
+import '../widgets/panels.dart';
 import '../widgets/search_bar.dart';
 
 class OutputsScreen extends StatefulWidget {
@@ -103,51 +104,47 @@ class _OutputsScreenState extends State<OutputsScreen> {
                     Expanded(
                       child: outputs.isEmpty
                           ? const Center(child: Text('No outputs found'))
-                          : ListView.builder(
-                              itemCount: outputs.length,
-                              itemBuilder: (context, index) {
-                                final output = outputs[index];
-                                final authors =
-                                    (output['output_authors']
-                                                as List<dynamic>? ??
-                                            [])
-                                        .map((author) {
-                                          final people =
-                                              (author
-                                                  as Map<
-                                                    String,
-                                                    dynamic
-                                                  >)['people'];
-                                          return (people
-                                                  as Map<
-                                                    String,
-                                                    dynamic
-                                                  >?)?['preferred_name']
-                                              as String?;
-                                        })
-                                        .whereType<String>()
-                                        .join(', ');
-                                return OutputRow(
-                                  title:
-                                      output['title'] as String? ?? 'Untitled',
-                                  year: output['reporting_year'] as int?,
-                                  type: output['type'] as String?,
-                                  detail: authors,
-                                  issueCodes: isAdmin
-                                      ? (output['issue_codes']
-                                                as List<dynamic>? ??
-                                            [])
-                                          .cast<String>()
-                                      : null,
-                                  errorCount:
-                                      output['error_count'] as int? ?? 0,
-                                  warningCount:
-                                      output['warning_count'] as int? ?? 0,
-                                  onTap: () => context.go(
-                                    '/outputs/${output['id']}',
+                          : ListView(
+                              children: [
+                                Panel(
+                                  padding: EdgeInsets.zero,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      for (
+                                        var index = 0;
+                                        index < outputs.length;
+                                        index++
+                                      ) ...[
+                                        if (outputs[index]['reporting_year'] !=
+                                                null &&
+                                            (index == 0 ||
+                                                outputs[index -
+                                                        1]['reporting_year'] !=
+                                                    outputs[index]['reporting_year']))
+                                          Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                              16,
+                                              14,
+                                              16,
+                                              8,
+                                            ),
+                                            child: Text(
+                                              '${outputs[index]['reporting_year']}',
+                                              style: const TextStyle(
+                                                color: AppColors.textMuted,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                        _outputRow(outputs[index]),
+                                      ],
+                                    ],
                                   ),
-                                );
-                              },
+                                ),
+                              ],
                             ),
                     ),
                   ],
@@ -166,17 +163,17 @@ class _OutputsScreenState extends State<OutputsScreen> {
       runSpacing: 12,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        filterDropdown('Type', _type, types, (value) {
+        ..._filterPills('Type', _type, types, (value) {
           _type = value;
           _load();
-        }, width: 240),
-        filterDropdown('Quartile', _quartile, const ['Q1', 'Q2', 'Q3', 'Q4'], (
+        }),
+        ..._filterPills('Quartile', _quartile, const ['Q1', 'Q2', 'Q3', 'Q4'], (
           value,
         ) {
           _quartile = value;
           _load();
-        }, width: 160),
-        filterDropdown(
+        }),
+        ..._filterPills(
           'Approval',
           _approvalStatus,
           const ['pending', 'approved', 'rejected'],
@@ -184,22 +181,71 @@ class _OutputsScreenState extends State<OutputsScreen> {
             _approvalStatus = value;
             _load();
           },
-          width: 160,
         ),
         if (isAdmin)
-          filterDropdown(
-            'Issues',
-            _severity,
-            const ['Any issue', 'Errors', 'Warnings'],
-            (value) => setState(() => _severity = value),
-            width: 160,
-          ),
+          ..._filterPills('Issues', _severity, const [
+            'Any issue',
+            'Errors',
+            'Warnings',
+          ], (value) => setState(() => _severity = value)),
         TextButton.icon(
           onPressed: () => context.go('/conferences'),
           icon: const Icon(Icons.event),
           label: const Text('Conferences'),
         ),
       ],
+    );
+  }
+
+  List<Widget> _filterPills(
+    String label,
+    String? selected,
+    List<String> values,
+    ValueChanged<String?> onChanged,
+  ) {
+    return [
+      Text(
+        label,
+        style: const TextStyle(
+          color: AppColors.textMuted,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      FilterPill(
+        'All',
+        selected: selected == null,
+        onTap: () => onChanged(null),
+      ),
+      for (final value in values)
+        FilterPill(
+          value.replaceAll('_', ' '),
+          selected: selected == value,
+          onTap: () => onChanged(value),
+        ),
+    ];
+  }
+
+  Widget _outputRow(Map<String, dynamic> output) {
+    final authors = (output['output_authors'] as List<dynamic>? ?? [])
+        .map((author) {
+          final people = (author as Map<String, dynamic>)['people'];
+          return (people as Map<String, dynamic>?)?['preferred_name']
+              as String?;
+        })
+        .whereType<String>()
+        .join(', ');
+    return OutputRow(
+      title: output['title'] as String? ?? 'Untitled',
+      year: output['reporting_year'] as int?,
+      type: output['type'] as String?,
+      detail: authors,
+      issueCodes: isAdmin
+          ? (output['issue_codes'] as List<dynamic>? ?? []).cast<String>()
+          : null,
+      errorCount: output['error_count'] as int? ?? 0,
+      warningCount: output['warning_count'] as int? ?? 0,
+      onTap: () => context.go('/outputs/${output['id']}'),
     );
   }
 }

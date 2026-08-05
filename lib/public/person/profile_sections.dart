@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../theme/tokens.dart';
 import '../../widgets/detail_scaffold.dart';
 
 Widget personHeader(
@@ -19,67 +20,151 @@ Widget personHeader(
   final name = person['preferred_name'] as String? ?? 'Unnamed';
   final photo = (person['photo_url'] as String? ?? '').trim();
   final theme = Theme.of(context);
+  final subtitle = (person['legal_name'] as String? ?? '').trim();
+  final identifiers = [
+    ('ORCID', (person['orcid'] as String? ?? '').trim()),
+    ('Ciência ID', (person['ciencia_id'] as String? ?? '').trim()),
+    ('Email', (person['email'] as String? ?? '').trim()),
+  ];
+  final chips = statusChips([
+    person['membership_type'],
+    person['status'],
+    person['profile_status'],
+  ]);
 
-  return EntityHeaderCard(
-    leading: CircleAvatar(
-      radius: 36,
-      backgroundColor: theme.colorScheme.primaryContainer,
-      foregroundImage: photo.isEmpty ? null : NetworkImage(photo),
-      child: Text(
-        _initials(name),
-        style: theme.textTheme.titleLarge?.copyWith(
-          color: theme.colorScheme.onPrimaryContainer,
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Container(
+        padding: const EdgeInsets.all(24),
+        decoration: const BoxDecoration(
+          color: AppColors.profileBand,
+          borderRadius: BorderRadius.all(Radius.circular(AppDims.radius)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 36,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              foregroundImage: photo.isEmpty ? null : NetworkImage(photo),
+              child: Text(
+                _initials(name),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      color: AppColors.textOnDark,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: AppColors.textOnDarkMuted,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                  if (identifiers.any(
+                    (identifier) => identifier.$2.isNotEmpty,
+                  )) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final (label, value) in identifiers)
+                          if (value.isNotEmpty) _identifierPill(label, value),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-    ),
-    title: name,
-    subtitle: person['legal_name'] as String?,
-    chips: statusChips([
-      person['membership_type'],
-      person['status'],
-      person['profile_status'],
-    ]),
-    onEdit: (admin || isOwner) ? onEdit : null,
-    actions: [
-      if (isOwner && !hasLinkedOrcid)
-        OutlinedButton.icon(
-          onPressed: onConnectOrcid,
-          icon: const Icon(Icons.badge_outlined),
-          label: const Text('Connect ORCID'),
+      if (chips.isNotEmpty || admin || isOwner) ...[
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ...chips,
+            if (admin || isOwner)
+              FilledButton.icon(
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit),
+                label: const Text('Edit'),
+              ),
+            if (isOwner && !hasLinkedOrcid)
+              OutlinedButton.icon(
+                onPressed: onConnectOrcid,
+                icon: const Icon(Icons.badge_outlined),
+                label: const Text('Connect ORCID'),
+              ),
+            if (admin)
+              FilledButton.icon(
+                onPressed: enriching ? null : onAutoFill,
+                icon: enriching
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_fix_high),
+                label: Text(enriching ? 'Loading...' : 'Auto-fill'),
+              ),
+            if (admin)
+              OutlinedButton.icon(
+                onPressed: syncing ? null : onCheckOrcidSync,
+                icon: syncing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.sync),
+                label: Text(syncing ? 'Checking...' : 'ORCID sync'),
+              ),
+            if (admin)
+              FilledButton.icon(
+                onPressed: onApprove,
+                icon: const Icon(Icons.check),
+                label: const Text('Approve'),
+              ),
+          ],
         ),
-      if (admin)
-        FilledButton.icon(
-          onPressed: enriching ? null : onAutoFill,
-          icon: enriching
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.auto_fix_high),
-          label: Text(enriching ? 'Loading...' : 'Auto-fill'),
-        ),
-      if (admin)
-        OutlinedButton.icon(
-          onPressed: syncing ? null : onCheckOrcidSync,
-          icon: syncing
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.sync),
-          label: Text(syncing ? 'Checking...' : 'ORCID sync'),
-        ),
-      if (admin)
-        FilledButton.icon(
-          onPressed: onApprove,
-          icon: const Icon(Icons.check),
-          label: const Text('Approve'),
-        ),
+      ],
     ],
   );
 }
+
+Widget _identifierPill(String label, String value) => Container(
+  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+  decoration: BoxDecoration(
+    color: Colors.white.withValues(alpha: 0.08),
+    borderRadius: BorderRadius.circular(AppDims.radiusSm),
+  ),
+  child: Text(
+    '$label $value',
+    style: const TextStyle(color: AppColors.textOnDark, fontSize: 12),
+  ),
+);
 
 List<Widget> personInfoSections(
   BuildContext context,

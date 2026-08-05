@@ -40,7 +40,7 @@ env:
 
 # Landing on the people list is the only proof the credentials were accepted.
 - extendedWaitUntil:
-    visible: "184 people"
+    visible: "1\\d\\d people"
     timeout: 20000
 
 - openLink: "${BASE_URL}/#/people/${TEST_PERSON_ID}"

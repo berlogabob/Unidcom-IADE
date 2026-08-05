@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../data/supabase.dart';
+import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/merge_matrix.dart';
+import '../widgets/panels.dart';
 import '../widgets/search_bar.dart';
 
 enum _MergeSection { people, outputs }
@@ -117,8 +119,8 @@ class _MergeSectionView extends StatefulWidget {
 }
 
 class _MergeSectionViewState extends State<_MergeSectionView> {
-  late Future<List<List<Map<String, dynamic>>>> _candidates =
-      widget.candidates();
+  late Future<List<List<Map<String, dynamic>>>> _candidates = widget
+      .candidates();
   late Future<List<Map<String, dynamic>>> _rows = widget.search('');
   final _selected = <String, Map<String, dynamic>>{};
 
@@ -155,11 +157,18 @@ class _MergeSectionViewState extends State<_MergeSectionView> {
       length: 2,
       child: Column(
         children: [
-          const TabBar(
-            tabs: [
-              Tab(text: 'Suggested'),
-              Tab(text: 'Manual'),
-            ],
+          const ColoredBox(
+            color: AppColors.cardBg,
+            child: TabBar(
+              labelColor: AppColors.textPrimary,
+              unselectedLabelColor: AppColors.textMuted,
+              indicatorColor: AppColors.teal,
+              dividerColor: AppColors.cardBorder,
+              tabs: [
+                Tab(text: 'Suggested'),
+                Tab(text: 'Manual'),
+              ],
+            ),
           ),
           Expanded(
             child: TabBarView(children: [_suggestedTab(), _manualTab()]),
@@ -183,28 +192,39 @@ class _MergeSectionViewState extends State<_MergeSectionView> {
             itemCount: groups.length,
             itemBuilder: (context, index) {
               final group = groups[index];
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${group.length} possible duplicates',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      for (final record in group) Text(widget.nameOf(record)),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: FilledButton(
-                          onPressed: () => _openMatrix(group),
-                          child: const Text('Review & merge'),
+              return Panel(
+                title: '${group.length} possible duplicates',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (final record in group)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: const BoxDecoration(
+                          color: AppColors.cardBg,
+                          border: Border(
+                            bottom: BorderSide(color: AppColors.cardBorder),
+                          ),
+                        ),
+                        child: Text(
+                          widget.nameOf(record),
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    ],
-                  ),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton(
+                        onPressed: () => _openMatrix(group),
+                        child: const Text('Review & merge'),
+                      ),
+                    ),
+                  ],
                 ),
               );
             },
@@ -264,8 +284,25 @@ class _MergeSectionViewState extends State<_MergeSectionView> {
                     final selected = _selected.containsKey(id);
                     return CheckboxListTile(
                       value: selected,
-                      title: Text(widget.nameOf(record)),
-                      subtitle: Text(widget.subtitleOf(record)),
+                      tileColor: AppColors.cardBg,
+                      shape: const Border(
+                        bottom: BorderSide(color: AppColors.cardBorder),
+                      ),
+                      title: Text(
+                        widget.nameOf(record),
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        widget.subtitleOf(record),
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
                       onChanged: (value) => setState(() {
                         if (value == true) {
                           _selected[id] = record;

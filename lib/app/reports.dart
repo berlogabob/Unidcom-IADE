@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../csv_download.dart';
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/panels.dart';
 
 /// The report kinds the `report` Edge Function can render. `kind` is sent verbatim;
 /// `usesTypeFilter` decides whether the Type dropdown applies to this report.
@@ -217,60 +218,62 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 ],
               ),
               const SizedBox(height: 12),
-              Text('${filtered.length} outputs'),
-              const SizedBox(height: 12),
               Expanded(
-                child: filtered.isEmpty
-                    ? const Center(child: Text('No outputs found'))
-                    : Scrollbar(
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
+                child: Panel(
+                  title: 'Outputs (${filtered.length})',
+                  padding: const EdgeInsets.all(0),
+                  child: filtered.isEmpty
+                      ? const Center(child: Text('No outputs found'))
+                      : Scrollbar(
                           child: SingleChildScrollView(
-                            child: DataTable(
-                              columns: const [
-                                DataColumn(label: Text('Title')),
-                                DataColumn(label: Text('Year')),
-                                DataColumn(label: Text('Type')),
-                                DataColumn(label: Text('Subtype')),
-                                DataColumn(label: Text('Authors')),
-                                DataColumn(label: Text('DOI / URL')),
-                              ],
-                              rows: [
-                                for (final output in filtered)
-                                  DataRow(
-                                    cells: [
-                                      DataCell(
-                                        ConstrainedBox(
-                                          constraints: const BoxConstraints(
-                                            maxWidth: 360,
+                            scrollDirection: Axis.horizontal,
+                            child: SingleChildScrollView(
+                              child: DataTable(
+                                columns: const [
+                                  DataColumn(label: Text('Title')),
+                                  DataColumn(label: Text('Year')),
+                                  DataColumn(label: Text('Type')),
+                                  DataColumn(label: Text('Subtype')),
+                                  DataColumn(label: Text('Authors')),
+                                  DataColumn(label: Text('DOI / URL')),
+                                ],
+                                rows: [
+                                  for (final output in filtered)
+                                    DataRow(
+                                      cells: [
+                                        DataCell(
+                                          ConstrainedBox(
+                                            constraints: const BoxConstraints(
+                                              maxWidth: 360,
+                                            ),
+                                            child: Text(
+                                              output['title'] as String? ?? '',
+                                            ),
                                           ),
-                                          child: Text(
-                                            output['title'] as String? ?? '',
+                                        ),
+                                        DataCell(
+                                          Text(
+                                            '${output['reporting_year'] ?? ''}',
                                           ),
                                         ),
-                                      ),
-                                      DataCell(
-                                        Text(
-                                          '${output['reporting_year'] ?? ''}',
+                                        DataCell(
+                                          Text(output['type'] as String? ?? ''),
                                         ),
-                                      ),
-                                      DataCell(
-                                        Text(output['type'] as String? ?? ''),
-                                      ),
-                                      DataCell(
-                                        Text(
-                                          output['subtype'] as String? ?? '',
+                                        DataCell(
+                                          Text(
+                                            output['subtype'] as String? ?? '',
+                                          ),
                                         ),
-                                      ),
-                                      DataCell(Text(_authors(output))),
-                                      DataCell(Text(_doiOrUrl(output))),
-                                    ],
-                                  ),
-                              ],
+                                        DataCell(Text(_authors(output))),
+                                        DataCell(Text(_doiOrUrl(output))),
+                                      ],
+                                    ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      ),
+                ),
               ),
             ],
           ),

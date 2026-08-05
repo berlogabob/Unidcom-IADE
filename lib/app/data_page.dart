@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../csv_download.dart';
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/panels.dart';
 import '../widgets/schema_view.dart';
 
 class DataScreen extends StatefulWidget {
@@ -182,15 +183,17 @@ class _DataScreenState extends State<DataScreen> {
             Expanded(child: _TableView(future: _rows)),
           ] else if (_view == _View.diagram)
             Expanded(
-              child: Card(
-                clipBehavior: Clip.antiAlias,
+              child: Panel(
+                title: 'Diagram',
+                padding: const EdgeInsets.all(0),
                 child: schemaView(),
               ),
             )
           else
             Expanded(
-              child: Card(
-                clipBehavior: Clip.antiAlias,
+              child: Panel(
+                title: 'Outputs Tree',
+                padding: const EdgeInsets.all(0),
                 child: schemaView(page: 'schema.html?src=outputs.mmd'),
               ),
             ),
