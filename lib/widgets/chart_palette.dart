@@ -6,23 +6,23 @@ Color slotColor(int slot, Brightness brightness) {
 }
 
 const _light = [
-  Color(0xff2a78d6),
-  Color(0xffeb6834),
-  Color(0xff1baf7a),
-  Color(0xffeda100),
-  Color(0xffe87ba4),
-  Color(0xff008300),
-  Color(0xff4a3aa7),
-  Color(0xffe34948),
+  Color(0xFF00B49B),
+  Color(0xFF16449E),
+  Color(0xFF59299E),
+  Color(0xFFEA9522),
+  Color(0xFF16213A),
+  Color(0xFF2E7D32),
+  Color(0xFFB71C1C),
+  Color(0xFFB4B3B0),
 ];
 
 const _dark = [
-  Color(0xff3987e5),
-  Color(0xffd95926),
-  Color(0xff199e70),
-  Color(0xffc98500),
-  Color(0xffd55181),
-  Color(0xff008300),
-  Color(0xff9085e9),
-  Color(0xffe66767),
+  Color(0xFF33C9B4),
+  Color(0xFF5B82D6),
+  Color(0xFF9B6BD6),
+  Color(0xFFF0B15C),
+  Color(0xFF8A94A8),
+  Color(0xFF66BB6A),
+  Color(0xFFE57373),
+  Color(0xFFD4D2CB),
 ];
