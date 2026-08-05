@@ -164,7 +164,71 @@ reviews. Tick only on measured acceptance.
 - [x] Re-run graph update + health check — claude — 2026-08-05 measured: graph 1,466 nodes / 2,119 edges / 126 communities; both cohesion scores above baseline (✅); dangling 135 and collapsed 247 exceed the ≤129/≤225 absolute targets because the graph grew (+71 nodes) — residue *rate* flat at 6.4% of edges. Absolute targets were mis-specified; tracking rate (≤6.5%) going forward.
 - No-fix (informational): 650 weakly-connected nodes are package-import leaves (supabase, XCTest, build) — expected for an AST graph; 17 zero-node files are JSON configs; `dashboard.dart` (752 lines) not flagged by cohesion — backlog only.
 
-## 8. Out of scope / Phase 2+
+## 8. UI redesign — Carmela templates (2026-08-05)
+
+Source of truth: `RAW_DATA/TemplatesFromCarmela/unidcom-{admin,researcher}.html`.
+Branch `redesign/carmela-ui`. Executors: codex CLI + haiku subagents; orchestrator
+reviews diffs and runs acceptance checks. Full plan + design decisions:
+`~/.claude/plans/implement-new-ui-design-expressive-pony.md`. Tick only after
+the acceptance command passes.
+
+### P0 — Tokens + theme
+- [ ] T0.1 `lib/theme/tokens.dart` — haiku — analyze clean
+- [ ] T0.2 `lib/theme/app_theme.dart` — codex — analyze clean
+- [ ] T0.3 main.dart theme swap, red deleted — haiku — grep old hexes = 0; tests green
+- [ ] T0.4 chart_palette swap — haiku — analyze clean
+- [ ] T0.5 bundle-size baseline recorded — orch
+
+### P1 — Shell + navigation
+- [ ] T1.1 extract AppShell → lib/widgets/app_shell.dart — haiku — tests green
+- [ ] T1.2 dark top-nav (≥760px) — codex — Maestro featured_star green
+- [ ] T1.3 admin sidebar variant — codex — /app/dashboard renders w/ sidebar
+- [ ] T1.4 LoginScreen restyle — haiku — Maestro login steps pass
+- [ ] T1.5 placeholder routes /app/home, /app/welcome/:section, /app/settings — haiku — render
+
+### P2 — Restyle existing pages
+- [ ] T2.1 lib/widgets/panels.dart (Panel/AccentStatCard/StatusPill/TypeBadge/FilterPill) — codex — analyze + smoke test
+- [ ] T2.2 stat_tile restyle — haiku — dashboard renders
+- [ ] T2.3 detail_scaffold panel pass — codex — analyze/test green
+- [ ] T2.4 people_list — codex — renders
+- [ ] T2.5 outputs + output_row — codex — renders
+- [ ] T2.6 projects/structure/conferences — codex — render
+- [ ] T2.7 person_page dark profile band — codex — Maestro star green
+- [ ] T2.8 dashboard — codex — renders admin+anon
+- [ ] T2.9 admin_page/review_queue/merge — codex — render
+- [ ] T2.10 my_profile (pinned strings) — codex — grep hits unchanged
+- [ ] T2.11 reports/data_page — haiku — render
+
+### P3 — Support requests
+- [ ] T3.1 migration support_requests + RLS — codex draft, orch review — apply_migration OK, advisors clean
+- [ ] T3.2 data layer queries — codex — transition unit test green
+- [ ] T3.3 requests_page (researcher) — codex — signed-in + anon CTA render
+- [ ] T3.4 request_form — codex — draft→submit round-trip
+- [ ] T3.5 admin_requests + badge wire — codex — approve writes change_log
+- [ ] T3.6 .maestro/support_request.yaml — codex — flow green
+
+### P4 — Researcher portal
+- [ ] T4.1 researcher_home /app/home — codex — signed-in + anon render
+- [ ] T4.2 welcome_pack shell /app/welcome/:section — codex — 11 sections render
+- [ ] T4.3 welcome content pt.1 (signature/social/docs) — codex — clipboard text exact
+- [ ] T4.4 welcome content pt.2 — codex — text matches template
+- [ ] T4.5 ORCID banner on my-profile — haiku — Maestro star green
+
+### P5 — Admin settings
+- [ ] T5.1 settings_page — haiku — admin renders, non-admin redirected
+
+### P6 — Verification + merge
+- [ ] T6.1 analyze 0 / tests 100%
+- [ ] T6.2 both Maestro flows green
+- [ ] T6.3 route crawl all routes
+- [ ] T6.4 metrics M1–M7 + screenshots
+- [ ] T6.5 PR → CI green → merge
+
+Metrics gate: M1 no old-red/Lato refs · M2 route crawl green · M3 analyze/test
+green · M4 E2E green · M5 pinned strings intact · M6 advisors no new warnings ·
+M7 bundle ≤ baseline +10%.
+
+## 9. Out of scope / Phase 2+
 
 - Sanity CMS as website layer (swap point: replace the Flutter SPA's PostgREST
   reads with a RIMS→Sanity push; the approval-driven RLS boundary is the API
