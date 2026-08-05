@@ -220,12 +220,12 @@ the acceptance command passes.
 - [x] T5.1 settings_page — codex — ✅ 6752053 + 273d788, anon redirect verified in crawl
 
 ### P7 — Figma parity (source: Figma UNIDCOM file, Design System page + 10 frames; Figma is newer than the HTML export and wins on conflict)
-- [ ] P7.1 token alignment — haiku — purple #59299E→#7B3F9E, blue #16449E→#2B68B8, red #B71C1C→#CC2B2B, amber #EA9522→#F5A622, add orange #E8622A + textSecondary #444240; chart palette hues follow; analyze clean
-- [ ] P7.2 typography scale — codex — Body 14 (was 13), H2 22, H3 16 per Figma DS; analyze + tests
-- [ ] P7.3 researcher portal tab shell — codex — persistent compact profile band + tabs Overview/Outputs/Support requests/Welcome pack on /app/home, /app/requests*, /app/welcome/*, /app/profile (Figma S1/S3A/S4); Maestro portal crawl still green
-- [ ] P7.4 top-nav user chip (avatar initials + name pill, Figma S1) — codex — renders signed-in
-- [ ] P7.5 admin polish — codex — People count badge in sidebar; requests table columns Researcher/Type/Amount/Submitted/Event/Docs/Status (Figma A3); analyze clean
-- [ ] P7.6 re-run gate — orch — analyze/tests/crawl + bundle ≤ ceiling
+- [x] P7.1 token alignment to Figma DS — haiku — ✅ 5eb6b8c, analyze + 42/42
+- [x] P7.2 typography scale (Body 14, H2 22, H3 16) — codex — ✅ 8a549f2
+- [x] P7.3 researcher portal tab shell — codex — ✅ 1b1ad57, portal crawl green
+- [x] P7.4 top-nav user chip — codex — ✅ e4be636
+- [x] P7.5 admin People badge + requests table columns — codex — ✅ e4be636 (badge via existing fetchPendingPeople)
+- [x] P7.6 gate re-run — orch — ✅ analyze 0, 45/45 tests, crawl green, E2E bundle 3,690,219 B < 3,890,165 ceiling; pinned strings intact
 
 ### P8 — ornith (local ollama) executor — bite-sized single-file tasks via pi-delegate
 - [x] O1 extend test/panels_test.dart — haiku (ornith benched: 4 pi attempts, zero edits emitted) — ✅ 768b14a, 4/4 targeted tests (orch re-verified)
