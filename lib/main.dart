@@ -106,6 +106,9 @@ final _router = GoRouter(
     if (state.matchedLocation == '/app/admin' && !data.isAdmin) {
       return '/people';
     }
+    if (state.matchedLocation == '/app/settings' && !data.isAdmin) {
+      return '/people';
+    }
     return null;
   },
   routes: [
@@ -164,6 +167,33 @@ final _router = GoRouter(
         GoRoute(
           path: '/app/profile',
           builder: (_, _) => const MyProfileScreen(),
+        ),
+        GoRoute(
+          path: '/app/home',
+          builder: (_, _) => const Scaffold(
+            body: Center(
+              child: Text('/app/home — coming soon'),
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/app/welcome/:section',
+          builder: (_, state) {
+            final section = state.pathParameters['section']!;
+            return Scaffold(
+              body: Center(
+                child: Text('/app/welcome/$section — coming soon'),
+              ),
+            );
+          },
+        ),
+        GoRoute(
+          path: '/app/settings',
+          builder: (_, _) => const Scaffold(
+            body: Center(
+              child: Text('/app/settings — coming soon'),
+            ),
+          ),
         ),
       ],
     ),
