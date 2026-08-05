@@ -1,0 +1,113 @@
+# E2E for support requests: log in, create and submit a request, then approve
+# it in the admin triage page.
+#
+# The app must be served from a build made WITH semantics, or Maestro sees only
+# a bare canvas (Flutter web draws to a <canvas>):
+#   flutter build web --dart-define=E2E=true
+#   python3 -m http.server 8123 --directory build/web
+#   maestro test .maestro/support_request.yaml --env-file .maestro/.env
+#
+# Selectors are text, not ids: Semantics(identifier:) does NOT reach the web
+# semantics tree, but TextField labels and IconButton tooltips both do.
+url: http://localhost:8123
+name: "Support request: create, submit, admin approve"
+env:
+  BASE_URL: http://localhost:8123
+---
+# clearState avoids a stale main.dart.js being served from cache — without it a
+# rebuilt app silently isn't the one under test.
+- clearState
+- openLink: "${BASE_URL}/#/login"
+- extendedWaitUntil:
+    visible: "Email"
+    timeout: 20000
+
+- tapOn:
+    id: "Email"
+- inputText: "${MAESTRO_EMAIL}"
+- tapOn:
+    id: "Password"
+- inputText: "${MAESTRO_PASSWORD}"
+# "Sign in" also names this screen's AppBar title, so anchor to the field above.
+- tapOn:
+    text: "Sign in"
+    below:
+      id: "Password"
+
+# Landing on the people list is the only proof the credentials were accepted.
+- extendedWaitUntil:
+    visible: "1\\d\\d people"
+    timeout: 20000
+
+- openLink: "${BASE_URL}/#/app/requests"
+- extendedWaitUntil:
+    visible: "Support requests"
+    timeout: 20000
+- tapOn:
+    text: "+ New request"
+- extendedWaitUntil:
+    visible: "Open Access"
+    timeout: 20000
+
+- tapOn:
+    text: "Open Access"
+- tapOn:
+    id: "Title.*"
+- inputText: "E2E Test Request"
+
+# scrollUntilVisible doesn't move the Flutter-web canvas, so swipe instead.
+- repeat:
+    times: 10
+    while:
+      notVisible: "Submit"
+    commands:
+      - swipe:
+          direction: UP
+          duration: 400
+- assertVisible: "Submit"
+- tapOn:
+    text: "Submit"
+
+# Card texts merge into one web-semantics node — match as substrings.
+- extendedWaitUntil:
+    visible: ".*E2E Test Request.*"
+    timeout: 20000
+- assertVisible:
+    text: ".*submitted.*"
+    label: "Request was submitted"
+
+# This is a different hash route; reopening the same hash would be a no-op.
+- openLink: "${BASE_URL}/#/app/admin/requests"
+- extendedWaitUntil:
+    visible: ".*E2E Test Request.*"
+    timeout: 30000
+- repeat:
+    times: 10
+    while:
+      notVisible: ".*E2E Test Request.*"
+    commands:
+      - swipe:
+          direction: UP
+          duration: 400
+- assertVisible: ".*E2E Test Request.*"
+
+# The actions column overflows right; swipe INSIDE the table's horizontal
+# scroller (coordinate swipe at the row's height), not the page.
+- repeat:
+    times: 10
+    while:
+      notVisible: ".*Approve.*"
+    commands:
+      - swipe:
+          start: "90%, 35%"
+          end: "20%, 35%"
+          duration: 400
+- tapOn:
+    text: "Approve"
+    index: 0
+- extendedWaitUntil:
+    visible: ".*[Aa]pproved.*"
+    timeout: 20000
+    label: "Request was approved"
+
+# Cleanup: orchestrator deletes the E2E rows via SQL after the run.
