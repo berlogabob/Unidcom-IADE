@@ -12,7 +12,10 @@ import 'app/admin_requests.dart';
 import 'app/dashboard.dart';
 import 'app/my_profile.dart';
 import 'app/request_form.dart';
+import 'app/researcher_home.dart';
 import 'app/requests_page.dart';
+import 'app/settings_page.dart';
+import 'app/welcome_pack.dart';
 import 'data/supabase.dart' as data;
 import 'public/cluster_page.dart';
 import 'public/conferences.dart';
@@ -179,46 +182,29 @@ final _router = GoRouter(
           path: '/app/profile',
           builder: (_, _) => const MyProfileScreen(),
         ),
-        GoRoute(
-          path: '/app/requests',
-          builder: (_, _) => const RequestsPage(),
-        ),
+        GoRoute(path: '/app/requests', builder: (_, _) => const RequestsPage()),
         GoRoute(
           path: '/app/requests/new',
           builder: (_, _) => const RequestFormPage(),
         ),
         GoRoute(
           path: '/app/requests/:id',
-          builder: (_, state) => RequestFormPage(
-            requestId: state.pathParameters['id'],
-          ),
+          builder: (_, state) =>
+              RequestFormPage(requestId: state.pathParameters['id']),
         ),
         GoRoute(
           path: '/app/home',
-          builder: (_, _) => const Scaffold(
-            body: Center(
-              child: Text('/app/home — coming soon'),
-            ),
-          ),
+          builder: (_, _) => const ResearcherHomePage(),
         ),
         GoRoute(
           path: '/app/welcome/:section',
-          builder: (_, state) {
-            final section = state.pathParameters['section']!;
-            return Scaffold(
-              body: Center(
-                child: Text('/app/welcome/$section — coming soon'),
-              ),
-            );
-          },
+          builder: (_, state) => WelcomePackPage(
+            section: state.pathParameters['section'] ?? 'start',
+          ),
         ),
         GoRoute(
           path: '/app/settings',
-          builder: (_, _) => const Scaffold(
-            body: Center(
-              child: Text('/app/settings — coming soon'),
-            ),
-          ),
+          builder: (_, _) => const SettingsPage(),
         ),
       ],
     ),
@@ -251,7 +237,6 @@ class GoRouterRefreshStream extends ChangeNotifier {
     super.dispose();
   }
 }
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -289,7 +274,8 @@ class _LoginScreenState extends State<LoginScreen> {
         'redirect_uri': '$_supabaseUrl/functions/v1/orcid-auth',
         'state': returnTo,
       }),
-      webOnlyWindowName: '_self', // not a popup — the session must land in this tab
+      webOnlyWindowName:
+          '_self', // not a popup — the session must land in this tab
     );
   }
 
