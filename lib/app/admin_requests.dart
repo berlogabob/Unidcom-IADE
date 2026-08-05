@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/request_status.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
 
 /// Admin triage of support requests (`support_requests`): stat cards,
@@ -24,44 +25,58 @@ class _AdminRequestsPageState extends State<AdminRequestsPage> {
   }
 
   Future<void> _setStatus(String id, String status) async {
-    await setRequestStatus(id, status);
-    _refresh();
+    try {
+      await setRequestStatus(id, status);
+      if (!mounted) return;
+      _refresh();
+    } catch (error) {
+      if (!mounted) return;
+      showSnack(context, error.toString());
+    }
   }
 
   Future<void> _reject(String id) async {
     final controller = TextEditingController();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reject request'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Admin note (optional)',
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Reject request'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText: 'Admin note (optional)',
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Reject'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Reject'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    final note = controller.text.trim();
-    await setRequestStatus(
-      id,
-      'rejected',
-      adminNote: note.isEmpty ? null : note,
-    );
-    _refresh();
+      );
+      if (confirmed != true) return;
+      final note = controller.text.trim();
+      await setRequestStatus(
+        id,
+        'rejected',
+        adminNote: note.isEmpty ? null : note,
+      );
+      if (!mounted) return;
+      _refresh();
+    } catch (error) {
+      if (!mounted) return;
+      showSnack(context, error.toString());
+    } finally {
+      controller.dispose();
+    }
   }
 
   @override

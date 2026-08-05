@@ -164,13 +164,23 @@ class _RequestFormPageState extends State<RequestFormPage> {
     return sum;
   }
 
+  // Keys must stay unique — the map's keys are the stored budget labels, so
+  // two lines with the same label would otherwise collapse into one entry
+  // (last wins) and disagree with the total shown on screen.
   Map<String, dynamic> get _budgetMap {
     final map = <String, dynamic>{};
+    final seen = <String, int>{};
     for (final line in _budgetLines) {
       final label = line.labelController.text.trim();
       final amount = double.tryParse(line.amountController.text.trim());
       if (label.isEmpty || amount == null) continue;
-      map[label] = amount;
+      var key = label;
+      if (map.containsKey(key)) {
+        final n = (seen[label] ?? 1) + 1;
+        seen[label] = n;
+        key = '$label ($n)';
+      }
+      map[key] = amount;
     }
     return map;
   }
@@ -183,7 +193,8 @@ class _RequestFormPageState extends State<RequestFormPage> {
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 5),
     );
-    if (picked != null) setState(() => _eventDate = picked);
+    if (picked == null || !mounted) return;
+    setState(() => _eventDate = picked);
   }
 
   Map<String, dynamic> _fields() => {

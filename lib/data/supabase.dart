@@ -1877,18 +1877,25 @@ Future<String> startOrcidLink(String returnTo) async {
 bool get hasLinkedOrcid =>
     db.auth.currentUser?.appMetadata['orcid'] != null;
 
+/// Resolves the signed-in user's own `people.id`, or null when there is no
+/// session or no matching person row. Shared by [fetchMyRequests] and
+/// [createRequest] so both look up the caller's person the same way.
+Future<String?> _myPersonId() async {
+  final userId = db.auth.currentUser?.id;
+  if (userId == null) return null;
+  final person = await db
+      .from('people')
+      .select('id')
+      .eq('auth_user_id', userId)
+      .maybeSingle();
+  return person?['id'] as String?;
+}
+
 /// Support requests (funding/DPD/open-access/mission asks) for the
 /// signed-in researcher's own person record, newest first.
 Future<List<Map<String, dynamic>>> fetchMyRequests() async {
   try {
-    final userId = db.auth.currentUser?.id;
-    if (userId == null) return [];
-    final person = await db
-        .from('people')
-        .select('id')
-        .eq('auth_user_id', userId)
-        .maybeSingle();
-    final personId = person?['id'] as String?;
+    final personId = await _myPersonId();
     if (personId == null) return [];
     final rows = await db
         .from('support_requests')
@@ -1916,13 +1923,20 @@ Future<List<Map<String, dynamic>>> fetchAllRequests({String? status}) async {
 
 Future<Map<String, dynamic>> createRequest(Map<String, dynamic> fields) async {
   try {
+    final personId = await _myPersonId();
+    if (personId == null) {
+      throw StateError(
+        'No researcher profile is linked to this account — cannot create a request.',
+      );
+    }
     final row = await db
         .from('support_requests')
-        .insert(fields)
+        .insert({...fields, 'person_id': personId})
         .select()
         .single();
     return Map<String, dynamic>.from(row);
   } catch (error) {
+    if (error is StateError) throw Exception(error.message);
     throw Exception(_error(error));
   }
 }
