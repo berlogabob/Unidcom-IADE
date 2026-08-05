@@ -23,6 +23,7 @@ import 'public/projects.dart';
 import 'public/project_page.dart';
 import 'public/structure.dart';
 import 'theme/app_theme.dart';
+import 'theme/tokens.dart';
 import 'widgets/app_shell.dart';
 
 const _supabaseUrl = String.fromEnvironment(
@@ -305,47 +306,74 @@ class _LoginScreenState extends State<LoginScreen> {
           constraints: const BoxConstraints(maxWidth: 420),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _password,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                if (_error != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+            child: Card(
+              color: AppColors.cardBg,
+              shape: RoundedRectangleBorder(
+                side: const BorderSide(color: AppColors.cardBorder),
+                borderRadius: BorderRadius.circular(AppDims.radius),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'UNIDCOM',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.navy,
+                      ),
                     ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: _loading ? null : _signIn,
-                  child: Text(_loading ? 'Signing in...' : 'Sign in'),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Research Information Management',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: _email,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _password,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Password',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        _error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: _loading ? null : _signIn,
+                      child: Text(_loading ? 'Signing in...' : 'Sign in'),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: _signInWithOrcid,
+                      child: const Text('Sign in with ORCID iD'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: _signInWithOrcid,
-                  child: const Text('Sign in with ORCID iD'),
-                ),
-              ],
+              ),
             ),
           ),
         ),
