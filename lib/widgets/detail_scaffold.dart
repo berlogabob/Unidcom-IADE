@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../theme/tokens.dart';
+import 'panels.dart';
+
 /// Shared building blocks for the entity detail pages. Keeps them thin
 /// instead of copy-pasting the header card, section headers, async
 /// preamble and a generic editor into each.
@@ -18,10 +21,17 @@ class AsyncView<T> extends StatelessWidget {
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.teal),
+          );
         }
         if (snapshot.hasError) {
-          return Center(child: Text(snapshot.error.toString()));
+          return Center(
+            child: Text(
+              snapshot.error.toString(),
+              style: const TextStyle(color: AppColors.red),
+            ),
+          );
         }
         return builder(context, snapshot.data as T);
       },
@@ -32,22 +42,43 @@ class AsyncView<T> extends StatelessWidget {
 /// Snackbar helper safe to call after awaits.
 void showSnack(BuildContext context, String message) {
   if (!context.mounted) return;
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(message)));
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 
-/// Compact chips for the non-empty values — feeds [EntityHeaderCard.chips].
-List<Widget> statusChips(Iterable<Object?> values) => [
-  for (final v in values)
-    if (v != null && v.toString().trim().isNotEmpty)
-      Chip(
-        label: Text(v.toString()),
-        visualDensity: VisualDensity.compact,
-      ),
-];
+PillTone _statusPillTone(String label) {
+  final value = label.toLowerCase();
+  if (value.contains('rejected') ||
+      value.contains('inactive') ||
+      value.contains('error')) {
+    return PillTone.red;
+  }
+  if (value.contains('approved') ||
+      value.contains('active') ||
+      value.contains('validated')) {
+    return PillTone.teal;
+  }
+  if (value.contains('pending') ||
+      value.contains('a_confirmar') ||
+      value.contains('awaiting')) {
+    return PillTone.amber;
+  }
+  return PillTone.grey;
+}
 
-/// Titled chip wrap of collaborations (internal/external icon per kind).
+StatusPill _statusPill(String label) =>
+    StatusPill(label, tone: _statusPillTone(label));
+
+/// Compact chips for the non-empty values — feeds [EntityHeaderCard.chips].
+List<Widget> statusChips(Iterable<Object?> values) {
+  assert(_statusPillTone('inactive') == PillTone.red);
+  return [
+    for (final v in values)
+      if (v != null && v.toString().trim().isNotEmpty)
+        _statusPill(v.toString()),
+  ];
+}
+
+/// Titled pill wrap of collaborations.
 Widget collaborationChips(
   BuildContext context,
   List<Map<String, dynamic>> items, {
@@ -59,23 +90,13 @@ Widget collaborationChips(
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Collaborations', style: Theme.of(context).textTheme.titleLarge),
+        sectionHeader(context, 'Collaborations'),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final c in items)
-              Chip(
-                avatar: Icon(
-                  (c['kind'] as String?) == 'internal'
-                      ? Icons.groups
-                      : Icons.public,
-                  size: 16,
-                ),
-                label: Text(c['name'] as String? ?? '—'),
-                visualDensity: VisualDensity.compact,
-              ),
+            for (final c in items) _statusPill(c['name'] as String? ?? '—'),
           ],
         ),
       ],
@@ -95,7 +116,8 @@ class ProjectTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Panel(
+      padding: EdgeInsets.zero,
       child: ListTile(
         title: Text(project['title'] as String? ?? 'Untitled'),
         subtitle: Text(project['status'] as String? ?? ''),
@@ -146,7 +168,9 @@ Widget editField(
       keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
+        border: const OutlineInputBorder(
+          borderSide: BorderSide(color: AppColors.cardBorder),
+        ),
       ),
     ),
   );
@@ -165,7 +189,9 @@ Widget editDropdown(
       initialValue: values.contains(value) ? value : values.first,
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
+        border: const OutlineInputBorder(
+          borderSide: BorderSide(color: AppColors.cardBorder),
+        ),
       ),
       items: [
         for (final item in values)
@@ -200,11 +226,17 @@ class DetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 760),
-        child: ListView(padding: const EdgeInsets.all(16), children: children),
+    return ColoredBox(
+      color: AppColors.pageBg,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: children,
+          ),
+        ),
       ),
     );
   }
@@ -242,75 +274,74 @@ class EntityHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final sub = subtitle?.trim() ?? '';
     final bodyText = body?.trim() ?? '';
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (leading != null) ...[
-                  leading!,
-                  const SizedBox(width: 16),
-                ] else if (code != null) ...[
-                  CodeAvatar(code: code!),
-                  const SizedBox(width: 16),
-                ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: theme.textTheme.headlineSmall),
-                      if (sub.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            sub,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+    return Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: 16),
+              ] else if (code != null) ...[
+                CodeAvatar(code: code!),
+                const SizedBox(width: 16),
               ],
-            ),
-            if (chips.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Wrap(spacing: 8, runSpacing: 8, children: chips),
-            ],
-            if (bodyText.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(bodyText),
-            ],
-            for (final widget in extra) ...[
-              const SizedBox(height: 8),
-              widget,
-            ],
-            if (onEdit != null || actions.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (onEdit != null)
-                    FilledButton.icon(
-                      onPressed: onEdit,
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Edit'),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ...actions,
-                ],
+                    if (sub.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          sub,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: AppColors.textMuted),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ],
+          ),
+          if (chips.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(spacing: 8, runSpacing: 8, children: chips),
           ],
-        ),
+          if (bodyText.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(bodyText),
+          ],
+          for (final widget in extra) ...[const SizedBox(height: 8), widget],
+          if (onEdit != null || actions.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                if (onEdit != null)
+                  FilledButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Edit'),
+                  ),
+                ...actions,
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -325,7 +356,14 @@ Widget sectionHeader(
   return Row(
     children: [
       Expanded(
-        child: Text(text, style: Theme.of(context).textTheme.titleLarge),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
       if (onAdd != null)
         TextButton.icon(
@@ -339,9 +377,9 @@ Widget sectionHeader(
 
 Widget mutedText(BuildContext context, String text) => Text(
   text,
-  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-    color: Theme.of(context).colorScheme.onSurfaceVariant,
-  ),
+  style: Theme.of(
+    context,
+  ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
 );
 
 /// Pulls the embedded child rows out of a PostgREST join list
@@ -381,17 +419,43 @@ Widget linkChipsSection(
           runSpacing: 8,
           children: [
             for (final item in items)
-              InputChip(
-                label: Tooltip(
-                  message: item['name'] as String? ?? '',
-                  child: Text(
-                    item['code'] as String? ?? item['name'] as String? ?? '—',
-                  ),
-                ),
-                onPressed: () => context.go('$basePath/${item['id']}'),
-                onDeleted: admin && onRemove != null
-                    ? () => onRemove(item['id'] as String)
-                    : null,
+              Builder(
+                builder: (context) {
+                  final label =
+                      item['code'] as String? ?? item['name'] as String? ?? '—';
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextButton(
+                        onPressed: () => context.go('$basePath/${item['id']}'),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: const StadiumBorder(),
+                        ),
+                        child: Tooltip(
+                          message: item['name'] as String? ?? '',
+                          child: _statusPill(label),
+                        ),
+                      ),
+                      if (admin && onRemove != null)
+                        IconButton(
+                          onPressed: () => onRemove(item['id'] as String),
+                          icon: const Icon(Icons.close, size: 16),
+                          color: AppColors.textMuted,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 24,
+                            minHeight: 24,
+                          ),
+                          tooltip: MaterialLocalizations.of(
+                            context,
+                          ).deleteButtonTooltip,
+                        ),
+                    ],
+                  );
+                },
               ),
           ],
         ),
