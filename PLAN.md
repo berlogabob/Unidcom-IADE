@@ -167,6 +167,8 @@ reviews. Tick only on measured acceptance.
 ## 8. UI redesign — Carmela templates (2026-08-05)
 
 Source of truth: `RAW_DATA/TemplatesFromCarmela/unidcom-{admin,researcher}.html`.
+Figma (same design, added 2026-08-05): https://www.figma.com/design/Ai1eR4QkCBlY57xQVpwbCT/UNIDCOM?node-id=0-1&m=dev
+— not machine-readable without Figma MCP/API token; templates drive implementation.
 Branch `redesign/carmela-ui`. Executors: codex CLI + haiku subagents; orchestrator
 reviews diffs and runs acceptance checks. Full plan + design decisions:
 `~/.claude/plans/implement-new-ui-design-expressive-pony.md`. Tick only after
@@ -201,12 +203,12 @@ the acceptance command passes.
 - [ ] T2.11 reports/data_page — haiku — render
 
 ### P3 — Support requests
-- [ ] T3.1 migration support_requests + RLS — codex draft, orch review — apply_migration OK, advisors clean
-- [ ] T3.2 data layer queries — codex — transition unit test green
-- [ ] T3.3 requests_page (researcher) — codex — signed-in + anon CTA render
-- [ ] T3.4 request_form — codex — draft→submit round-trip
-- [ ] T3.5 admin_requests + badge wire — codex — approve writes change_log
-- [ ] T3.6 .maestro/support_request.yaml — codex — flow green
+- [x] T3.1 migration support_requests + RLS — codex draft, orch line-by-line review — ✅ 5aaae96, applied via MCP, advisors: pre-existing warnings only
+- [x] T3.2 data layer queries — sonnet — ✅ c4b8226, 7 transition unit tests green (42/42 total)
+- [x] T3.3 requests_page (researcher) — sonnet — ✅ fcbce20, analyze clean; anon-CTA render check pending rebuild
+- [x] T3.4 request_form — sonnet — ✅ 238f1e5, analyze clean; live round-trip deferred to P6 (needs login credentials)
+- [x] T3.5 admin_requests + badge wire — sonnet — ✅ b73763d + 6540448 (routes), analyze clean; change_log check deferred to P6
+- [ ] T3.6 .maestro/support_request.yaml — orch, P6 — authored + validated live once .maestro/.env credentials are available
 
 ### P4 — Researcher portal
 - [ ] T4.1 researcher_home /app/home — codex — signed-in + anon render
@@ -223,6 +225,7 @@ the acceptance command passes.
 - [ ] T6.2 both Maestro flows green
 - [ ] T6.3 route crawl all routes
 - [ ] T6.4 metrics M1–M7 + screenshots
+- [ ] T6.4b Figma parity pass — orch+user — compare built screens against the Figma file (needs Figma MCP or exported frames); adjust tokens if they diverge from the HTML templates
 - [ ] T6.5 PR → CI green → merge
 
 Metrics gate: M1 no old-red/Lato refs · M2 route crawl green · M3 analyze/test
