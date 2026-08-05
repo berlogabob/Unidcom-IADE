@@ -7,12 +7,12 @@ Color slotColor(int slot, Brightness brightness) {
 
 const _light = [
   Color(0xFF00B49B),
-  Color(0xFF16449E),
-  Color(0xFF59299E),
-  Color(0xFFEA9522),
+  Color(0xFF2B68B8),
+  Color(0xFF7B3F9E),
+  Color(0xFFF5A622),
   Color(0xFF16213A),
   Color(0xFF2E7D32),
-  Color(0xFFB71C1C),
+  Color(0xFFCC2B2B),
   Color(0xFFB4B3B0),
 ];
 

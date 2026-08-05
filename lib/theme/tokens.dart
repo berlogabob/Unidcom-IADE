@@ -13,6 +13,7 @@ abstract final class AppColors {
 
   // Text
   static const textPrimary = Color(0xFF16213A);
+  static const textSecondary = Color(0xFF444240);
   static const textMuted = Color(0xFF888680);
   static const textFaint = Color(0xFFB4B3B0);
   static const textOnDark = Color(0xFFEEF1F6);
@@ -21,13 +22,14 @@ abstract final class AppColors {
   // Semantic
   static const teal = Color(0xFF00B49B);
   static const tealDark = Color(0xFF0A7A68);     // text on teal tint
-  static const amber = Color(0xFFEA9522);
+  static const amber = Color(0xFFF5A622);
   static const amberDark = Color(0xFF8A5A08);    // text on amber tint
   static const warn = Color(0xFFD49522);
   static const warnDark = Color(0xFF894F00);
-  static const red = Color(0xFFB71C1C);
-  static const blue = Color(0xFF16449E);
-  static const purple = Color(0xFF59299E);
+  static const red = Color(0xFFCC2B2B);
+  static const blue = Color(0xFF2B68B8);
+  static const purple = Color(0xFF7B3F9E);
+  static const orange = Color(0xFFE8622A);
   static const navy = Color(0xFF16213A);
   static const green = Color(0xFF2E7D32);
 
