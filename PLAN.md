@@ -208,7 +208,7 @@ the acceptance command passes.
 - [x] T3.3 requests_page (researcher) — sonnet — ✅ fcbce20, analyze clean; anon-CTA render check pending rebuild
 - [x] T3.4 request_form — sonnet — ✅ 238f1e5, analyze clean; live round-trip deferred to P6 (needs login credentials)
 - [x] T3.5 admin_requests + badge wire — sonnet — ✅ b73763d + 6540448 (routes), analyze clean; change_log check deferred to P6
-- [ ] T3.6 .maestro/support_request.yaml — orch, P6 — authored + validated live once .maestro/.env credentials are available
+- [x] T3.6 .maestro/support_request.yaml — codex+orch — ✅ flow green live: create → submit → admin approve; change_log audit rows verified by SQL; test rows cleaned
 
 ### P4 — Researcher portal
 - [x] T4.1 researcher_home /app/home — codex — ✅ 1a23c9f, anon CTA verified in crawl
@@ -236,17 +236,22 @@ the acceptance command passes.
 
 ### P6 — Verification + merge
 - [x] T6.1 analyze 0 / tests 100% — ✅ 0 issues, 42/42
-- [ ] T6.2 both Maestro flows green — BLOCKED on .maestro/.env credentials (user)
+- [x] T6.2 both Maestro flows green — ✅ featured_star + support_request full runs green (e2e-bot admin account, .maestro/.env local-only)
 - [x] T6.3 route crawl all routes — ✅ public + portal + welcome sections + admin redirects, Maestro crawl green (note: stale-browser-cache false alarm; clearState needed after redeploys)
 - [x] T6.4 metrics gate — ✅ 6/7 (M4 credential-blocked); key screens visually verified via Maestro during crawl
 - [x] T6.4c final whole-branch review — ✅ 8 findings (1 Critical: request insert missing person_id; 1 Important: portal unreachable from nav; 6 minor) — all fixed in 531e0e9; scoped re-review: all ADDRESSED, no new breakage
-- [ ] T6.4b Figma parity pass — orch+user — needs Figma MCP/token or exported frames
-- [ ] T6.5 PR → CI green → merge
+- [x] T6.4b Figma parity pass — ✅ done as P7 (tokens/typography/portal shell aligned to Figma frames)
+- [x] T6.5 PR #1 merged (d7dbc3c), deploy CI green, live site verified on new design
 
 Metrics gate (2026-08-05): M1 ✅ 0 refs (one "Relatorio" substring false-positive
-noted) · M2 ✅ crawl green · M3 ✅ 0 issues / 42 tests · M4 ⏳ blocked on
-.maestro/.env · M5 ✅ pinned greps unchanged · M6 ✅ advisors: pre-existing only ·
+noted) · M2 ✅ crawl green · M3 ✅ 0 issues / 42 tests · M4 ✅ both E2E flows green (2026-08-05) · M5 ✅ pinned greps unchanged · M6 ✅ advisors: pre-existing only ·
 M7 ✅ 3,678,947 B = +4.0% (ceiling +10%).
+
+P9 (close-out, 2026-08-05): e2e-bot admin auth user created (signup + SQL promote,
+password only in gitignored .maestro/.env); E2E hardening: MergeSemantics on request
+cards/triage rows (a11y + testability), individual button semantics kept on actions,
+triage table drops secondary columns <1400px so actions stay reachable; both flows
+green end-to-end against live DB with audit verified. P6 CLOSED.
 
 ## 9. Out of scope / Phase 2+
 
