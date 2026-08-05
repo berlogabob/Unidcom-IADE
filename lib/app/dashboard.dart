@@ -2,9 +2,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../data/supabase.dart';
+import '../theme/tokens.dart';
 import '../widgets/chart_palette.dart';
 import '../widgets/detail_scaffold.dart';
-import '../widgets/stat_tile.dart';
+import '../widgets/panels.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -125,103 +126,93 @@ class _StatTilesRow extends StatelessWidget {
   Widget build(BuildContext context) {
     if (pilot) {
       return _buildTiles([
-        StatTile(
+        AccentStatCard(
           label: 'ORCID linked',
           value:
               '${data.pilotKpis['orcidLinked']} / ${data.pilotKpis['people']}',
-          icon: Icons.badge_outlined,
+          tone: AccentTone.good,
         ),
-        StatTile(
+        AccentStatCard(
           label: 'Profiles validated',
           value:
               '${data.pilotKpis['profilesValidated']} / ${data.pilotKpis['people']}',
-          icon: Icons.person_search,
+          tone: AccentTone.good,
         ),
-        StatTile(
+        AccentStatCard(
           label: 'Outputs approved',
           value:
               '${data.pilotKpis['outputsApproved']} / ${data.pilotKpis['outputs']}',
-          icon: Icons.check_circle_outline,
+          tone: AccentTone.good,
         ),
-        StatTile(
+        AccentStatCard(
           label: 'DOI coverage',
           value:
               '${data.pilotKpis['doiCoverage']} / ${data.pilotKpis['outputs']}',
-          icon: Icons.link,
+          tone: AccentTone.good,
         ),
       ]);
     }
     final tiles = [
-      StatTile(
-        label: 'Researchers',
-        value: '${data.peopleCount}',
-        icon: Icons.people,
-      ),
-      StatTile(
+      AccentStatCard(label: 'Researchers', value: '${data.peopleCount}'),
+      AccentStatCard(
         label: 'Outputs',
         value: '${data.outputCount}',
-        icon: Icons.article,
+        tone: AccentTone.good,
       ),
-      StatTile(
+      AccentStatCard(
         label: 'Journal articles',
         value: '${data.journalCount}',
-        icon: Icons.library_books,
+        tone: AccentTone.info,
       ),
-      StatTile(
+      AccentStatCard(
         label: 'Needs verification',
         value: '${data.needsVerification}',
-        icon: Icons.verified_outlined,
+        tone: AccentTone.urgent,
       ),
-      StatTile(
+      AccentStatCard(
         label: 'Missing ORCID',
         value: '${data.missingOrcid}',
-        icon: Icons.badge_outlined,
+        tone: AccentTone.urgent,
       ),
-      StatTile(
-        label: 'Labs',
-        value: '${data.labCount}',
-        icon: Icons.science_outlined,
-      ),
-      StatTile(
+      AccentStatCard(label: 'Labs', value: '${data.labCount}'),
+      AccentStatCard(
         label: 'Projects',
         value: '${data.projectCount}',
-        icon: Icons.work_outline,
+        tone: AccentTone.info,
       ),
-      StatTile(
-        label: 'Clusters',
-        value: '${data.clusterCount}',
-        icon: Icons.hub_outlined,
-      ),
-      StatTile(
+      AccentStatCard(label: 'Clusters', value: '${data.clusterCount}'),
+      AccentStatCard(
         label: 'Verified outputs',
         value: '${data.verifiedOutputs}',
-        icon: Icons.verified_outlined,
+        tone: AccentTone.good,
       ),
-      StatTile(
-        label: data.year == null ? 'Lab allocations' : 'Lab allocations ${data.year}',
+      AccentStatCard(
+        label: data.year == null
+            ? 'Lab allocations'
+            : 'Lab allocations ${data.year}',
         value: '${data.labAllocations}',
-        icon: Icons.science_outlined,
+        tone: AccentTone.info,
       ),
-      StatTile(
+      AccentStatCard(
         label: data.year == null ? 'Mentorships' : 'Mentorships ${data.year}',
         value: '${data.mentorships}',
-        icon: Icons.school_outlined,
       ),
     ];
 
     return _buildTiles(tiles);
   }
 
-  Widget _buildTiles(List<StatTile> tiles) {
+  Widget _buildTiles(List<AccentStatCard> tiles) {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= 700) {
-          return Row(
+          final columns = tiles.length < 6 ? tiles.length : 6;
+          final width = (constraints.maxWidth - 12 * (columns - 1)) / columns;
+          return Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
-              for (var i = 0; i < tiles.length; i++) ...[
-                if (i > 0) const SizedBox(width: 12),
-                Expanded(child: tiles[i]),
-              ],
+              for (final tile in tiles) SizedBox(width: width, child: tile),
             ],
           );
         }
@@ -252,33 +243,47 @@ class _ResponsiveCharts extends StatelessWidget {
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 900;
         final children = [
-          _ChartCard(
+          Panel(
             title: 'Outputs by type',
-            bounded: false,
-            child: _HorizontalBars(items: data.outputsByType),
+            child: _HorizontalBars(
+              items: data.outputsByType,
+              color: AppColors.teal,
+            ),
           ),
-          _ChartCard(
+          Panel(
             title: 'Journal articles by quartile',
-            child: _QuartileChart(counts: data.journalsByQuartile),
+            child: SizedBox(
+              height: 280,
+              child: _QuartileChart(counts: data.journalsByQuartile),
+            ),
           ),
-          _ChartCard(
+          Panel(
             title: 'Top 10 researchers by output count',
-            bounded: false,
-            child: _HorizontalBars(items: data.topResearchers),
+            child: _HorizontalBars(
+              items: data.topResearchers,
+              color: AppColors.blue,
+            ),
           ),
-          _ChartCard(
+          Panel(
             title: 'People by category',
-            child: _MembershipChart(items: data.membershipCounts),
+            child: SizedBox(
+              height: 280,
+              child: _MembershipChart(items: data.membershipCounts),
+            ),
           ),
-          _ChartCard(
+          Panel(
             title: 'Projects by cluster',
-            bounded: false,
-            child: _HorizontalBars(items: data.projectsByCluster),
+            child: _HorizontalBars(
+              items: data.projectsByCluster,
+              color: AppColors.teal,
+            ),
           ),
-          _ChartCard(
+          Panel(
             title: 'Projects by lab',
-            bounded: false,
-            child: _HorizontalBars(items: data.projectsByLab),
+            child: _HorizontalBars(
+              items: data.projectsByLab,
+              color: AppColors.blue,
+            ),
           ),
         ];
         if (!wide) {
@@ -304,86 +309,69 @@ class _ResponsiveCharts extends StatelessWidget {
   }
 }
 
-class _ChartCard extends StatelessWidget {
-  const _ChartCard({
-    required this.title,
-    required this.child,
-    this.bounded = true,
-  });
-
-  final String title;
-  final Widget child;
-  final bool bounded;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            if (bounded) SizedBox(height: 280, child: child) else child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _HorizontalBars extends StatelessWidget {
-  const _HorizontalBars({required this.items});
+  const _HorizontalBars({required this.items, required this.color});
 
   final List<_CountItem> items;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) return const Center(child: Text('No data'));
-    final theme = Theme.of(context);
-    final color = slotColor(1, theme.brightness);
     final max = items.map((item) => item.count).reduce((a, b) => a > b ? a : b);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final item in items)
-          SizedBox(
-            height: 44,
-            child: Row(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Column(
               children: [
-                SizedBox(
-                  width: 190,
-                  child: Tooltip(
-                    message: item.label,
-                    child: Text(
-                      _shortLabel(item.label),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: item.count / max,
-                    child: Container(
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Tooltip(
+                        message: item.label,
+                        child: Text(
+                          _shortLabel(item.label),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 13,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${item.count}',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 34,
-                  child: Text(
-                    '${item.count}',
-                    style: theme.textTheme.bodySmall,
+                const SizedBox(height: 8),
+                Container(
+                  height: 6,
+                  alignment: Alignment.centerLeft,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: AppColors.sandHoverStrong,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: FractionallySizedBox(
+                    widthFactor: item.count / max,
+                    heightFactor: 1,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -657,7 +645,9 @@ class _DashboardData {
       clusterCount: clusterCount,
       labAllocations: labAllocations,
       mentorships: mentorships,
-      verifiedOutputs: outputs.where((o) => o['verified_online'] == true).length,
+      verifiedOutputs: outputs
+          .where((o) => o['verified_online'] == true)
+          .length,
       outputsByType: _topWithOther(_countBy(outputs, (row) => _type(row))),
       journalsByQuartile: quartiles,
       topResearchers: _topResearchers(authors),
@@ -671,9 +661,8 @@ class _DashboardData {
 }
 
 List<_CountItem> _mapToItems(Map<String, int> counts) {
-  final items =
-      counts.entries.map((e) => _CountItem(e.key, e.value)).toList()
-        ..sort((a, b) => b.count.compareTo(a.count));
+  final items = counts.entries.map((e) => _CountItem(e.key, e.value)).toList()
+    ..sort((a, b) => b.count.compareTo(a.count));
   return items;
 }
 
