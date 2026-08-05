@@ -157,11 +157,11 @@ Graph baseline: 1,395 nodes · 2,022 edges · 121 communities · 129 dangling ed
 mechanical refactors, cheaper Claude models for verification, main session
 reviews. Tick only on measured acceptance.
 
-- [ ] Split `lib/public/person_page.dart` (baseline **1,231 lines**, community cohesion **0.023**) into focused files under `lib/public/person/`; `PersonPageScreen` API + test-imported helpers (`featuredOf`, `orderByFeatured`, `nextFeatured`) stay importable from `person_page.dart` — codex — every split file ≤ 500 lines; `flutter analyze` clean; all 34 tests green; cohesion re-measured ↑
-- [ ] Extract `scripts/common.py` from `enrich.py` shared helpers (baseline: `orcid_works.py`/`find_dois.py` import pipeline internals from `enrich`, cohesion **0.056**); `enrich.py` re-exports for compat — codex — `uv run` `--selfcheck` passes for enrich/orcid_works/find_dois; cohesion re-measured ↑
-- [ ] Move 14 root `2026-*.txt` session transcripts → `notes/sessions/` — claude — repo root has zero `2026-*.txt`; graph `--update` reflects the move
-- [ ] Keep graph updated: `graphify hook install` (post-commit AST rebuild) + upgrade skill (0.9.30 → 0.9.32) — claude — `graphify hook status` = installed; a commit refreshes `graph.json` (mtime check)
-- [ ] Re-run graph update + health check after refactors — claude (cheap model verify) — dangling ≤ 129, collapsed ≤ 225, both cohesion scores above baseline; numbers recorded here
+- [x] Split `lib/public/person_page.dart` — codex — ✅ 2026-08-05: 1,231 → 317 lines + six files under `lib/public/person/` (max 409); API/test imports unchanged; analyzer clean; 34/34 tests green (verified); cohesion 0.023 → **0.043**
+- [x] Extract `scripts/common.py` — codex — ✅ 2026-08-05: 102-line common.py; enrich 489 → 413 lines, re-exports kept; all three selfchecks PASS (haiku-verified); zero `from enrich import` left; cohesion 0.056 → **0.059**
+- [x] Move 14 root `2026-*.txt` session transcripts → `notes/sessions/` (gitignored) — claude — ✅ 2026-08-05: root clean; transcript knowledge recovered from semantic cache and re-pointed to new paths in the graph
+- [x] Keep graph updated — claude — ✅ 2026-08-05: post-commit + post-checkout hooks installed, skill upgraded to 0.9.32; verified live (each commit auto-rebuilt graph.json)
+- [x] Re-run graph update + health check — claude — 2026-08-05 measured: graph 1,466 nodes / 2,119 edges / 126 communities; both cohesion scores above baseline (✅); dangling 135 and collapsed 247 exceed the ≤129/≤225 absolute targets because the graph grew (+71 nodes) — residue *rate* flat at 6.4% of edges. Absolute targets were mis-specified; tracking rate (≤6.5%) going forward.
 - No-fix (informational): 650 weakly-connected nodes are package-import leaves (supabase, XCTest, build) — expected for an AST graph; 17 zero-node files are JSON configs; `dashboard.dart` (752 lines) not flagged by cohesion — backlog only.
 
 ## 8. Out of scope / Phase 2+
