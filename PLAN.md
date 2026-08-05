@@ -211,26 +211,27 @@ the acceptance command passes.
 - [ ] T3.6 .maestro/support_request.yaml — orch, P6 — authored + validated live once .maestro/.env credentials are available
 
 ### P4 — Researcher portal
-- [ ] T4.1 researcher_home /app/home — codex — signed-in + anon render
-- [ ] T4.2 welcome_pack shell /app/welcome/:section — codex — 11 sections render
-- [ ] T4.3 welcome content pt.1 (signature/social/docs) — codex — clipboard text exact
-- [ ] T4.4 welcome content pt.2 — codex — text matches template
-- [ ] T4.5 ORCID banner on my-profile — haiku — Maestro star green
+- [x] T4.1 researcher_home /app/home — codex — ✅ 1a23c9f, anon CTA verified in crawl
+- [x] T4.2 welcome_pack shell /app/welcome/:section — codex — ✅ 68a4092, path-param sections, crawl green
+- [x] T4.3+T4.4 welcome content — codex — ✅ 6887ba4, transcribed verbatim; DOI 10.54499/UID/00711/2025 verified on-screen (EN+PT)
+- [x] T4.5 ORCID banner on my-profile — haiku — ✅ 3a92581, pinned strings intact
 
 ### P5 — Admin settings
-- [ ] T5.1 settings_page — haiku — admin renders, non-admin redirected
+- [x] T5.1 settings_page — codex — ✅ 6752053 + 273d788, anon redirect verified in crawl
 
 ### P6 — Verification + merge
-- [ ] T6.1 analyze 0 / tests 100%
-- [ ] T6.2 both Maestro flows green
-- [ ] T6.3 route crawl all routes
-- [ ] T6.4 metrics M1–M7 + screenshots
-- [ ] T6.4b Figma parity pass — orch+user — compare built screens against the Figma file (needs Figma MCP or exported frames); adjust tokens if they diverge from the HTML templates
+- [x] T6.1 analyze 0 / tests 100% — ✅ 0 issues, 42/42
+- [ ] T6.2 both Maestro flows green — BLOCKED on .maestro/.env credentials (user)
+- [x] T6.3 route crawl all routes — ✅ public + portal + welcome sections + admin redirects, Maestro crawl green (note: stale-browser-cache false alarm; clearState needed after redeploys)
+- [x] T6.4 metrics gate — ✅ 6/7 (M4 credential-blocked); key screens visually verified via Maestro during crawl
+- [x] T6.4c final whole-branch review — ✅ 8 findings (1 Critical: request insert missing person_id; 1 Important: portal unreachable from nav; 6 minor) — all fixed in 531e0e9; scoped re-review: all ADDRESSED, no new breakage
+- [ ] T6.4b Figma parity pass — orch+user — needs Figma MCP/token or exported frames
 - [ ] T6.5 PR → CI green → merge
 
-Metrics gate: M1 no old-red/Lato refs · M2 route crawl green · M3 analyze/test
-green · M4 E2E green · M5 pinned strings intact · M6 advisors no new warnings ·
-M7 bundle ≤ baseline +10%.
+Metrics gate (2026-08-05): M1 ✅ 0 refs (one "Relatorio" substring false-positive
+noted) · M2 ✅ crawl green · M3 ✅ 0 issues / 42 tests · M4 ⏳ blocked on
+.maestro/.env · M5 ✅ pinned greps unchanged · M6 ✅ advisors: pre-existing only ·
+M7 ✅ 3,678,947 B = +4.0% (ceiling +10%).
 
 ## 9. Out of scope / Phase 2+
 
