@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../data/supabase.dart';
 import '../public/person_page.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/panels.dart';
 
 String profileStatusLabel(String? status) => switch (status) {
   'pending_review' => 'Awaiting UNIDCOM approval',
@@ -163,9 +164,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 runSpacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Chip(
-                    label: Text(profileStatusLabel(status)),
-                    visualDensity: VisualDensity.compact,
+                  StatusPill(
+                    profileStatusLabel(status),
+                    tone: status == 'approved' ? PillTone.teal : PillTone.amber,
                   ),
                   if (status == 'draft') ...[
                     const Text('Check your data below, then confirm'),
@@ -249,39 +250,41 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         ],
         if (isAdmin) ...[
           const SizedBox(height: 16),
-          Text(
-            'Link a profile',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            decoration: const InputDecoration(
-              labelText: 'Search people',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
+          Panel(
+            title: 'Link a profile',
+            child: Column(
+              children: [
+                TextField(
+                  decoration: const InputDecoration(
+                    labelText: 'Search people',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    setState(() => _people = fetchPeople(query: value));
+                  },
+                ),
+                const SizedBox(height: 12),
+                AsyncView<List<Map<String, dynamic>>>(
+                  future: _people,
+                  builder: (context, people) {
+                    return Column(
+                      children: [
+                        for (final person in people.take(20))
+                          ListTile(
+                            title: Text(
+                              person['preferred_name'] as String? ?? 'Unnamed',
+                            ),
+                            subtitle: Text(person['email'] as String? ?? ''),
+                            trailing: const Icon(Icons.link),
+                            onTap: () => _link(person),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ],
             ),
-            onChanged: (value) {
-              setState(() => _people = fetchPeople(query: value));
-            },
-          ),
-          const SizedBox(height: 8),
-          AsyncView<List<Map<String, dynamic>>>(
-            future: _people,
-            builder: (context, people) {
-              return Column(
-                children: [
-                  for (final person in people.take(20))
-                    ListTile(
-                      title: Text(
-                        person['preferred_name'] as String? ?? 'Unnamed',
-                      ),
-                      subtitle: Text(person['email'] as String? ?? ''),
-                      trailing: const Icon(Icons.link),
-                      onTap: () => _link(person),
-                    ),
-                ],
-              );
-            },
           ),
         ],
       ],
