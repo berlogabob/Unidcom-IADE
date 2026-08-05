@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/output_row.dart';
+import '../widgets/panels.dart';
 import '../widgets/person_card.dart';
 import '../widgets/queue_list.dart';
 import '../widgets/timeline_section.dart';
@@ -57,9 +59,21 @@ class _ConferencesScreenState extends State<ConferencesScreen> {
         final years = g['years'] as Set<int>;
         return years.isEmpty ? 0 : years.reduce((a, b) => a > b ? a : b);
       },
-      itemBuilder: (group) => Card(
+      itemBuilder: (group) => Panel(
+        padding: EdgeInsets.zero,
         child: ListTile(
-          leading: const Icon(Icons.event),
+          tileColor: AppColors.cardBg,
+          shape: const Border(bottom: BorderSide(color: AppColors.cardBorder)),
+          titleTextStyle: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+          subtitleTextStyle: const TextStyle(
+            color: AppColors.textMuted,
+            fontSize: 12,
+          ),
+          leading: const Icon(Icons.event, color: AppColors.textMuted),
           title: Text(group['name'] as String),
           subtitle: Text(
             [
@@ -67,7 +81,7 @@ class _ConferencesScreenState extends State<ConferencesScreen> {
               if ((group['years'] as Set<int>).isNotEmpty) _yearsLabel(group),
             ].join(' · '),
           ),
-          trailing: const Icon(Icons.chevron_right),
+          trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
           onTap: () => context.go(
             '/conferences/${Uri.encodeComponent(group['key'] as String)}',
           ),
@@ -89,7 +103,8 @@ class ConferencePageScreen extends StatefulWidget {
 class _ConferencePageScreenState extends State<ConferencePageScreen> {
   late final Future<List<Map<String, dynamic>>> _outputs =
       fetchConferenceOutputs().then(
-        (all) => all.where((o) => conferenceKeyOf(o) == widget.confKey).toList(),
+        (all) =>
+            all.where((o) => conferenceKeyOf(o) == widget.confKey).toList(),
       );
 
   @override
@@ -100,12 +115,13 @@ class _ConferencePageScreenState extends State<ConferencePageScreen> {
         if (outputs.isEmpty) {
           return const Center(child: Text('Conference not found'));
         }
-        final years = outputs
-            .map((o) => o['reporting_year'] as int?)
-            .whereType<int>()
-            .toSet()
-            .toList()
-          ..sort((a, b) => b.compareTo(a));
+        final years =
+            outputs
+                .map((o) => o['reporting_year'] as int?)
+                .whereType<int>()
+                .toSet()
+                .toList()
+              ..sort((a, b) => b.compareTo(a));
         // Union of authors across the grouped outputs, deduped by person id.
         final people = <String, Map<String, dynamic>>{};
         for (final output in outputs) {

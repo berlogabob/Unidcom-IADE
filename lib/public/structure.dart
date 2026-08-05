@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/panels.dart';
 import '../widgets/queue_list.dart';
 
 /// One tab hosting Labs / Clusters / Objectives via a segmented switch.
@@ -32,10 +34,7 @@ class _StructureScreenState extends State<StructureScreen> {
             segments: const [
               ButtonSegment(value: _Seg.labs, label: Text('Labs')),
               ButtonSegment(value: _Seg.clusters, label: Text('Clusters')),
-              ButtonSegment(
-                value: _Seg.objectives,
-                label: Text('Objectives'),
-              ),
+              ButtonSegment(value: _Seg.objectives, label: Text('Objectives')),
             ],
             selected: {_seg},
             onSelectionChanged: (s) => setState(() => _seg = s.first),
@@ -105,12 +104,24 @@ class _StructureScreenState extends State<StructureScreen> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Card(
+    return Panel(
+      padding: EdgeInsets.zero,
       child: ListTile(
+        tileColor: AppColors.cardBg,
+        shape: const Border(bottom: BorderSide(color: AppColors.cardBorder)),
+        titleTextStyle: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+        subtitleTextStyle: const TextStyle(
+          color: AppColors.textMuted,
+          fontSize: 12,
+        ),
         leading: code == null ? null : CodeAvatar(code: code, radius: 20),
         title: Text(name),
         subtitle: subtitle.isEmpty ? null : Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
         onTap: onTap,
       ),
     );
@@ -127,7 +138,9 @@ String _plural(int n, String noun) => '$n $noun${n == 1 ? '' : 's'}';
 
 String _clusterCodes(Map<String, dynamic> objective) {
   return (objective['objective_clusters'] as List<dynamic>? ?? [])
-      .map((e) => (e as Map<String, dynamic>)['clusters'] as Map<String, dynamic>?)
+      .map(
+        (e) => (e as Map<String, dynamic>)['clusters'] as Map<String, dynamic>?,
+      )
       .map((c) => c?['code'] as String?)
       .whereType<String>()
       .join(', ');

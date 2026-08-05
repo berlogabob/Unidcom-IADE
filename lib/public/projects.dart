@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../theme/tokens.dart';
+import '../widgets/panels.dart';
 import '../widgets/queue_list.dart';
 import 'project_page.dart';
 
@@ -58,17 +60,54 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 valueOf: (p) => p['funding'] as String?,
               ),
             ],
-            itemBuilder: (project) => ListTile(
-              title: Text(project['title'] as String? ?? 'Untitled'),
-              subtitle: Text(
-                [project['status'], project['category'], project['funding']]
-                    .map((v) => (v as String?)?.trim())
-                    .where((v) => v != null && v.isNotEmpty)
-                    .join(' · '),
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.go('/projects/${project['id']}'),
-            ),
+            itemBuilder: (project) {
+              final status = (project['status'] as String? ?? '').trim();
+              final meta = [project['category'], project['funding']]
+                  .map((v) => (v as String?)?.trim())
+                  .where((v) => v != null && v.isNotEmpty)
+                  .join(' · ');
+              return Panel(
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  tileColor: AppColors.cardBg,
+                  shape: const Border(
+                    bottom: BorderSide(color: AppColors.cardBorder),
+                  ),
+                  titleTextStyle: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  subtitleTextStyle: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
+                  title: Text(project['title'] as String? ?? 'Untitled'),
+                  subtitle: meta.isEmpty ? null : Text(meta),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (status.isNotEmpty) ...[
+                        StatusPill(
+                          status,
+                          tone: switch (status) {
+                            'active' => PillTone.teal,
+                            'planned' => PillTone.amber,
+                            _ => PillTone.grey,
+                          },
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      const Icon(
+                        Icons.chevron_right,
+                        color: AppColors.textMuted,
+                      ),
+                    ],
+                  ),
+                  onTap: () => context.go('/projects/${project['id']}'),
+                ),
+              );
+            },
           ),
         ),
       ],
