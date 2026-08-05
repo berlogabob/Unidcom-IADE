@@ -237,55 +237,79 @@ DataRow _requestRow(
   return DataRow(
     cells: [
       DataCell(
-        SizedBox(width: 120, child: Text(_researcherLabel(request))),
+        MergeSemantics(
+          child: SizedBox(width: 120, child: Text(_researcherLabel(request))),
+        ),
       ),
       DataCell(
-        SizedBox(
-          width: 180,
+        MergeSemantics(
+          child: SizedBox(
+            width: 180,
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ),
+      ),
+      DataCell(
+        MergeSemantics(
+          child: TypeBadge(typeLabel, tone: typeTone),
+        ),
+      ),
+      DataCell(
+        MergeSemantics(
+          child: Text(amountTotal == null ? '—' : '€ ${_formatAmount(amountTotal)}'),
+        ),
+      ),
+      DataCell(
+        MergeSemantics(
+          child: Text(_dateOnly(request['created_at'] as String?)),
+        ),
+      ),
+      DataCell(
+        MergeSemantics(
+          child: Text(_dateOnly(request['event_date'] as String?)),
+        ),
+      ),
+      DataCell(
+        MergeSemantics(
           child: Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ),
-      ),
-      DataCell(TypeBadge(typeLabel, tone: typeTone)),
-      DataCell(
-        Text(amountTotal == null ? '—' : '€ ${_formatAmount(amountTotal)}'),
-      ),
-      DataCell(Text(_dateOnly(request['created_at'] as String?))),
-      DataCell(Text(_dateOnly(request['event_date'] as String?))),
-      DataCell(
-        Text(
-          '$done/$total',
-          style: TextStyle(
-            color: total > 0 && done < total
-                ? AppColors.warn
-                : AppColors.textMuted,
-            fontWeight: FontWeight.w600,
+            '$done/$total',
+            style: TextStyle(
+              color: total > 0 && done < total
+                  ? AppColors.warn
+                  : AppColors.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),
       DataCell(
-        StatusPill(_capitalize(status), tone: _statusTone(status)),
+        MergeSemantics(
+          child: StatusPill(_capitalize(status), tone: _statusTone(status)),
+        ),
       ),
       DataCell(
-        Wrap(
-          spacing: 8,
-          children: [
-            for (final next in adminNextStatuses(status))
-              if (next == 'rejected')
-                TextButton(
-                  onPressed: () => onReject(id),
-                  child: const Text('Reject'),
-                )
-              else
-                FilledButton(
-                  onPressed: () => onSetStatus(id, next),
-                  child: Text(_actionLabel(next)),
-                ),
-          ],
+        MergeSemantics(
+          child: Wrap(
+            spacing: 8,
+            children: [
+              for (final next in adminNextStatuses(status))
+                if (next == 'rejected')
+                  TextButton(
+                    onPressed: () => onReject(id),
+                    child: const Text('Reject'),
+                  )
+                else
+                  FilledButton(
+                    onPressed: () => onSetStatus(id, next),
+                    child: Text(_actionLabel(next)),
+                  ),
+            ],
+          ),
         ),
       ),
     ],

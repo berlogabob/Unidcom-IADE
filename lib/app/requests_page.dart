@@ -162,71 +162,73 @@ class _RequestCard extends StatelessWidget {
     final createdAt = _dateOnly(request['created_at'] as String?);
 
     return Panel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              TypeBadge(typeLabel, tone: typeTone),
-              StatusPill(status, tone: _statusTone(status)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+      child: MergeSemantics(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                TypeBadge(typeLabel, tone: typeTone),
+                StatusPill(status, tone: _statusTone(status)),
+              ],
             ),
-          ),
-          if (meta.isNotEmpty) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
             Text(
-              meta,
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-            ),
-          ],
-          if (checklist.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: done / checklist.length,
-                minHeight: 4,
-                backgroundColor: AppColors.sandHoverStrong,
-                valueColor: const AlwaysStoppedAnimation(AppColors.teal),
+              title,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              '$done / ${checklist.length} documents',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
-            ),
-          ],
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  createdAt.isEmpty ? '' : 'Created $createdAt',
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 11,
+            if (meta.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                meta,
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+              ),
+            ],
+            if (checklist.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: done / checklist.length,
+                  minHeight: 4,
+                  backgroundColor: AppColors.sandHoverStrong,
+                  valueColor: const AlwaysStoppedAnimation(AppColors.teal),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$done / ${checklist.length} documents',
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+              ),
+            ],
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    createdAt.isEmpty ? '' : 'Created $createdAt',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
-              ),
-              if (ownerCanEdit(status))
-                TextButton(
-                  onPressed: () => context.go('/app/requests/$id'),
-                  child: const Text('Edit'),
-                ),
-            ],
-          ),
-        ],
+                if (ownerCanEdit(status))
+                  TextButton(
+                    onPressed: () => context.go('/app/requests/$id'),
+                    child: const Text('Edit'),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
