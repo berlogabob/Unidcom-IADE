@@ -173,11 +173,11 @@ reviews diffs and runs acceptance checks. Full plan + design decisions:
 the acceptance command passes.
 
 ### P0 — Tokens + theme
-- [ ] T0.1 `lib/theme/tokens.dart` — haiku — analyze clean
-- [ ] T0.2 `lib/theme/app_theme.dart` — codex — analyze clean
-- [ ] T0.3 main.dart theme swap, red deleted — haiku — grep old hexes = 0; tests green
-- [ ] T0.4 chart_palette swap — haiku — analyze clean
-- [ ] T0.5 bundle-size baseline recorded — orch
+- [x] T0.1 `lib/theme/tokens.dart` — haiku — ✅ 893cd97, analyze clean
+- [x] T0.2 `lib/theme/app_theme.dart` — codex — ✅ 73e2756, analyze clean (codex sandbox couldn't commit; orch committed)
+- [x] T0.3 main.dart theme swap, red deleted — haiku — ✅ c207d5e, grep = 0, analyze clean, 34/34 tests
+- [x] T0.4 chart_palette swap — haiku — ✅ 8ae090e, analyze clean, slotColor signature untouched
+- [x] T0.5 bundle-size baseline — orch — ✅ main.dart.js = 3,536,514 bytes (M7 ceiling: 3,890,165)
 
 ### P1 — Shell + navigation
 - [ ] T1.1 extract AppShell → lib/widgets/app_shell.dart — haiku — tests green
