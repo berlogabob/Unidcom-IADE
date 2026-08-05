@@ -44,25 +44,40 @@ env:
     timeout: 20000
 
 - openLink: "${BASE_URL}/#/people/${TEST_PERSON_ID}"
+# Timeline section header proves the person data loaded.
 - extendedWaitUntil:
-    visible: "Outputs · 7"
+    visible: "Ana Nolasco|About"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      text: "Timeline · \\d+"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      text: "Highlight on profile"
     timeout: 20000
 - assertVisible:
     text: "Highlight on profile"
     label: "Starts unstarred"
 
+- scrollUntilVisible:
+    element:
+      text: "Highlight on profile"
+    timeout: 20000
 - tapOn:
     text: "Highlight on profile"
     index: 0
-- extendedWaitUntil:
-    visible: "Remove highlight"
+- scrollUntilVisible:
+    element:
+      text: "Remove highlight"
     timeout: 20000
     label: "Write + refetch round-tripped"
 
 # Reload from scratch: proves it was persisted, not just local widget state.
 - openLink: "${BASE_URL}/#/people/${TEST_PERSON_ID}"
-- extendedWaitUntil:
-    visible: "Remove highlight"
+- scrollUntilVisible:
+    element:
+      text: "Remove highlight"
     timeout: 20000
     label: "Survived a reload"
 
