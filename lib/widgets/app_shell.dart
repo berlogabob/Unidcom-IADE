@@ -14,7 +14,8 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final path = GoRouterState.of(context).uri.path;
     final admin = data.isAdmin;
-    final hasSession = Supabase.instance.client.auth.currentSession != null;
+    final session = Supabase.instance.client.auth.currentSession;
+    final hasSession = session != null;
     final destinations = [
       _NavItem('/people', Icons.people, 'People'),
       _NavItem(
@@ -84,6 +85,20 @@ class AppShell extends StatelessWidget {
                     icon: Icon(item.icon),
                     label: item.label,
                   ),
+              ],
+            ),
+          );
+        }
+
+        if (path == '/app/dashboard' ||
+            path.startsWith('/app/admin') ||
+            path == '/app/settings') {
+          return Scaffold(
+            body: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _adminSidebar(context, path, session),
+                Expanded(child: child),
               ],
             ),
           );
@@ -177,6 +192,157 @@ class AppShell extends StatelessWidget {
           body: child,
         );
       },
+    );
+  }
+
+  Widget _adminSidebar(BuildContext context, String path, Session? session) {
+    final items = [
+      _NavItem('/app/dashboard', Icons.dashboard, 'Dashboard'),
+      _NavItem('/people', Icons.people, 'People'),
+      _NavItem('/app/admin/requests', Icons.inbox, 'Requests'),
+      _NavItem('/outputs', Icons.article, 'Outputs'),
+      _NavItem('/structure', Icons.account_tree, 'Structure'),
+      _NavItem('/app/settings', Icons.settings, 'Settings'),
+    ];
+
+    return SizedBox(
+      width: 220,
+      child: ColoredBox(
+        color: AppColors.sidebar,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'UNIDCOM',
+                    style: TextStyle(
+                      color: AppColors.textOnDark,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Admin',
+                    style: TextStyle(
+                      color: AppColors.textOnDarkMuted,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                children: [
+                  for (final item in items)
+                    Builder(
+                      builder: (context) {
+                        final active = path.startsWith(item.path);
+                        final color = active
+                            ? AppColors.textOnDark
+                            : AppColors.textOnDarkMuted;
+                        return InkWell(
+                          onTap: () => context.go(item.path),
+                          child: Container(
+                            height: 44,
+                            padding: EdgeInsets.only(
+                              left: active ? 13 : 16,
+                              right: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : null,
+                              border: active
+                                  ? const Border(
+                                      left: BorderSide(
+                                        color: AppColors.teal,
+                                        width: 3,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(item.icon, color: color, size: 18),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    item.label,
+                                    style: TextStyle(
+                                      color: color,
+                                      fontSize: 13,
+                                      fontWeight: active
+                                          ? FontWeight.w600
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                if (item.path == '/app/admin/requests')
+                                  FutureBuilder<int>(
+                                    future: data.countPendingRequests(),
+                                    builder: (context, snapshot) {
+                                      final count = snapshot.data ?? 0;
+                                      if (count <= 0) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return Container(
+                                        constraints: const BoxConstraints(
+                                          minWidth: 22,
+                                          minHeight: 18,
+                                        ),
+                                        alignment: Alignment.center,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.amber,
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '$count',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+            if (session != null)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  session.user.email ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textOnDarkMuted,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -4,6 +4,8 @@ final db = Supabase.instance.client;
 
 bool get isAdmin => db.auth.currentUser?.appMetadata['role'] == 'admin';
 
+Future<int> countPendingRequests() async => 0; // ponytail: stub until support_requests lands (T3.2)
+
 /// Layer 1 — mandatory membership (one per person/year): the single source
 /// shared by the person editor, the logbook, and the dashboard.
 const membershipTypes = ['integrated', 'collaborator', 'external'];
