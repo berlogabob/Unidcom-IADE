@@ -57,12 +57,12 @@ Task row format: `- [ ] task — owner — acceptance check`
 
 ### W2 (Aug 11–17) — Researcher Profile Admin
 
-- [ ] "Confirm my profile" flow in `/app/profile`: researcher reviews data, hits Validate → `profile_status = pending_review` — codex — Dart test + manual flow on production — ⏳ code done 2026-08-04 (Codex, reviewed; analyze + 33 tests green); tick after manual check on deployed site
-- [ ] Publication claim UI: researcher selects from their `output_candidates` → promoted to `outputs` (pending approval) with authorship link — codex — claimed candidate appears in `outputs` linked via `output_authors` — ⏳ 2026-08-04 backend live + SQL-verified (owner promote/reject, cross-owner blocked, audited; migration `20260805090000_claim_own_candidates.sql`); UI code done (Codex, reviewed, 34 tests green); tick after manual check on deployed site
+- [x] "Confirm my profile" flow in `/app/profile` — codex — ✅ 2026-08-05 verified on production: researcher self-submit `draft → pending_review` observed live in `change_log`, admin approval followed, `last_verified_at` stamped
+- [x] Publication claim UI — codex — ✅ 2026-08-05 verified on production: 3 ORCID works claimed by a real researcher, landed as pending outputs with `output_authors` links + audit rows, approved via review queue, then anon-visible (RLS check passed)
 - [x] Selected/featured publications management from own profile — codex — ✅ 2026-08-04: already shipped in earlier UI; owner-only RLS + 5-cap verified by rolled-back SQL test on live DB
 - [x] Onboarding note for cohort (how to log in with ORCID, validate, claim) — codex — ✅ 2026-08-04: `ONBOARDING.md` at repo root
 
-**W2 KPI:** ≥1 real researcher completes ORCID login → profile validation → publication claim end-to-end on production.
+**W2 KPI:** ≥1 real researcher completes ORCID login → profile validation → publication claim end-to-end on production. ✅ met 2026-08-05 (full chain observed in `change_log`: confirm → claim ×3 → approvals → public).
 
 ### W3 (Aug 18–24) — UNIDCOM Admin + website sync
 
