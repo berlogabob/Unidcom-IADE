@@ -17,7 +17,7 @@ Corrections vs the PDF (agreed 2026-08-04):
   Supabase Postgres** under RLS — not Hugo, not Sanity. "Automatic
   synchronisation with the website" therefore means **approval-driven RLS
   visibility**: anonymous visitors see only approved/validated content. No push
-  pipeline needed. A Sanity swap stays a Phase-2 option (§7).
+  pipeline needed. A Sanity swap stays a Phase-2 option (§8).
 - **Ciência Vitae** direct integration is descoped for the pilot: ORCID is the
   single publication source (ResearchGate/Scopus deposit into ORCID; Ciência
   ids are already scraped from ORCID profiles into `people.ciencia_id`).
@@ -150,7 +150,21 @@ them first (`20260721230000_init.sql:127-132`). The W3 swap is:
 Acceptance: anonymous PostgREST request returns only approved/validated rows;
 authenticated still sees all.
 
-## 7. Out of scope / Phase 2+
+## 7. Code health & graph maintenance (from /graphify audit, 2026-08-05)
+
+Graph baseline: 1,395 nodes · 2,022 edges · 121 communities · 129 dangling edges
+· 225 collapsed parallel edges. Execution: codex subagents in parallel for
+mechanical refactors, cheaper Claude models for verification, main session
+reviews. Tick only on measured acceptance.
+
+- [ ] Split `lib/public/person_page.dart` (baseline **1,231 lines**, community cohesion **0.023**) into focused files under `lib/public/person/`; `PersonPageScreen` API + test-imported helpers (`featuredOf`, `orderByFeatured`, `nextFeatured`) stay importable from `person_page.dart` — codex — every split file ≤ 500 lines; `flutter analyze` clean; all 34 tests green; cohesion re-measured ↑
+- [ ] Extract `scripts/common.py` from `enrich.py` shared helpers (baseline: `orcid_works.py`/`find_dois.py` import pipeline internals from `enrich`, cohesion **0.056**); `enrich.py` re-exports for compat — codex — `uv run` `--selfcheck` passes for enrich/orcid_works/find_dois; cohesion re-measured ↑
+- [ ] Move 14 root `2026-*.txt` session transcripts → `notes/sessions/` — claude — repo root has zero `2026-*.txt`; graph `--update` reflects the move
+- [ ] Keep graph updated: `graphify hook install` (post-commit AST rebuild) + upgrade skill (0.9.30 → 0.9.32) — claude — `graphify hook status` = installed; a commit refreshes `graph.json` (mtime check)
+- [ ] Re-run graph update + health check after refactors — claude (cheap model verify) — dangling ≤ 129, collapsed ≤ 225, both cohesion scores above baseline; numbers recorded here
+- No-fix (informational): 650 weakly-connected nodes are package-import leaves (supabase, XCTest, build) — expected for an AST graph; 17 zero-node files are JSON configs; `dashboard.dart` (752 lines) not flagged by cohesion — backlog only.
+
+## 8. Out of scope / Phase 2+
 
 - Sanity CMS as website layer (swap point: replace the Flutter SPA's PostgREST
   reads with a RIMS→Sanity push; the approval-driven RLS boundary is the API
