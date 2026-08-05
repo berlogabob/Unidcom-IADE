@@ -44,47 +44,73 @@ env:
     timeout: 20000
 
 - openLink: "${BASE_URL}/#/people/${TEST_PERSON_ID}"
-# Timeline section header proves the person data loaded.
+# About proves the person data loaded. scrollUntilVisible doesn't move the
+# Flutter-web canvas, so we swipe-until-visible instead (star rows live in the
+# timeline, below the fold).
 - extendedWaitUntil:
-    visible: "Ana Nolasco|About"
+    visible: "About"
     timeout: 20000
-- scrollUntilVisible:
-    element:
-      text: "Timeline · \\d+"
-    timeout: 20000
-- scrollUntilVisible:
-    element:
-      text: "Highlight on profile"
-    timeout: 20000
+- repeat:
+    times: 10
+    while:
+      notVisible: "Highlight on profile"
+    commands:
+      - swipe:
+          direction: UP
+          duration: 400
 - assertVisible:
     text: "Highlight on profile"
     label: "Starts unstarred"
 
-- scrollUntilVisible:
-    element:
-      text: "Highlight on profile"
-    timeout: 20000
 - tapOn:
     text: "Highlight on profile"
     index: 0
-- scrollUntilVisible:
-    element:
-      text: "Remove highlight"
-    timeout: 20000
+# The refetch after the write can reset scroll to the top — swipe back down.
+- repeat:
+    times: 10
+    while:
+      notVisible: "Remove highlight"
+    commands:
+      - swipe:
+          direction: UP
+          duration: 400
+- assertVisible:
+    text: "Remove highlight"
     label: "Write + refetch round-tripped"
 
 # Reload from scratch: proves it was persisted, not just local widget state.
-- openLink: "${BASE_URL}/#/people/${TEST_PERSON_ID}"
-- scrollUntilVisible:
-    element:
-      text: "Remove highlight"
+# (openLink to the SAME hash URL is a no-op — bounce via the list first.)
+- openLink: "${BASE_URL}/#/people"
+- extendedWaitUntil:
+    visible: "1\\d\\d people"
     timeout: 20000
+- openLink: "${BASE_URL}/#/people/${TEST_PERSON_ID}"
+- extendedWaitUntil:
+    visible: "About"
+    timeout: 20000
+- repeat:
+    times: 10
+    while:
+      notVisible: "Remove highlight"
+    commands:
+      - swipe:
+          direction: UP
+          duration: 400
+- assertVisible:
+    text: "Remove highlight"
     label: "Survived a reload"
 
 - tapOn:
     text: "Remove highlight"
     index: 0
-- extendedWaitUntil:
-    visible: "Highlight on profile"
-    timeout: 20000
+- repeat:
+    times: 10
+    while:
+      notVisible: "Highlight on profile"
+    commands:
+      - swipe:
+          direction: UP
+          duration: 400
+- assertVisible:
+    text: "Highlight on profile"
     label: "Unstarred again — live data restored"
