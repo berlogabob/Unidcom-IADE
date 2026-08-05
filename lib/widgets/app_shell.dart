@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/supabase.dart' as data;
+import '../theme/tokens.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.child});
@@ -36,47 +37,146 @@ class AppShell extends StatelessWidget {
       (item) => item.prefixes.any(path.startsWith),
     );
     final selectedIndex = index < 0 ? 0 : index;
+    final sessionActions = hasSession
+        ? [
+            IconButton(
+              tooltip: 'My profile',
+              icon: const Icon(Icons.account_circle),
+              onPressed: () => context.go('/app/profile'),
+            ),
+            IconButton(
+              tooltip: 'Sign out',
+              icon: const Icon(Icons.logout),
+              onPressed: () => Supabase.instance.client.auth.signOut(),
+            ),
+          ]
+        : [
+            IconButton(
+              tooltip: 'Sign in',
+              icon: const Icon(Icons.login),
+              onPressed: () => context.go('/login'),
+            ),
+          ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(switch (destinations[selectedIndex].path) {
-          '/outputs' => 'Outputs',
-          '/projects' => 'Projects',
-          '/structure' => 'Structure',
-          '/app/dashboard' => 'Dashboard',
-          '/app/admin' => 'Admin',
-          _ => 'People',
-        }),
-        actions: hasSession
-            ? [
-                IconButton(
-                  tooltip: 'My profile',
-                  icon: const Icon(Icons.account_circle),
-                  onPressed: () => context.go('/app/profile'),
-                ),
-                IconButton(
-                  tooltip: 'Sign out',
-                  icon: const Icon(Icons.logout),
-                  onPressed: () => Supabase.instance.client.auth.signOut(),
-                ),
-              ]
-            : [
-                IconButton(
-                  tooltip: 'Sign in',
-                  icon: const Icon(Icons.login),
-                  onPressed: () => context.go('/login'),
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 760) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(switch (destinations[selectedIndex].path) {
+                '/outputs' => 'Outputs',
+                '/projects' => 'Projects',
+                '/structure' => 'Structure',
+                '/app/dashboard' => 'Dashboard',
+                '/app/admin' => 'Admin',
+                _ => 'People',
+              }),
+              actions: sessionActions,
+            ),
+            body: child,
+            bottomNavigationBar: NavigationBar(
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (value) =>
+                  context.go(destinations[value].path),
+              destinations: [
+                for (final item in destinations)
+                  NavigationDestination(
+                    icon: Icon(item.icon),
+                    label: item.label,
+                  ),
               ],
-      ),
-      body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (value) => context.go(destinations[value].path),
-        destinations: [
-          for (final item in destinations)
-            NavigationDestination(icon: Icon(item.icon), label: item.label),
-        ],
-      ),
+            ),
+          );
+        }
+
+        return Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            toolbarHeight: 56,
+            titleSpacing: 28,
+            backgroundColor: AppColors.sidebar,
+            foregroundColor: AppColors.textOnDark,
+            title: Row(
+              children: [
+                InkWell(
+                  onTap: () => context.go('/people'),
+                  child: Row(
+                    children: [
+                      Text(
+                        'UNIDCOM',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textOnDark,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        ' IADE',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textOnDarkMuted,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 36),
+                for (final item in destinations.take(4))
+                  Builder(
+                    builder: (context) {
+                      final active = item.prefixes.any(path.startsWith);
+                      return InkWell(
+                        onTap: () => context.go(item.path),
+                        child: Container(
+                          height: 56,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 13),
+                          decoration: active
+                              ? const BoxDecoration(
+                                  border: Border(
+                                    bottom: BorderSide(
+                                      color: AppColors.teal,
+                                      width: 2,
+                                    ),
+                                  ),
+                                )
+                              : null,
+                          child: Text(
+                            item.label,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: active
+                                      ? AppColors.textOnDark
+                                      : AppColors.textOnDarkMuted,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+              ],
+            ),
+            actions: [
+              IconButton(
+                tooltip: 'Dashboard',
+                icon: const Icon(Icons.dashboard),
+                onPressed: () => context.go('/app/dashboard'),
+              ),
+              if (admin)
+                IconButton(
+                  tooltip: 'Admin',
+                  icon: const Icon(Icons.admin_panel_settings),
+                  onPressed: () => context.go('/app/admin'),
+                ),
+              ...sessionActions,
+            ],
+          ),
+          body: child,
+        );
+      },
     );
   }
 }
