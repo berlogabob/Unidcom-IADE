@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/supabase.dart' as data;
 import '../theme/tokens.dart';
+
+/// The public UNIDCOM site. This app is the portal you arrive at *from* there,
+/// so every shell offers the way back.
+// ponytail: one const, one call site. Promote to --dart-define if the Hugo
+// site ever moves off github.io.
+const _publicSiteUrl = 'https://berlogabob.github.io/unidcom-site/';
+
+void _openPublicSite() {
+  launchUrl(Uri.parse(_publicSiteUrl), webOnlyWindowName: '_self');
+}
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key, required this.child});
@@ -58,6 +69,7 @@ class _AppShellState extends State<AppShell> {
       PopupMenuItem(value: 'requests', child: Text('Support requests')),
       PopupMenuItem(value: 'welcome', child: Text('Welcome pack')),
       PopupMenuItem(value: 'profile', child: Text('My profile')),
+      PopupMenuItem(value: 'site', child: Text('Public site')),
       PopupMenuItem(value: 'signout', child: Text('Sign out')),
     ];
     void handlePortalMenu(String value) {
@@ -65,6 +77,7 @@ class _AppShellState extends State<AppShell> {
       if (value == 'requests') context.go('/app/requests');
       if (value == 'welcome') context.go('/app/welcome/start');
       if (value == 'profile') context.go('/app/profile');
+      if (value == 'site') _openPublicSite();
       if (value == 'signout') {
         Supabase.instance.client.auth.signOut();
       }
@@ -87,15 +100,21 @@ class _AppShellState extends State<AppShell> {
           ]
         : [
             IconButton(
+              tooltip: 'Public site',
+              icon: const Icon(Icons.public),
+              onPressed: _openPublicSite,
+            ),
+            IconButton(
               tooltip: 'Sign in',
               icon: const Icon(Icons.login),
               onPressed: () => context.go('/login'),
             ),
           ];
     // Desktop wide top-nav account area — adds the researcher portal entry
-    // points (I1): Overview/Support requests/Welcome pack/My profile/Sign
-    // out behind one menu when signed in; a public Welcome pack link next
-    // to Sign in when not.
+    // points (I1): Overview/Support requests/Welcome pack/My profile/Public
+    // site/Sign out behind one menu when signed in. Signed out, the only
+    // screen here is the Welcome pack itself, so the useful links are the way
+    // back to the public site and the way forward into the portal.
     final desktopAccountActions = hasSession
         ? [
             PopupMenuButton<String>(
@@ -161,11 +180,11 @@ class _AppShellState extends State<AppShell> {
           ]
         : [
             TextButton(
-              onPressed: () => context.go('/app/welcome/start'),
+              onPressed: _openPublicSite,
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.textOnDarkMuted,
               ),
-              child: const Text('Welcome pack'),
+              child: const Text('Public site'),
             ),
             IconButton(
               tooltip: 'Sign in',

@@ -38,9 +38,9 @@ env:
     below:
       id: "Password"
 
-# Landing on the people list is the only proof the credentials were accepted.
+# Landing on the Welcome pack is the only proof the credentials were accepted.
 - extendedWaitUntil:
-    visible: "1\\d\\d people"
+    visible: "Welcome to UNIDCOM"
     timeout: 20000
 
 - openLink: "${BASE_URL}/#/people/${TEST_PERSON_ID}"

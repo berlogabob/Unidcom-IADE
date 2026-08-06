@@ -47,8 +47,9 @@ const _orcidClientId = String.fromEnvironment(
   defaultValue: 'APP-L64W8QJWLPH4MUEM',
 );
 
-// Set in main() when an ORCID sign-in just completed; read once by _router.
-bool _orcidSignedIn = false;
+// Set in main() when an ORCID return trip wants a landing other than the
+// default; read once by _router. Null means "land on the Welcome pack".
+String? _postAuthLanding;
 
 // Set in main() when the ORCID broker redirected back with a failure; routes
 // the app to /login and is consumed by LoginScreen so it shows exactly once.
@@ -79,7 +80,6 @@ Future<void> main() async {
         tokenHash: tokenHash,
       );
       await data.claimPersonByOrcid();
-      _orcidSignedIn = true;
     } catch (_) {
       // F5 replays the consumed one-time token; the persisted session wins.
     }
@@ -93,34 +93,40 @@ Future<void> main() async {
     } catch (_) {}
     // Only claim the profile landing if a session really survived: /app/profile
     // is auth-gated, so flagging it after a failed refresh would bounce the
-    // user to /login and on to /people with no explanation.
-    _orcidSignedIn = Supabase.instance.client.auth.currentSession != null;
+    // user to /login with no explanation. Sign-in lands on the Welcome pack,
+    // but this is the *link* flow — the user pressed Connect ORCID on their
+    // own profile and has to come back to it.
+    if (Supabase.instance.client.auth.currentSession != null) {
+      _postAuthLanding = '/app/profile';
+    }
   }
 
   // Broker failures come back as ?orcid_error= before the '#', so go_router
-  // never sees them. Read it here, not in LoginScreen.initState: anonymous
-  // visitors now stay on /people (see needsAuth), so LoginScreen would never
-  // mount and the message would be silently dropped — the failure most of the
-  // pilot cohort will hit, since a researcher whose iD isn't on file yet gets
+  // never sees them. Read it here, not in LoginScreen.initState: the param
+  // sits outside the fragment, so a return trip that lands anywhere but
+  // /login would drop the message silently — the failure most of the pilot
+  // cohort will hit, since a researcher whose iD isn't on file yet gets
   // exactly this redirect.
   _orcidError = Uri.base.queryParameters['orcid_error'];
 
   runApp(const UnidcomApp());
 }
 
-// Public directory stays anonymous; the researcher/admin portal (/app/*)
-// needs a session. Welcome pack stays public — it's pre-login onboarding info.
+// The Hugo site (berlogabob.github.io/unidcom-site) is the public face now;
+// this app is the portal. Login and the Welcome pack are its only anonymous
+// surfaces — the pack is pre-login onboarding info, and a researcher reaches
+// it from the public site before they have an account. Everything else,
+// directory included, is the live internal view and needs a session.
 bool needsAuth(String location) =>
-    location.startsWith('/app/') && !location.startsWith('/app/welcome');
+    location != '/login' && !location.startsWith('/app/welcome');
 
 final _router = GoRouter(
-  // Fresh ORCID sign-in lands on the (just-claimed) own profile; a broker
-  // failure lands on /login, the only screen that can show the reason.
-  initialLocation: _orcidSignedIn
-      ? '/app/profile'
-      : _orcidError != null
+  // Every login lands on the Welcome pack; a broker failure lands on /login,
+  // the only screen that can show the reason. _postAuthLanding overrides the
+  // default for the Connect-ORCID return trip.
+  initialLocation: _orcidError != null
       ? '/login'
-      : '/people',
+      : _postAuthLanding ?? '/app/welcome/start',
   refreshListenable: GoRouterRefreshStream(
     Supabase.instance.client.auth.onAuthStateChange,
   ),
@@ -128,7 +134,7 @@ final _router = GoRouter(
     final hasSession = Supabase.instance.client.auth.currentSession != null;
     final onLogin = state.matchedLocation == '/login';
     if (!hasSession && needsAuth(state.matchedLocation)) return '/login';
-    if (hasSession && onLogin) return '/people';
+    if (hasSession && onLogin) return '/app/welcome/start';
     if (state.matchedLocation == '/') return '/people';
     if (state.matchedLocation == '/app/admin' && !data.isAdmin) {
       return '/people';
@@ -326,7 +332,10 @@ class _LoginScreenState extends State<LoginScreen> {
         email: _email.text.trim(),
         password: _password.text,
       );
-      if (mounted) context.go('/people');
+      // No navigation here on purpose: the session change wakes the router's
+      // refreshListenable and its redirect sends us on. Navigating here too
+      // would make the landing screen a thing decided in two places, and the
+      // ORCID path already relies on the redirect alone.
     } on AuthException catch (error) {
       setState(() => _error = error.message);
     } catch (error) {

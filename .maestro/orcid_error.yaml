@@ -19,7 +19,7 @@ env:
 ---
 - clearState
 # No '#' — exactly how the broker returns. initialLocation must send us to
-# /login rather than the default /people.
+# /login rather than the default Welcome pack.
 - openLink: "${BASE_URL}/?orcid_error=No%20UNIDCOM%20profile%20is%20registered%20for%20ORCID%20iD%200000-0002-1825-0097.%20Contact%20an%20admin."
 - extendedWaitUntil:
     visible: "Password"
@@ -33,9 +33,11 @@ env:
 
 # Consumed once: navigating away and back must not resurrect a stale error
 # (the query param outlives the navigation).
-- openLink: "${BASE_URL}/?v=stale#/people"
+# The Welcome pack, not /people: the directory is auth-gated now, so the only
+# other place an anonymous visitor can stand is the pack.
+- openLink: "${BASE_URL}/?v=stale#/app/welcome/start"
 - extendedWaitUntil:
-    visible: "1\\d\\d people"
+    visible: "Welcome to UNIDCOM"
     timeout: 30000
 - openLink: "${BASE_URL}/?v=stale#/login"
 - extendedWaitUntil:

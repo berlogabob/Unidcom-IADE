@@ -1,0 +1,68 @@
+# E2E for the auth gate and the post-login landing.
+#
+# The Hugo site is the public face now, so this app is anonymous ONLY on
+# /login and the Welcome pack. Two things this proves, both of which broke
+# silently in the old arrangement:
+#   1. An anonymous deep link into the directory lands on /login.
+#   2. A successful login lands on the Welcome pack, not the directory.
+#
+# The app must be served from a build made WITH semantics, or Maestro sees only
+# a bare canvas (Flutter web draws to a <canvas>):
+#   flutter build web --dart-define=E2E=true
+#   python3 -m http.server 8123 --directory build/web
+#   maestro test .maestro/auth_gate.yaml --env-file .maestro/.env
+url: http://localhost:8123
+name: "Auth gate: anonymous is bounced, login lands on the Welcome pack"
+env:
+  BASE_URL: http://localhost:8123
+---
+# clearState avoids a stale main.dart.js being served from cache — without it a
+# rebuilt app silently isn't the one under test. It also drops any persisted
+# GoTrue session, which is what makes the next step genuinely anonymous.
+- clearState
+
+# 1. Anonymous deep link into the directory → bounced to /login.
+- openLink: "${BASE_URL}/#/people"
+- extendedWaitUntil:
+    visible: "Password"
+    timeout: 30000
+    label: "Anonymous /people was bounced to the login screen"
+- assertNotVisible:
+    text: "1\\d\\d people"
+    label: "The directory never rendered for an anonymous visitor"
+
+# 2. The Welcome pack stays anonymous — it's how a researcher arrives from the
+#    public site before they have an account.
+- openLink: "${BASE_URL}/#/app/welcome/start"
+- extendedWaitUntil:
+    visible: "Welcome to UNIDCOM"
+    timeout: 20000
+    label: "Welcome pack is reachable without a session"
+
+# 3. Sign in → land on the Welcome pack.
+- openLink: "${BASE_URL}/#/login"
+- extendedWaitUntil:
+    visible: "Email"
+    timeout: 20000
+- tapOn:
+    id: "Email"
+- inputText: "${MAESTRO_EMAIL}"
+- tapOn:
+    id: "Password"
+- inputText: "${MAESTRO_PASSWORD}"
+# "Sign in" also names this screen's AppBar title, so anchor to the field above.
+- tapOn:
+    text: "Sign in"
+    below:
+      id: "Password"
+- extendedWaitUntil:
+    visible: "Welcome to UNIDCOM"
+    timeout: 20000
+    label: "Login landed on the Welcome pack"
+
+# 4. With a session, the directory opens.
+- openLink: "${BASE_URL}/#/people"
+- extendedWaitUntil:
+    visible: "1\\d\\d people"
+    timeout: 20000
+    label: "Signed in, the internal directory is reachable"
