@@ -35,10 +35,8 @@ Widget welcomeSectionBody(BuildContext context, String slug) => switch (slug) {
 };
 
 Widget _startSection() => _section(
-  eyebrow: 'UNIDCOM/IADE · Welcome Pack 2026',
-  title: 'Welcome to UNIDCOM',
-  lead:
-      'This guide has everything you need to get started: your email signature, support requests, affiliation obligations and how to report your scientific activity.',
+  title: 'Getting started',
+  lead: 'Everything a new UNIDCOM researcher should have at hand.',
   children: [
     _tags([
       'UID/00711/2025',
@@ -100,7 +98,6 @@ Widget _startSection() => _section(
 );
 
 Widget _signatureSection(BuildContext context) => _section(
-  eyebrow: 'Communication',
   title: 'Email signature',
   lead:
       'Official template for your institutional email. Fill in your details and copy it into Outlook.',
@@ -181,7 +178,6 @@ Widget _signaturePreview(BuildContext context) => Panel(
 );
 
 Widget _socialSection() => _section(
-  eyebrow: 'Communication',
   title: 'Social media',
   lead:
       "Follow UNIDCOM and share your publications and appearances to boost the unit's visibility.",
@@ -216,7 +212,6 @@ Widget _socialSection() => _section(
 );
 
 Widget _documentsSection() => _section(
-  eyebrow: 'Support',
   title: 'Documents & forms',
   lead:
       'All the documents you need to submit support requests and plan your activities.',
@@ -284,7 +279,6 @@ Widget _documentsSection() => _section(
 );
 
 Widget _conferencesSection() => _section(
-  eyebrow: 'Support · DPD',
   title: 'Conferences & scientific events',
   lead:
       'How to request support to attend conferences, workshops and exhibitions.',
@@ -342,7 +336,6 @@ Widget _conferencesSection() => _section(
 );
 
 Widget _openAccessSection() => _section(
-  eyebrow: 'Support · Open Access',
   title: 'Open Access publishing',
   lead:
       'Rules for requesting support for publication fees (APC) and revision or translation services.',
@@ -392,7 +385,6 @@ Widget _openAccessSection() => _section(
 );
 
 Widget _missionsSection() => _section(
-  eyebrow: 'Support · Missions',
   title: 'Missions',
   lead:
       'Support for travel to coordination and supervision meetings and proposal preparation.',
@@ -430,8 +422,7 @@ Widget _missionsSection() => _section(
 );
 
 Widget _affiliationSection(BuildContext context) => _section(
-  eyebrow: 'Obligations',
-  title: 'Affiliation & FCT statement',
+  title: 'UNIDCOM affiliation',
   lead:
       'You must include the correct affiliation and the FCT statement in all scientific material.',
   children: [
@@ -445,20 +436,19 @@ Widget _affiliationSection(BuildContext context) => _section(
     _heading('Mandatory affiliation'),
     _secondaryLead('In all papers, chapters, presentations and posters:'),
     const SizedBox(height: 10),
-    _copyCard(context, language: 'EN', text: _affiliationEn),
-    const SizedBox(height: 12),
     _copyCard(context, language: 'PT', text: _affiliationPt),
+    const SizedBox(height: 12),
+    _copyCard(context, language: 'EN', text: _affiliationEn),
     _heading('FCT funding statement'),
     _secondaryLead('Include in the acknowledgements (PT and/or EN):'),
     const SizedBox(height: 10),
-    _copyCard(context, language: 'EN', text: _fundingEn),
-    const SizedBox(height: 12),
     _copyCard(context, language: 'PT', text: _fundingPt),
+    const SizedBox(height: 12),
+    _copyCard(context, language: 'EN', text: _fundingEn),
   ],
 );
 
 Widget _reportSection() => _section(
-  eyebrow: 'Obligations',
   title: 'Report activity',
   lead:
       "UNIDCOM's visibility depends on knowing your work. Tell us and we'll share it on social media and report it to FCT.",
@@ -498,8 +488,7 @@ Widget _reportSection() => _section(
 );
 
 Widget _logosSection() => _section(
-  eyebrow: 'Resources',
-  title: 'Logos & brand',
+  title: 'Logos & brand assets',
   lead:
       'Access and download institutional logos in the correct formats for each context.',
   children: [
@@ -569,7 +558,6 @@ Widget _logosSection() => _section(
 );
 
 Widget _contactsSection() => _section(
-  eyebrow: 'Resources',
   title: 'Contacts',
   lead: 'Reach the right team for approvals, admin support and communications.',
   children: [
@@ -594,46 +582,36 @@ Widget _contactsSection() => _section(
   ],
 );
 
+/// Figma S4: the section title and its lead sit on the page background, with
+/// the content cards below them — not inside one enclosing card. The template's
+/// per-section eyebrow ("Communication", "Support · DPD") is gone with it: the
+/// side nav already names the group, so it was saying the same thing twice.
 Widget _section({
-  required String eyebrow,
   required String title,
   required String lead,
   required List<Widget> children,
-}) => Panel(
-  padding: const EdgeInsets.all(24),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        eyebrow.toUpperCase(),
-        style: const TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.8,
-        ),
+}) => Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Text(
+      title,
+      style: const TextStyle(
+        color: AppColors.textPrimary,
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
       ),
-      const SizedBox(height: 8),
-      Text(
-        title,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-        ),
+    ),
+    const SizedBox(height: 8),
+    Text(
+      lead,
+      style: const TextStyle(
+        color: AppColors.textMuted,
+        fontSize: 14,
+        height: 1.5,
       ),
-      const SizedBox(height: 8),
-      Text(
-        lead,
-        style: const TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 13,
-          height: 1.5,
-        ),
-      ),
-      ...children,
-    ],
-  ),
+    ),
+    ...children,
+  ],
 );
 
 Widget _heading(String text) => Padding(
@@ -642,7 +620,7 @@ Widget _heading(String text) => Padding(
     text,
     style: const TextStyle(
       color: AppColors.textPrimary,
-      fontSize: 14,
+      fontSize: 16,
       fontWeight: FontWeight.w700,
     ),
   ),
@@ -963,21 +941,30 @@ Widget _copyCard(
   child: Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-        decoration: BoxDecoration(
-          color: AppColors.sandHoverStrong,
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          language,
-          style: const TextStyle(
-            color: AppColors.textMuted,
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
+      // Figma 45:21 — the language badge and the Copy button share the top
+      // row, so the action is found before the block of text, not after it.
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.blueTint,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              language,
+              style: const TextStyle(
+                color: AppColors.blue,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
+            ),
           ),
-        ),
+          const Spacer(),
+          _copyButton(context, text),
+        ],
       ),
       const SizedBox(height: 10),
       SelectableText(
@@ -988,24 +975,31 @@ Widget _copyCard(
           height: 1.5,
         ),
       ),
-      Align(
-        alignment: Alignment.centerRight,
-        child: _copyButton(context, text),
-      ),
     ],
   ),
 );
 
-Widget _copyButton(BuildContext context, String text) => TextButton.icon(
-  onPressed: () {
-    Clipboard.setData(ClipboardData(text: text));
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Copied')));
-  },
-  icon: const Icon(Icons.copy, size: 16),
-  label: const Text('Copy'),
-);
+/// Figma 45:25 — a filled navy button, not a text link: copying the exact
+/// affiliation is the one thing this screen exists to make easy.
+Widget _copyButton(BuildContext context, String text, {String label = 'Copy'}) {
+  return FilledButton(
+    onPressed: () {
+      Clipboard.setData(ClipboardData(text: text));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Copied')));
+    },
+    style: FilledButton.styleFrom(
+      backgroundColor: AppColors.navy,
+      foregroundColor: Colors.white,
+      minimumSize: const Size(0, 32),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ),
+    child: Text(label),
+  );
+}
 
 Widget _brandTag(String text, {bool dark = false}) => Padding(
   padding: const EdgeInsets.only(right: 10),

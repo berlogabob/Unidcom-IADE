@@ -6,7 +6,7 @@ import '../widgets/panels.dart';
 import 'welcome_pack_content.dart';
 
 const _sectionGroups = [
-  ('Start', [('start', 'Welcome Pack 2026')]),
+  ('Start', [('start', 'Getting started')]),
   (
     'Communication',
     [('signature', 'Email signature'), ('social', 'Social media')],
@@ -15,14 +15,14 @@ const _sectionGroups = [
     'Support',
     [
       ('docs', 'Documents & forms'),
-      ('conf', 'Conferences'),
+      ('conf', 'Conferences & events'),
       ('oa', 'Open Access'),
       ('missions', 'Missions'),
     ],
   ),
   (
     'Obligations',
-    [('affiliation', 'Affiliation statement'), ('report', 'Report activity')],
+    [('affiliation', 'Affiliation & FCT'), ('report', 'Report activity')],
   ),
   ('Resources', [('logos', 'Logos & brand'), ('contacts', 'Contacts')]),
 ];
@@ -104,7 +104,8 @@ class WelcomePackPage extends StatelessWidget {
               child: Text(
                 _sectionGroups[groupIndex].$1.toUpperCase(),
                 style: const TextStyle(
-                  color: AppColors.textMuted,
+                  // Figma 91:2 — group labels recede behind the items.
+                  color: AppColors.textFaint,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.8,
@@ -119,29 +120,29 @@ class WelcomePackPage extends StatelessWidget {
     );
   }
 
+  // Figma S4 (node 91:3): the active item is a mint pill, not a left rule —
+  // fill #E6F6F2 / text #0A7A68 / radius 7, both already tokens.
   Widget _desktopLink(BuildContext context, String slug, String title) {
     final active = section == slug;
-    return Material(
-      color: active ? AppColors.sandHover : Colors.transparent,
-      child: InkWell(
-        onTap: () => _go(context, slug),
-        hoverColor: AppColors.sandHover,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          decoration: BoxDecoration(
-            border: Border(
-              left: BorderSide(
-                color: active ? AppColors.teal : Colors.transparent,
-                width: 3,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Material(
+        color: active ? AppColors.tealTint : Colors.transparent,
+        borderRadius: BorderRadius.circular(7),
+        child: InkWell(
+          onTap: () => _go(context, slug),
+          borderRadius: BorderRadius.circular(7),
+          hoverColor: AppColors.sandHoverStrong,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            child: Text(
+              title,
+              style: TextStyle(
+                color: active ? AppColors.tealDark : AppColors.textMuted,
+                fontSize: 12.5,
+                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
               ),
-            ),
-          ),
-          child: Text(
-            title,
-            style: TextStyle(
-              color: active ? AppColors.navy : AppColors.textMuted,
-              fontSize: 12.5,
-              fontWeight: active ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
         ),

@@ -22,9 +22,21 @@ env:
     visible: "Email"
     timeout: 20000
 
-- tapOn:
-    id: "Email"
-- inputText: "${MAESTRO_EMAIL}"
+# inputText occasionally races the focus change and lands nowhere, leaving the
+# field empty; the run then fails several steps later on "missing email or
+# phone", which reads like a credentials problem. Retry until the text is
+# actually in the field.
+- repeat:
+    times: 3
+    while:
+      notVisible: "${MAESTRO_EMAIL}"
+    commands:
+      - tapOn:
+          id: "Email"
+      - inputText: "${MAESTRO_EMAIL}"
+- assertVisible:
+    text: "${MAESTRO_EMAIL}"
+    label: "Email landed in the field"
 - tapOn:
     id: "Password"
 - inputText: "${MAESTRO_PASSWORD}"
@@ -36,7 +48,7 @@ env:
 
 # Landing on the Welcome pack is the only proof the credentials were accepted.
 - extendedWaitUntil:
-    visible: "Welcome to UNIDCOM"
+    visible: "Your first 5 steps"
     timeout: 20000
 
 - openLink: "${BASE_URL}/#/app/requests"
