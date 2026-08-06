@@ -7,7 +7,7 @@ Welcome. This short guide explains how to check and confirm your UNIDCOM/IADE re
 1. Open the [researcher portal](https://berlogabob.github.io/Unidcom-IADE/), or follow the **Sign in with your ORCID iD** link on your own page on the [public website](https://berlogabob.github.io/unidcom-site/people/). Select **Sign in with ORCID iD**. RIMS matches your account to your researcher profile using your ORCID iD.
    - Signing in requires an ORCID iD **already on file against your UNIDCOM profile**. If it is not, sign-in will fail with a message saying so — email <unidcom@iade.pt> and it will be added.
    - Everything in the portal needs a session. The **Welcome Pack** is the exception — it is open to everyone, signed in or not, at `/app/welcome/start`, so you can read the onboarding material before you have an account.
-   - The portal is desktop-first for the pilot: use a wide-screen browser window. On narrow/mobile screens the portal pages are not yet reachable from the navigation.
+   - The portal is designed for a wide screen and is easier to use on one. It does work on a phone: the account menu at the top right reaches every portal page, though the side navigation collapses to a row of chips.
 2. Signing in lands you on the **Welcome Pack**. Open the user chip (your avatar and name) at the top right for a menu to **Overview**, **Support requests**, **Welcome pack**, **My profile**, **Public site**, and **Sign out**. Select **My profile** (`/app/profile`). The status chip at the top tells you where your profile is in the process:
    - **Profile not confirmed** — your profile is still a draft.
    - **Awaiting UNIDCOM approval** — you have confirmed it and it is waiting for review.
@@ -24,7 +24,7 @@ On wide screens, **My profile** sits under a tab bar — Overview | Outputs | Su
 
 - **Overview** (`/app/home`) is your dashboard: outputs count, active requests, profile status, and quick links.
 - **Support requests** (`/app/requests`) is where you ask for DPD, Open Access, or Mission support — start a new request, attach a budget and checklist, and track its status.
-- **Welcome pack** (`/app/welcome/start`) has onboarding material — email signature, social media, documents and forms, conferences, Open Access, missions, the UNIDCOM affiliation statement, activity reporting, logos, and contacts.
+- **Welcome pack** (`/app/welcome/start`) has onboarding material, in five groups: **Getting started**; Email signature and Social media; Documents & forms, Conferences & events, Open Access and Missions; Affiliation & FCT and Report activity; Logos & brand and Contacts.
 
 ## What happens next?
 

@@ -26,7 +26,7 @@
   ("8 / 9", "Success criteria met", "1 pending, 0 failed"),
   ("365", "Outputs approved", "from 0 at baseline"),
   ("184", "Profiles approved", "574 audited changes"),
-  ("49", "Automated tests", "plus 3 E2E flows"),
+  ("49", "Automated tests", "plus 4 E2E flows"),
 ))
 
 #callout(title: "The one thing needed from you", tone: "warn")[
@@ -131,7 +131,7 @@ the table records where each one lives.
     ([W3], [UNIDCOM Admin], [Review queue, merge tooling, data browser, dashboard, settings]),
     ([W3], [Synchronisation engine], [Approval-driven RLS visibility — §4]),
     ([W3], [Reporting engine], [Typst edge function producing the institutional PDF]),
-    ([W4], [Testing], [49 automated tests + 3 end-to-end flows; CI gates every deploy]),
+    ([W4], [Testing], [49 automated tests + 4 end-to-end flows; CI gates every deploy]),
     ([W4], [Bug fixing], [Zero known blockers; the notable finds are in §6]),
     ([W4], [Demonstration], [Script ready; awaiting cohort]),
   ),
@@ -206,7 +206,7 @@ the pilot needed it.
     ),
     (
       [Per-area authentication gate],
-      [The portal requires a session; the public directory and the Welcome Pack stay open, so a prospective member can read the onboarding material before they have an account.],
+      [The portal requires a session. The Welcome Pack stays open, so a prospective member can read the onboarding material before they have an account.],
     ),
     (
       [Accessibility corrections],
@@ -269,7 +269,7 @@ an automated test.
   gutter: 14pt,
   [
     #fact("Automated tests", "49, all passing")
-    #fact("End-to-end flows", "3, run against live data")
+    #fact("End-to-end flows", "4, run against live data")
     #fact("Migrations", "30, each reviewed before applying")
     #fact("Routes", "24")
   ],
@@ -281,9 +281,11 @@ an automated test.
   ],
 )
 
-The three end-to-end flows exercise the journeys that matter: the publication
+The four end-to-end flows exercise the journeys that matter: the publication
 highlight round-trip (write, reload, undo), the full support-request lifecycle
-through to administrator approval, and the ORCID failure path. Each runs
+through to administrator approval, the ORCID failure path, and the
+authentication gate itself --- that an anonymous visitor is turned away and a
+signed-in one lands where they should. Each runs
 against the live database and cleans up after itself.
 
 = 8. Risks and what is needed
@@ -321,10 +323,11 @@ against the live database and cleans up after itself.
 = 9. Addendum — changes since 6 August
 
 #callout(title: "Why this section exists", tone: "info")[
-  Everything above was measured on 6 August and is left exactly as delivered.
-  The architecture changed later the same day, in a way that turns §4's
-  "deviation" into a plain "met". Rather than rewrite the record, the change is
-  set out here with its own date.
+  The architecture changed later on 6 August, in a way that turns §4's
+  "deviation" into a plain "met". §4's argument is left exactly as delivered —
+  it was sound on the evidence available when it was written — and what changed
+  is set out here with its own date. Plain counts elsewhere in the document have
+  been corrected in place rather than contradicted from here.
 ]
 
 == What changed
@@ -356,6 +359,11 @@ The two systems were joined into one flow, and their roles separated:
   ),
 ))
 
+The Welcome Pack was also re-implemented directly from Carmela's Figma rather
+than from the HTML export, once the design file became readable through the API.
+Section §5 credits the design as hers; that remains true, and the implementation
+is now measured against the source rather than an intermediate.
+
 == Effect on the ninth criterion
 
 Criterion 5, _automatic synchronisation with the website_, was scored *Met
@@ -373,9 +381,10 @@ nightly run, stated in the site footer, and can be collapsed on demand.
 
 == Corrections to figures above
 
-#fact("End-to-end flows", "4, not 3 — an auth-gate flow was added covering the anonymous bounce and the post-login landing")
-#fact("People published", "183, not 184 — the approval gate excluded one merged duplicate record")
-#fact("Automated tests", "49, unchanged")
+Plain counts have been corrected in place above; only the figure that changed
+*meaning* is restated here.
+
+#fact("People published", "183 on the website, not the 184 approved in the database — the approval gate excluded one merged duplicate record")
 
 == What did not change
 

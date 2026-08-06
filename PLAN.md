@@ -39,6 +39,11 @@ subagent's self-report.
 
 ## 2. Baseline snapshot (2026-08-04, live DB)
 
+This table is the **starting** measurement and is deliberately not updated —
+progress is the delta against it. For current figures re-run the queries; as of
+2026-08-06 they read 184 people (183 published), 365 outputs all approved, 26
+with an ORCID iD, and 21 of 46 integrated members without one.
+
 | Metric | Baseline | Query |
 |---|---|---|
 | People | 184 | `select count(*) from people;` |
@@ -115,8 +120,10 @@ Task row format: `- [ ] task — owner — acceptance check`
 | Pilot demonstration | — | held, minuted | demo date recorded here |
 
 Status 2026-08-04: all criteria except the demonstration are met or code-complete.
-Live values: 362/362 outputs approved · 184/184 profiles approved · 26/184 ORCID
-· 1,456 candidates staged · public site approval-gated (verified). Report format
+Values as of 2026-08-04: 362/362 outputs approved · 184/184 profiles approved · 26/184 ORCID
+· 1,456 candidates staged · public site approval-gated (verified).
+**As of 2026-08-06:** 365/365 outputs approved · 184 profiles approved, 183 published
+· 26/184 ORCID · 1,457 candidates staged · site live and indexable. Report format
 confirmed against the institutionally reviewed `RAW_DATA/reports/UNIDCOM_Scientific_Outputs_(2025)__v2.0.pdf`
 — that document is this function's own output, so the format was aligned by
 construction; the broader annual "Relatório" (.docx) is a Phase-4 document per
@@ -195,7 +202,11 @@ reviews. Tick only on measured acceptance.
 
 Source of truth: `RAW_DATA/TemplatesFromCarmela/unidcom-{admin,researcher}.html`.
 Figma (same design, added 2026-08-05): https://www.figma.com/design/Ai1eR4QkCBlY57xQVpwbCT/UNIDCOM?node-id=0-1&m=dev
-— not machine-readable without Figma MCP/API token; templates drive implementation.
+— ~~not machine-readable without Figma MCP/API token; templates drive implementation.~~
+**Updated 2026-08-06 (P13):** readable via the REST API with a PAT carrying
+`file_content:read`. The file has a page per screen (S0–S4, A1–A4) plus a design
+system page; node IDs are quotable in briefs. The Welcome pack was implemented
+straight from it. Templates still drive the screens nobody has re-cut in Figma.
 Branch `redesign/carmela-ui`. Executors: codex CLI + haiku subagents; orchestrator
 reviews diffs and runs acceptance checks. Full plan + design decisions:
 `~/.claude/plans/implement-new-ui-design-expressive-pony.md`. Tick only after
@@ -319,7 +330,9 @@ Resolved by making Hugo the sole public face and this app the portal. See §1.
 - [x] P12.1 Auth gate inverted — `needsAuth` is now `location != '/login' && !startsWith('/app/welcome')`. The directory is the live internal view. Route-guard tests rewritten.
 - [x] P12.2 Every login lands on `/app/welcome/start`. Removed the duplicate `context.go('/people')` in `_signIn` — the router's redirect owns the landing, and deciding it in two places is how it broke. Connect-ORCID's *link* return still lands on `/app/profile`.
 - [x] P12.3 Four entry points added to the Hugo site: nav + footer login, an "Are you X?" note on person pages, and a `/researchers/` page. The person-page note is gated on `people.orcid` — the broker rejects unknown iDs, so 26 of the 183 published profiles get the invitation and 157 get a contact-the-office note.
-- [x] P12.4 Site left preview mode — approval-gated and indexable. Cost one profile (184 → 183); projects and publications unchanged. `sync.yml`'s `PREVIEW` was `!= 'false'`, which is **true** on the cron run, so the nightly sync had always published unapproved records; now opt-in only.
+- [x] P12.4 Site left preview mode — approval-gated and indexable. Cost one profile (184 → 183); projects and publications unchanged.
+  **Corrected account (2026-08-06):** an earlier commit message called the nightly sync a leak. It was not. Preview on the cron run was *deliberate* — `sync.yml` said "Preview defaults to true on the nightly run too, until curation is done" — and the site was noindexed and bannered throughout. Four bot syncs ran under it, all correctly in preview: `4e1df8f` (28 Jul), `63f82f5` (30 Jul), `5339334` (1 Aug), `7263ecd` (6 Aug).
+  The real defect was the **exit**: `PREVIEW: ${{ github.event.inputs.preview != 'false' }}` is true whenever inputs are absent, and a cron run sends none. Going live therefore required editing the workflow — and had anyone gone live without that edit, the next 04:00 run would have silently reverted the site to unapproved content and put `noindex` back. Now `== 'true'`, so preview is opt-in and the cron cannot re-enter it.
 - [x] P12.5 `.maestro/auth_gate.yaml` — anonymous bounce + post-login landing + no gated nav offered anonymously.
 
 **Repair pass, same day** — the change broke things it was supposed to fix:
@@ -329,7 +342,7 @@ Resolved by making Hugo the sole public face and this app the portal. See §1.
 - [x] P12.8 `alias.html` emitted `noindex, nofollow` unconditionally — written for preview builds, but on a live site it stopped crawlers following the old WordPress URLs to their canonical pages. Now gated on the preview flag.
 - [x] P12.9 `web/robots.txt` added: the gated portal was crawlable and would compete with the real site in search.
 - [x] P12.10 Dead code removed (`_SignedOutView` ×2, unreachable once the routes were gated); bare `/app/welcome` now redirects instead of 404ing.
-- [x] P12.11 Docs reconciled: both `DEMO.md` files, `unidcom-site/README.md`, `ONBOARDING.md`, this file, and a dated addendum in the delivery report. `unidcom-site/DEMO.md` had been telling the presenter to tick *preview*, which would have re-`noindex`ed the live site mid-demo.
+- [x] P12.11 Docs reconciled: both `DEMO.md` files, `unidcom-site/README.md`, `ONBOARDING.md`, this file, and a dated addendum in the delivery report. `unidcom-site/DEMO.md` had been telling the presenter to tick *preview*, which would have re-`noindex`ed the live site mid-demo. **Overtaken the same day** by the restyle and the pixelframes merge — see P13.4.
 
 **Not a security hole, checked:** `report_data()` is granted to `anon` and never
 filters `approval_status`, but it is `SECURITY INVOKER`, so `outputs_read`
@@ -340,7 +353,30 @@ filters `approval_status`, but it is `SECURITY INVOKER`, so `outputs_read`
 touches ~15 imports and every SDD brief for no behavioural gain. Read it as
 "the directory", not "publicly visible".
 
-Open, non-blocking: E2E-in-CI job (deploy CI gates analyze/test only); ornith/pi tool-calling debug; Figma token rotation (the stored PAT only has `current_user:read`, so it cannot read the file — the Welcome-pack Figma restyle is blocked on a new one with `file_content:read`); repo-root untracked files (`.gitattributes`, session `.txt`, `graphify-out/`).
+### P13 — Welcome pack restyled to Figma; site live (2026-08-06)
+
+The Figma became readable (a PAT with `file_content:read`), so the Welcome pack
+was implemented from the design rather than from the HTML export. File
+`Ai1eR4QkCBlY57xQVpwbCT`, page **S4 — Welcome Pack**, frame `44:2`.
+
+Every colour the design uses was already a token — the palette was right and
+the deltas were layout and type.
+
+- [x] P13.1 Side nav (`91:3`): active item is a mint pill — fill `#E6F6F2`, text `#0A7A68`, radius 7 — not a sand fill plus a 3px teal left rule. Group labels drop to `#B4B3B0` (`91:2`) so the items lead.
+- [x] P13.2 Section header (`45:19`/`45:20`): title and lead sit on the page background with the cards below, not inside one enclosing card. Title 18 → 22, lead 13 → 14, sub-headings 14 → 16. The per-section eyebrow is gone — the side nav already names the group.
+- [x] P13.3 Copy cards (`45:21`): the language badge and a filled navy Copy button (`45:25`) share the top row, so the action is found before the block of text; PT leads EN.
+- [x] P13.4 **§8's conflict rule invoked for the first time.** "Figma is newer than the HTML export and wins on conflict" overrode three shipped user-facing labels: "Welcome Pack 2026" → **Getting started**, "Conferences" → **Conferences & events**, "Affiliation statement" → **Affiliation & FCT**. Section titles followed: start → "Getting started", affiliation → "UNIDCOM affiliation", logos → "Logos & brand assets". Docs naming the old labels were corrected with this entry.
+- [x] P13.5 The four E2E flows re-anchor their post-login assertion on "Your first 5 steps" (the hero text changed).
+- [x] P13.6 **E2E login hardened.** `inputText` raced the focus change and left the email field empty; the run then failed several steps later on "missing email or phone", reading like a credentials problem. `featured_star` failed 1 run in 2. Now retried until the text is in the field — four flows, two consecutive clean passes.
+- [x] P13.7 Site merged to `main` and deployed. `robots.txt` `Allow: /` + sitemap, zero `noindex`, `/researchers/` live, portal `robots.txt` `Disallow: /`. `pixelframes-landing` merged in the same pass.
+- [x] P13.8 Merge hazard caught: three nightly syncs had landed on `main` meanwhile. `_meta.json` conflicted and `people.json` **auto-merged**, which would have blended 184-person preview data with the 183-person approved set. Resolved by regenerating from the database rather than picking a side.
+
+Open, non-blocking: E2E-in-CI job (deploy CI gates analyze/test only); ornith/pi
+tool-calling debug; **rotate the Figma PAT** (it has been pasted into a session
+transcript); repo-root untracked files (`.gitattributes`, session `.txt`,
+`graphify-out/`, `.config/`, `.flutter`, `.pi-runs/`); the PixelFrames subsite
+deploys by FTP outside CI and ships live `[… TBD]` placeholder copy on a now-
+indexable site.
 
 ## 9. Out of scope / Phase 2+
 

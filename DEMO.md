@@ -87,12 +87,13 @@ The portal is gated — `/login` and the Welcome Pack are its only anonymous scr
 ## Numbers to quote
 
 Refresh from the live database immediately before the demonstration
-(queries in PLAN.md §2). Values as of 2026-08-04:
+(queries in PLAN.md §2). Values as of 2026-08-06:
 
-- **184** researchers in RIMS
-- **26** researchers linked to ORCID
-- **362** scientific outputs — **362 approved** (100%, audit-trailed)
-- **1,456** ORCID publication candidates staged for claiming
+- **184** researchers in RIMS — **183** published on the website (one merged duplicate)
+- **26** researchers linked to ORCID; **21 of the 46 integrated members** have no iD yet
+- **365** scientific outputs — **365 approved** (100%, audit-trailed)
+- **76** of those qualify as publications for the website; the other 289 are activity records
+- **1,457** ORCID publication candidates staged for claiming
 
 ## Q&A preparation
 
