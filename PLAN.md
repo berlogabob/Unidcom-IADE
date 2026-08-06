@@ -78,7 +78,7 @@ Task row format: `- [ ] task — owner — acceptance check`
 
 - [x] Maestro flow — ✅ 2026-08-04 resolved as: `.maestro/featured_star.yaml` already covers authenticated E2E (password login + DB write + reload persistence). ORCID OAuth itself cannot be safely automated (third-party login), so validate→claim→approve is covered by the one-time manual production check instead. Limitation accepted.
 - [x] Dart/Deno tests for new state machine + report section — ✅ 2026-08-04: deploy workflow now gates on `flutter analyze` + `flutter test` before building; `deno test` (9 passing) run locally, report function deploys manually
-- [ ] Bug-fix pass from W2–W3 findings — codex — zero known blockers list
+- [x] Bug-fix pass from W2–W3 findings — codex/haiku — ✅ 2026-08-06 (P10.3): known-blocker list closed — mobile portal now reachable via the account menu; welcome-pack document labels made honest (no fake download links until the secretariat supplies assets); request cards + triage rows given `MergeSemantics` (a11y + E2E visibility); triage table drops secondary columns <1400px so Approve stays reachable; `person_id` insert bug and portal-unreachable-from-nav found by the final review and fixed pre-merge. Remaining known gaps are tracked as `ponytail:` debt, none pilot-blocking.
 - [x] Demo script (walkthrough matching PDF §5 success criteria) — claude — ✅ 2026-08-04: `DEMO.md` (routes verified against the app); dry-run still to be held
 
 **W4 KPI:** CI fully green; demo dry-run done.
@@ -252,6 +252,18 @@ password only in gitignored .maestro/.env); E2E hardening: MergeSemantics on req
 cards/triage rows (a11y + testability), individual button semantics kept on actions,
 triage table drops secondary columns <1400px so actions stay reachable; both flows
 green end-to-end against live DB with audit verified. P6 CLOSED.
+
+### P10 — Pilot readiness (2026-08-06)
+
+- [x] P10.1 Auth gate ON — orch — ✅ `_loginDisabled` replaced by per-area `_needsAuth()`: `/app/*` requires a session, public directory **and** `/app/welcome/*` stay anonymous (welcome pack is pre-login onboarding material). Redirect matrix verified by anonymous Maestro crawl; both logged-in E2E flows still green.
+- [x] P10.2 DEMO.md + ONBOARDING.md revalidated against the redesigned UI — sonnet — ✅ navigation rewritten for the top-nav/user-chip/admin-sidebar/portal-tabs; demo gained the support-request and Overview steps; onboarding gained a "Beyond your profile" section + the desktop-first and login-required notes. No contractual strings touched.
+- [x] P10.3 W4 bug-fix pass — see the W4 row above.
+- [x] P10.4a Institutional report generated from live data — orch — ✅ 24-page PDF (458 KB) for 2025: 335 outputs, per-type executive summary, full APA references with quality flags. Reproducible across 3 runs. **Note:** the first invocation after a cold start returns `WORKER_RESOURCE_LIMIT`; retry succeeds (~28 MB wasm boot). Warm-up call before any demo.
+- [x] P10.4b Report brand alignment — haiku — Typst templates still carried the deleted `#FF2A13`; realigned to navy/teal so the FCT-facing deliverable matches the app.
+- [ ] P10.4c Cohort definition (§5) — **needs Hande/Rui** (W1 row still open; the only true blocker left for September).
+- [ ] P10.4d Demo dry-run — user schedules; walkthrough is executable as written.
+
+Open, non-blocking: E2E-in-CI job (deploy CI gates analyze/test only); ornith/pi tool-calling debug; Figma token rotation; repo-root untracked files (`.gitattributes`, session `.txt`, `graphify-out/`).
 
 ## 9. Out of scope / Phase 2+
 
