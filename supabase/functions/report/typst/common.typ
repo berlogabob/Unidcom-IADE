@@ -4,12 +4,13 @@
 // Keep the local CLI pinned to 0.14.2 too; 0.15 changes inline-box baselines and would
 // silently shift the badge pills.
 
-#let brand = rgb("#FF2A13") // matches _brandRed in lib/main.dart
-#let ink = rgb("#1A1A1A")
-#let muted = rgb("#5A5A5A")
-#let rule-color = rgb("#E3E3E3")
-#let callout-bg = rgb("#F6F7F8")
-#let zebra = rgb("#FAFAFA")
+#let brand = rgb("#16213A") // navy, matches AppColors.navy in lib/theme/tokens.dart
+#let accent = rgb("#00B49B") // teal, matches AppColors.teal in lib/theme/tokens.dart
+#let ink = rgb("#16213A")
+#let muted = rgb("#888680")
+#let rule-color = rgb("#E2E1DC")
+#let callout-bg = rgb("#F5F4F0")
+#let zebra = rgb("#FAF9F5")
 
 // ponytail: no icon glyph on callouts. No emoji font is loaded (a 🧼 would be tofu),
 // and the brand-red left bar plus the bold title already mark the block. The `icon`
@@ -60,7 +61,7 @@
   linebreak()
   text(size: 14pt, weight: 400, fill: muted, meta.subtitle)
   v(0.6em)
-  block(above: 0.4em, below: 1em, line(length: 100%, stroke: 2pt + brand))
+  block(above: 0.4em, below: 1em, line(length: 100%, stroke: 2pt + accent))
   par(meta.scope)
 }
 
@@ -130,7 +131,7 @@
   radius: 3pt,
   // 0.14 takes the box baseline from its bottom edge; 0.15 changed this. Explicit.
   baseline: 0.15em,
-  fill: if kind == "state" { rgb("#FFF0ED") } else { rgb("#EFEFEF") },
+  fill: if kind == "state" { rgb("#FDF0DC") } else { rgb("#EFEEEA") },
   text(
     size: 7.5pt,
     weight: 600,
