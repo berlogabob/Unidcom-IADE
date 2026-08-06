@@ -9,7 +9,7 @@
 // GET ?action=start&return_to=…  (Authorization: user JWT)
 //   -> {url}: ORCID authorize URL whose state is an HMAC-bound link token.
 // GET ?code&state                (ORCID browser redirect)
-//   state = plain return URL          -> sign-in flow
+//   state = signin|nonce|return       -> sign-in flow
 //   state = link|user|exp|return|sig  -> link flow
 //
 // verify_jwt = false (config.toml): ORCID's redirect carries no JWT; the
@@ -17,11 +17,13 @@
 // action — it is called via fetch from the app origin; the OAuth callback
 // is a top-level navigation and needs none.
 
-const ALLOWED_RETURN = [
-  /^https:\/\/berlogabob\.github\.io\/Unidcom-IADE\/$/,
-  /^http:\/\/localhost(:\d+)?\/$/,
-  /^http:\/\/127\.0\.0\.1(:\d+)?\/$/,
-];
+import {
+  isAllowedReturn,
+  parseLinkState as parseLinkStateWith,
+  parseSignInState,
+  withNonce,
+} from "./state.ts";
+import type { LinkState } from "./state.ts";
 
 const ALLOWED_ORIGIN = [
   /^https:\/\/berlogabob\.github\.io$/,
@@ -89,16 +91,7 @@ async function sign(data: string): Promise<string> {
     .join("");
 }
 
-type LinkState = { userId: string; returnTo: string };
-
-async function parseLinkState(state: string): Promise<LinkState | null> {
-  const parts = state.split("|");
-  if (parts.length !== 5 || parts[0] !== "link") return null;
-  const [, userId, exp, returnTo, sig] = parts;
-  if (await sign(`link|${userId}|${exp}|${returnTo}`) !== sig) return null;
-  if (Number(exp) < Date.now() / 1000) return null;
-  return { userId, returnTo };
-}
+const parseLinkState = (state: string) => parseLinkStateWith(state, sign);
 
 function authorizeUrl(clientId: string, state: string): string {
   const u = new URL("https://orcid.org/oauth/authorize");
@@ -120,7 +113,7 @@ async function handleStart(req: Request, url: URL): Promise<Response> {
       headers: { "Content-Type": "application/json", ...corsHeaders(req) },
     });
   const returnTo = url.searchParams.get("return_to") ?? "";
-  if (!ALLOWED_RETURN.some((re) => re.test(returnTo))) {
+  if (!isAllowedReturn(returnTo, SB)) {
     return json(400, { error: "bad return_to" });
   }
   // The caller's JWT proves which account is linking.
@@ -177,11 +170,15 @@ Deno.serve(async (req) => {
 
   const state = url.searchParams.get("state") ?? "";
   const link = await parseLinkState(state);
-  const returnTo = link?.returnTo ?? state;
+  const signIn = link ? null : parseSignInState(state);
+  const returnTo = link?.returnTo ?? signIn?.returnTo ?? "";
   // Hard allowlist so this can't be an open redirector.
-  if (!ALLOWED_RETURN.some((re) => re.test(returnTo))) {
+  if (!isAllowedReturn(returnTo, SB)) {
     return new Response("bad state", { status: 400 });
   }
+  // Echoed back on success so the app can prove this callback belongs to the
+  // browser that started the flow — see state.ts and _orcidNonce in main.dart.
+  const nonce = signIn?.nonce ?? "";
   const fail = (msg: string) =>
     Response.redirect(
       `${returnTo}?orcid_error=${encodeURIComponent(msg)}`,
@@ -219,7 +216,7 @@ Deno.serve(async (req) => {
   // --- sign-in flow: deterministic resolution ---
   // 2. Registry gate: only known researchers get a session.
   const rows = await (await fetch(
-    `${SB}/rest/v1/people?select=id,auth_user_id&orcid=eq.${orcid}`,
+    `${SB}/rest/v1/people?select=id,auth_user_id&orcid=eq.${encodeURIComponent(orcid)}`,
     { headers: admin },
   )).json();
   if (!Array.isArray(rows) || rows.length === 0) {
@@ -273,5 +270,8 @@ Deno.serve(async (req) => {
   });
   if (!linkRes.ok) return fail("could not create sign-in link");
   const { hashed_token } = await linkRes.json();
-  return Response.redirect(`${returnTo}?token_hash=${hashed_token}`, 302);
+  return Response.redirect(
+    withNonce(`${returnTo}?token_hash=${hashed_token}`, nonce),
+    302,
+  );
 });

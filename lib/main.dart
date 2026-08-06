@@ -17,6 +17,7 @@ import 'app/requests_page.dart';
 import 'app/settings_page.dart';
 import 'app/welcome_pack.dart';
 import 'data/supabase.dart' as data;
+import 'orcid_nonce.dart';
 import 'public/cluster_page.dart';
 import 'public/conferences.dart';
 import 'public/lab_page.dart';
@@ -74,14 +75,32 @@ Future<void> main() async {
   // a PKCE exchange on it and throw.
   final tokenHash = Uri.base.queryParameters['token_hash'];
   if (tokenHash != null) {
-    try {
-      await Supabase.instance.client.auth.verifyOTP(
-        type: OtpType.magiclink,
-        tokenHash: tokenHash,
-      );
-      await data.claimPersonByOrcid();
-    } catch (_) {
-      // F5 replays the consumed one-time token; the persisted session wins.
+    // Login-CSRF guard. `state` used to be a bare return URL, so an attacker
+    // could finish their OWN ORCID authorization, capture the code, and hand a
+    // victim a link that silently signed the victim's browser in *as the
+    // attacker* — after which the victim's profile edits, publications and
+    // support requests all went into the attacker's account.
+    //
+    // The broker now echoes back the nonce we put in `state`. Only the browser
+    // that started the flow knows it, so a callback we did not initiate is
+    // refused here. This check is the one that matters: the broker cannot make
+    // it, having no session of its own.
+    final expected = takeOrcidNonce();
+    final returned = Uri.base.queryParameters['orcid_nonce'];
+    if (expected != null && expected.isNotEmpty && expected != returned) {
+      _orcidError =
+          'That sign-in link did not come from this browser, so it was '
+          'ignored. Start again from the Sign in page.';
+    } else {
+      try {
+        await Supabase.instance.client.auth.verifyOTP(
+          type: OtpType.magiclink,
+          tokenHash: tokenHash,
+        );
+        await data.claimPersonByOrcid();
+      } catch (_) {
+        // F5 replays the consumed one-time token; the persisted session wins.
+      }
     }
   }
   // Back from the Connect ORCID link flow: land on the (now-linked) profile.
@@ -107,7 +126,9 @@ Future<void> main() async {
   // /login would drop the message silently — the failure most of the pilot
   // cohort will hit, since a researcher whose iD isn't on file yet gets
   // exactly this redirect.
-  _orcidError = Uri.base.queryParameters['orcid_error'];
+  // ??=, not =: the nonce mismatch above already set a reason, and it must not
+  // be overwritten by the (absent) broker error.
+  _orcidError ??= Uri.base.queryParameters['orcid_error'];
 
   runApp(const UnidcomApp());
 }
@@ -307,13 +328,17 @@ class _LoginScreenState extends State<LoginScreen> {
     final returnTo = kIsWeb
         ? '${Uri.base.origin}${Uri.base.path}'
         : 'https://berlogabob.github.io/Unidcom-IADE/'; // mobile deep links: follow-up
+    // signin|<nonce>|<returnTo> — the broker echoes the nonce back so main()
+    // can prove the callback belongs to this browser. See the guard there.
+    final nonce = issueOrcidNonce();
+    final state = nonce.isEmpty ? returnTo : 'signin|$nonce|$returnTo';
     launchUrl(
       Uri.https('orcid.org', '/oauth/authorize', {
         'client_id': _orcidClientId,
         'response_type': 'code',
         'scope': 'openid',
         'redirect_uri': '$_supabaseUrl/functions/v1/orcid-auth',
-        'state': returnTo,
+        'state': state,
       }),
       webOnlyWindowName:
           '_self', // not a popup — the session must land in this tab
