@@ -228,21 +228,21 @@ Widget _documentsSection() => _section(
         title: 'Support Request Form (FPA)',
         description:
             'Fill in and sign before any conference, publication or mission. Mandatory for all financial support requests.',
-        download: '↓ Download DOCX',
+        download: 'DOCX · request from the secretariat',
       ),
       _downloadCard(
         icon: '📕',
         title: 'Standards & Support Manual',
         description:
             'Complete guide with all rules, support types, eligibility criteria and UNIDCOM procedures for 2026.',
-        download: '↓ Download PDF',
+        download: 'PDF · request from the secretariat',
       ),
       _downloadCard(
         icon: '📊',
         title: 'Semester Activity Plan',
         description:
             'Excel table to plan and report your upcoming activities: conferences, publications, missions and projects.',
-        download: '↓ Download XLSX',
+        download: 'XLSX · request from the secretariat',
       ),
     ]),
     _heading('How to use the Semester Plan'),
@@ -751,6 +751,8 @@ Widget _networkCard({
   ),
 );
 
+// ponytail: No real assets in the repo yet — swap these labels for real
+// download links when the secretariat supplies the files.
 Widget _downloadCard({
   required String icon,
   required String title,

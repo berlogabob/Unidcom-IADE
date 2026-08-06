@@ -50,14 +50,34 @@ class _AppShellState extends State<AppShell> {
       (item) => item.prefixes.any(path.startsWith),
     );
     final selectedIndex = index < 0 ? 0 : index;
-    // Mobile app bar + bottom nav — unchanged account actions (portal pages
-    // are reachable there only by URL; see I1 note on the desktop-only fix).
+    // Portal menu items & handler — shared between mobile and desktop (portal
+    // pages (/app/home, /app/requests*, /app/welcome/*, ...) now reachable
+    // on mobile via PopupMenuButton; see I1 fix).
+    final portalMenuItems = const [
+      PopupMenuItem(value: 'overview', child: Text('Overview')),
+      PopupMenuItem(value: 'requests', child: Text('Support requests')),
+      PopupMenuItem(value: 'welcome', child: Text('Welcome pack')),
+      PopupMenuItem(value: 'profile', child: Text('My profile')),
+      PopupMenuItem(value: 'signout', child: Text('Sign out')),
+    ];
+    void handlePortalMenu(String value) {
+      if (value == 'overview') context.go('/app/home');
+      if (value == 'requests') context.go('/app/requests');
+      if (value == 'welcome') context.go('/app/welcome/start');
+      if (value == 'profile') context.go('/app/profile');
+      if (value == 'signout') {
+        Supabase.instance.client.auth.signOut();
+      }
+    }
+    // Mobile app bar + bottom nav — now includes researcher portal via
+    // PopupMenuButton (I1).
     final sessionActions = hasSession
         ? [
-            IconButton(
+            PopupMenuButton<String>(
               tooltip: 'My profile',
               icon: const Icon(Icons.account_circle),
-              onPressed: () => context.go('/app/profile'),
+              onSelected: handlePortalMenu,
+              itemBuilder: (context) => portalMenuItems,
             ),
             IconButton(
               tooltip: 'Sign out',
@@ -80,25 +100,8 @@ class _AppShellState extends State<AppShell> {
         ? [
             PopupMenuButton<String>(
               tooltip: 'My profile',
-              onSelected: (value) {
-                if (value == 'overview') context.go('/app/home');
-                if (value == 'requests') context.go('/app/requests');
-                if (value == 'welcome') context.go('/app/welcome/start');
-                if (value == 'profile') context.go('/app/profile');
-                if (value == 'signout') {
-                  Supabase.instance.client.auth.signOut();
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'overview', child: Text('Overview')),
-                PopupMenuItem(
-                  value: 'requests',
-                  child: Text('Support requests'),
-                ),
-                PopupMenuItem(value: 'welcome', child: Text('Welcome pack')),
-                PopupMenuItem(value: 'profile', child: Text('My profile')),
-                PopupMenuItem(value: 'signout', child: Text('Sign out')),
-              ],
+              onSelected: handlePortalMenu,
+              itemBuilder: (context) => portalMenuItems,
               child: FutureBuilder<Map<String, dynamic>?>(
                 future: _person,
                 builder: (context, snapshot) {
