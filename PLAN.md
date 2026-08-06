@@ -126,6 +126,24 @@ end-to-end check (DEMO.md §2–4), demo dry-run + demonstration.
 
 _To be fixed in W1 (names + N). Placeholder: N = 10 researchers with ORCID iDs._
 
+**Data readiness (measured 2026-08-06) — read this before picking the cohort:**
+
+| Metric | Value | Query |
+|---|---|---|
+| Active people | 184 | `select count(*) from people where status <> 'inactive';` |
+| …with an ORCID iD on file | 26 | `… and orcid is not null and orcid <> ''` |
+| …with a linked login | 3 | `… and auth_user_id is not null` |
+| Integrated members | 46 | `… and membership_type = 'integrated'` |
+| **Integrated members WITHOUT an ORCID iD** | **21** | `… and membership_type='integrated' and (orcid is null or orcid='')` |
+
+A researcher whose iD is not in `people.orcid` **cannot sign in** — the broker
+returns "No UNIDCOM profile is registered for ORCID iD …" (`orcid-auth/index.ts:227`).
+As of P11 that message is finally shown to them (it used to be swallowed), but
+the fix is data, not code: **populate `people.orcid` for every cohort member
+before onboarding day.** Admins can find them with the "Missing ORCID" filter
+on the people list. Prefer cohort members who already have an iD on file
+(26 available) or budget an admin pass to add the missing ones.
+
 ## 6. RLS design note — website "sync" (W1 deliverable, executes in W3)
 
 The original approval-driven policies already exist, commented out, in
@@ -262,6 +280,24 @@ green end-to-end against live DB with audit verified. P6 CLOSED.
 - [x] P10.4b Report brand alignment — haiku — Typst templates still carried the deleted `#FF2A13`; realigned to navy/teal so the FCT-facing deliverable matches the app.
 - [ ] P10.4c Cohort definition (§5) — **needs Hande/Rui** (W1 row still open; the only true blocker left for September).
 - [ ] P10.4d Demo dry-run — user schedules; walkthrough is executable as written.
+
+### P11 — ORCID onboarding robustness (2026-08-06)
+
+Found by tracing the pilot's first user action after the redesign: the ORCID
+broker's **failure** return-trip was silently swallowed. The error redirect
+lands on the app root with no fragment, so with the new per-area gate an
+anonymous visitor stayed on `/people` and `LoginScreen` — the only screen that
+renders the reason — never mounted. Under the old `_loginDisabled` hack every
+visitor was forced to `/login`, which is why it was never seen. ~half the likely
+cohort (21/46 integrated members lack an ORCID iD, §5) would have hit it on day one.
+
+- [x] P11.1 Surface broker errors — orch — ✅ 01a9758: `_orcidError` read in `main()`, forces `initialLocation: '/login'`, consumed once by `LoginScreen` so a stale param can't replay.
+- [x] P11.2 `orcid_linked` no longer claims success after a swallowed `refreshSession()` failure — orch — ✅ 01a9758 (flag now set from the real session state).
+- [x] P11.3 First route-guard test coverage — haiku — ✅ 23a858b: `needsAuth` made public, 23 routes asserted incl. near-misses (`/appfoo`, `/app`). 49 tests total.
+- [x] P11.4 `.maestro/orcid_error.yaml` — orch — ✅ 95e54b8: asserts the reason renders and is not replayed. The OAuth round-trip can't be automated, but this half is just a query param.
+- [x] P11.4b **a11y**: the login error `Text` never reached Flutter web's semantics tree — screen readers were as blind to it as the test was. Now `Semantics(container, liveRegion)` so it is announced — ✅ 95e54b8.
+- [x] P11.5 Cohort data-readiness numbers recorded — §5 above.
+- [ ] **Manual check (human, one-time):** a real ORCID click-through with a registered iD. Third-party OAuth can't be automated; everything either side of it now is.
 
 Open, non-blocking: E2E-in-CI job (deploy CI gates analyze/test only); ornith/pi tool-calling debug; Figma token rotation; repo-root untracked files (`.gitattributes`, session `.txt`, `graphify-out/`).
 
