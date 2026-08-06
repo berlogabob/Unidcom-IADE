@@ -93,9 +93,10 @@ Future<void> main() async {
   runApp(const UnidcomApp());
 }
 
-// ponytail: login gate OFF for today (campus wifi blocking auth). Flip to
-// false to restore the login screen. Anon visitors get the public view.
-const _loginDisabled = true;
+// Public directory stays anonymous; the researcher/admin portal (/app/*)
+// needs a session. Welcome pack stays public — it's pre-login onboarding info.
+bool _needsAuth(String location) =>
+    location.startsWith('/app/') && !location.startsWith('/app/welcome');
 
 final _router = GoRouter(
   // Fresh ORCID sign-in lands on the (just-claimed) own profile.
@@ -106,10 +107,8 @@ final _router = GoRouter(
   redirect: (context, state) {
     final hasSession = Supabase.instance.client.auth.currentSession != null;
     final onLogin = state.matchedLocation == '/login';
-    if (!_loginDisabled) {
-      if (!hasSession) return onLogin ? null : '/login';
-      if (onLogin) return '/people';
-    }
+    if (!hasSession && _needsAuth(state.matchedLocation)) return '/login';
+    if (hasSession && onLogin) return '/people';
     if (state.matchedLocation == '/') return '/people';
     if (state.matchedLocation == '/app/admin' && !data.isAdmin) {
       return '/people';
