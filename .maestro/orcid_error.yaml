@@ -1,0 +1,48 @@
+# E2E for the ORCID broker's failure return-trip.
+#
+# The orcid-auth broker redirects failures to the app ROOT with the reason in a
+# query param and NO fragment (hash routing keeps go_router's location after
+# the '#'). The app must land on /login and show the reason — a researcher whose
+# iD isn't on file yet gets exactly this redirect, and before the fix they were
+# dropped on the public People list with no message at all.
+#
+# Unlike the ORCID OAuth round-trip itself, this half IS automatable: the return
+# trip is just a query param, so no third-party login is involved.
+#
+#   flutter build web --dart-define=E2E=true
+#   python3 -m http.server 8123 --directory build/web
+#   maestro test .maestro/orcid_error.yaml
+url: http://localhost:8123
+name: ORCID broker error is shown, not swallowed
+env:
+  BASE_URL: http://localhost:8123
+---
+- clearState
+# No '#' — exactly how the broker returns. initialLocation must send us to
+# /login rather than the default /people.
+- openLink: "${BASE_URL}/?orcid_error=No%20UNIDCOM%20profile%20is%20registered%20for%20ORCID%20iD%200000-0002-1825-0097.%20Contact%20an%20admin."
+- extendedWaitUntil:
+    visible: "Password"
+    timeout: 30000
+    label: "Landed on the login screen, not the public list"
+- assertVisible:
+    # Fragment from the first rendered line only — the message wraps, and
+    # Maestro's regex '.' does not cross a newline.
+    text: ".*No UNIDCOM profile.*"
+    label: "Broker's reason is visible to the researcher"
+
+# Consumed once: navigating away and back must not resurrect a stale error
+# (the query param outlives the navigation).
+- openLink: "${BASE_URL}/?v=stale#/people"
+- extendedWaitUntil:
+    visible: "1\\d\\d people"
+    timeout: 30000
+- openLink: "${BASE_URL}/?v=stale#/login"
+- extendedWaitUntil:
+    visible: "Password"
+    timeout: 20000
+- assertNotVisible:
+    # Fragment from the first rendered line only — the message wraps, and
+    # Maestro's regex '.' does not cross a newline.
+    text: ".*No UNIDCOM profile.*"
+    label: "Stale broker error is not replayed"

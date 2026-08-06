@@ -393,10 +393,18 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
-                      Text(
-                        _error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
+                      // liveRegion so assistive tech announces the failure when
+                      // it appears; container:true because a bare Text here
+                      // never reached Flutter web's semantics tree at all —
+                      // screen readers and E2E alike were blind to it.
+                      Semantics(
+                        container: true,
+                        liveRegion: true,
+                        child: Text(
+                          _error!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
                         ),
                       ),
                     ],
