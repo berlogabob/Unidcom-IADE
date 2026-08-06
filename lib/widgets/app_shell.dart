@@ -39,6 +39,13 @@ class _AppShellState extends State<AppShell> {
     final admin = data.isAdmin;
     final session = Supabase.instance.client.auth.currentSession;
     final hasSession = session != null;
+
+    // Signed out, the only screen reachable is the Welcome pack — a researcher
+    // arriving from the public site before they have an account. The nav below
+    // points exclusively at gated routes, so showing it here would offer five
+    // links that all bounce straight back to /login.
+    if (!hasSession) return _anonymousShell(context);
+
     final destinations = [
       _NavItem('/people', Icons.people, 'People'),
       _NavItem(
@@ -83,41 +90,25 @@ class _AppShellState extends State<AppShell> {
       }
     }
     // Mobile app bar + bottom nav — now includes researcher portal via
-    // PopupMenuButton (I1).
-    final sessionActions = hasSession
-        ? [
-            PopupMenuButton<String>(
-              tooltip: 'My profile',
-              icon: const Icon(Icons.account_circle),
-              onSelected: handlePortalMenu,
-              itemBuilder: (context) => portalMenuItems,
-            ),
-            IconButton(
-              tooltip: 'Sign out',
-              icon: const Icon(Icons.logout),
-              onPressed: () => Supabase.instance.client.auth.signOut(),
-            ),
-          ]
-        : [
-            IconButton(
-              tooltip: 'Public site',
-              icon: const Icon(Icons.public),
-              onPressed: _openPublicSite,
-            ),
-            IconButton(
-              tooltip: 'Sign in',
-              icon: const Icon(Icons.login),
-              onPressed: () => context.go('/login'),
-            ),
-          ];
+    // PopupMenuButton (I1). No signed-out variant: _anonymousShell handled it.
+    final sessionActions = [
+      PopupMenuButton<String>(
+        tooltip: 'My profile',
+        icon: const Icon(Icons.account_circle),
+        onSelected: handlePortalMenu,
+        itemBuilder: (context) => portalMenuItems,
+      ),
+      IconButton(
+        tooltip: 'Sign out',
+        icon: const Icon(Icons.logout),
+        onPressed: () => Supabase.instance.client.auth.signOut(),
+      ),
+    ];
     // Desktop wide top-nav account area — adds the researcher portal entry
     // points (I1): Overview/Support requests/Welcome pack/My profile/Public
-    // site/Sign out behind one menu when signed in. Signed out, the only
-    // screen here is the Welcome pack itself, so the useful links are the way
-    // back to the public site and the way forward into the portal.
-    final desktopAccountActions = hasSession
-        ? [
-            PopupMenuButton<String>(
+    // site/Sign out behind one menu.
+    final desktopAccountActions = [
+      PopupMenuButton<String>(
               tooltip: 'My profile',
               onSelected: handlePortalMenu,
               itemBuilder: (context) => portalMenuItems,
@@ -176,20 +167,6 @@ class _AppShellState extends State<AppShell> {
                   );
                 },
               ),
-            ),
-          ]
-        : [
-            TextButton(
-              onPressed: _openPublicSite,
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.textOnDarkMuted,
-              ),
-              child: const Text('Public site'),
-            ),
-            IconButton(
-              tooltip: 'Sign in',
-              icon: const Icon(Icons.login),
-              onPressed: () => context.go('/login'),
             ),
           ];
 
@@ -338,6 +315,63 @@ class _AppShellState extends State<AppShell> {
           body: widget.child,
         );
       },
+    );
+  }
+
+  /// Chrome for the one screen an anonymous visitor can reach: the Welcome
+  /// pack. Two links only — back to the public site they came from, or on
+  /// into the portal. The wordmark leaves for the public site rather than
+  /// tapping through to /people, which would bounce to /login.
+  Widget _anonymousShell(BuildContext context) {
+    final wordmark = Theme.of(context).textTheme.bodyMedium;
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        toolbarHeight: 56,
+        titleSpacing: 28,
+        backgroundColor: AppColors.sidebar,
+        foregroundColor: AppColors.textOnDark,
+        title: InkWell(
+          onTap: _openPublicSite,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'UNIDCOM',
+                style: wordmark?.copyWith(
+                  color: AppColors.textOnDark,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                ' IADE',
+                style: wordmark?.copyWith(
+                  color: AppColors.textOnDarkMuted,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: _openPublicSite,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.textOnDarkMuted,
+            ),
+            child: const Text('Public site'),
+          ),
+          IconButton(
+            tooltip: 'Sign in',
+            icon: const Icon(Icons.login),
+            onPressed: () => context.go('/login'),
+          ),
+          const SizedBox(width: 12),
+        ],
+      ),
+      body: widget.child,
     );
   }
 

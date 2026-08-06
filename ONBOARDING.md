@@ -4,10 +4,11 @@ Welcome. This short guide explains how to check and confirm your UNIDCOM/IADE re
 
 ## Get started
 
-1. Open the [RIMS pilot site](https://berlogabob.github.io/Unidcom-IADE/). On wide screens, click the **Sign in** icon at the top right; or go straight to the Login page (`/login`). Select **Sign in with ORCID iD**. RIMS matches your account to your researcher profile using your ORCID iD.
-   - The researcher portal (your profile, publications, and support requests) requires signing in. The **Welcome Pack** is the exception — it is open to everyone, signed in or not, at `/app/welcome/start`.
+1. Open the [researcher portal](https://berlogabob.github.io/Unidcom-IADE/), or follow the **Sign in with your ORCID iD** link on your own page on the [public website](https://berlogabob.github.io/unidcom-site/people/). Select **Sign in with ORCID iD**. RIMS matches your account to your researcher profile using your ORCID iD.
+   - Signing in requires an ORCID iD **already on file against your UNIDCOM profile**. If it is not, sign-in will fail with a message saying so — email <unidcom@iade.pt> and it will be added.
+   - Everything in the portal needs a session. The **Welcome Pack** is the exception — it is open to everyone, signed in or not, at `/app/welcome/start`, so you can read the onboarding material before you have an account.
    - The portal is desktop-first for the pilot: use a wide-screen browser window. On narrow/mobile screens the portal pages are not yet reachable from the navigation.
-2. Once signed in, open the user chip (your avatar and name) at the top right for a menu to **Overview**, **Support requests**, **Welcome pack**, **My profile**, and **Sign out**. Select **My profile** (`/app/profile`). The status chip at the top tells you where your profile is in the process:
+2. Signing in lands you on the **Welcome Pack**. Open the user chip (your avatar and name) at the top right for a menu to **Overview**, **Support requests**, **Welcome pack**, **My profile**, **Public site**, and **Sign out**. Select **My profile** (`/app/profile`). The status chip at the top tells you where your profile is in the process:
    - **Profile not confirmed** — your profile is still a draft.
    - **Awaiting UNIDCOM approval** — you have confirmed it and it is waiting for review.
    - **Approved** — UNIDCOM has reviewed and approved it.
@@ -27,7 +28,9 @@ On wide screens, **My profile** sits under a tab bar — Overview | Outputs | Su
 
 ## What happens next?
 
-UNIDCOM reviews your confirmed profile and any publications you claim. Once approved, the content appears on the public site and is included in institutional reports.
+UNIDCOM reviews your confirmed profile and any publications you claim. Once approved, the content is included in institutional reports and is published to the [public website](https://berlogabob.github.io/unidcom-site/).
+
+The website is rebuilt from the database overnight, so approved changes appear there the following day rather than instantly. The date it was last updated is in the site footer.
 
 ## FAQ
 

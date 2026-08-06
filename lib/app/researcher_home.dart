@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
@@ -59,10 +58,8 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    if (Supabase.instance.client.auth.currentSession == null) {
-      return const _SignedOutView();
-    }
-
+    // No signed-out branch: /app/home is auth-gated in main.dart, so an
+    // anonymous visitor never reaches this widget.
     return AsyncView<_HomeData>(
       future: _data,
       builder: (context, data) {
@@ -121,34 +118,6 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
   }
 }
 
-class _SignedOutView extends StatelessWidget {
-  const _SignedOutView();
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: AppColors.pageBg,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
-          child: Panel(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Sign in to view your researcher home'),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () => context.go('/login'),
-                  child: const Text('Sign in'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _NoProfileView extends StatelessWidget {
   const _NoProfileView();

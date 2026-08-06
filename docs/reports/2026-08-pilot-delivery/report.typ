@@ -317,3 +317,70 @@ against the live database and cleans up after itself.
   the most valuable near-term investment is not a feature: at 26 of 184 people,
   a single source of truth is only as good as ORCID coverage.
 ]
+
+= 9. Addendum — changes since 6 August
+
+#callout(title: "Why this section exists", tone: "info")[
+  Everything above was measured on 6 August and is left exactly as delivered.
+  The architecture changed later the same day, in a way that turns §4's
+  "deviation" into a plain "met". Rather than rewrite the record, the change is
+  set out here with its own date.
+]
+
+== What changed
+
+A Hugo static site already existed in a sibling repository,
+#raw("berlogabob/unidcom-site"), generated from this same database. Section 4
+argued against a push pipeline on the understanding that the Flutter application
+_was_ the public website. That was wrong at the repository boundary, and the two
+surfaces overlapped: both served People, Projects and Outputs publicly, through
+two different privacy filters.
+
+The two systems were joined into one flow, and their roles separated:
+
+#scorecard((
+  (
+    "Public website",
+    "Hugo", "ok",
+    "Static site regenerated from RIMS nightly; approval-gated and indexable since 6 August",
+  ),
+  (
+    "Researcher portal",
+    "This app", "ok",
+    "Login and the Welcome Pack are its only anonymous screens; the directory is now the live internal view",
+  ),
+  (
+    "Entry point",
+    "The website", "ok",
+    "Nav, footer, every person page and a /researchers/ page link into the portal",
+  ),
+))
+
+== Effect on the ninth criterion
+
+Criterion 5, _automatic synchronisation with the website_, was scored *Met
+differently* in §2 because publication was a database policy rather than a job.
+Both mechanisms now exist and they agree: row-level security decides which rows
+an unauthenticated caller may read at all, and the nightly synchronisation
+regenerates the public site from exactly those rows, with its own field
+allowlist on top. On the terms the plan set — RIMS as the source of truth
+pushing validated information to a website — the criterion is now simply *Met*.
+
+The §4 argument still holds where it was aimed: a second copy of the truth is a
+real cost, and it is paid here in a synchronisation lag rather than in
+divergence, because approval remains the single gate. The lag is bounded by the
+nightly run, stated in the site footer, and can be collapsed on demand.
+
+== Corrections to figures above
+
+#fact("End-to-end flows", "4, not 3 — an auth-gate flow was added covering the anonymous bounce and the post-login landing")
+#fact("People published", "183, not 184 — the approval gate excluded one merged duplicate record")
+#fact("Automated tests", "49, unchanged")
+
+== What did not change
+
+The cohort is still unnamed, and it remains the only blocker on the September
+checklist. ORCID coverage is still 26 of the active researchers, 21 of the 46
+integrated members still lack an iD, and the portal's sign-in broker still
+refuses an iD it does not know — so the admin pass described on page 1 is
+needed before onboarding day whichever names are chosen.

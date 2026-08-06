@@ -38,6 +38,15 @@ env:
     visible: "Welcome to UNIDCOM"
     timeout: 20000
     label: "Welcome pack is reachable without a session"
+# Every other nav target is gated, so an anonymous visitor must not be offered
+# them: AppShell's directory nav and PortalShell's first three tabs both used
+# to render regardless of session, giving five links that all bounce to /login.
+- assertNotVisible:
+    text: "Support requests"
+    label: "No gated portal tab offered to an anonymous visitor"
+- assertNotVisible:
+    text: "Structure"
+    label: "No directory nav offered to an anonymous visitor"
 
 # 3. Sign in → land on the Welcome pack.
 - openLink: "${BASE_URL}/#/login"

@@ -1,0 +1,6 @@
+# This is the researcher portal, not the public site. Every route except
+# /login and the Welcome pack needs a session, so there is nothing here for a
+# crawler to read — and indexing it would put a login wall into search results
+# competing with the real public site at berlogabob.github.io/unidcom-site/.
+User-agent: *
+Disallow: /

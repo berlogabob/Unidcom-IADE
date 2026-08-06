@@ -13,11 +13,20 @@ website sync, institutional report, dashboard, demo.
 
 Corrections vs the PDF (agreed 2026-08-04):
 
-- The website is a **Flutter web SPA** (GitHub Pages) reading **live from
+- ~~The website is a **Flutter web SPA** (GitHub Pages) reading **live from
   Supabase Postgres** under RLS — not Hugo, not Sanity. "Automatic
   synchronisation with the website" therefore means **approval-driven RLS
   visibility**: anonymous visitors see only approved/validated content. No push
-  pipeline needed. A Sanity swap stays a Phase-2 option (§8).
+  pipeline needed. A Sanity swap stays a Phase-2 option (§8).~~
+  **Superseded 2026-08-06 (P12).** This was wrong at the repo boundary: a Hugo
+  site already existed in the sibling repo `berlogabob/unidcom-site`, and it is
+  now the public face. The pilot therefore has both mechanisms, and they agree —
+  RLS decides which rows an anonymous caller may read, and `scripts/sync.py`
+  regenerates the static site from exactly those rows nightly, with its own
+  field allowlist on top. The Flutter app is now the **portal**: `/login` and
+  `/app/welcome/*` are its only anonymous surfaces. The "automatic
+  synchronisation with the website" criterion is met by a real pipeline, not
+  only by a policy. Sanity remains unbuilt and unneeded — Hugo fills that slot.
 - **Ciência Vitae** direct integration is descoped for the pilot: ORCID is the
   single publication source (ResearchGate/Scopus deposit into ORCID; Ciência
   ids are already scraped from ORCID profiles into `people.ciencia_id`).
@@ -208,17 +217,17 @@ the acceptance command passes.
 - Note: DB drifted 184→183 people; featured_star.yaml's "184 people" login-proof assert needs a regex patch in P6.
 
 ### P2 — Restyle existing pages
-- [ ] T2.1 lib/widgets/panels.dart (Panel/AccentStatCard/StatusPill/TypeBadge/FilterPill) — codex — analyze + smoke test
-- [ ] T2.2 stat_tile restyle — haiku — dashboard renders
-- [ ] T2.3 detail_scaffold panel pass — codex — analyze/test green
-- [ ] T2.4 people_list — codex — renders
-- [ ] T2.5 outputs + output_row — codex — renders
-- [ ] T2.6 projects/structure/conferences — codex — render
-- [ ] T2.7 person_page dark profile band — codex — Maestro star green
-- [ ] T2.8 dashboard — codex — renders admin+anon
-- [ ] T2.9 admin_page/review_queue/merge — codex — render
-- [ ] T2.10 my_profile (pinned strings) — codex — grep hits unchanged
-- [ ] T2.11 reports/data_page — haiku — render
+- [x] T2.1 lib/widgets/panels.dart (Panel/AccentStatCard/StatusPill/TypeBadge/FilterPill) — codex — analyze + smoke test
+- [x] T2.2 stat_tile restyle — haiku — dashboard renders
+- [x] T2.3 detail_scaffold panel pass — codex — analyze/test green
+- [x] T2.4 people_list — codex — renders
+- [x] T2.5 outputs + output_row — codex — renders
+- [x] T2.6 projects/structure/conferences — codex — render
+- [x] T2.7 person_page dark profile band — codex — Maestro star green
+- [x] T2.8 dashboard — codex — renders admin+anon
+- [x] T2.9 admin_page/review_queue/merge — codex — render
+- [x] T2.10 my_profile (pinned strings) — codex — grep hits unchanged
+- [x] T2.11 reports/data_page — haiku — render
 
 ### P3 — Support requests
 - [x] T3.1 migration support_requests + RLS — codex draft, orch line-by-line review — ✅ 5aaae96, applied via MCP, advisors: pre-existing warnings only
@@ -273,7 +282,7 @@ green end-to-end against live DB with audit verified. P6 CLOSED.
 
 ### P10 — Pilot readiness (2026-08-06)
 
-- [x] P10.1 Auth gate ON — orch — ✅ `_loginDisabled` replaced by per-area `_needsAuth()`: `/app/*` requires a session, public directory **and** `/app/welcome/*` stay anonymous (welcome pack is pre-login onboarding material). Redirect matrix verified by anonymous Maestro crawl; both logged-in E2E flows still green.
+- [x] P10.1 Auth gate ON — orch — ✅ `_loginDisabled` replaced by per-area `_needsAuth()`: `/app/*` requires a session, public directory **and** `/app/welcome/*` stay anonymous (welcome pack is pre-login onboarding material). Redirect matrix verified by anonymous Maestro crawl; both logged-in E2E flows still green. **Inverted by P12** — the directory is no longer anonymous.
 - [x] P10.2 DEMO.md + ONBOARDING.md revalidated against the redesigned UI — sonnet — ✅ navigation rewritten for the top-nav/user-chip/admin-sidebar/portal-tabs; demo gained the support-request and Overview steps; onboarding gained a "Beyond your profile" section + the desktop-first and login-required notes. No contractual strings touched.
 - [x] P10.3 W4 bug-fix pass — see the W4 row above.
 - [x] P10.4a Institutional report generated from live data — orch — ✅ 24-page PDF (458 KB) for 2025: 335 outputs, per-type executive summary, full APA references with quality flags. Reproducible across 3 runs. **Note:** the first invocation after a cold start returns `WORKER_RESOURCE_LIMIT`; retry succeeds (~28 MB wasm boot). Warm-up call before any demo.
@@ -299,13 +308,45 @@ cohort (21/46 integrated members lack an ORCID iD, §5) would have hit it on day
 - [x] P11.5 Cohort data-readiness numbers recorded — §5 above.
 - [ ] **Manual check (human, one-time):** a real ORCID click-through with a registered iD. Third-party OAuth can't be automated; everything either side of it now is.
 
-Open, non-blocking: E2E-in-CI job (deploy CI gates analyze/test only); ornith/pi tool-calling debug; Figma token rotation; repo-root untracked files (`.gitattributes`, session `.txt`, `graphify-out/`).
+### P12 — One entry point: public site → login → portal (2026-08-06)
+
+The two repos were unconnected islands. `grep -rn "unidcom-site"` in this repo
+returned zero hits and no Hugo template linked to the app, so a researcher who
+landed on the public site had no path to editing their own record. Worse, both
+served People/Projects/Outputs publicly through *different* privacy gates.
+Resolved by making Hugo the sole public face and this app the portal. See §1.
+
+- [x] P12.1 Auth gate inverted — `needsAuth` is now `location != '/login' && !startsWith('/app/welcome')`. The directory is the live internal view. Route-guard tests rewritten.
+- [x] P12.2 Every login lands on `/app/welcome/start`. Removed the duplicate `context.go('/people')` in `_signIn` — the router's redirect owns the landing, and deciding it in two places is how it broke. Connect-ORCID's *link* return still lands on `/app/profile`.
+- [x] P12.3 Four entry points added to the Hugo site: nav + footer login, an "Are you X?" note on person pages, and a `/researchers/` page. The person-page note is gated on `people.orcid` — the broker rejects unknown iDs, so 26 of the 183 published profiles get the invitation and 157 get a contact-the-office note.
+- [x] P12.4 Site left preview mode — approval-gated and indexable. Cost one profile (184 → 183); projects and publications unchanged. `sync.yml`'s `PREVIEW` was `!= 'false'`, which is **true** on the cron run, so the nightly sync had always published unapproved records; now opt-in only.
+- [x] P12.5 `.maestro/auth_gate.yaml` — anonymous bounce + post-login landing + no gated nav offered anonymously.
+
+**Repair pass, same day** — the change broke things it was supposed to fix:
+
+- [x] P12.6 The person-page CTA pointed at `#/app/profile`, but the redirect discards the intended location and every login lands on the Welcome pack. Repointed at `#/login` and reworded (decision: one landing rule, no `?next=`).
+- [x] P12.7 `AppShell` **and** `PortalShell` rendered gated nav to anonymous visitors — five links from the first screen a researcher sees, all bouncing to `/login`. `AppShell` now returns a minimal anonymous shell; `PortalShell` shows only the Welcome pack tab. Asserted in `auth_gate.yaml`.
+- [x] P12.8 `alias.html` emitted `noindex, nofollow` unconditionally — written for preview builds, but on a live site it stopped crawlers following the old WordPress URLs to their canonical pages. Now gated on the preview flag.
+- [x] P12.9 `web/robots.txt` added: the gated portal was crawlable and would compete with the real site in search.
+- [x] P12.10 Dead code removed (`_SignedOutView` ×2, unreachable once the routes were gated); bare `/app/welcome` now redirects instead of 404ing.
+- [x] P12.11 Docs reconciled: both `DEMO.md` files, `unidcom-site/README.md`, `ONBOARDING.md`, this file, and a dated addendum in the delivery report. `unidcom-site/DEMO.md` had been telling the presenter to tick *preview*, which would have re-`noindex`ed the live site mid-demo.
+
+**Not a security hole, checked:** `report_data()` is granted to `anon` and never
+filters `approval_status`, but it is `SECURITY INVOKER`, so `outputs_read`
+(narrowed by `20260805120000`) applies. The misleading comment in
+`20260729090000_orcid_works.sql` was corrected — it dated from the test period.
+
+`lib/public/` now holds the *internal* directory. Deliberately not renamed: it
+touches ~15 imports and every SDD brief for no behavioural gain. Read it as
+"the directory", not "publicly visible".
+
+Open, non-blocking: E2E-in-CI job (deploy CI gates analyze/test only); ornith/pi tool-calling debug; Figma token rotation (the stored PAT only has `current_user:read`, so it cannot read the file — the Welcome-pack Figma restyle is blocked on a new one with `file_content:read`); repo-root untracked files (`.gitattributes`, session `.txt`, `graphify-out/`).
 
 ## 9. Out of scope / Phase 2+
 
-- Sanity CMS as website layer (swap point: replace the Flutter SPA's PostgREST
-  reads with a RIMS→Sanity push; the approval-driven RLS boundary is the API
-  contract either way)
+- Sanity CMS as website layer — **slot filled by Hugo** (`unidcom-site`), which
+  is generated from RIMS rather than hand-authored. A Sanity swap would replace
+  `scripts/sync.py`'s target, not introduce a new architecture.
 - Ciência Vitae direct integration
 - Projects / Research Groups / Funding / PhD Students modules (PDF Phase 2)
 - News / Events / Calls / Newsletters (Phase 3)

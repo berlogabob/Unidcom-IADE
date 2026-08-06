@@ -135,7 +135,6 @@ final _router = GoRouter(
     final onLogin = state.matchedLocation == '/login';
     if (!hasSession && needsAuth(state.matchedLocation)) return '/login';
     if (hasSession && onLogin) return '/app/welcome/start';
-    if (state.matchedLocation == '/') return '/people';
     if (state.matchedLocation == '/app/admin' && !data.isAdmin) {
       return '/people';
     }
@@ -225,6 +224,13 @@ final _router = GoRouter(
         GoRoute(
           path: '/app/home',
           builder: (_, _) => const PortalShell(child: ResearcherHomePage()),
+        ),
+        // needsAuth treats bare /app/welcome as public, and the Hugo footer
+        // could plausibly link it — without this it is the one "public" path
+        // that 404s instead of resolving.
+        GoRoute(
+          path: '/app/welcome',
+          redirect: (_, _) => '/app/welcome/start',
         ),
         GoRoute(
           path: '/app/welcome/:section',

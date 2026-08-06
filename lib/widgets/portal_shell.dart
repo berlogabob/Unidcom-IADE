@@ -29,14 +29,21 @@ class _PortalShellState extends State<PortalShell> {
         if (constraints.maxWidth < 760) return widget.child;
 
         final path = GoRouterState.of(context).uri.path;
+        // Signed out, the Welcome pack is the only one of these a visitor can
+        // open — the other three are auth-gated, so offering them would be
+        // three tabs that bounce straight to /login.
+        final hasSession =
+            Supabase.instance.client.auth.currentSession != null;
         final tabs = [
-          ('Overview', '/app/home', path.startsWith('/app/home')),
-          ('Outputs', '/app/profile', path == '/app/profile'),
-          (
-            'Support requests',
-            '/app/requests',
-            path.startsWith('/app/requests'),
-          ),
+          if (hasSession) ...[
+            ('Overview', '/app/home', path.startsWith('/app/home')),
+            ('Outputs', '/app/profile', path == '/app/profile'),
+            (
+              'Support requests',
+              '/app/requests',
+              path.startsWith('/app/requests'),
+            ),
+          ],
           (
             'Welcome pack',
             '/app/welcome/start',
@@ -46,7 +53,7 @@ class _PortalShellState extends State<PortalShell> {
 
         return Column(
           children: [
-            if (Supabase.instance.client.auth.currentSession == null)
+            if (!hasSession)
               _profileBand()
             else
               FutureBuilder<Map<String, dynamic>?>(

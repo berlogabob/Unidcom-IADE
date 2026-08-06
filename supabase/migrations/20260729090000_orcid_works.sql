@@ -14,9 +14,16 @@ comment on column public.outputs.affiliation is
 
 create index outputs_affiliation_idx on public.outputs (affiliation);
 
--- Staging for works fetched from ORCID. The importer writes ONLY here: outputs_read
--- is `using (true)` during the test period and report_data() ignores approval_status,
--- so anything inserted straight into outputs is instantly public and in the next PDF.
+-- Staging for works fetched from ORCID. The importer writes ONLY here, so an
+-- unvetted work never lands in outputs.
+-- NOTE (2026-08-06): the original rationale here said outputs_read was
+-- `using (true)` during the test period and that report_data() ignores
+-- approval_status. The test period is over — 20260805120000_approval_visibility
+-- narrowed outputs_read to `approval_status = 'approved' or auth.uid() is not
+-- null`. report_data() genuinely never filters on approval_status, but it is
+-- SECURITY INVOKER, so that policy applies to it and an anonymous caller still
+-- cannot read unapproved rows through it. Staging remains the right design;
+-- the "instantly public" hazard it guarded against no longer exists.
 -- Grain is (person, work) — two IADE co-authors on one paper legitimately produce two
 -- candidates, which promote_output_candidate() collapses onto one output.
 create table public.output_candidates (

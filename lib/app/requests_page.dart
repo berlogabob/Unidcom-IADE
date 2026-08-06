@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/request_status.dart';
 import '../data/supabase.dart';
@@ -23,9 +22,8 @@ class _RequestsPageState extends State<RequestsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final hasSession = Supabase.instance.client.auth.currentSession != null;
-    if (!hasSession) return const _SignedOutView();
-
+    // No signed-out branch: /app/requests is auth-gated in main.dart, so an
+    // anonymous visitor never reaches this widget.
     return AsyncView<List<Map<String, dynamic>>>(
       future: _requests,
       builder: (context, requests) {
@@ -87,35 +85,6 @@ class _RequestsPageState extends State<RequestsPage> {
           ),
         );
       },
-    );
-  }
-}
-
-class _SignedOutView extends StatelessWidget {
-  const _SignedOutView();
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: AppColors.pageBg,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
-          child: Panel(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                mutedText(context, 'Sign in to view your support requests'),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () => context.go('/login'),
-                  child: const Text('Sign in'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
