@@ -54,19 +54,32 @@ so there is a bounded lag, stated in the site footer.
 
 This is the part most worth understanding before changing anything.
 
-**Row-level security decides which *rows* an unauthenticated caller may read.**
-See `supabase/migrations/20260805120000_approval_visibility.sql`: anonymous
-callers see only approved, publicly visible people, projects and outputs.
-Everything else in the portal requires a session.
+**Row-level security decides which *rows* a caller may read.** See
+`supabase/migrations/20260805120000_approval_visibility.sql`: only approved,
+publicly visible people, projects and outputs are readable without a session.
+
+**Grants decide which *tables* a role may touch at all.** Since
+`20260806150100_revoke_anon_public_schema.sql`, `anon` has **none** — no
+select, no write, on any table. Signing in uses GoTrue rather than PostgREST,
+so the login screen is unaffected.
 
 **`sync.py`'s allowlist decides which *fields* ever leave the database.** Every
 record is assembled by an explicit `pick()`, and `assert_whitelist()` fails the
 run if a record carries a key outside its declared set. `email`, `legal_name`,
 `auth_user_id`, `notes`, `total_budget` and `risk` are never even fetched.
+This is load-bearing on its own: the nightly workflow authenticates with the
+service key, which bypasses row-level security entirely.
 
-The second is load-bearing on its own: the nightly workflow authenticates with
-the service key, which bypasses row-level security entirely. RLS protects the
-portal's anonymous surface; the allowlist protects the website's.
+> **Why all three.** An earlier version of this document described only the
+> first and the third, and called them complementary. They are not: **RLS has
+> no column dimension.** A policy says which rows come back, never which
+> columns, so once the 2026-08-05 bulk approval made every `people` row
+> readable, every `people` *column* was readable too — 153 researcher email
+> addresses, `legal_name` and `notes`, to anyone holding the publishable key
+> that ships in the public JS bundle. `sync.py`'s careful field allowlist was
+> guarding one door while another stood open beside it. The grant layer is what
+> actually closes it. If a public directory is ever restored to the app,
+> re-grant **explicit columns** — never a bare `grant select on public.people`.
 
 A third, separate gate exists on the website only — a fail-closed content-type
 allowlist, because the database doubles as UNIDCOM's internal FCT reporting

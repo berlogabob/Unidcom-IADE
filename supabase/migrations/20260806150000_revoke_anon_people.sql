@@ -1,0 +1,36 @@
+-- Close an unauthenticated personal-data exposure.
+--
+-- people_read (20260805120000) gates ROWS: "approved and publicly visible, or
+-- any session". It has no column dimension, and PostgREST returns whatever
+-- columns the role is granted. After the 2026-08-05 bulk approval every row
+-- was readable, so every COLUMN of every row was readable by `anon` — using
+-- the publishable key that ships inside the public JS bundle:
+--
+--   GET /rest/v1/people?select=email&email=not.is.null  ->  153 rows
+--   GET /rest/v1/people?select=*&limit=1                ->  email, legal_name,
+--                                                            notes, auth_user_id,
+--                                                            join_date, exit_date, …
+--
+-- Nothing anonymous needs this table:
+--   * the Flutter app is gated — needsAuth() admits only /login and
+--     /app/welcome/*, neither of which reads people;
+--   * scripts/sync.py (the Hugo site's nightly build input) authenticates with
+--     the service key, which bypasses RLS and grants entirely;
+--   * the public website is static HTML and never contacts the database.
+--
+-- So this is a full revoke rather than a column allowlist. If a public
+-- directory is ever restored to the app, re-grant EXPLICIT COLUMNS —
+--   grant select (id, slug, preferred_name, bio, photo_url, orcid, ciencia_id,
+--                 phd, membership_type, status, integration_year)
+--     on public.people to anon;
+-- — and never a bare `grant select on public.people`, which is what created
+-- this hole. RLS alone cannot express "not the email column".
+revoke select on public.people from anon;
+
+-- Same columns, second path. report_data() is SECURITY INVOKER and the report
+-- edge function forwards the caller's Authorization header, so an anonymous
+-- caller reached people through it. It is also an unauthenticated DoS: the
+-- unfiltered call exceeds statement_timeout because v_output_issues carries an
+-- O(n^2) trigram self-join. Reports are an admin action behind a session;
+-- `authenticated` keeps its grant.
+revoke execute on function public.report_data(text, int, jsonb) from anon;
