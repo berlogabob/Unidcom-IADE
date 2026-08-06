@@ -50,6 +50,10 @@ const _orcidClientId = String.fromEnvironment(
 // Set in main() when an ORCID sign-in just completed; read once by _router.
 bool _orcidSignedIn = false;
 
+// Set in main() when the ORCID broker redirected back with a failure; routes
+// the app to /login and is consumed by LoginScreen so it shows exactly once.
+String? _orcidError;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -87,27 +91,43 @@ Future<void> main() async {
     try {
       await Supabase.instance.client.auth.refreshSession();
     } catch (_) {}
-    _orcidSignedIn = true;
+    // Only claim the profile landing if a session really survived: /app/profile
+    // is auth-gated, so flagging it after a failed refresh would bounce the
+    // user to /login and on to /people with no explanation.
+    _orcidSignedIn = Supabase.instance.client.auth.currentSession != null;
   }
+
+  // Broker failures come back as ?orcid_error= before the '#', so go_router
+  // never sees them. Read it here, not in LoginScreen.initState: anonymous
+  // visitors now stay on /people (see needsAuth), so LoginScreen would never
+  // mount and the message would be silently dropped — the failure most of the
+  // pilot cohort will hit, since a researcher whose iD isn't on file yet gets
+  // exactly this redirect.
+  _orcidError = Uri.base.queryParameters['orcid_error'];
 
   runApp(const UnidcomApp());
 }
 
 // Public directory stays anonymous; the researcher/admin portal (/app/*)
 // needs a session. Welcome pack stays public — it's pre-login onboarding info.
-bool _needsAuth(String location) =>
+bool needsAuth(String location) =>
     location.startsWith('/app/') && !location.startsWith('/app/welcome');
 
 final _router = GoRouter(
-  // Fresh ORCID sign-in lands on the (just-claimed) own profile.
-  initialLocation: _orcidSignedIn ? '/app/profile' : '/people',
+  // Fresh ORCID sign-in lands on the (just-claimed) own profile; a broker
+  // failure lands on /login, the only screen that can show the reason.
+  initialLocation: _orcidSignedIn
+      ? '/app/profile'
+      : _orcidError != null
+      ? '/login'
+      : '/people',
   refreshListenable: GoRouterRefreshStream(
     Supabase.instance.client.auth.onAuthStateChange,
   ),
   redirect: (context, state) {
     final hasSession = Supabase.instance.client.auth.currentSession != null;
     final onLogin = state.matchedLocation == '/login';
-    if (!hasSession && _needsAuth(state.matchedLocation)) return '/login';
+    if (!hasSession && needsAuth(state.matchedLocation)) return '/login';
     if (hasSession && onLogin) return '/people';
     if (state.matchedLocation == '/') return '/people';
     if (state.matchedLocation == '/app/admin' && !data.isAdmin) {
@@ -260,10 +280,13 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // Broker failures come back as ?orcid_error= before the '#' (hash routing),
-    // so go_router never sees it — Uri.base does.
-    final orcidError = Uri.base.queryParameters['orcid_error'];
-    if (orcidError != null) _error = orcidError;
+    // Read once and consume: the query param outlives the navigation (go_router
+    // only rewrites the fragment), so re-reading it would show a stale broker
+    // error every time the user came back to this screen.
+    if (_orcidError != null) {
+      _error = _orcidError;
+      _orcidError = null;
+    }
   }
 
   void _signInWithOrcid() {
