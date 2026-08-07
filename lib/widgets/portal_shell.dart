@@ -83,7 +83,7 @@ class _PortalShellState extends State<PortalShell> {
                                 border: Border(
                                   bottom: BorderSide(
                                     color: tab.$3
-                                        ? AppColors.teal
+                                        ? AppColors.tealDark
                                         : Colors.transparent,
                                     width: 2,
                                   ),
@@ -120,7 +120,7 @@ class _PortalShellState extends State<PortalShell> {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.profileBand,
-        border: Border(bottom: BorderSide(color: AppColors.teal, width: 2)),
+        border: Border(bottom: BorderSide(color: AppColors.tealDark, width: 2)),
       ),
       child: Center(
         child: ConstrainedBox(

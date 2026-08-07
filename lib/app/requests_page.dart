@@ -169,7 +169,7 @@ class _RequestCard extends StatelessWidget {
                   value: done / checklist.length,
                   minHeight: 4,
                   backgroundColor: AppColors.sandHoverStrong,
-                  valueColor: const AlwaysStoppedAnimation(AppColors.teal),
+                  valueColor: const AlwaysStoppedAnimation(AppColors.tealDark),
                 ),
               ),
               const SizedBox(height: 4),

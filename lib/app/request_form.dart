@@ -263,7 +263,7 @@ class _RequestFormPageState extends State<RequestFormPage> {
 
     if (!_loaded) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.teal),
+        child: CircularProgressIndicator(color: AppColors.tealDark),
       );
     }
     if (_loadError != null) {

@@ -14,14 +14,25 @@ abstract final class AppColors {
   // Text
   static const textPrimary = Color(0xFF16213A);
   static const textSecondary = Color(0xFF444240);
-  static const textMuted = Color(0xFF888680);
-  static const textFaint = Color(0xFFB4B3B0);
+  // Darkened 2026-08-07 to clear WCAG AA. The Figma values (#888680 / #B4B3B0)
+  // measured 3.64:1 and 2.10:1 on white and worse on the sand page background,
+  // against a 4.5:1 requirement — and textMuted is bound to bodySmall at 12px,
+  // the strictest case, in 53 places.
+  //
+  // Both now pass, which necessarily compresses the scale: a three-level grey
+  // on white can only span 4.5:1 to 21:1. Muted and faint are close in
+  // lightness now, so lean on size and weight for hierarchy, not on lightness.
+  static const textMuted = Color(0xFF6A6862); // 5.57:1 white / 5.06:1 sand
+  static const textFaint = Color(0xFF706E68); // 5.10:1 white / 4.63:1 sand
   static const textOnDark = Color(0xFFEEF1F6);
   static const textOnDarkMuted = Color(0xFF8A94A8);
 
   // Semantic
+  // Brand teal, from Carmela's Figma — left exactly as designed. It measures
+  // 2.62:1 on white, so it must not carry meaning on its own: anything a user
+  // has to *perceive* (an active tab underline, a spinner) uses tealDark.
   static const teal = Color(0xFF00B49B);
-  static const tealDark = Color(0xFF0A7A68);     // text on teal tint
+  static const tealDark = Color(0xFF0A7A68);     // 5.25:1 — text and UI on light
   static const amber = Color(0xFFF5A622);
   static const amberDark = Color(0xFF8A5A08);    // text on amber tint
   static const warn = Color(0xFFD49522);

@@ -48,7 +48,7 @@ class _AsyncViewState<T> extends State<AsyncView<T>> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
-            child: CircularProgressIndicator(color: AppColors.teal),
+            child: CircularProgressIndicator(color: AppColors.tealDark),
           );
         }
         if (snapshot.hasError) {

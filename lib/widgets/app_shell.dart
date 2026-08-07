@@ -142,7 +142,8 @@ class _AppShellState extends State<AppShell> {
                           child: Text(
                             _initials(name),
                             style: const TextStyle(
-                              color: Colors.white,
+                              // Navy on teal is 6.60:1; white was 2.62:1.
+                              color: AppColors.profileBand,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
