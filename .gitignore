@@ -14,8 +14,13 @@
 scripts/.env
 scripts/out/
 RAW_DATA/
-data/
-local_data/
+# Anchored. A bare `data/` matches a directory of that name at ANY depth, so it
+# silently ignored every new file in lib/data/ — which is where the data layer
+# lives. That is how failure.dart and timeout_client.dart reached main without
+# being committed, breaking the deploy: they existed locally, analyze passed
+# locally, and CI checked out a tree without them.
+/data/
+/local_data/
 
 
 
