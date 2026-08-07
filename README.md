@@ -37,7 +37,7 @@ flutter run -d chrome \
 
 ```sh
 flutter analyze
-flutter test            # 49 tests
+flutter test            # 69 tests
 ```
 
 ### End-to-end
@@ -93,13 +93,14 @@ The website's nightly sync is **not** in this repo — it lives in `unidcom-site
 
 ## Supabase
 
-`supabase/migrations/` holds 30 migrations: schema, row-level security, and the
+`supabase/migrations/` holds 32 migrations: schema, row-level security, and the
 audit triggers that write every status change to `change_log`. Two edge
 functions live in `supabase/functions/` — `orcid-auth` (the sign-in broker) and
 `report` (Typst → PDF). The report function has Deno tests:
 
 ```sh
 deno test supabase/functions/report/
+deno test supabase/functions/orcid-auth/
 ```
 
 ## Documentation
@@ -107,6 +108,8 @@ deno test supabase/functions/report/
 | | |
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | how both repositories fit together |
+| [OPERATIONS.md](OPERATIONS.md) | backups, secrets, access, incidents, supporting researchers |
+| [AUDIT.md](AUDIT.md) | 2026-08-07 review: what was fixed, what is still open |
 | [PLAN.md](PLAN.md) | pilot tracker, decisions and their rationale |
 | [ONBOARDING.md](ONBOARDING.md) | what a researcher joining the pilot needs to do |
 | [DEMO.md](DEMO.md) | demonstration script |

@@ -378,6 +378,21 @@ transcript); repo-root untracked files (`.gitattributes`, session `.txt`,
 deploys by FTP outside CI and ships live `[… TBD]` placeholder copy on a now-
 indexable site.
 
+### P14 — Audit remediation (2026-08-07)
+
+Full findings and the remaining backlog: **[AUDIT.md](AUDIT.md)**. Operational
+runbook, secrets and access registers: **[OPERATIONS.md](OPERATIONS.md)**.
+
+- [x] P14.1 `anon` revoked from the whole public schema. 153 researcher emails plus `legal_name`, `notes` and `auth_user_id` were readable unauthenticated: `people_read` gates rows, and RLS has no column dimension. `projects` leaked `total_budget`/`risk` the same way, and `anon` held INSERT/UPDATE/DELETE/TRUNCATE on all 27 tables.
+- [x] P14.2 ORCID login-CSRF closed with a browser-bound nonce; `localhost` dropped from the production return allowlist (302 before, 400 after); constant-time signature compare; escaped PostgREST filter. Broker's first 14 tests.
+- [x] P14.3 `sync.py` stops publishing unapproved `person_roles` — the only place the approval workflow was bypassed — and refuses to write if any entity count collapses.
+- [x] P14.4 Errors are classified and actionable, with a working retry and no internals in user-facing strings; `reportError` seam, root error guard, global timeout.
+- [x] P14.5 Lockfiles committed (`*.gitignore` had a bare `*.lock`, so no build was reproducible); `ci.yml` runs on pull requests — nothing was checked by a machine before `main`.
+- [x] P14.6 Palette raised to WCAG AA without touching Carmela's brand teal; 60 old WordPress researcher URLs now redirect instead of 404ing.
+- [ ] P14.7 **Backups cover 9 of 27 tables and `restore.py --wipe` cascades away 18 it cannot restore.** Highest remaining risk — see AUDIT.md.
+- [ ] P14.8 Bus factor: one person holds every critical account, including the ORCID developer app. OPERATIONS.md §1.
+- [ ] P14.9 Data-protection paperwork and an erasure path (`deletePerson` does not exist).
+
 ## 9. Out of scope / Phase 2+
 
 - Sanity CMS as website layer — **slot filled by Hugo** (`unidcom-site`), which
