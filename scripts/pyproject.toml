@@ -2,4 +2,12 @@
 name = "unidcom-scripts"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["httpx", "openpyxl", "python-dotenv", "supabase"]
+# Pinned, and uv.lock is committed: these run unattended on cron with the
+# service key, so "whatever resolves at 05:00 on Monday" is a supply-chain path
+# straight to the database.
+dependencies = [
+    "httpx>=0.27,<0.29",
+    "openpyxl>=3.1,<4",
+    "python-dotenv>=1.0,<2",
+    "supabase>=2.15,<3",
+]

@@ -1,0 +1,44 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@std/assert@1": "1.0.19",
+    "jsr:@std/internal@^1.0.12": "1.0.14",
+    "npm:@myriaddreamin/typst-ts-web-compiler@0.7.0": "0.7.0",
+    "npm:@myriaddreamin/typst.ts@0.7.0": "0.7.0_@myriaddreamin+typst-ts-web-compiler@0.7.0"
+  },
+  "jsr": {
+    "@std/assert@1.0.19": {
+      "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    },
+    "@std/internal@1.0.14": {
+      "integrity": "291516b3d4c35024d6ffbc0a9df5bf4c64116e05b50012cf846710152d2ffdf7"
+    }
+  },
+  "npm": {
+    "@myriaddreamin/typst-ts-web-compiler@0.7.0": {
+      "integrity": "sha512-nMwMcfOBy5pABPDuVM7/u8425SxhPUM+OJe6daqqgVOT3+neCTz4JKwx2L8XasfEHTNvd0cUI07LR9q5ADo7Gw=="
+    },
+    "@myriaddreamin/typst.ts@0.7.0_@myriaddreamin+typst-ts-web-compiler@0.7.0": {
+      "integrity": "sha512-JtO5Td/1QesH1IBKAZtbayFNK8u2sl3iz18Y67uYqBEdcXiu3z+wpZcDDKlmVJvAcCgSjHTnuk6ZLfkYclrGGQ==",
+      "dependencies": [
+        "@myriaddreamin/typst-ts-web-compiler",
+        "idb"
+      ],
+      "optionalPeers": [
+        "@myriaddreamin/typst-ts-web-compiler"
+      ]
+    },
+    "idb@7.1.1": {
+      "integrity": "sha512-gchesWBzyvGHRO9W8tzUWFDycow5gwjvFKfyV9FF32Y7F50yZMp7mP+T2mJIWFx49zicqyC4uefHM17o6xKIVQ=="
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:@myriaddreamin/typst-ts-web-compiler@0.7.0",
+      "npm:@myriaddreamin/typst.ts@0.7.0"
+    ]
+  }
+}

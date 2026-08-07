@@ -16,7 +16,9 @@ import 'app/researcher_home.dart';
 import 'app/requests_page.dart';
 import 'app/settings_page.dart';
 import 'app/welcome_pack.dart';
+import 'data/failure.dart';
 import 'data/supabase.dart' as data;
+import 'data/timeout_client.dart';
 import 'orcid_nonce.dart';
 import 'public/cluster_page.dart';
 import 'public/conferences.dart';
@@ -57,6 +59,20 @@ String? _postAuthLanding;
 String? _orcidError;
 
 Future<void> main() async {
+  // Nothing reported errors anywhere in this system: if the portal broke, the
+  // detection mechanism was a researcher emailing someone. These two hooks plus
+  // runZonedGuarded below are the whole net — see lib/data/failure.dart for the
+  // single seam a hosted reporter would plug into.
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    reportError(details.exception, details.stack, context: 'flutter');
+  };
+  runZonedGuarded(_boot, (error, stack) {
+    reportError(error, stack, context: 'uncaught');
+  });
+}
+
+Future<void> _boot() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // ponytail: Flutter web draws to a canvas, so UI tests see nothing until the
@@ -66,8 +82,22 @@ Future<void> main() async {
     SemanticsBinding.instance.ensureSemantics();
   }
 
-  // ignore: deprecated_member_use
-  await Supabase.initialize(url: _supabaseUrl, anonKey: _supabaseAnonKey);
+  // A bad key or a network failure at boot used to throw before runApp, so the
+  // researcher got a permanently blank white page with no message at all.
+  try {
+    await Supabase.initialize(
+      url: _supabaseUrl,
+      // ignore: deprecated_member_use
+      anonKey: _supabaseAnonKey,
+      httpClient: TimeoutClient(),
+    );
+  } catch (error, stack) {
+    reportError(error, stack, context: 'Supabase.initialize');
+    // Not the normal app: the router reads Supabase.instance on every redirect,
+    // so without a client there is nothing to route.
+    runApp(_StartupFailureApp(message: DataFailure.from(error).message));
+    return;
+  }
 
   // Hash URL strategy => the orcid-auth broker's ?token_hash sits before the
   // '#', invisible to go_router; Uri.base is the only place it exists. Never
@@ -269,6 +299,65 @@ final _router = GoRouter(
     ),
   ],
 );
+
+/// Shown when the app cannot start at all. Deliberately depends on nothing —
+/// no router, no Supabase, no theme lookup that could itself fail.
+class _StartupFailureApp extends StatelessWidget {
+  const _StartupFailureApp({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'UNIDCOM',
+      home: Scaffold(
+        backgroundColor: AppColors.pageBg,
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'UNIDCOM could not start',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Semantics(
+                    container: true,
+                    liveRegion: true,
+                    child: Text(
+                      message,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Reload the page. If it keeps happening, contact '
+                    'unidcom@iade.pt.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 12, color: AppColors.textFaint),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class UnidcomApp extends StatelessWidget {
   const UnidcomApp({super.key});

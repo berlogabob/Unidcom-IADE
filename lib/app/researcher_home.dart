@@ -62,6 +62,7 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
     // anonymous visitor never reaches this widget.
     return AsyncView<_HomeData>(
       future: _data,
+      retry: _load,
       builder: (context, data) {
         final person = data.person;
         if (person == null) return const _NoProfileView();

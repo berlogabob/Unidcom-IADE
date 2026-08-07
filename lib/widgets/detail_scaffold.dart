@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/failure.dart';
 import '../theme/tokens.dart';
 import 'panels.dart';
 
@@ -9,16 +10,41 @@ import 'panels.dart';
 /// preamble and a generic editor into each.
 
 /// FutureBuilder with the standard spinner/error preamble.
-class AsyncView<T> extends StatelessWidget {
-  const AsyncView({super.key, required this.future, required this.builder});
+///
+/// Pass [retry] to give the failure state a working Try again button. Without
+/// it the only way out of a failed screen is a browser reload, because callers
+/// hold their future in a `late final` field.
+class AsyncView<T> extends StatefulWidget {
+  const AsyncView({
+    super.key,
+    required this.future,
+    required this.builder,
+    this.retry,
+  });
 
   final Future<T> future;
   final Widget Function(BuildContext, T) builder;
 
+  /// Produces a fresh future. Called when the user asks to try again.
+  final Future<T> Function()? retry;
+
+  @override
+  State<AsyncView<T>> createState() => _AsyncViewState<T>();
+}
+
+class _AsyncViewState<T> extends State<AsyncView<T>> {
+  late Future<T> _future = widget.future;
+
+  @override
+  void didUpdateWidget(AsyncView<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.future != widget.future) _future = widget.future;
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<T>(
-      future: future,
+      future: _future,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -26,15 +52,76 @@ class AsyncView<T> extends StatelessWidget {
           );
         }
         if (snapshot.hasError) {
-          return Center(
-            child: Text(
-              snapshot.error.toString(),
-              style: const TextStyle(color: AppColors.red),
-            ),
+          final failure = DataFailure.from(snapshot.error!);
+          reportError(failure, snapshot.stackTrace, context: 'AsyncView');
+          return FailureView(
+            failure: failure,
+            onRetry: widget.retry == null
+                ? null
+                : () => setState(() => _future = widget.retry!()),
           );
         }
-        return builder(context, snapshot.data as T);
+        return widget.builder(context, snapshot.data as T);
       },
+    );
+  }
+}
+
+/// The standard "it didn't load" state: what happened, in plain words, and a
+/// way out.
+class FailureView extends StatelessWidget {
+  const FailureView({super.key, required this.failure, this.onRetry});
+
+  final DataFailure failure;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final signedOut = failure.kind == FailureKind.signedOut;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                failure.kind == FailureKind.offline
+                    ? Icons.wifi_off
+                    : Icons.error_outline,
+                size: 32,
+                color: AppColors.textMuted,
+              ),
+              const SizedBox(height: 12),
+              // liveRegion: Flutter web draws to a canvas, so without this a
+              // screen reader is never told the page failed to load.
+              Semantics(
+                container: true,
+                liveRegion: true,
+                child: Text(
+                  failure.message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (signedOut)
+                FilledButton(
+                  onPressed: () => context.go('/login'),
+                  child: const Text('Sign in'),
+                )
+              else if (onRetry != null && failure.retryable)
+                FilledButton(onPressed: onRetry, child: const Text('Try again'))
+              else if (onRetry != null)
+                TextButton(onPressed: onRetry, child: const Text('Try again')),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

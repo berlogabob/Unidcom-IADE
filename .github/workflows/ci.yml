@@ -1,0 +1,51 @@
+name: CI
+
+# Every workflow here used to be `push: main` or `schedule`, so nothing was
+# ever checked by a machine *before* it reached production — the deploy job
+# gated on analyze+test, but by then main was already the source of truth.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.7
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  deno:
+    # supabase/functions/report/shape_test.ts and the ORCID broker's
+    # state_test.ts both existed but ran only when a human remembered to.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check supabase/functions/orcid-auth/index.ts
+      - run: deno test supabase/functions/orcid-auth/
+      - run: deno test supabase/functions/report/
+
+  python:
+    # These scripts run unattended on cron with the service key. Nothing
+    # checked them at all before this.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --project scripts --frozen
+      - name: Compile-check every script
+        run: uv run --project scripts python -m compileall -q scripts

@@ -94,6 +94,7 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
   Widget build(BuildContext context) {
     return AsyncView<Map<String, dynamic>>(
       future: _project,
+      retry: () => fetchProject(widget.id),
       builder: (context, project) {
         final admin = isAdmin;
         final members = (project['project_members'] as List<dynamic>? ?? [])

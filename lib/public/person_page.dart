@@ -183,6 +183,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
   Widget build(BuildContext context) {
     return AsyncView<Map<String, dynamic>>(
       future: _person,
+      retry: () => fetchPerson(widget.id),
       builder: (context, person) {
         final admin = isAdmin;
         final isOwner =

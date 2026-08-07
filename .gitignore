@@ -2,7 +2,10 @@
 .DS_Store
 **/.DS_Store
 *.class
-*.lock
+# NOT *.lock — that swept up pubspec.lock, scripts/uv.lock and deno.lock, so
+# no build was ever reproducible: CI resolved fresh against caret ranges on
+# every run, and a bad or malicious patch release in any transitive dependency
+# reached production with no diff and no review. Lockfiles are committed.
 *.log
 *.pyc
 *.swp

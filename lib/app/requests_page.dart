@@ -26,6 +26,7 @@ class _RequestsPageState extends State<RequestsPage> {
     // anonymous visitor never reaches this widget.
     return AsyncView<List<Map<String, dynamic>>>(
       future: _requests,
+      retry: fetchMyRequests,
       builder: (context, requests) {
         return ColoredBox(
           color: AppColors.pageBg,
