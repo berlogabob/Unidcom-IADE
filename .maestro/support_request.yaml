@@ -9,6 +9,9 @@
 #
 # Selectors are text, not ids: Semantics(identifier:) does NOT reach the web
 # semantics tree, but TextField labels and IconButton tooltips both do.
+# v2 ONLY. Support requests are behind the pilot flag, so a default (v1) build
+# does not route to them and every step below fails. Build with the flag:
+#   flutter build web --dart-define=E2E=true --dart-define=V2=true
 url: http://localhost:8123
 name: "Support request: create, submit, admin approve"
 env:

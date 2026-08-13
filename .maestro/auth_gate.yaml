@@ -41,11 +41,15 @@ env:
 # Every other nav target is gated, so an anonymous visitor must not be offered
 # them: AppShell's directory nav and PortalShell's first three tabs both used
 # to render regardless of session, giving five links that all bounce to /login.
+#
+# "Overview", not "Support requests": that tab is behind the v2 flag now, so
+# asserting it is absent passes in a v1 build whatever the session does, and
+# proves nothing. Overview is session-only and present in both builds.
 - assertNotVisible:
-    text: "Support requests"
+    text: "^Overview$"
     label: "No gated portal tab offered to an anonymous visitor"
 - assertNotVisible:
-    text: "Structure"
+    text: "^Structure$"
     label: "No directory nav offered to an anonymous visitor"
 
 # 3. Sign in → land on the Welcome pack.
@@ -76,14 +80,24 @@ env:
     text: "Sign in"
     below:
       id: "Password"
+# An account holding the admin role is asked which job it is doing before it
+# lands anywhere. Every account in the system currently holds it, including the
+# E2E one — so this branch is the live path, and the `when` only guards against
+# the day a genuine researcher account exists.
+- runFlow:
+    when:
+      visible: "Continue as researcher"
+    commands:
+      - tapOn: "Continue as researcher"
 - extendedWaitUntil:
     visible: "Your first 5 steps"
     timeout: 20000
     label: "Login landed on the Welcome pack"
 
-# 4. With a session, the directory opens.
-- openLink: "${BASE_URL}/#/people"
+# 4. With a session, the researcher's own portal opens. The unit-wide directory
+#    is admin mode's, and admin_mode.yaml is what proves it opens there.
+- openLink: "${BASE_URL}/#/app/home"
 - extendedWaitUntil:
-    visible: "1\\d\\d people"
+    visible: "OUTPUTS"
     timeout: 20000
-    label: "Signed in, the internal directory is reachable"
+    label: "Signed in, the researcher's own overview is reachable"

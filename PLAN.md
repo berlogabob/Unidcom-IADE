@@ -142,6 +142,33 @@ end-to-end check (DEMO.md §2–4), demo dry-run + demonstration.
 
 _To be fixed in W1 (names + N). Placeholder: N = 10 researchers with ORCID iDs._
 
+**Nobody has a researcher account yet (measured 2026-08-13).** All four accounts
+in `auth.users` — `andre.berloga@`, `andre.berloga+e2e@`, `hande.ayanoglu@`,
+`rui.ramos@` — carry `app_metadata.role = 'admin'`. Until the view-mode split
+landed that was invisible, because there was only one view; now it means the
+plain-researcher experience (no chooser, no directory, no switcher) had never
+been seen by anyone.
+
+`andre.berloga+researcher@gmail.com` was created on 2026-08-13 with **no role
+claim** to close that gap, and linked to Ana Nolasco's row for the walkthrough.
+
+> ⚠️ **Unlink it before Ana Nolasco needs her own login.** `people.auth_user_id`
+> has a unique partial index, so while the test account holds her row she cannot
+> claim it:
+> ```sql
+> do $$ begin
+>   perform set_config('unidcom.orcid_claim','on',true);
+>   update people set auth_user_id = null
+>    where id = 'b455c1be-4686-5016-91f4-0b19f0d0a6ae';
+> end $$;
+> ```
+> (The `set_config` is required — `protect_people_cols()` otherwise reverts the
+> write silently, with no error.)
+
+Onboarding a real cohort member therefore has three steps, not one: create the
+account **without** a role claim, populate `people.orcid`, and link
+`auth_user_id`.
+
 **Data readiness (measured 2026-08-06) — read this before picking the cohort:**
 
 | Metric | Value | Query |

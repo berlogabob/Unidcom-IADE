@@ -25,6 +25,12 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      # analyze and test both run against v1 — the build that ships. The v2
+      # branches are compiled out of it, so a break inside `if (v2) ...` is
+      # invisible until someone flips the flag. This is the only thing that
+      # sees it.
+      - name: The v2 build must still compile
+        run: flutter build web --dart-define=V2=true
 
   deno:
     # supabase/functions/report/shape_test.ts and the ORCID broker's
