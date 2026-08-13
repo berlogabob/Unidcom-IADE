@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'app/admin_page.dart';
 import 'app/admin_requests.dart';
 import 'app/dashboard.dart';
+import 'app/mode_chooser.dart';
 import 'app/my_profile.dart';
 import 'app/request_form.dart';
 import 'app/researcher_home.dart';
@@ -17,6 +18,7 @@ import 'app/requests_page.dart';
 import 'app/settings_page.dart';
 import 'app/welcome_pack.dart';
 import 'data/failure.dart';
+import 'data/features.dart';
 import 'data/supabase.dart' as data;
 import 'data/timeout_client.dart';
 import 'orcid_nonce.dart';
@@ -147,6 +149,11 @@ Future<void> _boot() async {
     // own profile and has to come back to it.
     if (Supabase.instance.client.auth.currentSession != null) {
       _postAuthLanding = '/app/profile';
+      // Pressing Connect ORCID on your own profile *is* the answer to the
+      // chooser: you were acting as a researcher. Skip the question, or an
+      // admin gets interrogated on the way back from ORCID and loses the
+      // profile landing this whole branch exists to preserve.
+      data.modeChosen = true;
     }
   }
 
@@ -171,31 +178,91 @@ Future<void> _boot() async {
 bool needsAuth(String location) =>
     location != '/login' && !location.startsWith('/app/welcome');
 
+/// Everything the centre-wide view owns: the directory, the admin screens and
+/// the dashboards. Researcher mode has no way to reach any of it, because a
+/// researcher was promised "only things connected to him, no extra".
+///
+/// A prefix list rather than a chain of ifs so that adding an admin screen
+/// later is a one-line edit here, not a fourth branch in the redirect.
+const _adminOnly = [
+  '/people',
+  '/projects',
+  '/outputs',
+  '/structure',
+  '/conferences',
+  '/labs',
+  '/clusters',
+  '/objectives',
+  '/app/dashboard',
+  '/app/admin',
+  '/app/settings',
+];
+
+/// Where a signed-in caller should be sent, or null to let them through.
+///
+/// Pure, so it can be tested without a session — the same reason [needsAuth]
+/// is a bare function. It is *ergonomics only*: a researcher who types /people
+/// is already stopped by RLS and by the anon grant revocation, and this must
+/// never become the thing that protects a row. See ARCHITECTURE.md.
+String? modeRedirect(
+  String location, {
+  required bool adminAccount,
+  required bool adminMode,
+  required bool chosen,
+}) {
+  // Ask the question before honouring any deep link, otherwise an admin's
+  // bookmark silently decides the mode for them.
+  if (adminAccount && !chosen) {
+    return location == '/app/mode' ? null : '/app/mode';
+  }
+  // Answered, or never asked: the chooser has nothing left to say.
+  if (location == '/app/mode') {
+    return adminMode ? '/app/dashboard' : '/app/welcome/start';
+  }
+  if (!adminMode && _adminOnly.any(location.startsWith)) {
+    return '/app/home';
+  }
+  // Support requests are v2. Hidden links are not enough — a bookmark from the
+  // demo build would otherwise open a page v1 pretends does not exist.
+  if (!v2 && location.startsWith('/app/requests')) {
+    return '/app/home';
+  }
+  return null;
+}
+
 final _router = GoRouter(
   // Every login lands on the Welcome pack; a broker failure lands on /login,
   // the only screen that can show the reason. _postAuthLanding overrides the
-  // default for the Connect-ORCID return trip.
+  // default for the Connect-ORCID return trip. Admins are bounced on to the
+  // mode chooser by the redirect below rather than being named here — one
+  // place decides that, and it has to be the one that also sees deep links.
   initialLocation: _orcidError != null
       ? '/login'
       : _postAuthLanding ?? '/app/welcome/start',
-  refreshListenable: GoRouterRefreshStream(
-    Supabase.instance.client.auth.onAuthStateChange,
-  ),
+  // Two things now change what a route resolves to: signing in or out, and
+  // switching mode. Merge them, or a mode switch leaves the old shell on screen
+  // until the next navigation.
+  refreshListenable: Listenable.merge([
+    GoRouterRefreshStream(Supabase.instance.client.auth.onAuthStateChange),
+    data.viewMode,
+  ]),
   redirect: (context, state) {
     final hasSession = Supabase.instance.client.auth.currentSession != null;
     final onLogin = state.matchedLocation == '/login';
     if (!hasSession && needsAuth(state.matchedLocation)) return '/login';
-    if (hasSession && onLogin) return '/app/welcome/start';
-    if (state.matchedLocation == '/app/admin' && !data.isAdmin) {
-      return '/people';
+    // Anonymous callers are on the Welcome pack and have no mode to pick.
+    if (!hasSession) return null;
+    if (onLogin) {
+      return data.isAdminAccount && !data.modeChosen
+          ? '/app/mode'
+          : '/app/welcome/start';
     }
-    if (state.matchedLocation == '/app/admin/requests' && !data.isAdmin) {
-      return '/people';
-    }
-    if (state.matchedLocation == '/app/settings' && !data.isAdmin) {
-      return '/people';
-    }
-    return null;
+    return modeRedirect(
+      state.matchedLocation,
+      adminAccount: data.isAdminAccount,
+      adminMode: data.isAdmin,
+      chosen: data.modeChosen,
+    );
   },
   routes: [
     GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
@@ -245,6 +312,7 @@ final _router = GoRouter(
           builder: (_, state) =>
               ObjectivePageScreen(id: state.pathParameters['id']!),
         ),
+        GoRoute(path: '/app/mode', builder: (_, _) => const ModeChooserScreen()),
         GoRoute(
           path: '/app/dashboard',
           builder: (_, _) => const DashboardScreen(),

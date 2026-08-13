@@ -1,8 +1,45 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'taxonomy.dart';
 
 final db = Supabase.instance.client;
 
-bool get isAdmin => db.auth.currentUser?.appMetadata['role'] == 'admin';
+/// Which job the signed-in person is doing right now — not who they are.
+///
+/// Rui is both a researcher and the director, and used to get one screen for
+/// both: every admin control stapled onto his own profile ("its same page for
+/// 2 things ... well need ot change that", 2026-08-10). An account can hold the
+/// admin role and still be *acting* as a researcher, and then it should see
+/// exactly what a researcher sees.
+enum ViewMode { researcher, admin }
+
+/// Researcher is the default, so an admin who has not chosen yet — or who
+/// reloaded the tab — lands in the quieter of the two. Session-scoped on
+/// purpose: it lives in memory and resets on reload, and reloading into the
+/// mode that shows *less* is the safe direction to fail.
+final viewMode = ValueNotifier(ViewMode.researcher);
+
+/// Has the chooser been answered this session? Separate from [viewMode] because
+/// "not asked yet" and "chose researcher" have to look different to the router —
+/// they share a value but not a landing.
+bool modeChosen = false;
+
+/// Does this account hold the admin role at all? Fixed for the session, and
+/// the only thing that decides whether the mode switcher is offered.
+bool get isAdminAccount => db.auth.currentUser?.appMetadata['role'] == 'admin';
+
+/// Is the UI *currently* acting as an administrator?
+///
+/// Deliberately keeps the old name. Fourteen call sites already read `isAdmin`
+/// to decide what to draw, and every one of them wants this meaning — so
+/// narrowing the getter turns the whole admin surface off in researcher mode
+/// without touching them.
+///
+/// UI-only. RLS and `public.is_admin()` are the enforcement and are unchanged;
+/// see ARCHITECTURE.md "Two privacy boundaries". Nothing may ever be protected
+/// by this getter alone — it decides what is *drawn*, never what is *allowed*.
+bool get isAdmin => isAdminAccount && viewMode.value == ViewMode.admin;
 
 Future<int> countPendingRequests() async {
   try {
@@ -530,6 +567,44 @@ Future<void> approvePerson(String id) async {
   });
 }
 
+/// Files an output the signed-in researcher typed in themselves, returning its
+/// id.
+///
+/// Goes through the `create_my_output` RPC rather than a plain insert because
+/// `outputs_write` and `oa_write` are both admin-only and stay that way: the
+/// function is the one audited doorway, and it forces `pending` / `manual` /
+/// `unidcom` whatever this map says. Admins have `createOutput` and do not need
+/// it.
+Future<String> createMyOutput(Map<String, dynamic> fields) async {
+  try {
+    // Same reason as updateOutput: a pasted https://doi.org/10.x/y would be
+    // born with an invalid_doi quality flag.
+    final payload = {...fields, 'doi': cleanDoi(fields['doi'] as String?)};
+    final result = await db.rpc('create_my_output', params: {
+      'p_fields': payload,
+    });
+    return result as String;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// The admin path: a direct insert, allowed by `outputs_write`. Mirrors
+/// [createPerson] / [createProject].
+Future<String> createOutput(Map<String, dynamic> fields) async {
+  try {
+    final payload = {...fields, 'doi': cleanDoi(fields['doi'] as String?)};
+    final row = await db
+        .from('outputs')
+        .insert(payload)
+        .select('id')
+        .single();
+    return row['id'] as String;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<void> approveOutput(String id) async {
   try {
     await db
@@ -919,12 +994,32 @@ Future<List<Map<String, dynamic>>> fetchAuthorCounts() async {
   }
 }
 
+/// The director's classification as a tree. 74 rows, readable by anyone with a
+/// session, no filters — so callers hold it in a `late final Future` and fetch
+/// it once per screen rather than per keystroke.
+Future<List<TaxonomyNode>> fetchOutputTaxonomy() async {
+  try {
+    final rows = await db
+        .from('output_taxonomy')
+        .select('segments, sort_order')
+        .order('sort_order');
+    return buildTaxonomy([
+      for (final row in rows) (row['segments'] as List).cast<String>(),
+    ]);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<List<Map<String, dynamic>>> fetchOutputs({
   String? query,
   int? year,
   String? type,
   String? quartile,
   String? approvalStatus,
+  /// Taxonomy segments picked in the cascade. Matches this branch and
+  /// everything beneath it, so a partial selection is a real filter.
+  List<String>? categoryPath,
   /// Defaults to UNIDCOM-affiliated work only. Pass 'external', 'unknown', or
   /// null (all) to widen it.
   String? affiliation = 'unidcom',
@@ -934,7 +1029,7 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
     var request = db
         .from('outputs')
         .select(
-          'id, title, reporting_year, type, subtype, doi, url, approval_status, affiliation, output_authors(people(id,preferred_name))',
+          'id, title, reporting_year, type, subtype, category_path, doi, url, approval_status, affiliation, output_authors(people(id,preferred_name))',
         )
         .filter('merged_into', 'is', null);
     if (affiliation != null) {
@@ -951,6 +1046,9 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
     }
     if (quartile != null) {
       request = request.ilike('subtype', '%quartil $quartile%');
+    }
+    if (categoryPath != null && categoryPath.isNotEmpty) {
+      request = request.like('category_path', categoryPrefix(categoryPath));
     }
     if (approvalStatus != null) {
       request = request.eq('approval_status', approvalStatus);
@@ -1730,7 +1828,13 @@ Future<void> _syncMembershipCache(
   String label,
   int? year,
 ) async {
-  if (!isAdmin || kind != 'membership' || year != DateTime.now().year) return;
+  // isAdminAccount, not isAdmin: this guards a *write*, and the view mode is
+  // cosmetic. An admin who happened to be in researcher view would otherwise
+  // silently stop mirroring membership_type, leaving the lists and the
+  // dashboard reading a stale cache with nothing to show for it.
+  if (!isAdminAccount || kind != 'membership' || year != DateTime.now().year) {
+    return;
+  }
   try {
     await db
         .from('people')

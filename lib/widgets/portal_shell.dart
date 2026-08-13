@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../data/features.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
+import 'panels.dart';
 
 class PortalShell extends StatefulWidget {
   const PortalShell({super.key, required this.child});
@@ -26,23 +28,25 @@ class _PortalShellState extends State<PortalShell> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 760) return widget.child;
-
         final path = GoRouterState.of(context).uri.path;
         // Signed out, the Welcome pack is the only one of these a visitor can
-        // open — the other three are auth-gated, so offering them would be
-        // three tabs that bounce straight to /login.
+        // open — the others are auth-gated, so offering them would be tabs
+        // that bounce straight to /login.
         final hasSession =
             Supabase.instance.client.auth.currentSession != null;
         final tabs = [
           if (hasSession) ...[
             ('Overview', '/app/home', path.startsWith('/app/home')),
-            ('Outputs', '/app/profile', path == '/app/profile'),
-            (
-              'Support requests',
-              '/app/requests',
-              path.startsWith('/app/requests'),
-            ),
+            ('My outputs', '/app/profile', path == '/app/profile'),
+            // v2: hiding the tab is not enough on its own — modeRedirect in
+            // main.dart also refuses the route, so an old bookmark cannot walk
+            // in behind it.
+            if (v2)
+              (
+                'Support requests',
+                '/app/requests',
+                path.startsWith('/app/requests'),
+              ),
           ],
           (
             'Welcome pack',
@@ -50,6 +54,38 @@ class _PortalShellState extends State<PortalShell> {
             path.startsWith('/app/welcome'),
           ),
         ];
+
+        // Below 760 this used to return the bare child. That was survivable
+        // while AppShell's bottom nav existed; in researcher mode it no longer
+        // does, so a phone would have had no navigation at all. Same tabs,
+        // rendered as the scrolling pill strip welcome_pack.dart already uses.
+        if (constraints.maxWidth < 760) {
+          return Column(
+            children: [
+              SizedBox(
+                height: 52,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  children: [
+                    for (final tab in tabs) ...[
+                      FilterPill(
+                        tab.$1,
+                        selected: tab.$3,
+                        onTap: () => context.go(tab.$2),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  ],
+                ),
+              ),
+              Expanded(child: widget.child),
+            ],
+          );
+        }
 
         return Column(
           children: [
