@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/features.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/detail_scaffold.dart';
 
@@ -117,7 +118,18 @@ Widget personHeader(
                 icon: const Icon(Icons.badge_outlined),
                 label: const Text('Connect ORCID'),
               ),
-            if (admin)
+            // v2, all three. Rui, seeing them on his own profile band:
+            // "you have three things that i think make noise - connect ORCID,
+            // auto-fill, ORCID sync ... the approve button should not be
+            // visible - we in UNIDCOM ADMIN make it visible every 6 months for
+            // instance ... i would take it off at this stage - make it
+            // invisible."
+            //
+            // Approve is doubly moot for now: every person row is already
+            // approved, so the button's only effect is to look like unfinished
+            // business. Nothing is deleted — person_page.dart still wires all
+            // three handlers and a V2 build restores them.
+            if (v2 && admin)
               FilledButton.icon(
                 onPressed: enriching ? null : onAutoFill,
                 icon: enriching
@@ -129,7 +141,7 @@ Widget personHeader(
                     : const Icon(Icons.auto_fix_high),
                 label: Text(enriching ? 'Loading...' : 'Auto-fill'),
               ),
-            if (admin)
+            if (v2 && admin)
               OutlinedButton.icon(
                 onPressed: syncing ? null : onCheckOrcidSync,
                 icon: syncing
@@ -141,7 +153,7 @@ Widget personHeader(
                     : const Icon(Icons.sync),
                 label: Text(syncing ? 'Checking...' : 'ORCID sync'),
               ),
-            if (admin)
+            if (v2 && admin)
               FilledButton.icon(
                 onPressed: onApprove,
                 icon: const Icon(Icons.check),

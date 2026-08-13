@@ -1,8 +1,9 @@
 # UNIDCOM RIMS — researcher portal
 
-The Flutter web app UNIDCOM researchers sign in to: confirm your profile, manage
-your selected publications, and file support requests. Administrators approve
-that work here too.
+The Flutter web app UNIDCOM researchers sign in to: confirm your profile and
+manage your publications. Administrators approve that work here too, in a
+separate view of the same app — see "Two builds" below for what the pilot
+cohort actually sees.
 
 **This is not the public website.** That is a separate repository,
 [`unidcom-site`](https://github.com/berlogabob/unidcom-site) — a Hugo static
@@ -33,11 +34,43 @@ flutter run -d chrome \
   --dart-define=SUPABASE_ANON_KEY=...
 ```
 
+## Two builds: v1 and v2
+
+The pilot ships **v1** — deliberately fewer controls, all of them working. The
+rest is compiled out behind one flag rather than deleted:
+
+```sh
+flutter run -d chrome                        # v1 — what the pilot cohort sees
+flutter run -d chrome --dart-define=V2=true  # v2 — everything
+```
+
+Hidden in v1: Support requests (tab, routes and admin queue), the Approve
+button, Auto-fill, ORCID sync, Find DOI. See `lib/data/features.dart` for why,
+in the director's own words.
+
+## Who can write what
+
+A researcher has **no write grant on `outputs` or `output_authors`** — both
+policies are `is_admin()` and stay that way. They record their own work through
+`create_my_output()`, a `security definer` RPC that takes a whitelisted payload
+and forces `approval_status='pending'`, `source='manual'` and
+`affiliation='unidcom'` whatever the caller sends. It links the author row and
+writes the `change_log` entry itself, which is the only way a non-admin action
+gets audited at all: `cl_write` is admin-only, so the client's `logChanges()`
+is silently discarded for everyone else.
+
+Admins insert directly, through `createOutput`. Both routes open the same
+dialog, so the taxonomy cascade is the only way a category is ever set.
+
+Because `flutter analyze` and `flutter test` only ever see v1, CI carries a
+`--dart-define=V2=true` build step — it is the only thing that catches a break
+inside a `if (v2)` branch before someone flips the flag.
+
 ## Test
 
 ```sh
 flutter analyze
-flutter test            # 69 tests
+flutter test            # 114 tests
 ```
 
 ### End-to-end
@@ -52,14 +85,23 @@ python3 -m http.server 8123 --directory build/web
 maestro test .maestro/auth_gate.yaml -e MAESTRO_EMAIL=... -e MAESTRO_PASSWORD=...
 ```
 
-Four flows:
+Six flows:
 
 | Flow | Covers | Needs credentials |
 |---|---|---|
 | `auth_gate.yaml` | anonymous visitors are bounced to `/login`; login lands on the Welcome pack; no gated navigation is offered anonymously | yes |
-| `support_request.yaml` | full request lifecycle — create, submit, admin approve | yes |
+| `researcher_mode.yaml` | researcher mode offers only the researcher's own things — no directory, no Support requests, no Approve on your own profile | yes |
+| `admin_mode.yaml` | admin mode keeps the whole centre, and the switch works both ways without signing out | yes, admin |
+| `support_request.yaml` | full request lifecycle — create, submit, admin approve. **v2 only** | yes |
 | `featured_star.yaml` | star an output on a profile, survive a reload, unstar | yes |
 | `orcid_error.yaml` | the ORCID broker's failure return-trip is shown, not swallowed | no |
+
+`support_request.yaml` needs `--dart-define=V2=true` on the build as well as
+`E2E=true`; under v1 the routes it drives do not exist.
+
+Note that **every account in the database currently holds the admin role**, so
+all of them meet the chooser after signing in. There is no non-admin account to
+test the plain-researcher path with yet — see `PLAN.md` on the pilot cohort.
 
 Credentials live in `.maestro/.env` (gitignored; see `.env.example`). Maestro's
 CLI has no `--env-file`, so pass them with `-e`, or source the file first.
@@ -93,7 +135,7 @@ The website's nightly sync is **not** in this repo — it lives in `unidcom-site
 
 ## Supabase
 
-`supabase/migrations/` holds 32 migrations: schema, row-level security, and the
+`supabase/migrations/` holds 33 migrations: schema, row-level security, and the
 audit triggers that write every status change to `change_log`. Two edge
 functions live in `supabase/functions/` — `orcid-auth` (the sign-in broker) and
 `report` (Typst → PDF). The report function has Deno tests:

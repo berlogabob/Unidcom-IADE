@@ -1,0 +1,106 @@
+# E2E for the researcher/admin split.
+#
+# This is the flow that would have caught the complaint that prompted the work.
+# Rui holds both roles and got one screen for both — "its same page for 2
+# things ... well need ot change that". What it proves:
+#   1. An admin account is asked which job it is doing before landing anywhere.
+#   2. Researcher mode offers only the researcher's own things: no unit-wide
+#      directory, no Support requests (v2), no Approve button.
+#   3. The switch back to admin mode restores all of it.
+#
+# Every account in the database currently holds the admin role, so step 1 is
+# the live path for all of them.
+#
+# Serve a semantics build, or Maestro sees a bare canvas:
+#   flutter build web --dart-define=E2E=true
+#   python3 -m http.server 8123 --directory build/web
+#   maestro test .maestro/researcher_mode.yaml --env-file .maestro/.env
+url: http://localhost:8123
+name: "View mode: a researcher sees only their own things"
+env:
+  BASE_URL: http://localhost:8123
+---
+- clearState
+
+- openLink: "${BASE_URL}/#/login"
+- extendedWaitUntil:
+    visible: "Email"
+    timeout: 30000
+# Same focus race as auth_gate.yaml: inputText occasionally lands nowhere.
+- repeat:
+    times: 3
+    while:
+      notVisible: "${MAESTRO_EMAIL}"
+    commands:
+      - tapOn:
+          id: "Email"
+      - inputText: "${MAESTRO_EMAIL}"
+- tapOn:
+    id: "Password"
+- inputText: "${MAESTRO_PASSWORD}"
+- tapOn:
+    text: "Sign in"
+    below:
+      id: "Password"
+
+# 1. The chooser, before any landing. A bookmark must not decide this silently.
+- extendedWaitUntil:
+    visible: "How do you want to continue?"
+    timeout: 30000
+    label: "An admin account is asked which job it is doing"
+- tapOn: "Continue as researcher"
+
+# 2. Researcher mode: own things only.
+- extendedWaitUntil:
+    visible: "Your first 5 steps"
+    timeout: 20000
+    label: "Continuing as a researcher lands on the Welcome pack"
+# Anchored: the Welcome pack prose contains "Projects, researchers and
+# opportunities." and a sentence beginning "Support requests for activities...",
+# so a bare substring match would fail on text that is not navigation at all.
+- assertNotVisible:
+    text: "^Structure$"
+    label: "The unit-wide directory is not offered in researcher mode"
+- assertNotVisible:
+    text: "^Projects$"
+    label: "The unit-wide directory is not offered in researcher mode"
+- assertNotVisible:
+    text: "^Support requests$"
+    label: "Support requests are out of the v1 pilot"
+
+# The tabs that ARE offered, and the one that used to collide with the top nav:
+# "Outputs" appeared twice meaning two different things, and is "My outputs" now.
+- assertVisible:
+    text: "Overview"
+    label: "The researcher's own portal tabs are present"
+- assertVisible:
+    text: "My outputs"
+    label: "The researcher's own outputs tab is unambiguous"
+
+# 3. Typing a directory URL is not a way around the mode.
+- openLink: "${BASE_URL}/#/people"
+- extendedWaitUntil:
+    visible: "OUTPUTS"
+    timeout: 20000
+    label: "A directory deep link in researcher mode lands on the own overview"
+
+# 4. The profile band carries one button, not five. Auto-fill, ORCID sync and
+#    Approve were the "three things that make noise" on Rui's own profile.
+- openLink: "${BASE_URL}/#/app/profile"
+- extendedWaitUntil:
+    visible: "Edit"
+    timeout: 20000
+    label: "The researcher can still edit their own profile"
+- assertNotVisible:
+    text: "Approve"
+    label: "No Approve button on a researcher's own profile"
+- assertNotVisible:
+    text: "Auto-fill"
+    label: "No Auto-fill on a researcher's own profile"
+- assertNotVisible:
+    text: "ORCID sync"
+    label: "No ORCID sync on a researcher's own profile"
+# Moved to the bottom, always shown, one button for the lot.
+- assertVisible:
+    text: "My ORCID publications.*"
+    label: "ORCID publications are always shown, not behind a toggle"

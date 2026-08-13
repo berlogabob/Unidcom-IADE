@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../data/features.dart';
 import '../data/supabase.dart' as data;
 import '../theme/tokens.dart';
 
@@ -46,51 +47,63 @@ class _AppShellState extends State<AppShell> {
     // links that all bounce straight back to /login.
     if (!hasSession) return _anonymousShell(context);
 
-    final destinations = [
-      _NavItem('/people', Icons.people, 'People'),
-      _NavItem(
-        '/outputs',
-        Icons.article,
-        'Outputs',
-        prefixes: ['/outputs', '/conferences'],
-      ),
-      _NavItem('/projects', Icons.work, 'Projects'),
-      _NavItem(
-        '/structure',
-        Icons.account_tree,
-        'Structure',
-        prefixes: ['/structure', '/labs', '/clusters', '/objectives'],
-      ),
-      _NavItem('/app/dashboard', Icons.dashboard, 'Dashboard'),
-      if (admin) _NavItem('/app/admin', Icons.admin_panel_settings, 'Admin'),
-    ];
+    // The centre-wide directory belongs to admin mode. In researcher mode this
+    // is empty on purpose: PortalShell's tabs are the whole navigation, so the
+    // word "Outputs" stops appearing twice meaning two different things —
+    // Rui's original complaint about seeing one page doing two jobs.
+    final destinations = !admin
+        ? const <_NavItem>[]
+        : [
+            _NavItem('/people', Icons.people, 'People'),
+            _NavItem(
+              '/outputs',
+              Icons.article,
+              'Outputs',
+              prefixes: ['/outputs', '/conferences'],
+            ),
+            _NavItem('/projects', Icons.work, 'Projects'),
+            _NavItem(
+              '/structure',
+              Icons.account_tree,
+              'Structure',
+              prefixes: ['/structure', '/labs', '/clusters', '/objectives'],
+            ),
+            _NavItem('/app/dashboard', Icons.dashboard, 'Dashboard'),
+            _NavItem('/app/admin', Icons.admin_panel_settings, 'Admin'),
+          ];
     final index = destinations.indexWhere(
       (item) => item.prefixes.any(path.startsWith),
     );
     final selectedIndex = index < 0 ? 0 : index;
-    // Portal menu items & handler — shared between mobile and desktop (portal
-    // pages (/app/home, /app/requests*, /app/welcome/*, ...) now reachable
-    // on mobile via PopupMenuButton; see I1 fix).
-    final portalMenuItems = const [
-      PopupMenuItem(value: 'overview', child: Text('Overview')),
-      PopupMenuItem(value: 'requests', child: Text('Support requests')),
-      PopupMenuItem(value: 'welcome', child: Text('Welcome pack')),
-      PopupMenuItem(value: 'profile', child: Text('My profile')),
-      PopupMenuItem(value: 'site', child: Text('Public site')),
-      PopupMenuItem(value: 'signout', child: Text('Sign out')),
+    // Account menu. Overview / Outputs / Welcome pack deliberately absent:
+    // they are PortalShell's tabs, and listing them here as well was the third
+    // copy of the same navigation.
+    final portalMenuItems = <PopupMenuEntry<String>>[
+      const PopupMenuItem(value: 'profile', child: Text('My profile')),
+      if (data.isAdminAccount)
+        PopupMenuItem(
+          value: 'mode',
+          child: Text(admin ? 'Switch to researcher' : 'Switch to admin'),
+        ),
+      const PopupMenuItem(value: 'site', child: Text('Public site')),
+      const PopupMenuItem(value: 'signout', child: Text('Sign out')),
     ];
     void handlePortalMenu(String value) {
-      if (value == 'overview') context.go('/app/home');
-      if (value == 'requests') context.go('/app/requests');
-      if (value == 'welcome') context.go('/app/welcome/start');
       if (value == 'profile') context.go('/app/profile');
+      if (value == 'mode') {
+        // Flipping the notifier wakes the router; `go` only names the landing.
+        data.viewMode.value = admin
+            ? data.ViewMode.researcher
+            : data.ViewMode.admin;
+        data.modeChosen = true;
+        context.go(admin ? '/app/welcome/start' : '/app/dashboard');
+      }
       if (value == 'site') _openPublicSite();
       if (value == 'signout') {
         Supabase.instance.client.auth.signOut();
       }
     }
-    // Mobile app bar + bottom nav — now includes researcher portal via
-    // PopupMenuButton (I1). No signed-out variant: _anonymousShell handled it.
+    // Mobile app bar actions. No signed-out variant: _anonymousShell handled it.
     final sessionActions = [
       PopupMenuButton<String>(
         tooltip: 'My profile',
@@ -104,9 +117,9 @@ class _AppShellState extends State<AppShell> {
         onPressed: () => Supabase.instance.client.auth.signOut(),
       ),
     ];
-    // Desktop wide top-nav account area — adds the researcher portal entry
-    // points (I1): Overview/Support requests/Welcome pack/My profile/Public
-    // site/Sign out behind one menu.
+    // Desktop account chip. It used to repeat Overview / Support requests /
+    // Welcome pack — PortalShell's own tabs — which was the third copy of the
+    // same navigation on screen at once.
     final desktopAccountActions = [
       PopupMenuButton<String>(
               tooltip: 'My profile',
@@ -187,6 +200,11 @@ class _AppShellState extends State<AppShell> {
               ? 'My profile'
               : path == '/app/settings'
               ? 'Settings'
+              : path == '/app/mode'
+              ? 'UNIDCOM'
+              // Empty in researcher mode, so index it only when it has rows.
+              : destinations.isEmpty
+              ? 'UNIDCOM'
               : switch (destinations[selectedIndex].path) {
                   '/outputs' => 'Outputs',
                   '/projects' => 'Projects',
@@ -198,18 +216,23 @@ class _AppShellState extends State<AppShell> {
           return Scaffold(
             appBar: AppBar(title: Text(title), actions: sessionActions),
             body: widget.child,
-            bottomNavigationBar: NavigationBar(
-              selectedIndex: selectedIndex,
-              onDestinationSelected: (value) =>
-                  context.go(destinations[value].path),
-              destinations: [
-                for (final item in destinations)
-                  NavigationDestination(
-                    icon: Icon(item.icon),
-                    label: item.label,
+            // NavigationBar asserts on fewer than two destinations, so in
+            // researcher mode there is no bottom bar at all — PortalShell's
+            // mobile tab strip is the navigation there.
+            bottomNavigationBar: destinations.length < 2
+                ? null
+                : NavigationBar(
+                    selectedIndex: selectedIndex,
+                    onDestinationSelected: (value) =>
+                        context.go(destinations[value].path),
+                    destinations: [
+                      for (final item in destinations)
+                        NavigationDestination(
+                          icon: Icon(item.icon),
+                          label: item.label,
+                        ),
+                    ],
                   ),
-              ],
-            ),
           );
         }
 
@@ -238,7 +261,9 @@ class _AppShellState extends State<AppShell> {
             title: Row(
               children: [
                 InkWell(
-                  onTap: () => context.go('/people'),
+                  // /people is admin-only now; in researcher mode the wordmark
+                  // would have bounced off the redirect straight back here.
+                  onTap: () => context.go(admin ? '/people' : '/app/home'),
                   child: Row(
                     children: [
                       Text(
@@ -299,17 +324,18 @@ class _AppShellState extends State<AppShell> {
               ],
             ),
             actions: [
-              IconButton(
-                tooltip: 'Dashboard',
-                icon: const Icon(Icons.dashboard),
-                onPressed: () => context.go('/app/dashboard'),
-              ),
-              if (admin)
+              if (admin) ...[
+                IconButton(
+                  tooltip: 'Dashboard',
+                  icon: const Icon(Icons.dashboard),
+                  onPressed: () => context.go('/app/dashboard'),
+                ),
                 IconButton(
                   tooltip: 'Admin',
                   icon: const Icon(Icons.admin_panel_settings),
                   onPressed: () => context.go('/app/admin'),
                 ),
+              ],
               ...desktopAccountActions,
             ],
           ),
@@ -380,7 +406,7 @@ class _AppShellState extends State<AppShell> {
     final items = [
       _NavItem('/app/dashboard', Icons.dashboard, 'Dashboard'),
       _NavItem('/people', Icons.people, 'People'),
-      _NavItem('/app/admin/requests', Icons.inbox, 'Requests'),
+      if (v2) _NavItem('/app/admin/requests', Icons.inbox, 'Requests'),
       _NavItem('/outputs', Icons.article, 'Outputs'),
       _NavItem('/structure', Icons.account_tree, 'Structure'),
       _NavItem('/app/settings', Icons.settings, 'Settings'),

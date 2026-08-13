@@ -3,12 +3,16 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/enrich_client.dart';
+import '../data/features.dart';
 import '../data/supabase.dart';
+import '../data/taxonomy.dart';
+import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/merge_matrix.dart';
 import '../widgets/output_row.dart';
 import '../widgets/person_card.dart';
 import '../widgets/suggestion_tile.dart';
+import '../widgets/taxonomy_picker.dart';
 
 String _outputMergeName(Map<String, dynamic> output) =>
     output['title'] as String? ?? 'Untitled';
@@ -29,7 +33,6 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
   );
   late Future<List<Map<String, dynamic>>> _suggestions =
       fetchSuggestionsForOutput(widget.id);
-  bool _findingDoi = false;
 
   void _refresh() {
     setState(() {
@@ -60,7 +63,8 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
   /// Searches Crossref by citation. Finding nothing is the normal outcome for
   /// outputs that genuinely have no DOI, so say so plainly rather than failing.
   Future<void> _findDoi(Map<String, dynamic> output) async {
-    setState(() => _findingDoi = true);
+    // No in-place spinner any more: this runs after the edit dialog has closed,
+    // so there is no button left to disable. Progress is the snackbar.
     try {
       final match = await findDoiForOutput(widget.id);
       if (!mounted) return;
@@ -117,8 +121,6 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
       _refresh();
     } catch (error) {
       _snack(error.toString());
-    } finally {
-      if (mounted) setState(() => _findingDoi = false);
     }
   }
 
@@ -131,9 +133,23 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
   }
 
   Future<void> _edit(Map<String, dynamic> output) async {
+    // Ask before offering, so "Merge duplicates" is never a button whose only
+    // possible outcome is a snackbar saying it had nothing to do. One small
+    // query per Edit click is what "only if they exist" costs.
+    var duplicates = 0;
+    try {
+      duplicates = (await fetchOutputCluster(widget.id)).length;
+    } catch (_) {
+      // Not worth blocking the editor over; the tool just is not offered.
+    }
+    if (!mounted) return;
     final saved = await showDialog<bool>(
       context: context,
-      builder: (context) => _OutputEditDialog(output: output),
+      builder: (context) => OutputEditDialog(
+        output: output,
+        onFindDoi: v2 ? () => _findDoi(output) : null,
+        onMerge: duplicates >= 2 ? _mergeDuplicates : null,
+      ),
     );
     if (saved ?? false) _refresh();
   }
@@ -256,7 +272,10 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
     bool admin,
   ) {
     final theme = Theme.of(context);
-    final category = (output['category_path'] as String? ?? '').trim();
+    // Collapses the legacy four-column padding, so this reads correctly even
+    // against data the repair migration has not reached (an old export, a
+    // preview branch).
+    final category = categorySegments(output['category_path'] as String?);
     final reference = (output['full_reference'] as String? ?? '').trim();
     final doi = (output['doi'] as String? ?? '').trim();
     final doiStatus = output['doi_status'] as String?;
@@ -264,13 +283,15 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
         .split('T')
         .first;
     final link = resolveOutputUrl(output['url'] as String?, doi);
+    // Rui: "separate that tree (type) from managing module (state and issues)".
+    // macro_type / type / subtype are the first three columns of the same
+    // padded path, so as chips they said the classification three more times —
+    // often the same word twice. The breadcrumb below says it once; these are
+    // only the things that describe the record's *state*.
     final chips = [
       output['reporting_year']?.toString(),
-      output['macro_type'] as String?,
-      output['type'] as String?,
-      output['subtype'] as String?,
       output['output_status'] as String?,
-      output['approval_status'] as String?,
+      if (admin) output['approval_status'] as String?,
     ].whereType<String>().where((v) => v.isNotEmpty);
     final fctSelected = output['fct_selected'] as bool? ?? false;
     final verified = output['verified_online'] as bool? ?? false;
@@ -294,6 +315,18 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
           ),
       ],
       extra: [
+        // The classification, said once, as the tree it actually is. What this
+        // replaces rendered as "Organização de Seminários e Conferências ›
+        // Organização de Seminários e Conferências › Membro da comissão
+        // científica… › Membro da comissão científica…".
+        if (category.isNotEmpty)
+          Text(
+            category.join('  ›  '),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         if (reference.isNotEmpty)
           SelectableText(
             reference,
@@ -333,7 +366,6 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
                 ),
             ],
           ),
-        if (category.isNotEmpty) mutedText(context, category),
       ],
       actions: [
         if (link != null)
@@ -348,22 +380,8 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
             icon: const Icon(Icons.edit),
             label: const Text('Edit'),
           ),
-          OutlinedButton.icon(
-            onPressed: _findingDoi ? null : () => _findDoi(output),
-            icon: _findingDoi
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.travel_explore, size: 18),
-            label: const Text('Find DOI'),
-          ),
-          OutlinedButton.icon(
-            onPressed: _mergeDuplicates,
-            icon: const Icon(Icons.merge),
-            label: const Text('Merge duplicates'),
-          ),
+          // Find DOI and Merge duplicates used to sit here, in everyone's way.
+          // They live inside the Edit dialog now — see _edit.
           PopupMenuButton<void>(
             icon: const Icon(Icons.more_vert),
             itemBuilder: (context) => [
@@ -538,36 +556,64 @@ class _WaiveDialogState extends State<_WaiveDialog> {
   }
 }
 
-class _OutputEditDialog extends StatefulWidget {
-  const _OutputEditDialog({required this.output});
+/// Add or edit an output. `output == null` is the add case, following the same
+/// `_creating` shape as `_PersonEditDialog` and `_ProjectEditDialog`.
+///
+/// One dialog for both because the taxonomy cascade has to appear in both —
+/// "this works for both filtering my outputs as well as when i click +add".
+class OutputEditDialog extends StatefulWidget {
+  const OutputEditDialog({
+    super.key,
+    this.output,
+    this.onFindDoi,
+    this.onMerge,
+    this.asResearcher = false,
+  });
 
-  final Map<String, dynamic> output;
+  final Map<String, dynamic>? output;
+
+  /// Rui: "find DOI and merge duplicates should only show after i click EDIT.
+  /// And merge duplicates only if they exist." Null means don't offer it — the
+  /// caller decides, because only it knows whether duplicates exist and whether
+  /// this is a v2 build.
+  final VoidCallback? onFindDoi;
+  final VoidCallback? onMerge;
+
+  /// Save through `create_my_output` instead of a direct insert. A researcher
+  /// has no write grant on `outputs`; the RPC is their doorway, and it stamps
+  /// the record pending for review.
+  final bool asResearcher;
 
   @override
-  State<_OutputEditDialog> createState() => _OutputEditDialogState();
+  State<OutputEditDialog> createState() => _OutputEditDialogState();
 }
 
-class _OutputEditDialogState extends State<_OutputEditDialog> {
+class _OutputEditDialogState extends State<OutputEditDialog> {
+  late final _title = _controller('title');
   late final _doi = _controller('doi');
   late final _fullReference = _controller('full_reference');
-  late final _type = _controller('type');
-  late final _subtype = _controller('subtype');
   late final _reportingYear = _controller('reporting_year');
   late final _outputStatus = _controller('output_status');
+  late List<String> _category = categorySegments(
+    widget.output?['category_path'] as String?,
+  );
   late bool _verifiedOnline =
-      widget.output['verified_online'] as bool? ?? false;
+      widget.output?['verified_online'] as bool? ?? false;
+  late final Future<List<TaxonomyNode>> _taxonomy = fetchOutputTaxonomy();
   bool _saving = false;
+  String? _titleError;
+
+  bool get _creating => widget.output?['id'] == null;
 
   TextEditingController _controller(String key) =>
-      TextEditingController(text: widget.output[key]?.toString() ?? '');
+      TextEditingController(text: widget.output?[key]?.toString() ?? '');
 
   @override
   void dispose() {
     for (final c in [
+      _title,
       _doi,
       _fullReference,
-      _type,
-      _subtype,
       _reportingYear,
       _outputStatus,
     ]) {
@@ -576,26 +622,56 @@ class _OutputEditDialogState extends State<_OutputEditDialog> {
     super.dispose();
   }
 
+  /// Pops first, then runs. Stacking a merge matrix on top of an open editor
+  /// leaves two modals and an unsaved form behind whichever one you dismiss.
+  void _runTool(VoidCallback tool) {
+    Navigator.of(context).pop(false);
+    tool();
+  }
+
   String? _text(TextEditingController c) {
     final value = c.text.trim();
     return value.isEmpty ? null : value;
   }
 
   Future<void> _save() async {
-    setState(() => _saving = true);
+    // title is the one NOT NULL column, and the RPC raises on a blank one.
+    // Catching it here means a typo costs a glance, not a round trip.
+    if (_text(_title) == null) {
+      setState(() => _titleError = 'A title is required');
+      return;
+    }
+    setState(() {
+      _titleError = null;
+      _saving = true;
+    });
     try {
       final fields = {
+        'title': _text(_title),
         'doi': _text(_doi),
         'full_reference': _text(_fullReference),
-        'type': _text(_type),
-        'subtype': _text(_subtype),
+        'category_path': _category.isEmpty
+            ? null
+            : _category.join(categorySeparator),
+        // report_data() builds the annual PDF's sections from macro_type and
+        // its subsections from subtype, so the path alone would drop this
+        // output out of the report. Free-text Type/Subtype boxes are how the
+        // vocabulary drifted in the first place; the cascade writes all three.
+        ...categoryFields(_category),
         'reporting_year': _reportingYear.text.trim().isEmpty
             ? null
             : int.tryParse(_reportingYear.text.trim()),
         'output_status': _text(_outputStatus),
-        'verified_online': _verifiedOnline,
+        if (!widget.asResearcher) 'verified_online': _verifiedOnline,
       };
-      await updateOutput(widget.output['id'] as String, fields);
+      if (!_creating) {
+        await updateOutput(widget.output!['id'] as String, fields);
+      } else if (widget.asResearcher) {
+        // Forces pending/manual/unidcom server-side and links the author.
+        await createMyOutput(fields);
+      } else {
+        await createOutput(fields);
+      }
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
@@ -607,22 +683,43 @@ class _OutputEditDialogState extends State<_OutputEditDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Edit output'),
+      title: Text(_creating ? 'Add output' : 'Edit output'),
       content: SizedBox(
         width: 520,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Was missing entirely — the dialog only ever edited existing
+              // rows, so nothing had to supply the one required column.
+              TextField(
+                controller: _title,
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  border: const OutlineInputBorder(),
+                  errorText: _titleError,
+                ),
+                maxLines: 2,
+                minLines: 1,
+                onChanged: (_) {
+                  if (_titleError != null) setState(() => _titleError = null);
+                },
+              ),
+              const SizedBox(height: 12),
               editField(_doi, 'DOI'),
               editField(_fullReference, 'Full reference', maxLines: 4),
-              Row(
-                children: [
-                  Expanded(child: editField(_type, 'Type')),
-                  const SizedBox(width: 12),
-                  Expanded(child: editField(_subtype, 'Subtype')),
-                ],
+              const SizedBox(height: 4),
+              FutureBuilder<List<TaxonomyNode>>(
+                future: _taxonomy,
+                builder: (context, snapshot) => TaxonomyPicker(
+                  roots: snapshot.data ?? const [],
+                  value: _category,
+                  onChanged: (value) => setState(() => _category = value),
+                  width: 508,
+                ),
               ),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -636,12 +733,49 @@ class _OutputEditDialogState extends State<_OutputEditDialog> {
                   Expanded(child: editField(_outputStatus, 'Output status')),
                 ],
               ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Verified online'),
-                value: _verifiedOnline,
-                onChanged: (v) => setState(() => _verifiedOnline = v),
-              ),
+              // Curation state, not something a researcher asserts about
+              // their own work — and the RPC would ignore it anyway.
+              if (!widget.asResearcher)
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Verified online'),
+                  value: _verifiedOnline,
+                  onChanged: (v) => setState(() => _verifiedOnline = v),
+                ),
+              if (widget.asResearcher && _creating) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'UNIDCOM reviews what you add before it appears on the '
+                  'public site.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+              if (widget.onFindDoi != null || widget.onMerge != null) ...[
+                const Divider(height: 24),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (widget.onFindDoi != null)
+                        OutlinedButton.icon(
+                          onPressed: () => _runTool(widget.onFindDoi!),
+                          icon: const Icon(Icons.travel_explore, size: 18),
+                          label: const Text('Find DOI'),
+                        ),
+                      if (widget.onMerge != null)
+                        OutlinedButton.icon(
+                          onPressed: () => _runTool(widget.onMerge!),
+                          icon: const Icon(Icons.merge, size: 18),
+                          label: const Text('Merge duplicates'),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),

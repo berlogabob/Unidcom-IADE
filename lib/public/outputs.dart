@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../data/taxonomy.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/output_row.dart';
 import '../widgets/panels.dart';
+import '../widgets/queue_list.dart';
 import '../widgets/search_bar.dart';
+import '../widgets/taxonomy_picker.dart';
+import 'output_page.dart';
 
 class OutputsScreen extends StatefulWidget {
   const OutputsScreen({super.key});
@@ -18,12 +22,11 @@ class OutputsScreen extends StatefulWidget {
 class _OutputsScreenState extends State<OutputsScreen> {
   String _query = '';
   String _year = '';
-  String? _type;
-  String? _quartile;
+  List<String> _category = const [];
   String? _approvalStatus;
   String? _severity; // null = All · 'Any issue' · 'Errors' · 'Warnings'
   late Future<List<Map<String, dynamic>>> _outputs = fetchOutputs();
-  late final Future<List<String>> _types = fetchDistinctOutputTypes();
+  late final Future<List<TaxonomyNode>> _taxonomy = fetchOutputTaxonomy();
 
   void _load() {
     final year = int.tryParse(_year);
@@ -31,8 +34,7 @@ class _OutputsScreenState extends State<OutputsScreen> {
       () => _outputs = fetchOutputs(
         query: _query,
         year: year,
-        type: _type,
-        quartile: _quartile,
+        categoryPath: _category,
         approvalStatus: _approvalStatus,
       ),
     );
@@ -41,6 +43,16 @@ class _OutputsScreenState extends State<OutputsScreen> {
   void _search(String value) {
     _query = value;
     _load();
+  }
+
+  /// Admins insert directly — they hold `outputs_write`. Same dialog the
+  /// researcher gets, so the taxonomy cascade is the only way in for both.
+  Future<void> _addOutput() async {
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => const OutputEditDialog(),
+    );
+    if (saved ?? false) _load();
   }
 
   @override
@@ -67,11 +79,9 @@ class _OutputsScreenState extends State<OutputsScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          FutureBuilder<List<String>>(
-            future: _types,
-            builder: (context, snapshot) {
-              return _filters(snapshot.data ?? []);
-            },
+          FutureBuilder<List<TaxonomyNode>>(
+            future: _taxonomy,
+            builder: (context, snapshot) => _filters(snapshot.data ?? const []),
           ),
           const SizedBox(height: 12),
           Expanded(
@@ -157,33 +167,40 @@ class _OutputsScreenState extends State<OutputsScreen> {
     );
   }
 
-  Widget _filters(List<String> types) {
+  /// The Type row used to be a flat wrap of thirteen pills, several of them
+  /// 70 characters of Portuguese, which is what prompted "use the same three
+  /// comboboxes as filter". Quartile went with it: Q1–Q4 are already nodes
+  /// under `Artigos em revistas`, so the cascade asks that question in its own
+  /// place instead of as a second control that silently means nothing for the
+  /// other ten categories.
+  Widget _filters(List<TaxonomyNode> taxonomy) {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        ..._filterPills('Type', _type, types, (value) {
-          _type = value;
-          _load();
-        }),
-        ..._filterPills('Quartile', _quartile, const ['Q1', 'Q2', 'Q3', 'Q4'], (
-          value,
-        ) {
-          _quartile = value;
-          _load();
-        }),
-        ..._filterPills(
-          'Approval',
-          _approvalStatus,
-          const ['pending', 'approved', 'rejected'],
-          (value) {
-            _approvalStatus = value;
+        TaxonomyPicker(
+          roots: taxonomy,
+          value: _category,
+          onChanged: (value) {
+            _category = value;
             _load();
           },
         ),
+        // Admin only: every row in the corpus is currently `approved`, so to a
+        // researcher this is a control whose every setting but one returns an
+        // empty list. It earns its place on the review side, not here.
         if (isAdmin)
-          ..._filterPills('Issues', _severity, const [
+          filterDropdown('Approval', _approvalStatus, const [
+            'pending',
+            'approved',
+            'rejected',
+          ], (value) {
+            _approvalStatus = value;
+            _load();
+          }),
+        if (isAdmin)
+          filterDropdown('Issues', _severity, const [
             'Any issue',
             'Errors',
             'Warnings',
@@ -193,37 +210,14 @@ class _OutputsScreenState extends State<OutputsScreen> {
           icon: const Icon(Icons.event),
           label: const Text('Conferences'),
         ),
+        if (isAdmin)
+          FilledButton.icon(
+            onPressed: _addOutput,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add output'),
+          ),
       ],
     );
-  }
-
-  List<Widget> _filterPills(
-    String label,
-    String? selected,
-    List<String> values,
-    ValueChanged<String?> onChanged,
-  ) {
-    return [
-      Text(
-        label,
-        style: const TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      FilterPill(
-        'All',
-        selected: selected == null,
-        onTap: () => onChanged(null),
-      ),
-      for (final value in values)
-        FilterPill(
-          value.replaceAll('_', ' '),
-          selected: selected == value,
-          onTap: () => onChanged(value),
-        ),
-    ];
   }
 
   Widget _outputRow(Map<String, dynamic> output) {

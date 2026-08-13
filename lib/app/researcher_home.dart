@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/features.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
@@ -89,8 +90,10 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
                       );
                       final right = Column(
                         children: [
-                          _SupportRequests(requests: data.requests),
-                          const SizedBox(height: 16),
+                          if (v2) ...[
+                            _SupportRequests(requests: data.requests),
+                            const SizedBox(height: 16),
+                          ],
                           const _QuickLinks(),
                         ],
                       );
@@ -166,11 +169,12 @@ class _Stats extends StatelessWidget {
     final verified = person['last_verified_at']?.toString();
     final cards = [
       AccentStatCard(label: 'OUTPUTS', value: '${data.outputs.length}'),
-      AccentStatCard(
-        label: 'ACTIVE REQUESTS',
-        value: '$active',
-        tone: active > 0 ? AccentTone.warn : AccentTone.neutral,
-      ),
+      if (v2)
+        AccentStatCard(
+          label: 'ACTIVE REQUESTS',
+          value: '$active',
+          tone: active > 0 ? AccentTone.warn : AccentTone.neutral,
+        ),
       AccentStatCard(
         label: 'PROFILE STATUS',
         value: status.replaceAll('_', ' '),
@@ -228,7 +232,9 @@ class _Alerts extends StatelessWidget {
         route: '/app/profile',
       ));
     }
-    if (requests.any((request) => request['status'] == 'rejected')) {
+    // v2: an alert whose only action is a link to a page v1 does not route to
+    // would be a dead end, and support requests are not part of the pilot.
+    if (v2 && requests.any((request) => request['status'] == 'rejected')) {
       alerts.add((
         background: AppColors.redTint,
         foreground: AppColors.red,

@@ -25,6 +25,28 @@ def clean(value: str | None) -> str:
     return " ".join((value or "").strip().split())
 
 
+CATEGORY_SEPARATOR = " › "
+
+
+def collapse_category_path(value: str | None) -> str | None:
+    """Un-pad the spreadsheet's fixed four-column category into a real path.
+
+    The sheet has Macro-tipo / Tipo / Subtipo / Papel as four columns and pads
+    shallow branches out to four by repeating a level, so a two-level category
+    arrives as "A › A › B › B". Stored verbatim that reads back to a researcher
+    as the same label twice, twice over, and it matched only 39 of 301 rows
+    against output_taxonomy. Collapsing consecutive duplicates inverts the
+    padding exactly — see 20260812120000_repair_category_path.sql, which did
+    this once to the existing data. This keeps the next import from undoing it.
+    """
+    segments: list[str] = []
+    for segment in (value or "").split("›"):
+        segment = clean(segment)
+        if segment and (not segments or segments[-1] != segment):
+            segments.append(segment)
+    return CATEGORY_SEPARATOR.join(segments) or None
+
+
 def match_key(value: str | None) -> str:
     text = unicodedata.normalize("NFKD", clean(value).lower())
     return "".join(c for c in text if not unicodedata.combining(c))
@@ -218,7 +240,9 @@ def build_outputs(rows: list[dict[str, str]], people: list[dict], person_by_name
                 "reporting_year": parse_year(row["Ano"]),
                 "type": clean(row["Tipo"]) or None,
                 "subtype": clean(row["Subtipo"]) or None,
-                "category_path": clean(row["Categoria (caminho)"]) or None,
+                "category_path": collapse_category_path(
+                    row["Categoria (caminho)"]
+                ),
                 "doi": doi,
                 "url": non_doi_url(row["URL/DOI"]),
                 "approval_status": "pending",

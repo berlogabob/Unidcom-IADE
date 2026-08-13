@@ -1,0 +1,78 @@
+# E2E for the other half of the split: admin mode still has everything, and the
+# switch works in both directions without signing out.
+#
+# Runs only for an account holding the admin role. Every account currently does.
+#
+#   flutter build web --dart-define=E2E=true
+#   python3 -m http.server 8123 --directory build/web
+#   maestro test .maestro/admin_mode.yaml --env-file .maestro/.env
+url: http://localhost:8123
+name: "View mode: admin mode keeps the whole centre, and the switch works"
+env:
+  BASE_URL: http://localhost:8123
+---
+- clearState
+
+- openLink: "${BASE_URL}/#/login"
+- extendedWaitUntil:
+    visible: "Email"
+    timeout: 30000
+- repeat:
+    times: 3
+    while:
+      notVisible: "${MAESTRO_EMAIL}"
+    commands:
+      - tapOn:
+          id: "Email"
+      - inputText: "${MAESTRO_EMAIL}"
+- tapOn:
+    id: "Password"
+- inputText: "${MAESTRO_PASSWORD}"
+- tapOn:
+    text: "Sign in"
+    below:
+      id: "Password"
+
+- extendedWaitUntil:
+    visible: "How do you want to continue?"
+    timeout: 30000
+- tapOn: "Continue as administrator"
+
+# 1. Admin mode lands on the dashboard and keeps the sidebar.
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 30000
+    label: "Continuing as an administrator lands on the dashboard"
+- assertVisible:
+    text: "People"
+    label: "The admin sidebar is present"
+- assertVisible:
+    text: "Structure"
+    label: "The admin sidebar is present"
+
+# 2. The directory that researcher mode hides opens here.
+- openLink: "${BASE_URL}/#/people"
+- extendedWaitUntil:
+    visible: "1\\d\\d people"
+    timeout: 20000
+    label: "Admin mode reaches the unit-wide directory"
+
+# 3. The cascading filter replaced the flat pill row. The level-1 dropdown is
+#    always present; picking a branch reveals the next level.
+- openLink: "${BASE_URL}/#/outputs"
+- extendedWaitUntil:
+    visible: "Category"
+    timeout: 20000
+    label: "Outputs filter is the cascade, not a wrap of Type pills"
+
+# 4. Switch back without signing out — the whole point of the avatar menu item.
+- tapOn:
+    id: "My profile"
+- tapOn: "Switch to researcher"
+- extendedWaitUntil:
+    visible: "Your first 5 steps"
+    timeout: 20000
+    label: "Switching back lands in researcher mode"
+- assertNotVisible:
+    text: "^Structure$"
+    label: "The directory is gone again after switching back"
