@@ -219,6 +219,12 @@ class TypeBadge extends StatelessWidget {
       ),
       child: Text(
         text.toUpperCase(),
+        // The UNIDCOM taxonomy has labels like "Valorizações de atividades ou
+        // outros outputs no âmbito de projetos científicos" — 77 characters.
+        // Unconstrained, one of those eats a whole row and squeezes the title
+        // beside it down to a single character per line.
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: foreground,
           fontSize: 10,

@@ -225,23 +225,34 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         key: ValueKey('$status-${_candidates.length}'),
         id: person['id'] as String,
         leading: [
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          // Row, not a Wrap with a Spacer in it: Spacer is an Expanded, which
+          // asserts outside a Flex, and inside a Wrap it silently takes the
+          // button down with it.
+          Row(
             children: [
-              StatusPill(
-                profileStatusLabel(status),
-                tone: status == 'approved' ? PillTone.teal : PillTone.amber,
-              ),
-              if (status == 'draft') ...[
-                const Text('Check your data below, then confirm'),
-                FilledButton(
-                  onPressed: _submitting ? null : _submitProfile,
-                  child: const Text('Confirm my profile'),
+              Expanded(
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    StatusPill(
+                      profileStatusLabel(status),
+                      tone: status == 'approved'
+                          ? PillTone.teal
+                          : PillTone.amber,
+                    ),
+                    if (status == 'draft') ...[
+                      const Text('Check your data below, then confirm'),
+                      FilledButton(
+                        onPressed: _submitting ? null : _submitProfile,
+                        child: const Text('Confirm my profile'),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-              const Spacer(),
+              ),
+              const SizedBox(width: 12),
               // The "+add" half of "this works for both filtering my outputs
               // as well as when i click +add" — same cascade, same dialog.
               FilledButton.icon(

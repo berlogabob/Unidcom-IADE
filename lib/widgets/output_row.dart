@@ -153,7 +153,12 @@ class OutputRow extends StatelessWidget {
               ),
               if (type != null && type!.isNotEmpty) ...[
                 const SizedBox(width: 12),
-                TypeBadge(type!, tone: _typeTone(type!)),
+                // Capped, or a long category label starves the Expanded title
+                // beside it — the taxonomy's longest run to 77 characters.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 220),
+                  child: TypeBadge(type!, tone: _typeTone(type!)),
+                ),
               ],
               if (statusTone != null) ...[
                 const SizedBox(width: 12),
