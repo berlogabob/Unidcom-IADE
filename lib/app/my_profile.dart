@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/enrich_client.dart';
+import '../data/features.dart';
 import '../data/supabase.dart';
 import '../public/person/orcid_sync_dialog.dart';
+import '../public/output_page.dart';
 import '../public/person_page.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
@@ -34,6 +36,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   List<Map<String, dynamic>> _candidates = [];
   bool _resolved = false;
   bool _submitting = false;
+  bool _addingAll = false;
   String? _error;
 
   @override
@@ -113,6 +116,51 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     }
   }
 
+  /// Files an output the researcher types in themselves. Saves through
+  /// `create_my_output`, which stamps it pending and links them as an author —
+  /// they have no write grant on `outputs` and are not getting one.
+  Future<void> _addOutput() async {
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => const OutputEditDialog(asResearcher: true),
+    );
+    if (saved ?? false) _refresh();
+  }
+
+  /// Rui: "dont do it as toggle - just show and add a sync botton to all - so
+  /// that i dont have to do it for each one." Eight publications meant eight
+  /// clicks; this is the one.
+  ///
+  /// ponytail: sequential, not Future.wait — promoteCandidate writes an output
+  /// plus an author link per call, and a researcher has single digits of these.
+  /// Parallelise if anyone ever arrives with hundreds.
+  Future<void> _addAllCandidates() async {
+    if (_addingAll || _candidates.isEmpty) return;
+    setState(() => _addingAll = true);
+    final ids = [for (final row in _candidates) row['id'] as String];
+    var added = 0;
+    try {
+      for (final id in ids) {
+        await promoteCandidate(id);
+        added++;
+      }
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
+    } finally {
+      if (mounted) {
+        // Drop what actually landed, not the whole list: a failure halfway
+        // through must not hide the ones still waiting.
+        setState(() {
+          _candidates.removeWhere((row) => ids.take(added).contains(row['id']));
+          _addingAll = false;
+        });
+        if (added > 0) {
+          showSnack(context, '$added publication${added == 1 ? '' : 's'} added');
+        }
+      }
+    }
+  }
+
   /// Adds ORCID as a login method for the signed-in account; if the person
   /// registry lists this iD, the profile is claimed server-side too.
   Future<void> _connectOrcid() async {
@@ -170,125 +218,146 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     final person = _person;
     if (person != null) {
       final status = person['profile_status'] as String? ?? 'draft';
-      return Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  StatusPill(
-                    profileStatusLabel(status),
-                    tone: status == 'approved' ? PillTone.teal : PillTone.amber,
-                  ),
-                  if (status == 'draft') ...[
-                    const Text('Check your data below, then confirm'),
-                    FilledButton(
-                      onPressed: _submitting ? null : _submitProfile,
-                      child: const Text('Confirm my profile'),
-                    ),
-                  ],
-                ],
+      // ponytail: still the detail page, now with two slots. Split only if the
+      // own-profile UI genuinely diverges from the directory one.
+      return PersonPageScreen(
+        // Re-key on claims too, so a promoted publication shows up below.
+        key: ValueKey('$status-${_candidates.length}'),
+        id: person['id'] as String,
+        leading: [
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              StatusPill(
+                profileStatusLabel(status),
+                tone: status == 'approved' ? PillTone.teal : PillTone.amber,
               ),
-            ),
-          ),
-          if (_candidates.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
-                child: ExpansionTile(
-                  title: Text('My ORCID publications (${_candidates.length})'),
-                  children: [
-                    for (final candidate in _candidates)
-                      ListTile(
-                        title: Text(
-                          candidate['title'] as String? ?? 'Untitled',
-                        ),
-                        subtitle: Text(candidateSubtitle(candidate)),
-                        trailing: Wrap(
-                          spacing: 8,
-                          children: [
-                            TextButton(
-                              onPressed: () => _reviewCandidate(
-                                candidate['id'] as String,
-                                promote: false,
-                              ),
-                              child: const Text('Not mine'),
-                            ),
-                            FilledButton(
-                              onPressed: () => _reviewCandidate(
-                                candidate['id'] as String,
-                                promote: true,
-                              ),
-                              child: const Text('Add to my publications'),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
+              if (status == 'draft') ...[
+                const Text('Check your data below, then confirm'),
+                FilledButton(
+                  onPressed: _submitting ? null : _submitProfile,
+                  child: const Text('Confirm my profile'),
                 ),
+              ],
+              const Spacer(),
+              // The "+add" half of "this works for both filtering my outputs
+              // as well as when i click +add" — same cascade, same dialog.
+              FilledButton.icon(
+                onPressed: _addOutput,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add output'),
               ),
-            ),
-          // ORCID sync banner above publications
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 760),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.tealTint,
-                  border: Border.all(
-                    color: AppColors.teal.withValues(alpha: 0.3),
-                  ),
-                  borderRadius: BorderRadius.circular(AppDims.radiusSm),
-                ),
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.sync,
-                      size: 18,
-                      color: AppColors.tealDark,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        person['orcid'] != null && (person['orcid'] as String).isNotEmpty
-                            ? 'ORCID connected — outputs sync automatically'
-                            : 'Connect your ORCID iD to sync outputs automatically',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.tealDark,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    if (person['orcid'] != null && (person['orcid'] as String).isNotEmpty)
-                      TextButton(
-                        onPressed: () => _checkOrcidSync(person['id'] as String),
-                        child: const Text('Sync now'),
-                      ),
-                  ],
-                ),
-              ),
-            ),
+            ],
           ),
-          // ponytail: reuse the detail page; split only if own-profile UI diverges.
-          Expanded(
-            child: PersonPageScreen(
-              // Re-key on claims too, so a promoted publication shows up below.
-              key: ValueKey('$status-${_candidates.length}'),
-              id: person['id'] as String,
-            ),
-          ),
+          const SizedBox(height: 16),
+          // v2: the old banner's "Sync now" opens a diff dialog and imports
+          // nothing — one of the three things Rui named as noise. What he
+          // asked for instead is the single Add all button at the bottom.
+          if (v2 && (person['orcid'] as String? ?? '').isNotEmpty) ...[
+            _syncBanner(context, person),
+            const SizedBox(height: 16),
+          ],
         ],
+        trailing: [const SizedBox(height: 24), _orcidCandidates(context)],
       );
     }
 
+    return _unlinkedView();
+  }
+
+  /// Always on screen and never a toggle — "dont do it as toggle - just show".
+  /// Sits last, below the outputs, because that is where it was asked to go.
+  Widget _orcidCandidates(BuildContext context) {
+    return Panel(
+      title: 'My ORCID publications · ${_candidates.length}',
+      trailing: _candidates.isEmpty
+          ? null
+          : FilledButton.icon(
+              onPressed: _addingAll ? null : _addAllCandidates,
+              icon: _addingAll
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.library_add_outlined, size: 18),
+              label: Text(_addingAll ? 'Adding...' : 'Add all'),
+            ),
+      padding: EdgeInsets.zero,
+      child: _candidates.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Nothing new from ORCID. Publications you add there show up '
+                'here for you to confirm.',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+              ),
+            )
+          : Column(
+              children: [
+                for (final candidate in _candidates)
+                  ListTile(
+                    title: Text(candidate['title'] as String? ?? 'Untitled'),
+                    subtitle: Text(candidateSubtitle(candidate)),
+                    trailing: Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton(
+                          onPressed: _addingAll
+                              ? null
+                              : () => _reviewCandidate(
+                                  candidate['id'] as String,
+                                  promote: false,
+                                ),
+                          child: const Text('Not mine'),
+                        ),
+                        FilledButton(
+                          onPressed: _addingAll
+                              ? null
+                              : () => _reviewCandidate(
+                                  candidate['id'] as String,
+                                  promote: true,
+                                ),
+                          child: const Text('Add'),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+    );
+  }
+
+  Widget _syncBanner(BuildContext context, Map<String, dynamic> person) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.tealTint,
+        border: Border.all(color: AppColors.teal.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(AppDims.radiusSm),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          const Icon(Icons.sync, size: 18, color: AppColors.tealDark),
+          const SizedBox(width: 8),
+          const Expanded(
+            child: Text(
+              'ORCID connected — outputs sync automatically',
+              style: TextStyle(color: AppColors.tealDark, fontSize: 13),
+            ),
+          ),
+          TextButton(
+            onPressed: () => _checkOrcidSync(person['id'] as String),
+            child: const Text('Sync now'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _unlinkedView() {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [

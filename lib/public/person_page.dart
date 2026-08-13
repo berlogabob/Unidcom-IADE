@@ -32,9 +32,25 @@ bool _isUnidcom(Map<String, dynamic> author) {
 }
 
 class PersonPageScreen extends StatefulWidget {
-  const PersonPageScreen({super.key, required this.id});
+  const PersonPageScreen({
+    super.key,
+    required this.id,
+    this.leading = const <Widget>[],
+    this.trailing = const <Widget>[],
+  });
 
   final String id;
+
+  /// Sections the caller wants above and below this page's own, inside the
+  /// same scroll view.
+  ///
+  /// My-profile needs its status banner first and its ORCID publications
+  /// genuinely last ("in the outputs move this to the bottom"). Stacking them
+  /// around an Expanded copy of this screen made three scroll regions and a
+  /// footer pinned above the fold — these two slots make it one list in one
+  /// order, without this page having to know who is asking.
+  final List<Widget> leading;
+  final List<Widget> trailing;
 
   @override
   State<PersonPageScreen> createState() => _PersonPageScreenState();
@@ -206,6 +222,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
 
         return DetailBody(
           children: [
+            ...widget.leading,
             personHeader(
               context,
               person,
@@ -286,6 +303,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                   onTap: (id) => context.go('/outputs/$id'),
                 ),
             ],
+            ...widget.trailing,
           ],
         );
       },

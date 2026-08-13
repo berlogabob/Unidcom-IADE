@@ -15,10 +15,25 @@ Widget filterDropdown(
     width: width,
     child: DropdownButtonFormField<String?>(
       initialValue: value,
+      // The taxonomy labels run to 70+ characters ("Valorizações de atividades
+      // ou outros outputs no âmbito de projetos científicos"). isExpanded stops
+      // the button overflowing its box; selectedItemBuilder ellipsizes the
+      // *closed* state only, so the open menu still shows each option in full —
+      // truncating there would make two options indistinguishable.
+      isExpanded: true,
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(),
       ),
+      selectedItemBuilder: (context) => [
+        const Text('All'),
+        for (final item in values)
+          Text(
+            item.replaceAll('_', ' '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+      ],
       items: [
         const DropdownMenuItem(value: null, child: Text('All')),
         for (final item in values)
