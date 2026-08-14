@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:unidcom_iade/data/supabase.dart' show ViewMode, modeFromStored;
 import 'package:unidcom_iade/main.dart';
 
 // modeRedirect is the whole "researcher sees only their own things" rule, and
@@ -22,7 +23,12 @@ String? redirect(
 void main() {
   group('the chooser', () {
     test('an admin who has not chosen is asked, wherever they were going', () {
-      for (final location in ['/app/home', '/people', '/app/admin', '/outputs']) {
+      for (final location in [
+        '/app/home',
+        '/people',
+        '/app/admin',
+        '/outputs',
+      ]) {
         expect(
           redirect(location, adminAccount: true, chosen: false),
           '/app/mode',
@@ -44,10 +50,7 @@ void main() {
         redirect('/app/mode', adminAccount: true, adminMode: true),
         '/app/dashboard',
       );
-      expect(
-        redirect('/app/mode', adminAccount: true),
-        '/app/welcome/start',
-      );
+      expect(redirect('/app/mode', adminAccount: true), '/app/welcome/start');
     });
   });
 
@@ -129,6 +132,22 @@ void main() {
           '/app/home',
           reason: 'a demo-build bookmark must not walk in behind the flag',
         );
+      }
+    });
+  });
+
+  group('restoring the mode after a refresh', () {
+    // The tab's sessionStorage survives F5; modeFromStored decides whether
+    // that counts as "already answered". Junk must mean "ask again", never
+    // "silently admin".
+    test('the two real values round-trip', () {
+      expect(modeFromStored('admin'), ViewMode.admin);
+      expect(modeFromStored('researcher'), ViewMode.researcher);
+    });
+
+    test('anything else means the chooser is asked again', () {
+      for (final stored in [null, '', 'Admin', 'superuser']) {
+        expect(modeFromStored(stored), isNull, reason: '$stored');
       }
     });
   });
