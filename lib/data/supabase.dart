@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../view_mode_store.dart';
 import 'taxonomy.dart';
 
 final db = Supabase.instance.client;
@@ -14,16 +15,41 @@ final db = Supabase.instance.client;
 /// exactly what a researcher sees.
 enum ViewMode { researcher, admin }
 
-/// Researcher is the default, so an admin who has not chosen yet — or who
-/// reloaded the tab — lands in the quieter of the two. Session-scoped on
-/// purpose: it lives in memory and resets on reload, and reloading into the
-/// mode that shows *less* is the safe direction to fail.
-final viewMode = ValueNotifier(ViewMode.researcher);
+/// Researcher is the default, so an admin who has not chosen yet lands in the
+/// quieter of the two. Tab-scoped: sessionStorage remembers the answer across
+/// F5 — Rui got re-asked on every refresh — but dies with the tab, so a shared
+/// machine never inherits admin mode. Anything unrecognised in storage falls
+/// back to researcher-and-ask, the safe direction to fail.
+final viewMode = ValueNotifier(
+  modeFromStored(loadStoredMode()) ?? ViewMode.researcher,
+);
+
+/// Maps a stored string back to a mode; null (also for junk) = not chosen yet.
+ViewMode? modeFromStored(String? stored) => switch (stored) {
+  'admin' => ViewMode.admin,
+  'researcher' => ViewMode.researcher,
+  _ => null,
+};
 
 /// Has the chooser been answered this session? Separate from [viewMode] because
 /// "not asked yet" and "chose researcher" have to look different to the router —
 /// they share a value but not a landing.
-bool modeChosen = false;
+bool modeChosen = modeFromStored(loadStoredMode()) != null;
+
+/// The one door for answering the chooser (or the avatar-menu switcher):
+/// flips the notifier — which wakes the router — and persists for this tab.
+void chooseMode(ViewMode mode) {
+  viewMode.value = mode;
+  modeChosen = true;
+  storeMode(mode.name);
+}
+
+/// Sign-out companion: next login in this tab gets the chooser again.
+void forgetMode() {
+  viewMode.value = ViewMode.researcher;
+  modeChosen = false;
+  storeMode(null);
+}
 
 /// Does this account hold the admin role at all? Fixed for the session, and
 /// the only thing that decides whether the mode switcher is offered.
@@ -540,10 +566,7 @@ Future<String> createPerson(Map<String, dynamic> fields) async {
 /// clean_doi in scripts/enrich.py. Returns null when there's no DOI in there.
 String? cleanDoi(String? value) {
   final match = RegExp(r'10\.[^\s"<>]+').firstMatch(value ?? '');
-  return match
-      ?.group(0)
-      ?.replaceAll(RegExp(r'[).,;]+$'), '')
-      .toLowerCase();
+  return match?.group(0)?.replaceAll(RegExp(r'[).,;]+$'), '').toLowerCase();
 }
 
 Future<void> updateOutput(String id, Map<String, dynamic> fields) async {
@@ -580,9 +603,10 @@ Future<String> createMyOutput(Map<String, dynamic> fields) async {
     // Same reason as updateOutput: a pasted https://doi.org/10.x/y would be
     // born with an invalid_doi quality flag.
     final payload = {...fields, 'doi': cleanDoi(fields['doi'] as String?)};
-    final result = await db.rpc('create_my_output', params: {
-      'p_fields': payload,
-    });
+    final result = await db.rpc(
+      'create_my_output',
+      params: {'p_fields': payload},
+    );
     return result as String;
   } catch (error) {
     throw Exception(_error(error));
@@ -594,11 +618,7 @@ Future<String> createMyOutput(Map<String, dynamic> fields) async {
 Future<String> createOutput(Map<String, dynamic> fields) async {
   try {
     final payload = {...fields, 'doi': cleanDoi(fields['doi'] as String?)};
-    final row = await db
-        .from('outputs')
-        .insert(payload)
-        .select('id')
-        .single();
+    final row = await db.from('outputs').insert(payload).select('id').single();
     return row['id'] as String;
   } catch (error) {
     throw Exception(_error(error));
@@ -680,7 +700,9 @@ Future<void> submitMyProfileForReview(String personId) async {
 Future<void> claimPersonByOrcid() async {
   try {
     await db.rpc('claim_person_by_orcid');
-  } catch (_) {/* best-effort; profile UI has a manual fallback */}
+  } catch (_) {
+    /* best-effort; profile UI has a manual fallback */
+  }
 }
 
 Future<void> linkPersonToMe(String personId) async {
@@ -1017,9 +1039,11 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
   String? type,
   String? quartile,
   String? approvalStatus,
+
   /// Taxonomy segments picked in the cascade. Matches this branch and
   /// everything beneath it, so a partial selection is a real filter.
   List<String>? categoryPath,
+
   /// Defaults to UNIDCOM-affiliated work only. Pass 'external', 'unknown', or
   /// null (all) to widen it.
   String? affiliation = 'unidcom',
@@ -1940,10 +1964,7 @@ String conferenceKeyOf(Map<String, dynamic> output) {
   for (var i = 0; i < _diacritics.length; i++) {
     key = key.replaceAll(_diacritics[i], _diacriticsPlain[i]);
   }
-  return key
-      .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
-      .trim()
-      .replaceAll(' ', '-');
+  return key.replaceAll(RegExp(r'[^a-z0-9]+'), ' ').trim().replaceAll(' ', '-');
 }
 
 Future<List<Map<String, dynamic>>> fetchConferenceOutputs() async {
@@ -1978,8 +1999,7 @@ Future<String> startOrcidLink(String returnTo) async {
 }
 
 /// True when the signed-in account already has an ORCID login method.
-bool get hasLinkedOrcid =>
-    db.auth.currentUser?.appMetadata['orcid'] != null;
+bool get hasLinkedOrcid => db.auth.currentUser?.appMetadata['orcid'] != null;
 
 /// Resolves the signed-in user's own `people.id`, or null when there is no
 /// session or no matching person row. Shared by [fetchMyRequests] and

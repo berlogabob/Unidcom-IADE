@@ -117,12 +117,25 @@ Map<String, dynamic> categoryFields(List<String> segments) {
   };
 }
 
+/// Client-side twin of `fetchOutputs`' `categoryPath` prefix filter, for rows
+/// already in memory (a person's own outputs). True when the stored path sits
+/// on or under the selected branch; empty [selected] means "All". Compares
+/// collapsed segments rather than string prefixes, so it is correct on padded
+/// legacy paths too, and an unclassified row matches only the empty selection —
+/// the same rule the SQL `like` applies.
+bool matchesCategory(String? path, List<String> selected) {
+  if (selected.isEmpty) return true;
+  final segments = categorySegments(path);
+  if (segments.length < selected.length) return false;
+  for (var i = 0; i < selected.length; i++) {
+    if (segments[i] != selected[i]) return false;
+  }
+  return true;
+}
+
 /// The children available under [selected], or the roots when nothing is
 /// picked. Empty means the branch ends here and the cascade should stop.
-List<TaxonomyNode> childrenAt(
-  List<TaxonomyNode> roots,
-  List<String> selected,
-) {
+List<TaxonomyNode> childrenAt(List<TaxonomyNode> roots, List<String> selected) {
   var level = roots;
   for (final label in selected) {
     final match = level.where((node) => node.label == label);

@@ -153,7 +153,7 @@ Future<void> _boot() async {
       // chooser: you were acting as a researcher. Skip the question, or an
       // admin gets interrogated on the way back from ORCID and loses the
       // profile landing this whole branch exists to preserve.
-      data.modeChosen = true;
+      data.chooseMode(data.ViewMode.researcher);
     }
   }
 
@@ -312,7 +312,10 @@ final _router = GoRouter(
           builder: (_, state) =>
               ObjectivePageScreen(id: state.pathParameters['id']!),
         ),
-        GoRoute(path: '/app/mode', builder: (_, _) => const ModeChooserScreen()),
+        GoRoute(
+          path: '/app/mode',
+          builder: (_, _) => const ModeChooserScreen(),
+        ),
         GoRoute(
           path: '/app/dashboard',
           builder: (_, _) => const DashboardScreen(),
@@ -347,10 +350,7 @@ final _router = GoRouter(
         // needsAuth treats bare /app/welcome as public, and the Hugo footer
         // could plausibly link it — without this it is the one "public" path
         // that 404s instead of resolving.
-        GoRoute(
-          path: '/app/welcome',
-          redirect: (_, _) => '/app/welcome/start',
-        ),
+        GoRoute(path: '/app/welcome', redirect: (_, _) => '/app/welcome/start'),
         GoRoute(
           path: '/app/welcome/:section',
           builder: (_, state) => PortalShell(
@@ -359,10 +359,7 @@ final _router = GoRouter(
             ),
           ),
         ),
-        GoRoute(
-          path: '/app/settings',
-          builder: (_, _) => const SettingsPage(),
-        ),
+        GoRoute(path: '/app/settings', builder: (_, _) => const SettingsPage()),
       ],
     ),
   ],

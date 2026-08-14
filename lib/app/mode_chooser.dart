@@ -46,14 +46,16 @@ class ModeChooserScreen extends StatelessWidget {
                     _ModeCard(
                       icon: Icons.person_outline,
                       title: 'As a researcher',
-                      body: 'Your profile, your outputs and the welcome pack. '
+                      body:
+                          'Your profile, your outputs and the welcome pack. '
                           'Nothing else.',
                       onTap: () => _choose(context, ViewMode.researcher),
                     ),
                     _ModeCard(
                       icon: Icons.admin_panel_settings_outlined,
                       title: 'As an administrator',
-                      body: 'The whole centre — people, outputs, structure, '
+                      body:
+                          'The whole centre — people, outputs, structure, '
                           'review queues and reports.',
                       onTap: () => _choose(context, ViewMode.admin),
                     ),
@@ -95,8 +97,7 @@ class ModeChooserScreen extends StatelessWidget {
 /// the redirect — so the `go` below only has to name the landing, and the shell
 /// swaps itself. Same one-decision-point rule the sign-in path follows.
 void _choose(BuildContext context, ViewMode mode) {
-  viewMode.value = mode;
-  modeChosen = true;
+  chooseMode(mode);
   context.go(mode == ViewMode.admin ? '/app/dashboard' : '/app/welcome/start');
 }
 

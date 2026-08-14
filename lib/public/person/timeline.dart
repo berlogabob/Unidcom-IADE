@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../data/supabase.dart';
+import '../../data/taxonomy.dart';
 import '../../widgets/queue_list.dart';
+import '../../widgets/taxonomy_picker.dart';
 import '../../widgets/timeline_section.dart';
 import 'featured_outputs.dart';
 import 'output_row.dart';
 
-class PersonTimelineSection extends StatelessWidget {
+class PersonTimelineSection extends StatefulWidget {
   const PersonTimelineSection({
     super.key,
     required this.roles,
@@ -34,6 +36,16 @@ class PersonTimelineSection extends StatelessWidget {
   final ValueChanged<String> onOpenOutput;
   final ValueChanged<String> onOpenLab;
 
+  @override
+  State<PersonTimelineSection> createState() => _PersonTimelineSectionState();
+}
+
+class _PersonTimelineSectionState extends State<PersonTimelineSection> {
+  /// The cascade selection — "for both filtering my outputs as well as when i
+  /// click +add". Empty = All.
+  List<String> _category = const [];
+  late final Future<List<TaxonomyNode>> _taxonomy = fetchOutputTaxonomy();
+
   static const _kindLabels = {
     'membership': 'Membership',
     'role': 'Role',
@@ -59,23 +71,35 @@ class PersonTimelineSection extends StatelessWidget {
   /// outputs (star toggles intact) and lab memberships.
   @override
   Widget build(BuildContext context) {
-    final canEdit = admin || isOwner;
+    final canEdit = widget.admin || widget.isOwner;
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: roles,
+      future: widget.roles,
       builder: (context, snapshot) {
         final roles = snapshot.data ?? [];
-        // Roles first (membership pinned), then outputs, then labs — the
-        // year buckets keep this insertion order.
+        // A picked category names outputs, so it narrows the timeline to the
+        // matching ones — roles and labs have no category and drop out, the
+        // same "unclassified matches only All" rule the admin list applies.
         final items = <Map<String, dynamic>>[
-          for (final role in [
-            ...roles,
-          ]..sort((a, b) => _order(a).compareTo(_order(b))))
-            {...role, '_kind': _kindLabels[role['kind']] ?? 'Role'},
-          for (final author in authors) {...author, '_kind': 'Output'},
-          for (final membership in labMemberships)
-            {...membership, '_kind': 'Lab'},
+          if (_category.isEmpty) ...[
+            // Roles first (membership pinned), then outputs, then labs — the
+            // year buckets keep this insertion order.
+            for (final role in [
+              ...roles,
+            ]..sort((a, b) => _order(a).compareTo(_order(b))))
+              {...role, '_kind': _kindLabels[role['kind']] ?? 'Role'},
+          ],
+          for (final author in widget.authors)
+            if (matchesCategory(
+              (author['outputs'] as Map<String, dynamic>?)?['category_path']
+                  as String?,
+              _category,
+            ))
+              {...author, '_kind': 'Output'},
+          if (_category.isEmpty)
+            for (final membership in widget.labMemberships)
+              {...membership, '_kind': 'Lab'},
         ];
-        return TimelineSection(
+        final timeline = TimelineSection(
           title: 'Timeline · ${items.length}',
           items: items,
           yearOf: (item) => switch (item['_kind']) {
@@ -99,15 +123,42 @@ class PersonTimelineSection extends StatelessWidget {
           itemBuilder: (item) => switch (item['_kind']) {
             'Output' => PersonOutputRow(
               author: item,
-              isFeatured: featured.contains(outputIdOf(item)),
-              onToggle: canEdit ? onToggleFeatured : null,
-              onTap: onOpenOutput,
+              isFeatured: widget.featured.contains(outputIdOf(item)),
+              onToggle: canEdit ? widget.onToggleFeatured : null,
+              onTap: widget.onOpenOutput,
             ),
             'Lab' => _labRow(context, item),
             _ => _roleRow(item, showValue: true),
           },
-          emptyText: 'Nothing recorded yet',
-          onAdd: canEdit ? onAddRole : null,
+          emptyText: _category.isEmpty
+              ? 'Nothing recorded yet'
+              : 'No outputs in this category',
+          onAdd: canEdit ? widget.onAddRole : null,
+        );
+        // The cascade sits outside TimelineSection: the section hides its
+        // filter row whenever its items come up empty, and a picker that
+        // vanishes on a zero-result selection could never be undone.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.authors.isNotEmpty)
+              FutureBuilder<List<TaxonomyNode>>(
+                future: _taxonomy,
+                builder: (context, taxonomy) {
+                  final roots = taxonomy.data ?? const <TaxonomyNode>[];
+                  if (roots.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: TaxonomyPicker(
+                      roots: roots,
+                      value: _category,
+                      onChanged: (value) => setState(() => _category = value),
+                    ),
+                  );
+                },
+              ),
+            timeline,
+          ],
         );
       },
     );
@@ -129,7 +180,7 @@ class PersonTimelineSection extends StatelessWidget {
         '${coordinator ? ' (coordinator)' : ''}',
       ),
       trailing: const Icon(Icons.chevron_right, size: 18),
-      onTap: () => onOpenLab(lab['id'].toString()),
+      onTap: () => widget.onOpenLab(lab['id'].toString()),
     );
   }
 
@@ -154,22 +205,22 @@ class PersonTimelineSection extends StatelessWidget {
               label: Text('pending'),
               visualDensity: VisualDensity.compact,
             ),
-          if (admin && pending)
+          if (widget.admin && pending)
             IconButton(
               tooltip: 'Approve',
               icon: const Icon(Icons.check),
               onPressed: () async {
                 await approvePersonRole(role['id'] as String);
-                onRefresh();
+                widget.onRefresh();
               },
             ),
-          if (admin || isOwner)
+          if (widget.admin || widget.isOwner)
             IconButton(
               tooltip: 'Remove',
               icon: const Icon(Icons.close),
               onPressed: () async {
                 await removePersonRole(role['id'] as String);
-                onRefresh();
+                widget.onRefresh();
               },
             ),
         ],

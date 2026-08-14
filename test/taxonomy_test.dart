@@ -18,24 +18,21 @@ void main() {
     test('shared prefixes merge into one node', () {
       expect(roots.length, 3);
       expect(roots.first.label, 'Livros');
-      expect(
-        roots.first.children.map((node) => node.label),
-        ['Capítulos de livros', 'Autoria de Livro'],
-      );
+      expect(roots.first.children.map((node) => node.label), [
+        'Capítulos de livros',
+        'Autoria de Livro',
+      ]);
     });
 
     test('seed order wins over alphabetical', () {
       // 'Autoria de Livro' sorts first but is seeded second; the director's
       // ordering is the one the reports use.
       expect(roots.first.children.first.label, 'Capítulos de livros');
-      expect(
-        roots.map((node) => node.label).toList(),
-        [
-          'Livros',
-          'Organização de Seminários e Conferências',
-          'Missões de internacionalização',
-        ],
-      );
+      expect(roots.map((node) => node.label).toList(), [
+        'Livros',
+        'Organização de Seminários e Conferências',
+        'Missões de internacionalização',
+      ]);
     });
 
     test('ragged depths coexist; leaves have no children', () {
@@ -64,10 +61,9 @@ void main() {
     // The four positional shapes the importer produced, verified against all
     // 301 classified rows in scripts/out/outputs.json.
     test('depth 1 stored as [L1,L1,L1,L1]', () {
-      expect(
-        categorySegments('Missões › Missões › Missões › Missões'),
-        ['Missões'],
-      );
+      expect(categorySegments('Missões › Missões › Missões › Missões'), [
+        'Missões',
+      ]);
     });
 
     test('depth 2 stored as [L1,L1,L2,L2]', () {
@@ -78,29 +74,35 @@ void main() {
           'Organização de Seminários e Conferências › '
           'Membro da comissão científica › Membro da comissão científica',
         ),
-        ['Organização de Seminários e Conferências', 'Membro da comissão científica'],
+        [
+          'Organização de Seminários e Conferências',
+          'Membro da comissão científica',
+        ],
       );
     });
 
     test('depth 3 stored as [L1,L1,L2,L3]', () {
-      expect(
-        categorySegments('Artigos › Artigos › Quartil Q1 › Co-autor'),
-        ['Artigos', 'Quartil Q1', 'Co-autor'],
-      );
+      expect(categorySegments('Artigos › Artigos › Quartil Q1 › Co-autor'), [
+        'Artigos',
+        'Quartil Q1',
+        'Co-autor',
+      ]);
     });
 
     test('depth 4 is already canonical and survives untouched', () {
-      expect(
-        categorySegments('Livros › Capítulos › Indexados › Co-autor'),
-        ['Livros', 'Capítulos', 'Indexados', 'Co-autor'],
-      );
+      expect(categorySegments('Livros › Capítulos › Indexados › Co-autor'), [
+        'Livros',
+        'Capítulos',
+        'Indexados',
+        'Co-autor',
+      ]);
     });
 
     test('repaired paths round-trip unchanged', () {
-      expect(
-        categorySegments('Livros › Capítulos de livros'),
-        ['Livros', 'Capítulos de livros'],
-      );
+      expect(categorySegments('Livros › Capítulos de livros'), [
+        'Livros',
+        'Capítulos de livros',
+      ]);
     });
 
     test('null, empty and whitespace give nothing, not a phantom segment', () {
@@ -125,6 +127,41 @@ void main() {
 
     test('an empty selection matches everything', () {
       expect(categoryPrefix([]), '%');
+    });
+  });
+
+  group('matchesCategory: the in-memory twin of the SQL prefix filter', () {
+    test('empty selection is All — even the unclassified pass', () {
+      expect(matchesCategory('Livros', const []), isTrue);
+      expect(matchesCategory(null, const []), isTrue);
+    });
+
+    test('a branch matches itself and everything under it', () {
+      expect(matchesCategory('Livros', const ['Livros']), isTrue);
+      expect(
+        matchesCategory('Livros › Capítulos de livros', const ['Livros']),
+        isTrue,
+      );
+      expect(matchesCategory('Exposições', const ['Livros']), isFalse);
+    });
+
+    test('segments, not string prefixes — no sibling over-match', () {
+      expect(matchesCategory('Livros e afins', const ['Livros']), isFalse);
+    });
+
+    test('unclassified rows drop out of any real selection', () {
+      expect(matchesCategory(null, const ['Livros']), isFalse);
+      expect(matchesCategory('', const ['Livros']), isFalse);
+    });
+
+    test('correct on legacy padded paths, like categorySegments', () {
+      expect(
+        matchesCategory('Livros › Livros › Capítulos de livros', const [
+          'Livros',
+          'Capítulos de livros',
+        ]),
+        isTrue,
+      );
     });
   });
 

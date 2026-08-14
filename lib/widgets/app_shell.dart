@@ -91,18 +91,17 @@ class _AppShellState extends State<AppShell> {
     void handlePortalMenu(String value) {
       if (value == 'profile') context.go('/app/profile');
       if (value == 'mode') {
-        // Flipping the notifier wakes the router; `go` only names the landing.
-        data.viewMode.value = admin
-            ? data.ViewMode.researcher
-            : data.ViewMode.admin;
-        data.modeChosen = true;
+        // chooseMode wakes the router; `go` only names the landing.
+        data.chooseMode(admin ? data.ViewMode.researcher : data.ViewMode.admin);
         context.go(admin ? '/app/welcome/start' : '/app/dashboard');
       }
       if (value == 'site') _openPublicSite();
       if (value == 'signout') {
+        data.forgetMode();
         Supabase.instance.client.auth.signOut();
       }
     }
+
     // Mobile app bar actions. No signed-out variant: _anonymousShell handled it.
     final sessionActions = [
       PopupMenuButton<String>(
@@ -114,7 +113,10 @@ class _AppShellState extends State<AppShell> {
       IconButton(
         tooltip: 'Sign out',
         icon: const Icon(Icons.logout),
-        onPressed: () => Supabase.instance.client.auth.signOut(),
+        onPressed: () {
+          data.forgetMode();
+          Supabase.instance.client.auth.signOut();
+        },
       ),
     ];
     // Desktop account chip. It used to repeat Overview / Support requests /
@@ -122,67 +124,64 @@ class _AppShellState extends State<AppShell> {
     // same navigation on screen at once.
     final desktopAccountActions = [
       PopupMenuButton<String>(
-              tooltip: 'My profile',
-              onSelected: handlePortalMenu,
-              itemBuilder: (context) => portalMenuItems,
-              child: FutureBuilder<Map<String, dynamic>?>(
-                future: _person,
-                builder: (context, snapshot) {
-                  final personName =
-                      (snapshot.data?['preferred_name'] as String? ?? '')
-                          .trim();
-                  final email =
-                      (snapshot.data?['email'] as String? ??
-                              session.user.email ??
-                              '')
-                          .trim();
-                  final name = personName.isEmpty
-                      ? email.split('@').first
-                      : personName;
-                  return Container(
-                    margin: const EdgeInsets.only(right: 16),
-                    padding: const EdgeInsets.fromLTRB(4, 4, 10, 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircleAvatar(
-                          radius: 12,
-                          backgroundColor: AppColors.teal,
-                          child: Text(
-                            _initials(name),
-                            style: const TextStyle(
-                              // Navy on teal is 6.60:1; white was 2.62:1.
-                              color: AppColors.profileBand,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 160),
-                          child: Text(
-                            name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textOnDark,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+        tooltip: 'My profile',
+        onSelected: handlePortalMenu,
+        itemBuilder: (context) => portalMenuItems,
+        child: FutureBuilder<Map<String, dynamic>?>(
+          future: _person,
+          builder: (context, snapshot) {
+            final personName =
+                (snapshot.data?['preferred_name'] as String? ?? '').trim();
+            final email =
+                (snapshot.data?['email'] as String? ?? session.user.email ?? '')
+                    .trim();
+            final name = personName.isEmpty
+                ? email.split('@').first
+                : personName;
+            return Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.fromLTRB(4, 4, 10, 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(999),
               ),
-            ),
-          ];
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: AppColors.teal,
+                    child: Text(
+                      _initials(name),
+                      style: const TextStyle(
+                        // Navy on teal is 6.60:1; white was 2.62:1.
+                        color: AppColors.profileBand,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 160),
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textOnDark,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
