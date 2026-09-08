@@ -32,4 +32,10 @@ void main() {
       findsNothing,
     );
   });
+  test('nav shows three group headers and none over Getting started', () {
+    final titles = [for (final g in sectionGroups) g.$1];
+    expect(titles.where((t) => t.isNotEmpty).length, 3);
+    expect(sectionGroups.first.$1, isEmpty);
+    expect(sectionGroups.first.$2.single.$1, 'start');
+  });
 }
