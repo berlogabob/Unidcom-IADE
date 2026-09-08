@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/features.dart';
+import '../data/supabase.dart';
 import '../theme/tokens.dart';
 import '../widgets/panels.dart';
+import 'signature_form.dart';
 
 const _affiliationEn =
     'UNIDCOM/IADE, Research Unit in Design and Communication, Oriente Green Campus, Jardim António Augusto Simenta Mordido, 2 – 1885-081 Moscavide, Portugal';
@@ -13,12 +15,6 @@ const _fundingEn =
     'This work is supported by FCT — Fundação para a Ciência e Tecnologia, I.P., in the framework of the Project UID/00711/2025 — Research Unit in Design and Communication — UNIDCOM/IADE, with the DOI identifier 10.54499/UID/00711/2025\nDOI: https://doi.org/10.54499/UID/00711/2025';
 const _fundingPt =
     'Este trabalho é financiado por fundos nacionais através da FCT — Fundação para a Ciência e a Tecnologia, I.P., no âmbito do projeto UID/00711/2025 — Unidade de Investigação em Design e Comunicação — UNIDCOM/IADE, com o identificador DOI 10.54499/UID/00711/2025\nDOI: https://doi.org/10.54499/UID/00711/2025';
-const _signature = '''Name Surname
-Role
-IADE – Faculty of Design, Technology and Communication, Universidade Europeia
-Oriente Green Campus, Jardim António Augusto Simenta Mordido, 2 – 1885-081 Moscavide, Portugal
-E email@universidadeeuropeia.pt · iade.europeia.pt
-This work is supported by FCT, project UID/00711/2025 – UNIDCOM/IADE (DOI: 10.54499/UID/00711/2025)''';
 
 Widget welcomeSectionBody(BuildContext context, String slug) => switch (slug) {
   'start' => _startSection(),
@@ -103,7 +99,7 @@ Widget _startSection() => _section(
 Widget _signatureSection(BuildContext context) => _section(
   title: 'Email signature',
   lead:
-      'Official template for your institutional email. Fill in your details and copy it into Outlook.',
+      'Official template for your institutional email. Your details are filled in from your UNIDCOM record — correct them below and copy the result into Outlook.',
   children: [
     const SizedBox(height: 18),
     _callout(
@@ -112,16 +108,7 @@ Widget _signatureSection(BuildContext context) => _section(
       color: AppColors.warnDark,
       background: AppColors.amberTintSoft,
     ),
-    _heading('Personalise your signature'),
-    const _SignatureField(label: 'Full name', hint: 'Name Surname'),
-    const SizedBox(height: 12),
-    const _SignatureField(label: 'Role', hint: 'e.g. Associate Professor'),
-    const SizedBox(height: 12),
-    const _SignatureField(label: 'Email', hint: 'name@universidadeeuropeia.pt'),
-    const SizedBox(height: 12),
-    const _SignatureField(label: 'Mobile (optional)', hint: '+351 …'),
-    _heading('Preview'),
-    _signaturePreview(context),
+    const _SignatureSection(),
     const SizedBox(height: 10),
     if (v2)
       const Text(
@@ -129,56 +116,6 @@ Widget _signatureSection(BuildContext context) => _section(
         style: TextStyle(color: AppColors.textFaint, fontSize: 11),
       ),
   ],
-);
-
-Widget _signaturePreview(BuildContext context) => Panel(
-  padding: const EdgeInsets.all(18),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Name Surname',
-        style: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      const Text(
-        'Role',
-        style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-      ),
-      const SizedBox(height: 10),
-      Row(children: [_brandTag('IADE', dark: true), _brandTag('UNIDCOM')]),
-      const SizedBox(height: 10),
-      const Divider(color: AppColors.cardBorder, height: 1),
-      const SizedBox(height: 10),
-      const SelectableText(
-        'IADE – Faculty of Design, Technology and Communication, Universidade Europeia\n'
-        'Oriente Green Campus, Jardim António Augusto Simenta Mordido, 2 – 1885-081 Moscavide, Portugal\n'
-        'E email@universidadeeuropeia.pt · iade.europeia.pt',
-        style: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 11,
-          height: 1.55,
-        ),
-      ),
-      const SizedBox(height: 8),
-      const Text(
-        'This work is supported by FCT, project UID/00711/2025 – UNIDCOM/IADE (DOI: 10.54499/UID/00711/2025)',
-        style: TextStyle(
-          color: AppColors.textFaint,
-          fontSize: 10,
-          fontStyle: FontStyle.italic,
-          height: 1.4,
-        ),
-      ),
-      Align(
-        alignment: Alignment.centerRight,
-        child: _copyButton(context, _signature),
-      ),
-    ],
-  ),
 );
 
 Widget _socialSection() => _section(
@@ -1008,25 +945,6 @@ Widget _copyButton(BuildContext context, String text, {String label = 'Copy'}) {
   );
 }
 
-Widget _brandTag(String text, {bool dark = false}) => Padding(
-  padding: const EdgeInsets.only(right: 10),
-  child: Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-    decoration: BoxDecoration(
-      color: dark ? AppColors.profileBand : AppColors.tealTint,
-      borderRadius: BorderRadius.circular(4),
-    ),
-    child: Text(
-      text,
-      style: TextStyle(
-        color: dark ? AppColors.cardBg : AppColors.tealDark,
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-  ),
-);
-
 Widget _logoRow({
   required String swatch,
   required String label,
@@ -1118,20 +1036,19 @@ Widget _contactCard({
   ),
 );
 
-class _SignatureField extends StatelessWidget {
-  const _SignatureField({required this.label, required this.hint});
-
-  final String label;
-  final String hint;
+class _SignatureSection extends StatefulWidget {
+  const _SignatureSection();
 
   @override
-  Widget build(BuildContext context) => TextField(
-    style: const TextStyle(fontSize: 13),
-    decoration: InputDecoration(
-      labelText: label,
-      hintText: hint,
-      border: const OutlineInputBorder(),
-      isDense: true,
-    ),
+  State<_SignatureSection> createState() => _SignatureSectionState();
+}
+
+class _SignatureSectionState extends State<_SignatureSection> {
+  late final Future<Map<String, dynamic>?> _person = fetchMyPerson();
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder(
+    future: _person,
+    builder: (context, snapshot) => SignatureForm(person: snapshot.data),
   );
 }
