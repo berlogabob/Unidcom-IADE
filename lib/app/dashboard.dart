@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../data/features.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
 import '../widgets/chart_palette.dart';
@@ -257,13 +258,15 @@ class _ResponsiveCharts extends StatelessWidget {
               child: _QuartileChart(counts: data.journalsByQuartile),
             ),
           ),
-          Panel(
-            title: 'Top 10 researchers by output count',
-            child: _HorizontalBars(
-              items: data.topResearchers,
-              color: AppColors.blue,
+          // Rui, 14 Aug: "Top 10 — delete" → hidden, not deleted.
+          if (v2)
+            Panel(
+              title: 'Top 10 researchers by output count',
+              child: _HorizontalBars(
+                items: data.topResearchers,
+                color: AppColors.blue,
+              ),
             ),
-          ),
           Panel(
             title: 'People by category',
             child: SizedBox(
