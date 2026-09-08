@@ -122,7 +122,6 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
   }
 }
 
-
 class _NoProfileView extends StatelessWidget {
   const _NoProfileView();
 
@@ -180,13 +179,15 @@ class _Stats extends StatelessWidget {
         value: status.replaceAll('_', ' '),
         tone: status == 'approved' ? AccentTone.good : AccentTone.warn,
       ),
-      AccentStatCard(
-        label: 'LAST VERIFIED',
-        value: verified == null || verified.isEmpty
-            ? 'Never'
-            : verified.split('T').first,
-        tone: AccentTone.info,
-      ),
+      // M2 — Rui, 14 Aug: "Last verified → hide"
+      if (v2)
+        AccentStatCard(
+          label: 'LAST VERIFIED',
+          value: verified == null || verified.isEmpty
+              ? 'Never'
+              : verified.split('T').first,
+          tone: AccentTone.info,
+        ),
     ];
 
     return LayoutBuilder(

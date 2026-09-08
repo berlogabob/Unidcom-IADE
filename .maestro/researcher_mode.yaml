@@ -83,6 +83,9 @@ env:
     visible: "OUTPUTS"
     timeout: 20000
     label: "A directory deep link in researcher mode lands on the own overview"
+- assertNotVisible:
+    text: "LAST VERIFIED"
+    label: "Last verified is M2 — Rui, 14 Aug"
 
 # 4. The profile band carries one button, not five. Auto-fill, ORCID sync and
 #    Approve were the "three things that make noise" on Rui's own profile.
@@ -91,6 +94,9 @@ env:
     visible: "Edit"
     timeout: 20000
     label: "The researcher can still edit their own profile"
+- assertNotVisible:
+    text: "^Last verified$"
+    label: "Last verified row is M2 on the researcher's own profile"
 - assertNotVisible:
     text: "Approve"
     label: "No Approve button on a researcher's own profile"
