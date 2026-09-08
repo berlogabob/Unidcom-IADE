@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/features.dart';
 import '../theme/tokens.dart';
@@ -192,16 +193,19 @@ Widget _socialSection() => _section(
         name: 'Instagram',
         handle: '@unidcom.iade',
         description: 'Events, publications and researcher activity.',
+        url: 'https://www.instagram.com/unidcom.iade/',
       ),
       _networkCard(
         name: 'Facebook',
         handle: 'UNIDCOM/IADE',
         description: 'News, events and publications from the unit.',
+        url: 'https://www.facebook.com/unidcom.iade/',
       ),
       _networkCard(
         name: 'LinkedIn',
         handle: 'UNIDCOM/IADE',
         description: 'Projects, researchers and opportunities.',
+        url: 'https://www.linkedin.com/in/unidcom-iade-80b45a182/',
       ),
     ]),
     _heading('How you can contribute'),
@@ -699,37 +703,47 @@ Widget _networkCard({
   required String name,
   required String handle,
   required String description,
-}) => Panel(
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        name,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-        ),
+  required String url,
+}) => Semantics(
+  link: true,
+  label: url,
+  child: InkWell(
+    onTap: () => launchUrl(Uri.parse(url)),
+    borderRadius: BorderRadius.circular(AppDims.radius),
+    child: Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            name,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            handle,
+            style: const TextStyle(
+              color: AppColors.teal,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 11.5,
+              height: 1.45,
+            ),
+          ),
+        ],
       ),
-      const SizedBox(height: 2),
-      Text(
-        handle,
-        style: const TextStyle(
-          color: AppColors.teal,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      const SizedBox(height: 8),
-      Text(
-        description,
-        style: const TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 11.5,
-          height: 1.45,
-        ),
-      ),
-    ],
+    ),
   ),
 );
 
