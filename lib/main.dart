@@ -36,6 +36,7 @@ import 'public/structure.dart';
 import 'theme/app_theme.dart';
 import 'theme/tokens.dart';
 import 'widgets/app_shell.dart';
+import 'widgets/nav_model.dart';
 import 'widgets/portal_shell.dart';
 
 const _supabaseUrl = String.fromEnvironment(
