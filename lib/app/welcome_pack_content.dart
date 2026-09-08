@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../data/features.dart';
 import '../theme/tokens.dart';
 import '../widgets/panels.dart';
 
@@ -47,9 +48,9 @@ Widget _startSection() => _section(
     _cardGrid([
       _infoCard(
         icon: '👥',
-        title: '~40 researchers',
+        title: '46 integrated members',
         description:
-            'Integrated members, collaborators and PhD students in Design and Communication.',
+            'Plus collaborators and PhD students in Design and Communication.',
       ),
       _infoCard(
         icon: '📍',
@@ -64,8 +65,8 @@ Widget _startSection() => _section(
             'Website, publications, events and information about the research unit.',
       ),
     ]),
-    _heading('Your first 5 steps'),
-    _steps(const [
+    _heading('Your first steps'),
+    _steps([
       (
         'Set up your email signature',
         'Use the official template with your UNIDCOM/IADE affiliation. See “Email signature”.',
@@ -74,14 +75,16 @@ Widget _startSection() => _section(
         'Send your photo and bio to UNIDCOM',
         'For the website: name, role, research area and a professional photo.',
       ),
-      (
-        'Send your semester activity plan',
-        'When requested, include planned conferences, publications and missions. See “Documents & forms”.',
-      ),
-      (
-        'Submit the FPA before any event or publication',
-        'The Support Request Form must be filed at least 4 months in advance.',
-      ),
+      if (v2)
+        (
+          'Send your semester activity plan',
+          'When requested, include planned conferences, publications and missions. See “Documents & forms”.',
+        ),
+      if (v2)
+        (
+          'Submit the FPA before any event or publication',
+          'The Support Request Form must be filed at least 4 months in advance.',
+        ),
       (
         'Always use the correct affiliation and FCT statement',
         'On all papers, presentations and posters. Missing them makes requests ineligible.',
