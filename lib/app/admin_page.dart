@@ -1,47 +1,25 @@
 import 'package:flutter/material.dart';
 
-import '../theme/tokens.dart';
 import 'data_page.dart';
 import 'merge.dart';
 import 'reports.dart';
 import 'review_queue.dart';
 
+/// The tools /app/admin/:tool can show. Anything else redirects to review.
+const adminTools = ['reports', 'review', 'merge', 'data'];
+
 class AdminScreen extends StatelessWidget {
-  const AdminScreen({super.key});
+  const AdminScreen({super.key, required this.tool});
+
+  final String tool;
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 4,
-      child: Column(
-        children: [
-          const ColoredBox(
-            color: AppColors.cardBg,
-            child: TabBar(
-              labelColor: AppColors.textPrimary,
-              unselectedLabelColor: AppColors.textMuted,
-              indicatorColor: AppColors.teal,
-              dividerColor: AppColors.cardBorder,
-              tabs: [
-                Tab(text: 'Reports'),
-                Tab(text: 'Review'),
-                Tab(text: 'Merge'),
-                Tab(text: 'Data'),
-              ],
-            ),
-          ),
-          const Expanded(
-            child: TabBarView(
-              children: [
-                ReportsScreen(),
-                ReviewQueueScreen(),
-                MergeScreen(),
-                DataScreen(),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return switch (tool) {
+      'reports' => const ReportsScreen(),
+      'merge' => const MergeScreen(),
+      'data' => const DataScreen(),
+      _ => const ReviewQueueScreen(),
+    };
   }
 }
