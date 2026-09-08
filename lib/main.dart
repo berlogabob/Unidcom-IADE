@@ -346,6 +346,12 @@ final _router = GoRouter(
           builder: (_, _) => const PortalShell(child: MyProfileScreen()),
         ),
         GoRoute(
+          path: '/app/outputs',
+          builder: (_, _) => const PortalShell(
+            child: MyProfileScreen(section: MySection.outputs),
+          ),
+        ),
+        GoRoute(
           path: '/app/requests',
           builder: (_, _) => const PortalShell(child: RequestsPage()),
         ),

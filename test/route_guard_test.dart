@@ -61,6 +61,7 @@ void main() {
         '/app/requests/new',
         '/app/requests/abc-123',
         '/app/profile',
+        '/app/outputs',
         '/app/dashboard',
         '/app/admin',
         '/app/admin/requests',

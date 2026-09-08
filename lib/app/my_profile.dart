@@ -23,8 +23,23 @@ String candidateSubtitle(Map<String, dynamic> row) => [
   row['type'],
 ].where((value) => value != null && '$value'.isNotEmpty).join(' · ');
 
+enum MySection { profile, outputs }
+
+({bool addOutput, bool confirm, bool orcidCandidates}) mySlots(
+  MySection section,
+) => switch (section) {
+  MySection.profile => (
+    addOutput: false,
+    confirm: true,
+    orcidCandidates: false,
+  ),
+  MySection.outputs => (addOutput: true, confirm: false, orcidCandidates: true),
+};
+
 class MyProfileScreen extends StatefulWidget {
-  const MyProfileScreen({super.key});
+  const MyProfileScreen({super.key, this.section = MySection.profile});
+
+  final MySection section;
 
   @override
   State<MyProfileScreen> createState() => _MyProfileScreenState();
@@ -155,7 +170,10 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           _addingAll = false;
         });
         if (added > 0) {
-          showSnack(context, '$added publication${added == 1 ? '' : 's'} added');
+          showSnack(
+            context,
+            '$added publication${added == 1 ? '' : 's'} added',
+          );
         }
       }
     }
@@ -218,60 +236,78 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     final person = _person;
     if (person != null) {
       final status = person['profile_status'] as String? ?? 'draft';
+      final slots = mySlots(widget.section);
       // ponytail: still the detail page, now with two slots. Split only if the
       // own-profile UI genuinely diverges from the directory one.
       return PersonPageScreen(
         // Re-key on claims too, so a promoted publication shows up below.
         key: ValueKey('$status-${_candidates.length}'),
         id: person['id'] as String,
+        sections: widget.section == MySection.profile
+            ? {PersonSection.profile}
+            : {PersonSection.outputs},
         leading: [
           // Row, not a Wrap with a Spacer in it: Spacer is an Expanded, which
           // asserts outside a Flex, and inside a Wrap it silently takes the
           // button down with it.
-          Row(
-            children: [
-              Expanded(
-                child: Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    StatusPill(
-                      profileStatusLabel(status),
-                      tone: status == 'approved'
-                          ? PillTone.teal
-                          : PillTone.amber,
-                    ),
-                    if (status == 'draft') ...[
-                      const Text('Check your data below, then confirm'),
-                      FilledButton(
-                        onPressed: _submitting ? null : _submitProfile,
-                        child: const Text('Confirm my profile'),
+          if (slots.confirm)
+            Row(
+              children: [
+                Expanded(
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      StatusPill(
+                        profileStatusLabel(status),
+                        tone: status == 'approved'
+                            ? PillTone.teal
+                            : PillTone.amber,
                       ),
+                      if (status == 'draft') ...[
+                        const Text('Check your data below, then confirm'),
+                        FilledButton(
+                          onPressed: _submitting ? null : _submitProfile,
+                          child: const Text('Confirm my profile'),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              // The "+add" half of "this works for both filtering my outputs
-              // as well as when i click +add" — same cascade, same dialog.
-              FilledButton.icon(
-                onPressed: _addOutput,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Add output'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+              ],
+            ),
+          if (slots.addOutput) ...[
+            Row(
+              children: [
+                const Spacer(),
+                // The "+add" half of "this works for both filtering my outputs
+                // as well as when i click +add" — same cascade, same dialog.
+                FilledButton.icon(
+                  onPressed: _addOutput,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add output'),
+                ),
+              ],
+            ),
+          ],
+          if (slots.confirm || slots.addOutput) const SizedBox(height: 16),
           // v2: the old banner's "Sync now" opens a diff dialog and imports
           // nothing — one of the three things Rui named as noise. What he
           // asked for instead is the single Add all button at the bottom.
-          if (v2 && (person['orcid'] as String? ?? '').isNotEmpty) ...[
+          if (slots.addOutput &&
+              v2 &&
+              (person['orcid'] as String? ?? '').isNotEmpty) ...[
             _syncBanner(context, person),
             const SizedBox(height: 16),
           ],
         ],
-        trailing: [const SizedBox(height: 24), _orcidCandidates(context)],
+        trailing: [
+          if (slots.orcidCandidates) ...[
+            const SizedBox(height: 24),
+            _orcidCandidates(context),
+          ],
+        ],
       );
     }
 

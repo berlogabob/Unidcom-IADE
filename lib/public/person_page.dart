@@ -24,6 +24,13 @@ export 'person/featured_outputs.dart'
         outputIdOf;
 export 'person/person_dialogs.dart' show showPersonEditor;
 
+enum PersonSection { profile, outputs }
+
+const Set<PersonSection> allPersonSections = {
+  PersonSection.profile,
+  PersonSection.outputs,
+};
+
 /// Rows with no affiliation recorded are UNIDCOM's — that's the column default,
 /// so every pre-import output lands here.
 bool _isUnidcom(Map<String, dynamic> author) {
@@ -35,11 +42,13 @@ class PersonPageScreen extends StatefulWidget {
   const PersonPageScreen({
     super.key,
     required this.id,
+    this.sections = allPersonSections,
     this.leading = const <Widget>[],
     this.trailing = const <Widget>[],
   });
 
   final String id;
+  final Set<PersonSection> sections;
 
   /// Sections the caller wants above and below this page's own, inside the
   /// same scroll view.
@@ -237,71 +246,78 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
               onCheckOrcidSync: _checkOrcidSync,
               onApprove: _approve,
             ),
-            if (admin) _suggestionsSection(),
-            ...personInfoSections(
-              context,
-              person,
-              labMemberships,
-              onOpen: _open,
-              onOpenLab: (id) => context.go('/labs/$id'),
-            ),
-            () {
-              final highlights = ordered
-                  .where((author) => featured.contains(outputIdOf(author)))
-                  .toList();
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  sectionHeader(context, 'Highlights · ${highlights.length}'),
-                  const SizedBox(height: 8),
-                  if (highlights.isEmpty)
-                    mutedText(
-                      context,
-                      'No highlights yet — star outputs in the timeline below',
-                    )
-                  else
-                    for (final author in highlights)
-                      PersonOutputRow(
-                        author: author,
-                        isFeatured: true,
-                        onToggle: admin || isOwner
-                            ? (id) => _toggleFeatured(person, featured, id)
-                            : null,
-                        onTap: (id) => context.go('/outputs/$id'),
-                      ),
-                ],
-              );
-            }(),
-            const SizedBox(height: 24),
-            PersonTimelineSection(
-              roles: _roles,
-              authors: ordered,
-              labMemberships: labMemberships,
-              featured: featured,
-              admin: admin,
-              isOwner: isOwner,
-              onToggleFeatured: (id) => _toggleFeatured(person, featured, id),
-              onRefresh: _refresh,
-              onAddRole: _addRole,
-              onOpenOutput: (id) => context.go('/outputs/$id'),
-              onOpenLab: (id) => context.go('/labs/$id'),
-            ),
-            if (external.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              sectionHeader(context, 'Other affiliations · ${external.length}'),
-              const SizedBox(height: 4),
-              mutedText(
+            if (widget.sections.contains(PersonSection.profile)) ...[
+              if (admin) _suggestionsSection(),
+              ...personInfoSections(
                 context,
-                'Published before or outside IADE/UNIDCOM. '
-                'Not counted in unit reports.',
+                person,
+                labMemberships,
+                onOpen: _open,
+                onOpenLab: (id) => context.go('/labs/$id'),
               ),
-              const SizedBox(height: 8),
-              for (final author in external)
-                PersonOutputRow(
-                  author: author,
-                  isFeatured: false,
-                  onTap: (id) => context.go('/outputs/$id'),
+            ],
+            if (widget.sections.contains(PersonSection.outputs)) ...[
+              () {
+                final highlights = ordered
+                    .where((author) => featured.contains(outputIdOf(author)))
+                    .toList();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    sectionHeader(context, 'Highlights · ${highlights.length}'),
+                    const SizedBox(height: 8),
+                    if (highlights.isEmpty)
+                      mutedText(
+                        context,
+                        'No highlights yet — star outputs in the timeline below',
+                      )
+                    else
+                      for (final author in highlights)
+                        PersonOutputRow(
+                          author: author,
+                          isFeatured: true,
+                          onToggle: admin || isOwner
+                              ? (id) => _toggleFeatured(person, featured, id)
+                              : null,
+                          onTap: (id) => context.go('/outputs/$id'),
+                        ),
+                  ],
+                );
+              }(),
+              const SizedBox(height: 24),
+              PersonTimelineSection(
+                roles: _roles,
+                authors: ordered,
+                labMemberships: labMemberships,
+                featured: featured,
+                admin: admin,
+                isOwner: isOwner,
+                onToggleFeatured: (id) => _toggleFeatured(person, featured, id),
+                onRefresh: _refresh,
+                onAddRole: _addRole,
+                onOpenOutput: (id) => context.go('/outputs/$id'),
+                onOpenLab: (id) => context.go('/labs/$id'),
+              ),
+              if (external.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                sectionHeader(
+                  context,
+                  'Other affiliations · ${external.length}',
                 ),
+                const SizedBox(height: 4),
+                mutedText(
+                  context,
+                  'Published before or outside IADE/UNIDCOM. '
+                  'Not counted in unit reports.',
+                ),
+                const SizedBox(height: 8),
+                for (final author in external)
+                  PersonOutputRow(
+                    author: author,
+                    isFeatured: false,
+                    onTap: (id) => context.go('/outputs/$id'),
+                  ),
+              ],
             ],
             ...widget.trailing,
           ],
