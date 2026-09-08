@@ -30,4 +30,13 @@ void main() {
       findsNWidgets(3),
     );
   });
+  testWidgets('FCT Information section shows correct content', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: WelcomePackPage(section: 'fct')),
+      ),
+    );
+    expect(find.textContaining('FCT Information'), findsWidgets);
+    expect(find.textContaining('Mandatory affiliation'), findsNothing);
+  });
 }
