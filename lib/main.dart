@@ -12,6 +12,7 @@ import 'app/admin_requests.dart';
 import 'app/dashboard.dart';
 import 'app/mode_chooser.dart';
 import 'app/my_profile.dart';
+import 'app/portal_pages.dart';
 import 'app/request_form.dart';
 import 'app/researcher_home.dart';
 import 'app/requests_page.dart';
@@ -379,6 +380,38 @@ final _router = GoRouter(
         GoRoute(
           path: '/app/home',
           builder: (_, _) => const PortalShell(child: ResearcherHomePage()),
+        ),
+        // One route per Overview/Help leaf in the researcher-portal IA — each
+        // re-fetches on its own rather than being handed a slice of the
+        // dashboard's already-loaded data.
+        GoRoute(
+          path: '/app/home/summary',
+          builder: (_, _) => const PortalShell(child: OverviewSummaryPage()),
+        ),
+        GoRoute(
+          path: '/app/home/recent',
+          builder: (_, _) => const PortalShell(child: OverviewRecentPage()),
+        ),
+        GoRoute(
+          path: '/app/home/alerts',
+          builder: (_, _) => const PortalShell(child: OverviewAlertsPage()),
+        ),
+        GoRoute(
+          path: '/app/home/status',
+          builder: (_, _) => const PortalShell(child: ProfileStatusPage()),
+        ),
+        GoRoute(
+          path: '/app/help/links',
+          builder: (_, _) => const PortalShell(child: QuickLinksPage()),
+        ),
+        GoRoute(
+          path: '/app/help/docs',
+          builder: (_, _) =>
+              const PortalShell(child: WipPage(title: 'Documentation')),
+        ),
+        GoRoute(
+          path: '/app/help/faq',
+          builder: (_, _) => const PortalShell(child: WipPage(title: 'FAQs')),
         ),
         // needsAuth treats bare /app/welcome as public, and the Hugo footer
         // could plausibly link it — without this it is the one "public" path
