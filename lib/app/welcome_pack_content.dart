@@ -26,6 +26,7 @@ Widget welcomeSectionBody(BuildContext context, String slug) => switch (slug) {
   'oa' => _openAccessSection(),
   'missions' => _missionsSection(),
   'affiliation' => _affiliationSection(context),
+  'fct' => _fctSection(context),
   'report' => _reportSection(),
   'logos' => _logosSection(),
   'contacts' => _contactsSection(),
@@ -368,12 +369,11 @@ Widget _missionsSection() => _section(
 
 Widget _affiliationSection(BuildContext context) => _section(
   title: 'UNIDCOM affiliation',
-  lead:
-      'You must include the correct affiliation and the FCT statement in all scientific material.',
+  lead: 'You must include the correct affiliation in all scientific material.',
   children: [
     const SizedBox(height: 18),
     _callout(
-      'A missing affiliation or FCT statement makes the request ineligible and may require funds to be returned.',
+      'A missing affiliation makes the request ineligible and may require funds to be returned.',
       icon: Icons.warning_amber_rounded,
       color: AppColors.red,
       background: AppColors.redTint,
@@ -384,6 +384,21 @@ Widget _affiliationSection(BuildContext context) => _section(
     _copyCard(context, language: 'PT', text: _affiliationPt),
     const SizedBox(height: 12),
     _copyCard(context, language: 'EN', text: _affiliationEn),
+  ],
+);
+
+Widget _fctSection(BuildContext context) => _section(
+  title: 'FCT Information',
+  lead:
+      'Include the funding statement in the acknowledgements of every output (PT and/or EN)',
+  children: [
+    const SizedBox(height: 18),
+    _callout(
+      'A missing FCT statement makes the request ineligible and may require funds to be returned.',
+      icon: Icons.warning_amber_rounded,
+      color: AppColors.red,
+      background: AppColors.redTint,
+    ),
     _heading('FCT funding statement'),
     _secondaryLead('Include in the acknowledgements (PT and/or EN):'),
     const SizedBox(height: 10),
