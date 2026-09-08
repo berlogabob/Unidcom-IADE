@@ -227,6 +227,13 @@ String? modeRedirect(
   if (!v2 && location.startsWith('/app/requests')) {
     return '/app/home';
   }
+  // M2 welcome sections: a bookmark must not open a page v1 pretends does not exist.
+  final slug = location.startsWith('/app/welcome/')
+      ? location.substring('/app/welcome/'.length)
+      : null;
+  if (!v2 && slug != null && welcomeSlugsM2.contains(slug)) {
+    return '/app/welcome/start';
+  }
   return null;
 }
 
@@ -250,6 +257,15 @@ final _router = GoRouter(
     final hasSession = Supabase.instance.client.auth.currentSession != null;
     final onLogin = state.matchedLocation == '/login';
     if (!hasSession && needsAuth(state.matchedLocation)) return '/login';
+    // M2 welcome sections: a bookmark must not open a page v1 pretends does not exist.
+    if (!v2) {
+      final slug = state.matchedLocation.startsWith('/app/welcome/')
+          ? state.matchedLocation.substring('/app/welcome/'.length)
+          : null;
+      if (slug != null && welcomeSlugsM2.contains(slug)) {
+        return '/app/welcome/start';
+      }
+    }
     // Anonymous callers are on the Welcome pack and have no mode to pick.
     if (!hasSession) return null;
     if (onLogin) {
