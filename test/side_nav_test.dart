@@ -8,6 +8,10 @@ void main() {
     home: Scaffold(body: SizedBox(width: 240, child: child)),
   );
 
+  tearDown(() {
+    collapsedGroups.value = {};
+  });
+
   testWidgets('active row carries the key and its label appears once', (
     tester,
   ) async {
@@ -25,19 +29,24 @@ void main() {
     expect(find.byKey(const Key('nav-active')), findsOneWidget);
   });
 
-  testWidgets('anonymous researcher nav has no Overview', (tester) async {
-    await tester.pumpWidget(
-      host(
-        SideNav(
-          groups: researcherNav(signedIn: false),
-          path: '/app/welcome/start',
-          header: const SizedBox(),
-          footer: const SizedBox(),
+  testWidgets(
+    'anonymous researcher nav has no My Profile / My Outputs, has Getting Started',
+    (tester) async {
+      await tester.pumpWidget(
+        host(
+          SideNav(
+            groups: researcherNav(signedIn: false),
+            path: '/app/welcome/start',
+            header: const SizedBox(),
+            footer: const SizedBox(),
+          ),
         ),
-      ),
-    );
-    expect(find.text('Overview'), findsNothing);
-  });
+      );
+      expect(find.text('MY PROFILE'), findsNothing);
+      expect(find.text('My Outputs'), findsNothing);
+      expect(find.text('Getting Started'), findsOneWidget);
+    },
+  );
 
   testWidgets('group labels render uppercase, only when non-empty', (
     tester,
@@ -101,5 +110,89 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('0'), findsNothing);
+  });
+
+  testWidgets('a section header can be collapsed and expanded', (tester) async {
+    await tester.pumpWidget(
+      host(
+        SideNav(
+          groups: researcherNav(signedIn: true),
+          path: '/app/home',
+          header: const SizedBox(),
+          footer: const SizedBox(),
+        ),
+      ),
+    );
+    expect(find.text('Biography'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('nav-toggle-My Profile')));
+    await tester.pump();
+
+    expect(find.text('Biography'), findsNothing);
+    expect(collapsedGroups.value, contains('My Profile'));
+  });
+
+  testWidgets('tapping a group header label navigates to its landing route', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(
+        SideNav(
+          groups: researcherNav(signedIn: true),
+          path: '/app/home',
+          header: const SizedBox(),
+          footer: const SizedBox(),
+        ),
+      ),
+    );
+    expect(find.byKey(const Key('nav-group-My Profile')), findsOneWidget);
+  });
+
+  testWidgets('a collapsed section shows the closed chevron and tooltip', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(
+        SideNav(
+          groups: researcherNav(signedIn: true),
+          path: '/app/home',
+          header: const SizedBox(),
+          footer: const SizedBox(),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('nav-toggle-My Profile')));
+    await tester.pump();
+
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('nav-toggle-My Profile')),
+        matching: find.byIcon(Icons.chevron_right),
+      ),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Show section'), findsOneWidget);
+  });
+
+  testWidgets('toggling a section twice restores its items', (tester) async {
+    await tester.pumpWidget(
+      host(
+        SideNav(
+          groups: researcherNav(signedIn: true),
+          path: '/app/home',
+          header: const SizedBox(),
+          footer: const SizedBox(),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('nav-toggle-My Profile')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('nav-toggle-My Profile')));
+    await tester.pump();
+
+    expect(find.text('Biography'), findsOneWidget);
+    expect(collapsedGroups.value, isEmpty);
   });
 }

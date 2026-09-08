@@ -37,44 +37,104 @@ class SideNav extends StatelessWidget {
         children: [
           header,
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              children: [
-                for (final group in groups) ...[
-                  // Rui, 8 Sep (D4): headers must read as headers; a group
-                  // with no label (the top one, in both navs) gets none.
-                  if (group.label.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-                      child: Text(
-                        group.label.toUpperCase(),
-                        style: const TextStyle(
-                          color: AppColors.textOnDarkMuted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.6,
-                        ),
-                      ),
-                    ),
-                  for (final item in group.items) ...[
-                    _row(context, item, item == active, indent: 16),
-                    // Always rendered, not just when active or an ancestor of
-                    // the active route — the IA is small enough (max one
-                    // level) that hiding them would cost more than it saves.
-                    for (final child in item.children)
-                      _row(
+            child: ValueListenableBuilder<Set<String>>(
+              valueListenable: collapsedGroups,
+              builder: (context, collapsed, _) => ListView(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                children: [
+                  for (final group in groups) ...[
+                    // Rui, 8 Sep (D4): headers must read as headers; a group
+                    // with no label (the top one, in both navs) gets none
+                    // and is never collapsible.
+                    if (group.label.isNotEmpty)
+                      _groupHeader(
                         context,
-                        child,
-                        child == active,
-                        indent: 28,
-                        fontSize: 13,
+                        group,
+                        isCollapsed: collapsed.contains(group.label),
+                        isActive: _ownsActive(group, active),
                       ),
+                    if (group.label.isEmpty || !collapsed.contains(group.label))
+                      ..._items(context, group, active),
                   ],
                 ],
-              ],
+              ),
             ),
           ),
           footer,
+        ],
+      ),
+    );
+  }
+
+  bool _ownsActive(NavGroup group, NavItem? active) {
+    if (active == null) return false;
+    return group.items.contains(active) ||
+        group.items.any((i) => i.children.contains(active));
+  }
+
+  List<Widget> _items(BuildContext context, NavGroup group, NavItem? active) =>
+      [
+        for (final item in group.items) ...[
+          _row(context, item, item == active, indent: 16),
+          // Always rendered, not just when active or an ancestor of the active
+          // route — the admin IA is small enough (max one level) that hiding
+          // them would cost more than it saves.
+          for (final child in item.children)
+            _row(context, child, child == active, indent: 28, fontSize: 13),
+        ],
+      ];
+
+  /// A collapsible section header: uppercase label (tap → the section's
+  /// landing route when it has one, else just toggle) plus a chevron that
+  /// always toggles. When its group is collapsed the header itself takes the
+  /// active styling, so the user can still see which section they're in.
+  Widget _groupHeader(
+    BuildContext context,
+    NavGroup group, {
+    required bool isCollapsed,
+    required bool isActive,
+  }) {
+    final showActive = isActive && isCollapsed;
+    final color = showActive ? AppColors.textOnDark : AppColors.textOnDarkMuted;
+    return Container(
+      key: Key('nav-group-${group.label}'),
+      decoration: BoxDecoration(
+        color: showActive ? Colors.white.withValues(alpha: 0.06) : null,
+        border: showActive
+            ? const Border(left: BorderSide(color: AppColors.teal, width: 3))
+            : null,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () => group.route != null
+                  ? context.go(group.route!)
+                  : toggleGroup(group.label),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(showActive ? 13 : 16, 14, 0, 6),
+                child: Text(
+                  group.label.toUpperCase(),
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          IconButton(
+            key: Key('nav-toggle-${group.label}'),
+            icon: Icon(
+              isCollapsed ? Icons.chevron_right : Icons.expand_more,
+              color: AppColors.textOnDarkMuted,
+              size: 18,
+            ),
+            tooltip: isCollapsed ? 'Show section' : 'Hide section',
+            onPressed: () => toggleGroup(group.label),
+          ),
         ],
       ),
     );
