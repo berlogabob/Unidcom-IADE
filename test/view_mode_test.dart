@@ -86,7 +86,6 @@ void main() {
         '/app/home',
         '/app/profile',
         '/app/welcome/start',
-        '/app/welcome/oa',
       ]) {
         expect(redirect(location), isNull, reason: location);
       }
@@ -96,6 +95,13 @@ void main() {
       // The point of the whole split: holding the role is not the same as
       // using it. This is what stopped Approve appearing on Rui's own profile.
       expect(redirect('/people', adminAccount: true), '/app/home');
+    });
+
+    test('M2 welcome sections redirect to start in v1', () {
+      for (final slug in ['docs', 'conf', 'oa', 'missions']) {
+        expect(redirect('/app/welcome/$slug'), '/app/welcome/start');
+      }
+      expect(redirect('/app/welcome/affiliation'), isNull);
     });
   });
 

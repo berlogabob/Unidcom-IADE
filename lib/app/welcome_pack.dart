@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/features.dart';
 import '../theme/tokens.dart';
 import '../widgets/panels.dart';
 import 'welcome_pack_content.dart';
 
-const _sectionGroups = [
+/// M2 (milestone 2) per Rui's 14 Aug notes — hidden in v1, not deleted.
+const welcomeSlugsM2 = {'docs', 'conf', 'oa', 'missions'};
+
+final sectionGroups = [
   ('Start', [('start', 'Getting started')]),
   (
     'Communication',
     [('signature', 'Email signature'), ('social', 'Social media')],
   ),
-  (
-    'Support',
-    [
-      ('docs', 'Documents & forms'),
-      ('conf', 'Conferences & events'),
-      ('oa', 'Open Access'),
-      ('missions', 'Missions'),
-    ],
-  ),
+  if (v2)
+    (
+      'Support',
+      [
+        ('docs', 'Documents & forms'),
+        ('conf', 'Conferences & events'),
+        ('oa', 'Open Access'),
+        ('missions', 'Missions'),
+      ],
+    ),
   (
     'Obligations',
     [('affiliation', 'Affiliation & FCT'), ('report', 'Report activity')],
@@ -66,7 +71,7 @@ class WelcomePackPage extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    for (final group in _sectionGroups)
+                    for (final group in sectionGroups)
                       for (final item in group.$2) ...[
                         FilterPill(
                           item.$2,
@@ -95,14 +100,14 @@ class WelcomePackPage extends StatelessWidget {
         children: [
           for (
             var groupIndex = 0;
-            groupIndex < _sectionGroups.length;
+            groupIndex < sectionGroups.length;
             groupIndex++
           ) ...[
             if (groupIndex > 0) const SizedBox(height: 6),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
               child: Text(
-                _sectionGroups[groupIndex].$1.toUpperCase(),
+                sectionGroups[groupIndex].$1.toUpperCase(),
                 style: const TextStyle(
                   // Figma 91:2 — group labels recede behind the items.
                   color: AppColors.textFaint,
@@ -112,7 +117,7 @@ class WelcomePackPage extends StatelessWidget {
                 ),
               ),
             ),
-            for (final item in _sectionGroups[groupIndex].$2)
+            for (final item in sectionGroups[groupIndex].$2)
               _desktopLink(context, item.$1, item.$2),
           ],
         ],
