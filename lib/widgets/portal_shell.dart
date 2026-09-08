@@ -186,6 +186,8 @@ class _PortalShellState extends State<PortalShell> {
 
   Widget _profile(Map<String, dynamic> person) {
     final name = (person['preferred_name'] as String? ?? 'Researcher').trim();
+    // Rui, 14 Aug: "add bio picture".
+    final photo = (person['photo_url'] as String? ?? '').trim();
     final role = switch (person['membership_type']) {
       'integrated' => 'Integrated researcher',
       'collaborator' => 'Collaborator',
@@ -214,6 +216,7 @@ class _PortalShellState extends State<PortalShell> {
         CircleAvatar(
           radius: 20,
           backgroundColor: AppColors.teal,
+          foregroundImage: photo.isEmpty ? null : NetworkImage(photo),
           child: Text(
             _initials(name),
             style: const TextStyle(
