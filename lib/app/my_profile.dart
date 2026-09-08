@@ -11,6 +11,7 @@ import '../public/person_page.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
+import 'portal_pages.dart';
 
 String profileStatusLabel(String? status) => switch (status) {
   'pending_review' => 'Awaiting UNIDCOM approval',
@@ -23,21 +24,65 @@ String candidateSubtitle(Map<String, dynamic> row) => [
   row['type'],
 ].where((value) => value != null && '$value'.isNotEmpty).join(' · ');
 
-enum MySection { profile, outputs }
+enum MySection {
+  personal,
+  identifiers,
+  biography,
+  outputs,
+  addOutput,
+  importSync,
+}
 
 ({bool addOutput, bool confirm, bool orcidCandidates}) mySlots(
   MySection section,
 ) => switch (section) {
-  MySection.profile => (
+  MySection.personal => (
     addOutput: false,
     confirm: true,
     orcidCandidates: false,
   ),
-  MySection.outputs => (addOutput: true, confirm: false, orcidCandidates: true),
+  MySection.identifiers => (
+    addOutput: false,
+    confirm: false,
+    orcidCandidates: false,
+  ),
+  MySection.biography => (
+    addOutput: false,
+    confirm: false,
+    orcidCandidates: false,
+  ),
+  // Outputs keeps "+ Add output"; the candidates panel moved to Import & Sync.
+  MySection.outputs => (
+    addOutput: true,
+    confirm: false,
+    orcidCandidates: false,
+  ),
+  // Rendered by AddOutputPage instead, not through MyProfileScreen.
+  MySection.addOutput => (
+    addOutput: false,
+    confirm: false,
+    orcidCandidates: false,
+  ),
+  MySection.importSync => (
+    addOutput: false,
+    confirm: false,
+    orcidCandidates: true,
+  ),
+};
+
+/// PersonSection each MySection borrows from PersonPageScreen. importSync has
+/// no PersonSection of its own — `build` renders it as a standalone page
+/// before this is ever consulted.
+PersonSection _personSectionFor(MySection section) => switch (section) {
+  MySection.personal => PersonSection.personal,
+  MySection.identifiers => PersonSection.identifiers,
+  MySection.biography => PersonSection.biography,
+  MySection.outputs || MySection.addOutput => PersonSection.outputs,
+  MySection.importSync => PersonSection.outputs,
 };
 
 class MyProfileScreen extends StatefulWidget {
-  const MyProfileScreen({super.key, this.section = MySection.profile});
+  const MyProfileScreen({super.key, this.section = MySection.personal});
 
   final MySection section;
 
@@ -235,17 +280,20 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
     final person = _person;
     if (person != null) {
+      // Import & Sync has no profile body of its own — just the candidates
+      // panel plus the two not-built-yet sources, so it skips PersonPageScreen.
+      if (widget.section == MySection.importSync) {
+        return _importSyncPage(context);
+      }
       final status = person['profile_status'] as String? ?? 'draft';
       final slots = mySlots(widget.section);
-      // ponytail: still the detail page, now with two slots. Split only if the
-      // own-profile UI genuinely diverges from the directory one.
+      // ponytail: still the detail page, now with more slots. Split only if
+      // the own-profile UI genuinely diverges from the directory one.
       return PersonPageScreen(
         // Re-key on claims too, so a promoted publication shows up below.
         key: ValueKey('$status-${_candidates.length}'),
         id: person['id'] as String,
-        sections: widget.section == MySection.profile
-            ? {PersonSection.profile}
-            : {PersonSection.outputs},
+        sections: {_personSectionFor(widget.section)},
         leading: [
           // Row, not a Wrap with a Spacer in it: Spacer is an Expanded, which
           // asserts outside a Flex, and inside a Wrap it silently takes the
@@ -302,16 +350,28 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             const SizedBox(height: 16),
           ],
         ],
-        trailing: [
-          if (slots.orcidCandidates) ...[
-            const SizedBox(height: 24),
-            _orcidCandidates(context),
-          ],
-        ],
+        // orcidCandidates never reaches here — importSync (the only section
+        // with it) returns before PersonPageScreen above.
       );
     }
 
     return _unlinkedView();
+  }
+
+  /// Import & Synchronisation leaf: the ORCID candidates panel (moved here
+  /// from My Outputs) plus the two sources not built yet.
+  Widget _importSyncPage(BuildContext context) {
+    return DetailBody(
+      children: [
+        sectionHeader(context, 'ORCID Sync'),
+        const SizedBox(height: 8),
+        _orcidCandidates(context),
+        const SizedBox(height: 24),
+        const WipCallout('Ciência Vitae Sync'),
+        const SizedBox(height: 12),
+        const WipCallout('Other Data Sources'),
+      ],
+    );
   }
 
   /// Always on screen and never a toggle — "dont do it as toggle - just show".

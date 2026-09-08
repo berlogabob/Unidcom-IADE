@@ -178,45 +178,117 @@ Widget _identifierPill(String label, String value) => Container(
   ),
 );
 
-List<Widget> personInfoSections(
+/// Researcher Identifiers leaf: ORCID, Ciência ID and the rest each get their
+/// own heading, so the IA page and the ORCID Connect action both land under
+/// the right one instead of one flat list.
+List<Widget> personIdentifiersSections(
+  BuildContext context,
+  Map<String, dynamic> person, {
+  required ValueChanged<String> onOpen,
+  required VoidCallback onConnectOrcid,
+  required bool showConnect,
+}) => [
+  sectionHeader(context, 'ORCID'),
+  const SizedBox(height: 8),
+  _orcidSection(context, person, onOpen, onConnectOrcid, showConnect),
+  const SizedBox(height: 24),
+  sectionHeader(context, 'Ciência ID'),
+  const SizedBox(height: 8),
+  _cienciaSection(context, person, onOpen),
+  const SizedBox(height: 24),
+  sectionHeader(context, 'Other Identifiers'),
+  const SizedBox(height: 8),
+  _otherIdentifiers(context, person, onOpen),
+];
+
+/// Biography leaf: the About heading plus bio/notes.
+List<Widget> personBioSection(
   BuildContext context,
   Map<String, dynamic> person,
-  List<Map<String, dynamic>> labMemberships, {
-  required ValueChanged<String> onOpen,
-  required ValueChanged<String> onOpenLab,
-}) => [
-  const SizedBox(height: 24),
-  sectionHeader(context, 'Identifiers'),
-  const SizedBox(height: 8),
-  _identifiers(context, person, onOpen),
-  const SizedBox(height: 24),
+) => [
   sectionHeader(context, 'About'),
   const SizedBox(height: 8),
   _bio(context, person),
-  const SizedBox(height: 24),
-  if (labMemberships.isNotEmpty) ...[
-    sectionHeader(context, 'Labs'),
-    const SizedBox(height: 8),
-    Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final membership in labMemberships)
-          _labChip(membership, onOpenLab),
-      ],
-    ),
-    const SizedBox(height: 24),
-  ],
 ];
 
-Widget _identifiers(
+/// Lab chips, grouped with Personal Information rather than the identifiers
+/// list — membership is who-you-are, not an identifier to look someone up by.
+List<Widget> personLabsSection(
+  BuildContext context,
+  List<Map<String, dynamic>> labMemberships, {
+  required ValueChanged<String> onOpenLab,
+}) => labMemberships.isEmpty
+    ? const []
+    : [
+        const SizedBox(height: 24),
+        sectionHeader(context, 'Labs'),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final membership in labMemberships)
+              _labChip(membership, onOpenLab),
+          ],
+        ),
+      ];
+
+Widget _orcidSection(
+  BuildContext context,
+  Map<String, dynamic> person,
+  ValueChanged<String> onOpen,
+  VoidCallback onConnectOrcid,
+  bool showConnect,
+) {
+  final orcid = (person['orcid'] as String? ?? '').trim();
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _InfoRow(
+        icon: Icons.badge_outlined,
+        label: 'ORCID',
+        child: orcid.isEmpty
+            ? mutedText(context, 'Not set')
+            : _link(context, orcid, 'https://orcid.org/$orcid', onOpen),
+      ),
+      if (showConnect) ...[
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: onConnectOrcid,
+          icon: const Icon(Icons.badge_outlined),
+          label: const Text('Connect ORCID'),
+        ),
+      ],
+    ],
+  );
+}
+
+Widget _cienciaSection(
+  BuildContext context,
+  Map<String, dynamic> person,
+  ValueChanged<String> onOpen,
+) {
+  final ciencia = (person['ciencia_id'] as String? ?? '').trim();
+  return _InfoRow(
+    icon: Icons.fingerprint,
+    label: 'Ciência ID',
+    child: ciencia.isEmpty
+        ? mutedText(context, 'Not set')
+        : _link(
+            context,
+            ciencia,
+            'https://www.cienciavitae.pt/portal/$ciencia',
+            onOpen,
+          ),
+  );
+}
+
+Widget _otherIdentifiers(
   BuildContext context,
   Map<String, dynamic> person,
   ValueChanged<String> onOpen,
 ) {
   final email = (person['email'] as String? ?? '').trim();
-  final orcid = (person['orcid'] as String? ?? '').trim();
-  final ciencia = (person['ciencia_id'] as String? ?? '').trim();
   final verified = person['last_verified_at'] as String?;
   final joined = (person['join_date'] as String? ?? '').trim();
   final left = (person['exit_date'] as String? ?? '').trim();
@@ -229,25 +301,6 @@ Widget _identifiers(
         child: email.isEmpty
             ? mutedText(context, 'Not set')
             : _link(context, email, 'mailto:$email', onOpen),
-      ),
-      _InfoRow(
-        icon: Icons.badge_outlined,
-        label: 'ORCID',
-        child: orcid.isEmpty
-            ? mutedText(context, 'Not set')
-            : _link(context, orcid, 'https://orcid.org/$orcid', onOpen),
-      ),
-      _InfoRow(
-        icon: Icons.fingerprint,
-        label: 'Ciência ID',
-        child: ciencia.isEmpty
-            ? mutedText(context, 'Not set')
-            : _link(
-                context,
-                ciencia,
-                'https://www.cienciavitae.pt/portal/$ciencia',
-                onOpen,
-              ),
       ),
       if ((person['phd'] as String? ?? '').trim().isNotEmpty)
         _InfoRow(

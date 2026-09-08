@@ -24,10 +24,12 @@ export 'person/featured_outputs.dart'
         outputIdOf;
 export 'person/person_dialogs.dart' show showPersonEditor;
 
-enum PersonSection { profile, outputs }
+enum PersonSection { personal, identifiers, biography, outputs }
 
 const Set<PersonSection> allPersonSections = {
-  PersonSection.profile,
+  PersonSection.personal,
+  PersonSection.identifiers,
+  PersonSection.biography,
   PersonSection.outputs,
 };
 
@@ -232,29 +234,41 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
         return DetailBody(
           children: [
             ...widget.leading,
-            personHeader(
-              context,
-              person,
-              admin: admin,
-              isOwner: isOwner,
-              hasLinkedOrcid: hasLinkedOrcid,
-              enriching: _enriching,
-              syncing: _syncing,
-              onEdit: () => _edit(person, canEditGovernance: admin),
-              onConnectOrcid: _connectOrcid,
-              onAutoFill: () => _autoFill(person),
-              onCheckOrcidSync: _checkOrcidSync,
-              onApprove: _approve,
-            ),
-            if (widget.sections.contains(PersonSection.profile)) ...[
-              if (admin) _suggestionsSection(),
-              ...personInfoSections(
+            if (widget.sections.contains(PersonSection.personal)) ...[
+              personHeader(
                 context,
                 person,
+                admin: admin,
+                isOwner: isOwner,
+                hasLinkedOrcid: hasLinkedOrcid,
+                enriching: _enriching,
+                syncing: _syncing,
+                onEdit: () => _edit(person, canEditGovernance: admin),
+                onConnectOrcid: _connectOrcid,
+                onAutoFill: () => _autoFill(person),
+                onCheckOrcidSync: _checkOrcidSync,
+                onApprove: _approve,
+              ),
+              if (admin) _suggestionsSection(),
+              ...personLabsSection(
+                context,
                 labMemberships,
-                onOpen: _open,
                 onOpenLab: (id) => context.go('/labs/$id'),
               ),
+            ],
+            if (widget.sections.contains(PersonSection.identifiers)) ...[
+              const SizedBox(height: 24),
+              ...personIdentifiersSections(
+                context,
+                person,
+                onOpen: _open,
+                onConnectOrcid: _connectOrcid,
+                showConnect: isOwner && !hasLinkedOrcid,
+              ),
+            ],
+            if (widget.sections.contains(PersonSection.biography)) ...[
+              const SizedBox(height: 24),
+              ...personBioSection(context, person),
             ],
             if (widget.sections.contains(PersonSection.outputs)) ...[
               () {

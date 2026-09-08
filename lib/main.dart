@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'app/add_output_page.dart';
 import 'app/admin_page.dart';
 import 'app/admin_requests.dart';
 import 'app/dashboard.dart';
@@ -358,9 +359,60 @@ final _router = GoRouter(
           builder: (_, _) => const PortalShell(child: MyProfileScreen()),
         ),
         GoRoute(
+          path: '/app/profile/identifiers',
+          builder: (_, _) => const PortalShell(
+            child: MyProfileScreen(section: MySection.identifiers),
+          ),
+        ),
+        GoRoute(
+          path: '/app/profile/bio',
+          builder: (_, _) => const PortalShell(
+            child: MyProfileScreen(section: MySection.biography),
+          ),
+        ),
+        GoRoute(
+          path: '/app/profile/areas',
+          builder: (_, _) =>
+              const PortalShell(child: WipPage(title: 'Research Areas')),
+        ),
+        GoRoute(
+          path: '/app/profile/interests',
+          builder: (_, _) =>
+              const PortalShell(child: WipPage(title: 'Research Interests')),
+        ),
+        GoRoute(
+          path: '/app/profile/status',
+          builder: (_, _) => const PortalShell(child: ProfileStatusPage()),
+        ),
+        GoRoute(
           path: '/app/outputs',
           builder: (_, _) => const PortalShell(
             child: MyProfileScreen(section: MySection.outputs),
+          ),
+        ),
+        GoRoute(
+          path: '/app/outputs/add',
+          builder: (_, _) => const PortalShell(child: AddOutputPage()),
+        ),
+        GoRoute(
+          path: '/app/outputs/edit',
+          builder: (_, _) => const PortalShell(
+            child: WipPage(
+              title: 'Edit Scientific Outputs',
+              note: 'Open an output from My Outputs to edit it',
+            ),
+          ),
+        ),
+        GoRoute(
+          path: '/app/outputs/import',
+          builder: (_, _) => const PortalShell(
+            child: MyProfileScreen(section: MySection.importSync),
+          ),
+        ),
+        GoRoute(
+          path: '/app/outputs/validation',
+          builder: (_, _) => const PortalShell(
+            child: WipPage(title: 'Validation & Duplicates'),
           ),
         ),
         GoRoute(
