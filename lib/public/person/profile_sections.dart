@@ -271,14 +271,16 @@ Widget _identifiers(
           label: 'Left',
           child: mutedText(context, left),
         ),
-      _InfoRow(
-        icon: Icons.verified_outlined,
-        label: 'Last verified',
-        child: mutedText(
-          context,
-          verified == null ? 'Never' : verified.split('T').first,
+      // M2 — Rui, 14 Aug: "Last verified → hide"
+      if (v2)
+        _InfoRow(
+          icon: Icons.verified_outlined,
+          label: 'Last verified',
+          child: mutedText(
+            context,
+            verified == null ? 'Never' : verified.split('T').first,
+          ),
         ),
-      ),
     ],
   );
 }
