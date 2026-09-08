@@ -8,11 +8,47 @@ import '../widgets/detail_scaffold.dart';
 import '../widgets/output_row.dart';
 import '../widgets/panels.dart';
 
-typedef _HomeData = ({
+/// Home-page fetch, public so the split-out `/app/home/*` leaves (see
+/// portal_pages.dart) can each load it independently instead of the researcher
+/// home composing them from one already-loaded value.
+typedef HomeData = ({
   Map<String, dynamic>? person,
   List<Map<String, dynamic>> outputs,
   List<Map<String, dynamic>> requests,
 });
+
+Future<HomeData> loadHomeData() async {
+  final mine = await fetchMyPerson();
+  if (mine == null) {
+    return (
+      person: null,
+      outputs: const <Map<String, dynamic>>[],
+      requests: const <Map<String, dynamic>>[],
+    );
+  }
+
+  final results = await Future.wait<Object>([
+    fetchPerson(mine['id'] as String),
+    fetchMyRequests(),
+  ]);
+  final person = results[0] as Map<String, dynamic>;
+  final outputs =
+      [
+        for (final author
+            in person['output_authors'] as List<dynamic>? ?? const [])
+          if (author is Map && author['outputs'] is Map)
+            Map<String, dynamic>.from(author['outputs'] as Map),
+      ]..sort(
+        (a, b) => ((b['reporting_year'] as int?) ?? 0).compareTo(
+          (a['reporting_year'] as int?) ?? 0,
+        ),
+      );
+  return (
+    person: person,
+    outputs: outputs,
+    requests: results[1] as List<Map<String, dynamic>>,
+  );
+}
 
 class ResearcherHomePage extends StatefulWidget {
   const ResearcherHomePage({super.key});
@@ -22,48 +58,15 @@ class ResearcherHomePage extends StatefulWidget {
 }
 
 class _ResearcherHomePageState extends State<ResearcherHomePage> {
-  late final Future<_HomeData> _data = _load();
-
-  Future<_HomeData> _load() async {
-    final mine = await fetchMyPerson();
-    if (mine == null) {
-      return (
-        person: null,
-        outputs: const <Map<String, dynamic>>[],
-        requests: const <Map<String, dynamic>>[],
-      );
-    }
-
-    final results = await Future.wait<Object>([
-      fetchPerson(mine['id'] as String),
-      fetchMyRequests(),
-    ]);
-    final person = results[0] as Map<String, dynamic>;
-    final outputs =
-        [
-          for (final author
-              in person['output_authors'] as List<dynamic>? ?? const [])
-            if (author is Map && author['outputs'] is Map)
-              Map<String, dynamic>.from(author['outputs'] as Map),
-        ]..sort(
-          (a, b) => ((b['reporting_year'] as int?) ?? 0).compareTo(
-            (a['reporting_year'] as int?) ?? 0,
-          ),
-        );
-    return (
-      person: person,
-      outputs: outputs,
-      requests: results[1] as List<Map<String, dynamic>>,
-    );
-  }
+  late final Future<HomeData> _data = loadHomeData();
 
   @override
   Widget build(BuildContext context) {
     // No signed-out branch: /app/home is auth-gated in main.dart, so an
     // anonymous visitor never reaches this widget.
-    return AsyncView<_HomeData>(
+    return AsyncView<HomeData>(
       future: _data,
-      retry: _load,
+      retry: loadHomeData,
       builder: (context, data) {
         final person = data.person;
         if (person == null) return const _NoProfileView();
@@ -77,13 +80,16 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _Stats(person: person, data: data),
+                  OverviewStats(person: person, data: data),
                   const SizedBox(height: 16),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final left = Column(
                         children: [
-                          _Alerts(person: person, requests: data.requests),
+                          OverviewAlerts(
+                            person: person,
+                            requests: data.requests,
+                          ),
                           const SizedBox(height: 16),
                           RecentOutputs(outputs: data.outputs),
                         ],
@@ -94,7 +100,7 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
                             _SupportRequests(requests: data.requests),
                             const SizedBox(height: 16),
                           ],
-                          const _QuickLinks(),
+                          const QuickLinks(),
                         ],
                       );
                       if (constraints.maxWidth < 760) {
@@ -151,11 +157,13 @@ class _NoProfileView extends StatelessWidget {
   }
 }
 
-class _Stats extends StatelessWidget {
-  const _Stats({required this.person, required this.data});
+/// Outputs / active-requests / profile-status cards. Public: also the body
+/// of the `/app/home/summary` leaf (see portal_pages.dart).
+class OverviewStats extends StatelessWidget {
+  const OverviewStats({super.key, required this.person, required this.data});
 
   final Map<String, dynamic> person;
-  final _HomeData data;
+  final HomeData data;
 
   @override
   Widget build(BuildContext context) {
@@ -206,8 +214,14 @@ class _Stats extends StatelessWidget {
   }
 }
 
-class _Alerts extends StatelessWidget {
-  const _Alerts({required this.person, required this.requests});
+/// Profile/support-request alerts. Public: also the body of the
+/// `/app/home/alerts` leaf (see portal_pages.dart).
+class OverviewAlerts extends StatelessWidget {
+  const OverviewAlerts({
+    super.key,
+    required this.person,
+    required this.requests,
+  });
 
   final Map<String, dynamic> person;
   final List<Map<String, dynamic>> requests;
@@ -380,8 +394,10 @@ class _SupportRequests extends StatelessWidget {
   }
 }
 
-class _QuickLinks extends StatelessWidget {
-  const _QuickLinks();
+/// Quick links to the Welcome-pack resources. Public: also the body of the
+/// `/app/help/links` leaf (see portal_pages.dart).
+class QuickLinks extends StatelessWidget {
+  const QuickLinks({super.key});
 
   @override
   Widget build(BuildContext context) {
