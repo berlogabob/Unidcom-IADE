@@ -18,20 +18,18 @@ void main() {
       'contacts',
     ]);
   });
-  testWidgets(
-    'Getting started shows no advice callouts and no M2 references',
-    (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: WelcomePackPage(section: 'start')),
-        ),
-      );
-      expect(find.textContaining('Documents & forms'), findsNothing);
-      expect(
-        find.textContaining('All support requests require approval'),
-        findsNothing,
-      );
-    },
-    skip: true, // enabled by C7 (callouts hidden)
-  );
+  testWidgets('Getting started shows no advice callouts and no M2 references', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: WelcomePackPage(section: 'start')),
+      ),
+    );
+    expect(find.textContaining('Documents & forms'), findsNothing);
+    expect(
+      find.textContaining('All support requests require approval'),
+      findsNothing,
+    );
+  });
 }
