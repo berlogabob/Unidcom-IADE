@@ -68,14 +68,15 @@ env:
     text: "^Support requests$"
     label: "Support requests are out of the v1 pilot"
 
-# The tabs that ARE offered, and the one that used to collide with the top nav:
-# "Outputs" appeared twice meaning two different things, and is "My papers" now (Rui, 14 Aug: "render to papers").
+# The sidebar items that ARE offered. "Outputs" once appeared twice meaning
+# two different things; the researcher's own are "Scientific outputs" now
+# (the 8 Sep IA), on their own page.
 - assertVisible:
     text: "Overview"
-    label: "The researcher's own portal tabs are present"
+    label: "The researcher's own sidebar items are present"
 - assertVisible:
-    text: "My papers"
-    label: "The researcher's own papers tab is unambiguous"
+    text: "Scientific outputs"
+    label: "The researcher's own outputs item is unambiguous"
 
 # 3. Typing a directory URL is not a way around the mode.
 - openLink: "${BASE_URL}/#/people"
@@ -106,7 +107,13 @@ env:
 - assertNotVisible:
     text: "ORCID sync"
     label: "No ORCID sync on a researcher's own profile"
-# Moved to the bottom, always shown, one button for the lot.
+# 5. The outputs live on their own page now (E4). Moved to the bottom, always
+#    shown, one button for the lot.
+- openLink: "${BASE_URL}/#/app/outputs"
+- extendedWaitUntil:
+    visible: "Add output"
+    timeout: 20000
+    label: "Scientific outputs is the researcher's own outputs page"
 - assertVisible:
     text: "My ORCID publications.*"
     label: "ORCID publications are always shown, not behind a toggle"

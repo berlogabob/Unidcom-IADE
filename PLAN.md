@@ -504,6 +504,34 @@ Not done / open:
 - Rui's wording for Getting started (Phase C Q1); "email — add [automated]
   tag" (Q2); C6 "bio sync as a notification" (Q3) — all still open.
 
+#### Round 3 (2026-09-08, evening) — one navigation
+
+User: "lets rearrange navigations. do it in one consistent way. put all
+navigations on aside left", with two IA trees (researcher portal, admin
+"Research Management"). Executed as E1–E6 (haiku/sonnet subagents; Codex out
+of quota twice that day).
+
+| # | Task | PR | Check |
+|---|---|---|---|
+| E1 | `nav_model.dart`: both trees reduced to existing pages; M2 items as a comment | [x] #23 | `test/nav_model_test.dart` (5) |
+| E4 | `/app/profile` (profile) and `/app/outputs` (scientific outputs) are two pages | [x] #24 | `my_profile_sections_test.dart`, `route_guard_test.dart` |
+| E5 | `/app/admin/{review,reports,merge,data}`; no TabBar | [x] #22 | `grep -c "TabBar(" lib/app/admin_page.dart` = 0 |
+| E2 | `SideNav` + one `AppShell`; portal tabs, admin sidebar, bottom bar, welcome inner nav removed | [x] #25 | `side_nav_test.dart` (6); grep for old surfaces = 0 |
+| E6 | Maestro labels, this record, ARCHITECTURE.md §Navigation | [x] | — |
+
+| Metric | Before | After |
+|---|---|---|
+| Navigation surfaces | 5 | 1 |
+| Researcher pages | 1 combined | 2 |
+| Admin tools deep-linkable | tabs only | 4 routes |
+| `flutter test` | 137 | 148 |
+| CI | green | green on all 5 PRs |
+
+Not done: the local Maestro harness still fails at the login step (Phase C
+gap), so the updated `researcher_mode.yaml` is unexercised; the deployed
+click-through is the check. Open: whether the profile band stays (kept);
+Q1–Q3 carried from Phase C.
+
 ## 9. Out of scope / Phase 2+
 
 - Sanity CMS as website layer — **slot filled by Hugo** (`unidcom-site`), which

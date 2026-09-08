@@ -24,6 +24,21 @@ permission-dependent data, so it talks to Supabase directly.
 The website is the entry point. It links into the portal from the navigation,
 the footer, every person page, and a `/researchers/` page.
 
+## Navigation
+
+One left-hand `SideNav` (`lib/widgets/side_nav.dart`) is the whole navigation,
+in every mode: a 240 px column at ≥ 900 px, a drawer behind a hamburger below.
+What it lists comes from `lib/widgets/nav_model.dart` — `researcherNav(signedIn:)`
+(anonymous visitors get only the Welcome-pack material and Sign in) and
+`adminNav()` — reduced to the pages that exist; the rest of the 8 Sep 2026
+information architecture is a comment there, not a menu item. `navSelected()`
+picks the highlighted row and the phone app-bar title. Until 8 Sep the portal
+had five navigation surfaces (admin top bar, admin-only sidebar, phone bottom
+bar, researcher tab strip, Welcome-pack inner nav); `test/nav_model_test.dart`
+keeps every listed route real and the anonymous list anonymous. The sidebar is
+ergonomics only — `modeRedirect` / `needsAuth` in `main.dart` and RLS decide
+what anyone can reach.
+
 ## Data flow
 
 ```
