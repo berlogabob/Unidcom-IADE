@@ -38,4 +38,17 @@ void main() {
     expect(sectionGroups.first.$1, isEmpty);
     expect(sectionGroups.first.$2.single.$1, 'start');
   });
+  testWidgets('social media cards are links to the real pages', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: WelcomePackPage(section: 'social')),
+      ),
+    );
+    expect(
+      find.bySemanticsLabel(
+        RegExp(r'^https://www\.(instagram|facebook|linkedin)\.com/'),
+      ),
+      findsNWidgets(3),
+    );
+  });
 }
