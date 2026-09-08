@@ -122,7 +122,6 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
   }
 }
 
-
 class _NoProfileView extends StatelessWidget {
   const _NoProfileView();
 
@@ -375,9 +374,10 @@ class _QuickLinks extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const links = [
+    final links = [
       (label: 'UNIDCOM affiliation text', route: '/app/welcome/affiliation'),
-      (label: 'Open Access', route: '/app/welcome/oa'),
+      // M2 — Rui, 14 Aug: "open access M2".
+      if (v2) (label: 'Open Access', route: '/app/welcome/oa'),
       (label: 'Download logos', route: '/app/welcome/logos'),
       (label: 'Email signature', route: '/app/welcome/signature'),
     ];
