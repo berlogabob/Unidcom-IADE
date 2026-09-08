@@ -85,7 +85,7 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
                         children: [
                           _Alerts(person: person, requests: data.requests),
                           const SizedBox(height: 16),
-                          _RecentOutputs(outputs: data.outputs),
+                          RecentOutputs(outputs: data.outputs),
                         ],
                       );
                       final right = Column(
@@ -286,19 +286,28 @@ class _Alerts extends StatelessWidget {
   }
 }
 
-class _RecentOutputs extends StatelessWidget {
-  const _RecentOutputs({required this.outputs});
-
+class RecentOutputs extends StatefulWidget {
+  const RecentOutputs({super.key, required this.outputs});
   final List<Map<String, dynamic>> outputs;
+  @override
+  State<RecentOutputs> createState() => _RecentOutputsState();
+}
 
+class _RecentOutputsState extends State<RecentOutputs> {
+  // ponytail: expands to all, no paging — a researcher has tens of outputs, not thousands.
+  bool _expanded = false;
   @override
   Widget build(BuildContext context) {
+    final outputs = widget.outputs;
+    final shown = _expanded ? outputs : outputs.take(3).toList();
     return Panel(
       title: 'Recent papers',
-      trailing: TextButton(
-        onPressed: () => context.go('/app/profile'),
-        child: const Text('See all →'),
-      ),
+      trailing: outputs.length <= 3 || _expanded
+          ? null
+          : TextButton(
+              onPressed: () => setState(() => _expanded = true),
+              child: const Text('More'),
+            ),
       padding: EdgeInsets.zero,
       child: outputs.isEmpty
           ? const Padding(
@@ -307,7 +316,7 @@ class _RecentOutputs extends StatelessWidget {
             )
           : Column(
               children: [
-                for (final output in outputs.take(3))
+                for (final output in shown)
                   OutputRow(
                     title: output['title'] as String? ?? 'Untitled output',
                     year: output['reporting_year'] as int?,
