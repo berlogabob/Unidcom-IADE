@@ -10,7 +10,7 @@ import 'welcome_pack_content.dart';
 const welcomeSlugsM2 = {'docs', 'conf', 'oa', 'missions'};
 
 final sectionGroups = [
-  ('Start', [('start', 'Getting started')]),
+  ('', [('start', 'Getting started')]),
   (
     'Communication',
     [('signature', 'Email signature'), ('social', 'Social media')],
@@ -104,19 +104,20 @@ class WelcomePackPage extends StatelessWidget {
             groupIndex++
           ) ...[
             if (groupIndex > 0) const SizedBox(height: 6),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-              child: Text(
-                sectionGroups[groupIndex].$1.toUpperCase(),
-                style: const TextStyle(
-                  // Figma 91:2 — group labels recede behind the items.
-                  color: AppColors.textFaint,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
+            if (sectionGroups[groupIndex].$1.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 14, 12, 6),
+                child: Text(
+                  sectionGroups[groupIndex].$1.toUpperCase(),
+                  style: const TextStyle(
+                    // Rui, 8 Sep: headers must read as headers; a lone item gets none.
+                    color: AppColors.textMuted,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
                 ),
               ),
-            ),
             for (final item in sectionGroups[groupIndex].$2)
               _desktopLink(context, item.$1, item.$2),
           ],
