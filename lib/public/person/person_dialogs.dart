@@ -56,6 +56,8 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   late final _joinDate = _controller('join_date');
   late final _exitDate = _controller('exit_date');
   late final _integrationYear = _controller('integration_year');
+  late final _jobTitle = _controller('job_title');
+  late final _phone = _controller('phone');
   late String _membershipType =
       widget.person?['membership_type'] as String? ?? _membershipTypes.first;
   late String _status = widget.person?['status'] as String? ?? _statuses.first;
@@ -83,6 +85,8 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
       _joinDate,
       _exitDate,
       _integrationYear,
+      _jobTitle,
+      _phone,
     ]) {
       controller.dispose();
     }
@@ -104,6 +108,8 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
         'bio': _text(_bio),
         'photo_url': _text(_photoUrl),
         'email': _text(_email),
+        'job_title': _text(_jobTitle),
+        'phone': _text(_phone),
         'orcid': _text(_orcid),
         'ciencia_id': _text(_cienciaId),
         'phd': _text(_phd),
@@ -153,6 +159,8 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
               editField(_bio, 'Bio', maxLines: 4),
               editField(_photoUrl, 'Photo URL'),
               editField(_email, 'Email'),
+              editField(_jobTitle, 'Job title (for the email signature)'),
+              editField(_phone, 'Phone'),
               editField(_orcid, 'ORCID'),
               editField(_cienciaId, 'Ciencia ID'),
               editField(_phd, 'PhD'),

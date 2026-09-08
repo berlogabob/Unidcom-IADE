@@ -226,7 +226,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
     final row = await db
         .from('people')
         .select(
-          'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, '
+          'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, job_title, phone, '
           'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
           'join_date, exit_date, phd, notes, integration_year, auth_user_id, '
           'featured_outputs, '
@@ -670,7 +670,7 @@ Future<Map<String, dynamic>?> fetchMyPerson() async {
     final rows = await db
         .from('people')
         .select(
-          'id, preferred_name, bio, photo_url, email, orcid, ciencia_id, profile_status',
+          'id, preferred_name, bio, photo_url, email, job_title, phone, orcid, ciencia_id, profile_status',
         )
         .eq('auth_user_id', userId)
         .limit(1);
