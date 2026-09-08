@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../data/supabase.dart';
 import '../theme/tokens.dart';
+import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
 
 /// Pure: the signature text for the Copy button and the preview.
@@ -34,20 +36,30 @@ class _SignatureFormState extends State<SignatureForm> {
   late final TextEditingController _emailController;
   late final TextEditingController _phoneController;
 
+  bool _sending = false;
+  Map<String, String>? _sentSnapshot;
+  late final Map<String, String?> _initialPerson;
+
   @override
   void initState() {
     super.initState();
+    _initialPerson = {
+      'preferred_name': widget.person?['preferred_name'] as String?,
+      'job_title': widget.person?['job_title'] as String?,
+      'email': widget.person?['email'] as String?,
+      'phone': widget.person?['phone'] as String?,
+    };
     _nameController = TextEditingController(
-      text: widget.person?['preferred_name'] as String? ?? '',
+      text: _initialPerson['preferred_name'] ?? '',
     );
     _roleController = TextEditingController(
-      text: widget.person?['job_title'] as String? ?? '',
+      text: _initialPerson['job_title'] ?? '',
     );
     _emailController = TextEditingController(
-      text: widget.person?['email'] as String? ?? '',
+      text: _initialPerson['email'] ?? '',
     );
     _phoneController = TextEditingController(
-      text: widget.person?['phone'] as String? ?? '',
+      text: _initialPerson['phone'] ?? '',
     );
 
     _nameController.addListener(() => setState(() {}));
@@ -63,6 +75,56 @@ class _SignatureFormState extends State<SignatureForm> {
     _emailController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  // After a send, the sent values are the baseline: a second send stages
+  // only what changed since, not everything that differs from the DB row.
+  Map<String, String?> get _current => _sentSnapshot ?? _initialPerson;
+
+  Map<String, String> get _proposed => {
+    'preferred_name': _nameController.text,
+    'job_title': _roleController.text,
+    'email': _emailController.text,
+    'phone': _phoneController.text,
+  };
+
+  bool get _dirty {
+    final baseline = _sentSnapshot ?? _current;
+    return _nameController.text.trim() !=
+            (baseline['preferred_name'] ?? '').trim() ||
+        _roleController.text.trim() != (baseline['job_title'] ?? '').trim() ||
+        _emailController.text.trim() != (baseline['email'] ?? '').trim() ||
+        _phoneController.text.trim() != (baseline['phone'] ?? '').trim();
+  }
+
+  Future<void> _sendChanges() async {
+    if (!mounted) return;
+    final person = widget.person;
+    if (person == null) return;
+
+    setState(() => _sending = true);
+    try {
+      final n = await proposeMyChanges(
+        person['id'] as String,
+        _current,
+        _proposed,
+      );
+      if (mounted) {
+        showSnack(
+          context,
+          '$n change${n == 1 ? '' : 's'} sent to UNIDCOM for approval',
+        );
+        setState(() => _sentSnapshot = Map.from(_proposed));
+      }
+    } catch (error) {
+      if (mounted) {
+        showSnack(context, error.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _sending = false);
+      }
+    }
   }
 
   @override
@@ -117,7 +179,20 @@ class _SignatureFormState extends State<SignatureForm> {
           isDense: true,
         ),
       ),
-      // D3: "Send changes for approval" goes here.
+      if (widget.person != null) ...[
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          key: const Key('sig-send'),
+          onPressed: _dirty && !_sending ? _sendChanges : null,
+          icon: const Icon(Icons.send_outlined),
+          label: const Text('Send changes for approval'),
+        ),
+        const SizedBox(height: 8),
+        mutedText(
+          context,
+          'Changes are applied to your profile once UNIDCOM approves them.',
+        ),
+      ],
       _heading('Preview'),
       Panel(
         padding: const EdgeInsets.all(18),

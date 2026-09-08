@@ -882,6 +882,42 @@ Future<void> rejectSuggestion(String id) async {
   }
 }
 
+/// Pure, testable: one suggestion row per field whose trimmed value differs.
+List<Map<String, dynamic>> signatureSuggestions(
+  String personId,
+  Map<String, String?> current,
+  Map<String, String> proposed,
+) => [
+  for (final entry in proposed.entries)
+    if (entry.value.trim() != (current[entry.key] ?? '').trim())
+      {
+        'subject_type': 'person',
+        'subject_id': personId,
+        'field': entry.key,
+        'current_value': current[entry.key],
+        'suggested_value': entry.value.trim(),
+        'source': 'researcher',
+        'confidence': 1,
+      },
+];
+
+/// Researcher-proposed corrections to their own row. Staged, not applied:
+/// an admin accepts or rejects each one in the Review queue (acceptSuggestion).
+Future<int> proposeMyChanges(
+  String personId,
+  Map<String, String?> current,
+  Map<String, String> proposed,
+) async {
+  final rows = signatureSuggestions(personId, current, proposed);
+  if (rows.isEmpty) return 0;
+  try {
+    await db.from('enrichment_suggestions').insert(rows);
+    return rows.length;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 /// Works pulled from ORCID and waiting for an admin to import or dismiss.
 /// Highest affiliation confidence first — 'external' rows stay in the list so a
 /// profile showing no outputs has a visible explanation.
