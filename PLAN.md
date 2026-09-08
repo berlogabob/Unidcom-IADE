@@ -470,6 +470,40 @@ Known gaps:
   automated tag" not understood; **Q3** C6's reading of "bio sync as a
   notification" unconfirmed.
 
+#### Round 2 (2026-09-08, afternoon) — feedback on the live v1
+
+Three screenshots of the deployed Welcome pack. Executed the same way
+(haiku subagents, one PR per task, orchestrator runs the checks).
+
+| # | Feedback | Task | PR | Check |
+|---|---|---|---|---|
+| R1 | "email must be filled with our data set entities … role — we must know his role. if we dont have info — it could be added" | D1 `people.job_title` + `people.phone`; D2 signature form seeded from the row, live preview, Copy copies the filled text | [x] #19, [x] #18 | `test/signature_test.dart`; SQL rollback test of the migration |
+| R2 | "any field could be edited and send to us to apply or declined (as we have for submit btn)" | D1 RLS: researcher may insert/read `enrichment_suggestions` about own row (`source='researcher'`); D3 "Send changes for approval" → rows land in the admin Review queue → Accept applies via `acceptSuggestion` | [x] #19, [x] #20 | `signatureSuggestions` unit test; RLS: own insert ok, other person 42501, other source 42501 |
+| R3 | "Start with one item, why keep submenu for 1 item" | D4 Getting started ungrouped | [x] #16 | `v1_surface_test.dart` |
+| R4 | "other headers cant be readed well as header" | D4 11.5px / w700 / textMuted / more air | [x] #16 | visual on deploy |
+| R5 | "social media must be clickable" | D5 cards are links (Instagram, Facebook, LinkedIn) | [x] #17 | `v1_surface_test.dart` 3 link semantics |
+
+Measured on `main` (e1a9f01):
+
+| Metric | Before | After |
+|---|---|---|
+| Signature fields prefilled for a linked researcher | 0 / 4 | name + email always; role/phone when on file |
+| Preview / Copy | static template | live, filled |
+| Researcher edit path for name/role/email/phone | direct Edit only | + staged for admin approve/decline |
+| Nav group headers | 5 (one over a lone item) | 3, readable |
+| Social cards | static | 3 links |
+| `flutter test` | 130 | 137 |
+| CI (v1 + V2 build) | green | green on all 6 PRs |
+
+Not done / open:
+- The live click-through of R2 (send as researcher → Accept as admin → field
+  on the profile) is the user's to run on the deployed site; the DB half was
+  verified by SQL.
+- `merge_people()` applies a fixed column list, so `job_title`/`phone` are
+  not offered in the merge matrix (a chooser there would do nothing).
+- Rui's wording for Getting started (Phase C Q1); "email — add [automated]
+  tag" (Q2); C6 "bio sync as a notification" (Q3) — all still open.
+
 ## 9. Out of scope / Phase 2+
 
 - Sanity CMS as website layer — **slot filled by Hugo** (`unidcom-site`), which
