@@ -420,6 +420,56 @@ runbook, secrets and access registers: **[OPERATIONS.md](OPERATIONS.md)**.
 - [ ] P14.8 Bus factor: one person holds every critical account, including the ORCID developer app. OPERATIONS.md §1.
 - [ ] P14.9 Data-protection paperwork and an erasure path (`deletePerson` does not exist).
 
+### Phase C — Cleaning 2: Rui's 14 Aug notes (2026-09-08)
+
+Source: Rui's handwritten notes of 14 Aug (transcribed). Rule: hide behind
+`v2` (Rui's "M2" = milestone 2), delete nothing. One PR per task; boxes ticked
+only after the orchestrator ran the acceptance check. Executed by Claude
+`haiku` subagents (Codex quota was exhausted); orchestrated by Claude.
+
+| # | Note line | Task | PR | Check |
+|---|---|---|---|---|
+| N2 N3 N4 | `M2 → hide`, `open access M2`, ~~Conferences & events~~, 7-item nav | C1 hide Support group; M2 slugs redirect to start | [x] #9 | `test/v1_surface_test.dart`, `view_mode_test.dart` |
+| N5 N2 | `Get sta… text must be refined`, `open access M2` | C2 drop steps pointing at M2 sections; Open Access quick link v2; "46 integrated members" | [x] #10 | `grep -B1 welcome/oa lib/app/researcher_home.dart` |
+| N7 N10 | `Last verified → hide`, `hide Last verif.` | C3 stat card + profile row v2; Maestro asserts | [x] #11 | label grep counts unchanged |
+| N9 | `M outputs … render to papers` | C4 "My papers" tab, "Recent papers" panel | [x] #12 | `grep -rn "My outputs" lib .maestro` = 0 |
+| N12 | `add bio picture` | C5 portal band shows `photo_url` | [x] #7 | `flutter analyze`; live check pending (see below) |
+| N13 | `bio sync as a notification` | C6 ORCID candidates as an Overview alert — **awaiting Rui/André: confirm reading** | [ ] | `test/home_alerts_test.dart` (planned) |
+| N14 | `extra advice → hide` | C7 `_callout` renders nothing in v1; Outlook hint v2 | [x] #14 | `v1_surface_test.dart` widget test un-skipped |
+| N15 | `Top 10 — delete` | C8 dashboard Top 10 panel v2 | [x] #8 | `grep -B2 "Top 10 researchers" lib/app/dashboard.dart` |
+| N16 | `кнопка ещё` | C9 "More" expands Recent papers in place | [x] #13 | `test/recent_outputs_test.dart` |
+| N8 N11 N17 | PROFILE STATUS stays; `кнопка add` exists; Report activity/Affiliation/Logos/Contacts/Social media stay | verify only | [x] | read on main 2026-09-08 |
+| N1 N6 | `digitalization of work process`; `email — add [automated] tag` | deferred (M2) / unclear | — | — |
+
+Measured on `main` (7182765), v1 build:
+
+| Metric | Before | After |
+|---|---|---|
+| Welcome-pack nav items | 11 | 7 |
+| Callouts rendered in Getting started | 1 | 0 |
+| `/app/welcome/oa` deep link | opens | → `/app/welcome/start` |
+| Overview stat cards | 3 | 2 |
+| Overview quick links | 4 | 3 |
+| "Last verified" rows in the researcher view | 2 | 0 |
+| Researcher tab label | My outputs | My papers |
+| Recent papers control | See all → | More (expands in place) |
+| Admin dashboard panels | 6 | 5 |
+| Label strings deleted from source | — | 0 |
+| `flutter test` | 125 | 130 |
+| CI (v1 + V2 build) | green | green on all 8 PRs |
+
+Known gaps:
+- **Maestro cannot run locally**: `.maestro/researcher_mode.yaml` fails at its
+  first step ("Email" not visible on /#/login) on this machine — and did so on
+  both 12 Aug runs in `~/.maestro/tests`, before this phase. The new assertions
+  (My papers, no LAST VERIFIED) are in the flow but unexercised. Needs a fix
+  to the E2E harness, not to the app.
+- **C5 live check** (photo in the band) not done: it needs a `photo_url` on a
+  real person's row, and the sync publishes that row to the public site.
+- **Q1** Getting-started copy still needs Rui's wording; **Q2** "email —
+  automated tag" not understood; **Q3** C6's reading of "bio sync as a
+  notification" unconfirmed.
+
 ## 9. Out of scope / Phase 2+
 
 - Sanity CMS as website layer — **slot filled by Hugo** (`unidcom-site`), which
