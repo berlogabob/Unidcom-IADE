@@ -69,13 +69,13 @@ env:
     label: "Support requests are out of the v1 pilot"
 
 # The tabs that ARE offered, and the one that used to collide with the top nav:
-# "Outputs" appeared twice meaning two different things, and is "My outputs" now.
+# "Outputs" appeared twice meaning two different things, and is "My papers" now (Rui, 14 Aug: "render to papers").
 - assertVisible:
     text: "Overview"
     label: "The researcher's own portal tabs are present"
 - assertVisible:
-    text: "My outputs"
-    label: "The researcher's own outputs tab is unambiguous"
+    text: "My papers"
+    label: "The researcher's own papers tab is unambiguous"
 
 # 3. Typing a directory URL is not a way around the mode.
 - openLink: "${BASE_URL}/#/people"

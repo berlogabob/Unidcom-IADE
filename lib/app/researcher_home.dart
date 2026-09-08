@@ -122,7 +122,6 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
   }
 }
 
-
 class _NoProfileView extends StatelessWidget {
   const _NoProfileView();
 
@@ -293,7 +292,7 @@ class _RecentOutputs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Panel(
-      title: 'Recent outputs',
+      title: 'Recent papers',
       trailing: TextButton(
         onPressed: () => context.go('/app/profile'),
         child: const Text('See all →'),

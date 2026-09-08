@@ -32,12 +32,12 @@ class _PortalShellState extends State<PortalShell> {
         // Signed out, the Welcome pack is the only one of these a visitor can
         // open — the others are auth-gated, so offering them would be tabs
         // that bounce straight to /login.
-        final hasSession =
-            Supabase.instance.client.auth.currentSession != null;
+        final hasSession = Supabase.instance.client.auth.currentSession != null;
         final tabs = [
           if (hasSession) ...[
             ('Overview', '/app/home', path.startsWith('/app/home')),
-            ('My outputs', '/app/profile', path == '/app/profile'),
+            // Rui, 14 Aug: "render to papers".
+            ('My papers', '/app/profile', path == '/app/profile'),
             // v2: hiding the tab is not enough on its own — modeRedirect in
             // main.dart also refuses the route, so an old bookmark cannot walk
             // in behind it.
@@ -206,10 +206,7 @@ class _PortalShellState extends State<PortalShell> {
     }
     final code = (currentLab?['code'] as String? ?? '').trim();
     final labName = (currentLab?['name'] as String? ?? '').trim();
-    final unit = [
-      code,
-      labName,
-    ].where((value) => value.isNotEmpty).join(' — ');
+    final unit = [code, labName].where((value) => value.isNotEmpty).join(' — ');
 
     return Row(
       children: [
