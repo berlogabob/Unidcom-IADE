@@ -532,6 +532,33 @@ gap), so the updated `researcher_mode.yaml` is unexercised; the deployed
 click-through is the check. Open: whether the profile band stays (kept);
 Q1–Q3 carried from Phase C.
 
+#### Round 4 (2026-09-08, evening) — researcher sidebar one-to-one, collapsible
+
+User: "double check on navigation … do it one to one, if you dont have
+information — create empty page with notification work in progress. make menu
+headers toggable to hide all entities from eyes." Decisions: third-level nodes
+become headings on the page; collapse state per tab (sessionStorage).
+
+| # | Task | PR | Check |
+|---|---|---|---|
+| F2 | Overview + Help leaves as pages (`portal_pages.dart`, `WipPage`) | [x] #28 | `wip_page_test.dart` |
+| F3 | My Profile + Scientific Outputs leaves as pages; Identifiers / Import & Sync with third-level headings | [x] #29 | `my_profile_sections_test.dart` |
+| F4 | FCT Information as its own welcome section | [x] #27 | `v1_surface_test.dart` |
+| F1 | Six collapsible sections, 25 leaves, labels verbatim; state per tab | [x] #30 | `nav_model_test.dart`, `side_nav_test.dart` |
+| F5 | Maestro labels, this record, ARCHITECTURE §Navigation | [x] | — |
+
+| Metric | Before | After |
+|---|---|---|
+| Researcher sidebar leaves | 10 | 25 |
+| Leaves with a page | 10 | 25 (8 "Work in progress") |
+| Collapsible sections | 0 | 6 |
+| `flutter test` | 148 | 165 |
+| CI | green | green on all 5 PRs |
+
+Open: Overview › Profile Status and My Profile › Profile Status are the same
+widget on two routes (the tree lists the leaf twice). Local Maestro harness
+still unusable (Phase C gap). Carried Q1–Q3.
+
 ## 9. Out of scope / Phase 2+
 
 - Sanity CMS as website layer — **slot filled by Hugo** (`unidcom-site`), which

@@ -30,8 +30,11 @@ One left-hand `SideNav` (`lib/widgets/side_nav.dart`) is the whole navigation,
 in every mode: a 240 px column at ≥ 900 px, a drawer behind a hamburger below.
 What it lists comes from `lib/widgets/nav_model.dart` — `researcherNav(signedIn:)`
 (anonymous visitors get only the Welcome-pack material and Sign in) and
-`adminNav()` — reduced to the pages that exist; the rest of the 8 Sep 2026
-information architecture is a comment there, not a menu item. `navSelected()`
+`adminNav()`. The researcher nav is one-to-one with the 8 Sep 2026 tree:
+six collapsible sections (collapse state in sessionStorage, per tab) and one
+page per leaf — leaves not built yet render a "Work in progress" page
+(`WipPage`) rather than being left out. The admin nav is reduced to the pages
+that exist; its unbuilt IA items are a comment in the model. `navSelected()`
 picks the highlighted row and the phone app-bar title. Until 8 Sep the portal
 had five navigation surfaces (admin top bar, admin-only sidebar, phone bottom
 bar, researcher tab strip, Welcome-pack inner nav); `test/nav_model_test.dart`
