@@ -75,7 +75,7 @@ env:
     text: "Overview"
     label: "The researcher's own sidebar items are present"
 - assertVisible:
-    text: "Scientific outputs"
+    text: "My Outputs"
     label: "The researcher's own outputs item is unambiguous"
 
 # 3. Typing a directory URL is not a way around the mode.
@@ -107,13 +107,16 @@ env:
 - assertNotVisible:
     text: "ORCID sync"
     label: "No ORCID sync on a researcher's own profile"
-# 5. The outputs live on their own page now (E4). Moved to the bottom, always
-#    shown, one button for the lot.
+# 5. The outputs live on their own page now (E4)…
 - openLink: "${BASE_URL}/#/app/outputs"
 - extendedWaitUntil:
     visible: "Add output"
     timeout: 20000
-    label: "Scientific outputs is the researcher's own outputs page"
-- assertVisible:
-    text: "My ORCID publications.*"
+    label: "My Outputs is the researcher's own outputs page"
+# …and the ORCID publications on Import & Synchronisation (F3). Always shown,
+# one button for the lot.
+- openLink: "${BASE_URL}/#/app/outputs/import"
+- extendedWaitUntil:
+    visible: "My ORCID publications.*"
+    timeout: 20000
     label: "ORCID publications are always shown, not behind a toggle"
