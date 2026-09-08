@@ -336,10 +336,20 @@ final _router = GoRouter(
           path: '/app/dashboard',
           builder: (_, _) => const DashboardScreen(),
         ),
-        GoRoute(path: '/app/admin', builder: (_, _) => const AdminScreen()),
+        GoRoute(path: '/app/admin', redirect: (_, _) => '/app/admin/review'),
         GoRoute(
           path: '/app/admin/requests',
           builder: (_, _) => const AdminRequestsPage(),
+        ),
+        // The four admin tools are sidebar items, not tabs: each one is a URL.
+        GoRoute(
+          path: '/app/admin/:tool',
+          redirect: (_, state) =>
+              adminTools.contains(state.pathParameters['tool'])
+              ? null
+              : '/app/admin/review',
+          builder: (_, state) =>
+              AdminScreen(tool: state.pathParameters['tool']!),
         ),
         GoRoute(
           path: '/app/profile',

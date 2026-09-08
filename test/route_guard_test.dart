@@ -64,6 +64,7 @@ void main() {
         '/app/dashboard',
         '/app/admin',
         '/app/admin/requests',
+        '/app/admin/review',
         '/app/settings',
       ];
 

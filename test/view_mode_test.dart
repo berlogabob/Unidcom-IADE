@@ -70,6 +70,7 @@ void main() {
         '/app/dashboard',
         '/app/admin',
         '/app/admin/requests',
+        '/app/admin/data',
         '/app/settings',
       ];
       for (final location in directory) {
