@@ -123,10 +123,11 @@ Widget _signatureSection(BuildContext context) => _section(
     _heading('Preview'),
     _signaturePreview(context),
     const SizedBox(height: 10),
-    const Text(
-      'Outlook: File > Options > Mail > Signatures > New > paste the copied content.',
-      style: TextStyle(color: AppColors.textFaint, fontSize: 11),
-    ),
+    if (v2)
+      const Text(
+        'Outlook: File > Options > Mail > Signatures > New > paste the copied content.',
+        style: TextStyle(color: AppColors.textFaint, fontSize: 11),
+      ),
   ],
 );
 
@@ -869,27 +870,30 @@ Widget _callout(
   required IconData icon,
   required Color color,
   required Color background,
-}) => Container(
-  width: double.infinity,
-  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-  decoration: BoxDecoration(
-    color: background,
-    borderRadius: BorderRadius.circular(AppDims.radiusSm),
-  ),
-  child: Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Icon(icon, size: 16, color: color),
-      const SizedBox(width: 11),
-      Expanded(
-        child: Text(
-          text,
-          style: TextStyle(color: color, fontSize: 12.5, height: 1.5),
+}) {
+  if (!v2) return const SizedBox.shrink(); // Rui, 14 Aug: "extra advice → hide"
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+    decoration: BoxDecoration(
+      color: background,
+      borderRadius: BorderRadius.circular(AppDims.radiusSm),
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(color: color, fontSize: 12.5, height: 1.5),
+          ),
         ),
-      ),
-    ],
-  ),
-);
+      ],
+    ),
+  );
+}
 
 Widget _linkRows(List<(String, String)> rows) => Panel(
   padding: EdgeInsets.zero,
