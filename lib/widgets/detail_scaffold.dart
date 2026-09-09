@@ -126,7 +126,10 @@ class FailureView extends StatelessWidget {
   }
 }
 
-/// Snackbar helper safe to call after awaits.
+/// Feedback rules: inline text under a field validates that field only;
+/// SnackBar reports the result of an action the user just took, whether it
+/// succeeded or failed; the AsyncView banner reports that a screen could not
+/// load its data.
 void showSnack(BuildContext context, String message) {
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));

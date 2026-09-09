@@ -38,6 +38,7 @@ import 'public/structure.dart';
 import 'theme/app_theme.dart';
 import 'theme/tokens.dart';
 import 'widgets/app_shell.dart';
+import 'widgets/detail_scaffold.dart';
 import 'widgets/nav_model.dart';
 import 'widgets/portal_shell.dart';
 
@@ -618,7 +619,12 @@ class GoRouterRefreshStream extends ChangeNotifier {
 }
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({super.key, this.signIn});
+
+  final Future<AuthResponse> Function({
+    required String email,
+    required String password,
+  })? signIn;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -639,6 +645,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_orcidError != null) {
       _error = _orcidError;
       _orcidError = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) showSnack(context, _error!);
+      });
     }
   }
 
@@ -673,13 +682,21 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _signIn() async {
+    if (_email.text.trim().isEmpty) {
+      setState(() => _error = 'Email is required');
+      return;
+    }
+    if (_password.text.isEmpty) {
+      setState(() => _error = 'Password is required');
+      return;
+    }
     setState(() {
       _error = null;
       _loading = true;
     });
 
     try {
-      await Supabase.instance.client.auth.signInWithPassword(
+      await (widget.signIn ?? Supabase.instance.client.auth.signInWithPassword)(
         email: _email.text.trim(),
         password: _password.text,
       );
@@ -688,9 +705,9 @@ class _LoginScreenState extends State<LoginScreen> {
       // would make the landing screen a thing decided in two places, and the
       // ORCID path already relies on the redirect alone.
     } on AuthException catch (error) {
-      setState(() => _error = error.message);
+      if (mounted) showSnack(context, error.message);
     } catch (error) {
-      setState(() => _error = error.toString());
+      if (mounted) showSnack(context, error.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
