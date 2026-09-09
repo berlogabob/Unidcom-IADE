@@ -1,0 +1,74 @@
+[
+ {
+  "criterion": "VD-TYPE-3",
+  "screen": "anon_welcome_logos",
+  "severity": 3,
+  "evidence": "In the 'Logos & brand assets' list, the 'IADE — Universidade Europeia / Positive' swatch renders as pale mint text on a pale mint chip (near-identical lightness to its background), and the 'FCT — Fundação para a Ciência e a Tecnologia / Positive · Horizontal' swatch renders as pale pink/red text on a pale pink chip. Both labels are barely legible against their own swatch background, unlike the adjacent 'Negative' and 'UNIDCOM/IADE' swatches which use dark navy chips with white text and read clearly. The identical bug repeats on r_welcome_logos (same page, researcher-mode route) — same design tokens, same low-contrast pairing.",
+  "screenshot": "screens/anon_welcome_logos.png",
+  "measurement": null,
+  "recommendation": "Give the 'Positive' logo-preview chips a dark or neutral card background (or a visible border) so the light-on-light brand mark is distinguishable, or render the identifying label ('IADE', 'FCT') outside the swatch in standard textPrimary instead of matching the swatch's own light tint."
+ },
+ {
+  "criterion": "VD-COL-2",
+  "screen": "r_home",
+  "severity": 2,
+  "evidence": "The 'OUTPUTS' and 'PROFILE STATUS' stat cards share one continuous amber/warn-colored top border. 'Profile Status: draft' is legitimately a warning state, but 'Outputs: 0' is a neutral count with no problem — yet it gets the same warning-amber accent, borrowing meaning it doesn't have. The identical mis-pairing appears again on r_home_summary and r_settings (same widget, same amber bar spanning both cards).",
+  "screenshot": "screens/r_home.png",
+  "measurement": null,
+  "recommendation": "Apply the amber/warn accent only to the card(s) whose state actually needs attention (Profile Status here); give the neutral Outputs count a neutral/no accent so the warning color keeps a single meaning across the app."
+ },
+ {
+  "criterion": "VD-COL-2",
+  "screen": "a_dashboard",
+  "severity": 2,
+  "evidence": "The 12 KPI tiles are one repeated component (label + big number + colored top border) but use three different accent colors — teal, blue, and red — without a visible rule: plain counts are teal for some tiles (Outputs, Researchers, Verified Outputs) but blue for structurally identical plain counts on other tiles (Projects, Clusters, Journal Articles, Lab Allocations). Red is reserved for the two genuinely problematic metrics (Needs Verification 181, Missing ORCID 158), which is correct, but the teal/blue split among the rest reads as arbitrary categorical decoration rather than meaning.",
+  "screenshot": "screens/a_dashboard.png",
+  "measurement": null,
+  "recommendation": "Pick one neutral accent (teal) for all plain-count tiles and reserve blue/red for tiles that carry an actual status (attention-needed, informational grouping, etc.), so the same visual treatment always maps to the same meaning."
+ },
+ {
+  "criterion": "VD-RESP-1",
+  "screen": "a_admin_reports",
+  "severity": 2,
+  "evidence": "In the Scientific Outputs report table, the 'Type' column's long category labels (e.g. 'Valorizações de atividades ou outros outputs no âmbito de projetos c…') are cut off exactly at the 1280px viewport edge with no horizontal scrollbar, fade, or other affordance indicating more content exists off-screen.",
+  "screenshot": "screens/a_admin_reports.png",
+  "measurement": null,
+  "recommendation": "Wrap the table in its own horizontal-scroll container (with a visible scrollbar or edge shadow) or truncate long Type values with an ellipsis and full text on hover/tap, instead of letting them run off the viewport unindicated."
+ },
+ {
+  "criterion": "VD-RESP-1",
+  "screen": "phone_a_dashboard",
+  "severity": 3,
+  "evidence": "On the 390px admin dashboard, the KPI card rows overflow the viewport: the third card in row 1 ('OUTPUTS APPROVED') shows only 'OU…/API/3/3', and the third card in row 2 ('JOURNAL ARTICLES') shows only 'JOU…/2' before being clipped by the screen edge, with no scroll indicator. Key metrics are unreadable at this width.",
+  "screenshot": "screens/phone_a_dashboard.png",
+  "measurement": null,
+  "recommendation": "Reflow the KPI grid to a single column (or a horizontally-scrollable row with visible affordance) below a defined breakpoint instead of letting a fixed multi-column grid clip against the viewport."
+ },
+ {
+  "criterion": "VD-RESP-1",
+  "screen": "phone_a_review",
+  "severity": 2,
+  "evidence": "The 'Pending approval' section tab bar ('Profiles to approve', 'Outputs to approve', …) overflows the 390px viewport — only a sliver of a letter from the next tab is visible at the right edge, with no scroll affordance (arrow, fade, or dots) hinting that additional tabs (Needs re-verification, Suggestions, Activity, Needs attention, ORCID works) exist off-screen.",
+  "screenshot": "screens/phone_a_review.png",
+  "measurement": null,
+  "recommendation": "Give the tab bar a visible scroll cue on phone widths (edge fade/gradient, partial next-tab peek with clear spacing, or a collapsed 'more' menu) so users know there are more tabs than fit on screen."
+ },
+ {
+  "criterion": "VD-RESP-1",
+  "screen": "phone_r_drawer",
+  "severity": 2,
+  "evidence": "In the mobile navigation drawer, after the 'SCIENTIFIC OUTPUTS' section header the expected items ('My Outputs', 'Add Scientific Output') are missing; in their place is a single thin teal horizontal line immediately before the account footer (avatar/email/'Switch to admin'/'Sign out'). This reads as the drawer's scrollable list being clipped mid-section, leaving an orphaned decorative element (likely a squeezed active-item indicator) rather than a clean cut.",
+  "screenshot": "screens/phone_r_drawer.png",
+  "measurement": null,
+  "recommendation": "Verify the drawer's scroll container sizes correctly on 390px-tall viewports so all nav sections render in full, or add an explicit internal scroll region with visible scrollbar/fade instead of hard-clipping the list against the fixed account footer."
+ },
+ {
+  "criterion": "VD-TYPE-1",
+  "screen": "a_admin_data",
+  "severity": 1,
+  "evidence": "The 'people' table in the raw Data Browser renders full-sentence bio paragraphs (a full bio paragraph) as regular table-cell text at roughly 12-13px — below the 16px floor for text a person is expected to actually read, not just scan as a short label.",
+  "screenshot": "screens/a_admin_data.png",
+  "measurement": null,
+  "recommendation": "For long free-text columns (bio, notes) either truncate with an expand-on-click affordance shown at readable size, or bump the cell font size for these specific columns rather than reusing the compact ID/date-column size."
+ }
+]

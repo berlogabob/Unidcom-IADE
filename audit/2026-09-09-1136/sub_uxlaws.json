@@ -1,0 +1,92 @@
+[
+ {
+  "criterion": "LAW-MILLER-1",
+  "screen": "r_sidebar_expanded",
+  "severity": 3,
+  "evidence": "The persistent researcher sidebar holds 25 leaf nav rows across 6 collapsible groups (OVERVIEW, MY PROFILE, SCIENTIFIC OUTPUTS, WELCOME PACK, HELP, SETTINGS). On the 1280x900 viewport, only 2 groups plus a sliver of the 3rd (11 items: 5 under OVERVIEW, 6 under MY PROFILE) fit before the fold; SCIENTIFIC OUTPUTS, the welcome pack, HELP and SETTINGS groups require scrolling to even discover. The group chevrons imply collapsibility, but all groups render expanded by default, so the app never actually chunks the list down to a Miller-safe size at first paint.",
+  "screenshot": "screens/r_sidebar_expanded.png",
+  "measurement": null,
+  "recommendation": "Collapse all but the current section's group by default (accordion behavior, one open group at a time) so the visible option count stays near 7±2, and let the active route auto-expand only its own group."
+ },
+ {
+  "criterion": "LAW-MILLER-1",
+  "screen": "phone_r_drawer",
+  "severity": 3,
+  "evidence": "measurements.json flags the drawer nav as one flat oversized group: {\"label\":\"flt-semantic-node-738\",\"items\":22,\"limit\":9} — 22 leaf items exposed as a single list on a 390px viewport, 2.4x Miller's ceiling, with no progressive disclosure (all 6 sections rendered open simultaneously).",
+  "screenshot": "screens/phone_r_drawer.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-738\", \"items\": 22, \"limit\": 9}",
+  "recommendation": "On mobile especially, default to only the active group expanded; consider a two-level drawer (sections first, rows on tap) instead of one long scrolling list."
+ },
+ {
+  "criterion": "LAW-MILLER-1",
+  "screen": "a_dashboard",
+  "severity": 2,
+  "evidence": "The admin dashboard renders 12 ungrouped KPI tiles (ORCID Linked, Profiles Validated, Outputs Approved, DOI Coverage, Researchers, Outputs, Journal Articles, Needs Verification, Missing ORCID, Labs, Projects, Clusters, Verified Outputs, Lab Allocations, Mentorships) with no category headers, immediately followed by an 8-row 'Outputs by type' breakdown and a quartile chart on the same screen. measurements.json flattens the whole panel into one oversized semantic group ({\"items\":90,\"limit\":9}), and visually the top KPI grid alone already exceeds the 7±2 ceiling with no sub-grouping (e.g. 'People' vs 'Outputs' vs 'Structure' metrics).",
+  "screenshot": "screens/a_dashboard.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-13\", \"items\": 90, \"limit\": 9}",
+  "recommendation": "Cluster the KPI tiles under 3-4 labeled sub-headers (People, Outputs, Structure, Reporting) of ≤9 tiles each instead of one undifferentiated grid."
+ },
+ {
+  "criterion": "LAW-JAKOB-1",
+  "screen": "r_account_menu",
+  "severity": 2,
+  "evidence": "mode_chooser explicitly tells the user 'You can switch at any time from your name, top right.' But there is no account control top-right anywhere in researcher or admin mode — the header's identity block (avatar 'EB' + 'E2E Bot' + role text) is non-clickable (clickable=\"false\" on all three nodes in hierarchy/r_account_menu.json), and the real mode-switch/sign-out control is a plain text link stack ('Switch to admin', 'Public site', 'Sign out') at the very bottom of the left sidebar. The crawler's scripted action 'top-right name → menu' produced a screen whose hierarchy is byte-identical to r_home.json — nothing opened, because the described target doesn't exist. This breaks both platform convention (account controls are top-right in virtually every web app) and the app's own documented affordance.",
+  "screenshot": "screens/r_account_menu.png",
+  "measurement": null,
+  "recommendation": "Either move the account/mode switcher to a real top-right menu trigger, or fix the onboarding copy on mode_chooser to say 'from your name, bottom left' — the instruction and the UI must agree."
+ },
+ {
+  "criterion": "LAW-FITTS-1",
+  "screen": "phone_r_drawer",
+  "severity": 2,
+  "evidence": "Rows near the bottom of the drawer report 280×15 px ('My Outputs', bounds [0,688][280,703]) and 280×5 px ('Affiliation Guidelines') because the drawer footer (avatar + Switch/Public site/Sign out) is drawn over the scrolling list and clips it; the rows themselves are 44 px when fully visible ('Research Activity Summary' [0,124][280,168]). Symptom of the footer-overlap layout (see VD-GES-1 r_home), not of small targets by design.",
+  "screenshot": "screens/phone_r_drawer.png",
+  "measurement": "small_tap_targets: {\"label\":\"My Outputs\",\"w\":280,\"h\":15,\"assumed\":false}; {\"label\":\"Affiliation Guidelines\",\"w\":280,\"h\":5,\"assumed\":false}",
+  "recommendation": "Same fix as the desktop footer: pad the list by the footer height or pin the footer below it."
+ },
+ {
+  "criterion": "LAW-FITTS-1",
+  "screen": "a_person",
+  "severity": 2,
+  "evidence": "The 'Remove' control on a person's timeline entry is a confirmed clickable target only 40×6px (hierarchy bounds [1084,894]-[1124,900]), an order of magnitude under the 24px minimum. It sits directly beneath the 'Highlights' block with no visual button styling to compensate for the tiny hit area.",
+  "screenshot": "screens/a_person.png",
+  "measurement": "small_tap_targets: {\"label\":\"Remove\",\"w\":40,\"h\":6,\"assumed\":false}",
+  "recommendation": "Render 'Remove' as a proper button/icon-button with at least a 24px (ideally 44px) hit box, not a 6px text sliver."
+ },
+ {
+  "criterion": "LAW-FITTS-1",
+  "screen": "r_profile_edit_dialog",
+  "severity": 2,
+  "evidence": "The 'Integration year' field in the 'Edit researcher' modal is a confirmed clickable control only 528×7px (hierarchy bounds [380,795]-[908,802]), squeezed at the bottom of a 14-field unsectioned form. It is essentially a sliver compared to every other input in the same dialog.",
+  "screenshot": "screens/r_profile_edit_dialog.png",
+  "measurement": "small_tap_targets: {\"label\":\"Integration year\",\"w\":528,\"h\":7,\"assumed\":false}",
+  "recommendation": "Give the Integration year field the same input height/padding as its siblings (Join date, Exit date) in the same form."
+ },
+ {
+  "criterion": "LAW-FITTS-1",
+  "screen": "phone_a_review",
+  "severity": 2,
+  "evidence": "The 'Pending approval' tab bar on the 390px viewport can't fit its tabs: 'Needs re-verification' is a confirmed clickable target only 19px wide (h=48, so width is the failure) and a further tab is visibly clipped at the right edge of the screenshot (only a sliver labeled 'I...' shows). Users on this exact viewport cannot reliably select or even read that tab.",
+  "screenshot": "screens/phone_a_review.png",
+  "measurement": "small_tap_targets: {\"label\":\"Needs re-verification\",\"w\":19,\"h\":48,\"assumed\":false}",
+  "recommendation": "Make the approval tab bar horizontally scrollable with visible overflow affordance, or move to a dropdown/segmented control on narrow viewports instead of squeezing 3+ tabs into 390px."
+ },
+ {
+  "criterion": "LAW-HICK-2",
+  "screen": "r_profile_edit_dialog",
+  "severity": 2,
+  "evidence": "The 'Edit researcher' dialog presents 14 fields (Preferred name, Legal name, Bio, Photo URL, Email, Job title, Phone, ORCID, Ciencia ID, PhD, Join date, Exit date, Integration year, plus Cancel/Save) in one continuous, unsectioned, scrolling modal — flagged by measurements.json as an oversized group of 14 items against a limit of 9. There are no headings or steps to break identity fields from academic-identifier fields from employment-dates fields.",
+  "screenshot": "screens/r_profile_edit_dialog.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-609\", \"items\": 14, \"limit\": 9}",
+  "recommendation": "Split into labeled sub-sections (Identity, Identifiers, Employment) within the same dialog, or turn it into a 2-3 step wizard so no single view demands scanning 14 fields at once."
+ },
+ {
+  "criterion": "LAW-HICK-1",
+  "screen": "a_people",
+  "severity": 2,
+  "evidence": "The People filter/action bar bundles 9 simultaneous, ungrouped controls in one row: Search box, 'Add person' button, 3 dropdowns (Membership, Status, Profile) and 3 toggle chips (Missing ORCID, Needs verification, Has outputs), plus the '184 people' count — measured as one oversized group of 10 against a limit of 9, with no visual separation between 'find' controls and the 'create' action.",
+  "screenshot": "screens/a_people.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-104\", \"items\": 10, \"limit\": 9}",
+  "recommendation": "Separate the primary action ('Add person') from the filter cluster visually (e.g. right-aligned in the header, not inline with filters), and collapse the 3 toggle chips into a single 'More filters' disclosure."
+ }
+]

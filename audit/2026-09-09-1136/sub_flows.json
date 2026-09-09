@@ -1,0 +1,56 @@
+[
+ {
+  "criterion": "ST-LOAD",
+  "screen": "state_loading_cold",
+  "severity": 2,
+  "evidence": "Cold-start screenshot taken at +250ms is fully blank white with zero content; hierarchy/state_loading_cold.json returns only {\"bounds\":\"[0,0][0,0]\",\"text\":\"NO SEMANTICS HOST\"} — no splash, no spinner, no branding is rendered while the Flutter engine boots. No other cold-start frame exists in the evidence set showing any loading indicator between this blank frame and the first painted screen (login), so there is no designed loading state for app boot, only an unindicated wait.",
+  "screenshot": "screens/state_loading_cold.png",
+  "measurement": "capture at +250ms, 0 semantic nodes",
+  "recommendation": "Ship a static HTML/CSS splash (logo or spinner) shown before the Flutter engine attaches, so cold load never presents a blank white frame."
+ },
+ {
+  "criterion": "ST-ERROR",
+  "screen": "r_unknown_route",
+  "severity": 2,
+  "evidence": "The unknown-route screen (#/nope/404) shows the raw framework exception string \"GoException: no routes for location: /nope/404\" as the user-facing error message, instead of plain language. A \"Home\" recovery link is present (so this is not a dead end, NAV-3 is satisfied), but the message itself violates plain-language error copy and leaks an internal exception class name to end users.",
+  "screenshot": "screens/r_unknown_route.png",
+  "measurement": null,
+  "recommendation": "Catch the GoException in the router's errorBuilder and render a generic \"Page not found\" message; never interpolate the raw exception into the UI."
+ },
+ {
+  "criterion": "ST-SUCCESS",
+  "screen": "flow_add_output_4_in_my_outputs",
+  "severity": 3,
+  "evidence": "flows-results.json `add_output`: passed true, duration_s 12.6, steps 11, warnings: [\"no status tag on the new pending output in My Outputs (finding, not a task failure)\"]. flow_add_output_4_in_my_outputs.png and flow_add_output_5_FAIL.png both show the newly created row \"E2E UX audit output (delete me)\" with no status badge at all, whereas the same output shows a clear \"● pending\" tag on the admin review queue (flow_review_queue_3_confirm_dialog.png). The researcher who just submitted an output has no way to tell it succeeded or what state it is in.",
+  "screenshot": "screens/flow_add_output_4_in_my_outputs.png",
+  "measurement": "12.6s / 11 steps, 0 status indicators rendered on the new row",
+  "recommendation": "Render the same pending/approved/rejected status chip in My Outputs that already exists in the admin review queue UI."
+ },
+ {
+  "criterion": "ST-SUCCESS",
+  "screen": "flow_review_queue_4_after_reject",
+  "severity": 3,
+  "evidence": "flows-results.json `review_queue`: passed true, duration_s 13.7, steps 10, warnings: [\"no feedback after Reject (finding)\"]; note: \"Reject has no confirmation dialog in code (review_queue.dart _rejectOutput)\". flow_review_queue_4_after_reject.png shows the list silently drop to \"No outputs waiting for approval\" / count (0) with no toast or confirmation. Contrast with flow_review_queue_3_confirm_dialog.png, which shows the bulk \"Approve all 1 pending outputs?\" dialog — i.e. the app asks for confirmation before the non-destructive bulk approve, but gives neither confirmation nor after-the-fact feedback for the individually destructive Reject.",
+  "screenshot": "screens/flow_review_queue_4_after_reject.png",
+  "measurement": "13.7s / 10 steps",
+  "recommendation": "Add a lightweight confirm step (or an undo toast) for Reject to match the confirmation already implemented for Approve all, and show an explicit \"Rejected\" success toast."
+ },
+ {
+  "criterion": "NAV-4",
+  "screen": "a_admin_review",
+  "severity": 2,
+  "evidence": "a_admin_review.png (Pending approval) adds a secondary row of 7 top tabs — Profiles to approve, Outputs to approve, Needs re-verification, Suggestions, Activity, Needs attention, ORCID works — layered on top of the single left-sidebar entry \"Pending approval\". No other screen in the inventory combines the sidebar with a secondary flat tab bar, and 7 tabs in one row exceeds the ~5 that a single flat tab row can hold without strain, so this screen's navigation depth/pattern is inconsistent with the rest of the app.",
+  "screenshot": "screens/a_admin_review.png",
+  "measurement": "7 tabs in one row, unique to this screen",
+  "recommendation": "Either split the 7 sub-views into their own sidebar leaves (consistent with the rest of the IA) or reduce/group the tabs (e.g. a dropdown for the 3 least-used) so no single tab row exceeds ~5 items."
+ },
+ {
+  "criterion": "ST-EMPTY",
+  "screen": "state_empty_people_search",
+  "severity": 1,
+  "evidence": "Five-state coverage sampled across data screens: | Screen | ST-IDLE | ST-LOAD | ST-SUCCESS | ST-ERROR | ST-EMPTY | |---|---|---|---|---|---| | People search | present | n/a | present | n/a | present (weak) | | People (backend down) | n/a | present (unbounded) | n/a | MISSING | n/a | | Dashboard (backend down) | n/a | present (unbounded) | n/a | MISSING | n/a | | Cold boot | n/a | MISSING | n/a | n/a | n/a | | My Outputs after add | n/a | n/a | MISSING (no status) | n/a | n/a |. state_empty_people_search.png itself does the empty state reasonably well (\"No people found\", filters and search term still visible so the cause is inferable), but offers no explicit next step (e.g. a \"Clear search\" action) beyond editing the search box by hand.",
+  "screenshot": "screens/state_empty_people_search.png",
+  "measurement": "0 people / 0 next-step affordance besides editing the search field",
+  "recommendation": "Add a \"Clear filters/search\" button to the empty result state so the next step is explicit rather than implicit."
+ }
+]

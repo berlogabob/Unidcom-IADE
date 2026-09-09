@@ -144,3 +144,9 @@ graphify-out/
 .config/
 .flutter
 RAW_DATA/
+
+# UX-audit raw captures hold researcher emails (admin data browser) — keep local
+audit/*/screens/
+audit/*/hierarchy/
+audit/*/measurements.json
+docs/reports/*/fonts/

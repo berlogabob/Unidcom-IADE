@@ -1,0 +1,128 @@
+[
+ {
+  "criterion": "ST-LOAD",
+  "screen": "state_error_backend_down",
+  "severity": 2,
+  "evidence": "With the backend unreachable, /people shows the toolbar and a single pulsing dot for the full 20 s TimeoutClient window (screens/state_error_backend_down.png at 3 s) with no skeleton, no 'still loading' text and no cancel; only after the timeout does the classified error appear: \"Can't reach UNIDCOM. Check your connection and try again\" with Retry (screens/state_error_backend_down_26s.png). Same on /app/dashboard (state_error_dashboard_down_26s.png). The error state itself is good; the 20 s of silence before it is the finding.",
+  "screenshot": "screens/state_error_backend_down.png",
+  "measurement": "TimeoutClient timeout = 20 s (lib/data/timeout_client.dart:10)",
+  "recommendation": "Show a skeleton or 'Still loading… (slow connection)' hint after ~3 s and a cancel/retry after ~8 s; consider a shorter timeout for list reads."
+ },
+ {
+  "criterion": "H1",
+  "screen": "a_person_e2e_self",
+  "severity": 4,
+  "evidence": "Verified: /people/<E2E id> captured after /people/<Celia id> is byte-identical to Celia's page (md5 459cc8a2 both). After a hard reload on the E2E URL the correct record shows; then changing the hash to Celia's id keeps showing E2E Bot (md5 5acaf5fd for both a_person_e2e_self_reload.png and a_person_hash_switch.png). The person page does not refetch when only the :id parameter changes, so an admin following a person→person link or editing the URL sees, and can edit, the previous researcher's record under the new researcher's URL. Root cause: lib/public/person_page.dart:71-74 initialises `late Future … = fetchPerson(widget.id)` once and has no didUpdateWidget, so a new :id on the same route reuses the old State.",
+  "screenshot": "screens/a_person_e2e_self.png",
+  "measurement": "screens/a_person.png == screens/a_person_e2e_self.png; screens/a_person_e2e_self_reload.png == screens/a_person_hash_switch.png",
+  "recommendation": "Key the page widget by id (ValueKey(id)) in the GoRoute builder or refetch in didUpdateWidget when widget.id changes; add a widget test that navigates A→B and asserts B's name."
+ },
+ {
+  "criterion": "H4",
+  "screen": "r_welcome_affiliation",
+  "severity": 3,
+  "evidence": "For an anonymous visitor, /app/welcome/affiliation shows a dedicated sidebar with the full welcome-pack sub-nav (Getting Started, Affiliation Guidelines, FCT Information, Research Activity Reporting, Email Signature, Social Media, Logos & Brand, Key Contacts) and highlights the current item. For a signed-in researcher visiting the identical route, the sidebar is replaced by the full app sidebar (Overview / My Profile / Scientific Outputs...) with none of those welcome-pack sub-items present and nothing highlighted as active — the researcher loses the in-page sub-navigation and any 'you are here' cue. The same regression reproduces on r_welcome_start/fct/report/signature/social/logos/contacts and r_help_links (Key Contacts content under a generic sidebar with no active state).",
+  "screenshot": "screens/r_welcome_affiliation.png",
+  "measurement": null,
+  "recommendation": "Render the same welcome-pack/help sub-nav for researchers that anonymous visitors get (or link the equivalent items under Overview/Help with correct active-state highlighting) so researchers always see where they are."
+ },
+ {
+  "criterion": "H2",
+  "screen": "r_account_menu",
+  "severity": 2,
+  "evidence": "The mode chooser says 'You can switch at any time from your name, top right', but there is no control top right: the profile band (avatar, name, role) is not clickable (hierarchy/r_account_menu.json: clickable=false) and the actual controls are three text links at the bottom of the sidebar ('Switch to admin', 'Public site', 'Sign out'). The instruction points to the wrong place.",
+  "screenshot": "screens/r_account_menu.png",
+  "measurement": null,
+  "recommendation": "Fix the sentence to 'from the bottom of the sidebar' or make the top-right identity block open the same menu."
+ },
+ {
+  "criterion": "H9",
+  "screen": "r_unknown_route",
+  "severity": 3,
+  "evidence": "Visiting an unknown route (#/nope/404) in researcher mode shows 'Page Not Found' plus the raw developer exception text 'GoException: no routes for location: /nope/404' directly to the end user, alongside a 'Home' recovery link.",
+  "screenshot": "screens/r_unknown_route.png",
+  "measurement": null,
+  "recommendation": "Replace the raw exception string with a plain-language message ('This page doesn't exist') and keep the Home link; log the exception detail server-side/console only."
+ },
+ {
+  "criterion": "H1",
+  "screen": "anon_welcome_docs_m2",
+  "severity": 3,
+  "evidence": "screens.md notes this M2 slug (/app/welcome/docs) is 'expected redirect to start' for an anonymous visitor. Instead the screenshot is a full Sign-in screen — an anonymous user browsing the public welcome pack unexpectedly lands on a login wall for one specific sub-page, with no message explaining why, breaking the otherwise-consistent anonymous welcome flow (anon_welcome_start/affiliation/fct/report/... all render without login).",
+  "screenshot": "screens/anon_welcome_docs_m2.png",
+  "measurement": null,
+  "recommendation": "Route unknown/compiled-out welcome slugs to /app/welcome/start like the other anon-accessible welcome pages, instead of falling through to the sign-in gate."
+ },
+ {
+  "criterion": "H10",
+  "screen": "login",
+  "severity": 2,
+  "evidence": "The sign-in form offers only 'Sign in' (email/password) and 'Sign in with ORCID iD' — there is no 'Forgot password' or account-recovery link anywhere on the screen.",
+  "screenshot": "screens/login.png",
+  "measurement": null,
+  "recommendation": "Add a password-recovery link under the password field so users who forget their credentials aren't stuck."
+ },
+ {
+  "criterion": "H2",
+  "screen": "r_profile",
+  "severity": 2,
+  "evidence": "The profile header shows raw status chips 'external', 'inactive', 'draft' with no tooltip or explanation. 'inactive' in red reads as an account-disabled warning to a researcher self-managing their own profile, but nothing on the page says what it means or how to change it.",
+  "screenshot": "screens/r_profile.png",
+  "measurement": null,
+  "recommendation": "Replace raw status codes with plain-language labels (e.g. 'Not yet an active member') and add a tooltip/help link explaining each chip and how it changes."
+ },
+ {
+  "criterion": "H5",
+  "screen": "r_add_output_dialog",
+  "severity": 2,
+  "evidence": "The 'Add output' dialog's Category dropdown defaults to 'All' when creating a brand-new output. 'All' is a list-filter concept, not a valid category for a single record, so a researcher who doesn't touch the field submits an output with a nonsensical category value.",
+  "screenshot": "screens/r_add_output_dialog.png",
+  "measurement": null,
+  "recommendation": "Default the Category field to a blank/placeholder state (or the most common real category) and make it required, rather than defaulting to the 'All' filter value."
+ },
+ {
+  "criterion": "H5",
+  "screen": "r_profile_edit_dialog",
+  "severity": 2,
+  "evidence": "'Join date (YYYY-MM-DD)' and 'Exit date (YYYY-MM-DD)' are plain free-text fields; the required format is communicated only via placeholder text, with no date picker or input mask to prevent malformed entries.",
+  "screenshot": "screens/r_profile_edit_dialog.png",
+  "measurement": null,
+  "recommendation": "Use a date picker or masked input for the date fields instead of relying on placeholder-text instructions alone."
+ },
+ {
+  "criterion": "H4",
+  "screen": "r_outputs_import",
+  "severity": 2,
+  "evidence": "The 'Ciência Vitae Sync' and 'Other Data Sources' rows use the same green-tinted, wrench-icon styling as the explicit 'work in progress' hint banner seen on r_home_summary ('Outputs by year, by type and quality indicators — work in progress'), but omit the 'work in progress' label, leaving it unclear whether they are working, clickable controls or placeholders.",
+  "screenshot": "screens/r_outputs_import.png",
+  "measurement": null,
+  "recommendation": "Either make these rows functional or label them 'Work in progress' the same way the other placeholder banners in the app are labeled, so the styling means the same thing everywhere."
+ },
+ {
+  "criterion": "H4",
+  "screen": "r_outputs",
+  "severity": 1,
+  "evidence": "Two different labels are used for the same 'add an output' action on the same screen: the top-right button says 'Add output' while the inline control next to the Timeline heading says just 'Add'.",
+  "screenshot": "screens/r_outputs.png",
+  "measurement": null,
+  "recommendation": "Use one consistent label ('Add output') for both entry points to the same action."
+ },
+ {
+  "criterion": "H6",
+  "screen": "r_profile_areas_wip",
+  "severity": 2,
+  "evidence": "Research Areas, Research Interests, Edit Outputs, Validation & Duplicates, Documentation, and FAQs are all listed as ordinary, clickable sidebar items indistinguishable from working sections; only after clicking does a placeholder 'Work in progress' card reveal the feature doesn't exist yet. No badge/label in the sidebar itself signals this in advance.",
+  "screenshot": "screens/r_profile_areas_wip.png",
+  "measurement": null,
+  "recommendation": "Mark not-yet-implemented sidebar items with a 'Coming soon' badge (or disable/grey them) so users don't have to click through to discover a dead end."
+ },
+ {
+  "criterion": "H1",
+  "screen": "state_loading_cold",
+  "severity": 2,
+  "evidence": "At +250ms into a cold load, the screen is entirely blank white — no spinner, logo, or skeleton UI is visible to indicate the app is starting up.",
+  "screenshot": "screens/state_loading_cold.png",
+  "measurement": null,
+  "recommendation": "Show a lightweight loading indicator (logo/spinner) immediately at first paint instead of a blank white screen, especially for slower connections."
+ }
+]

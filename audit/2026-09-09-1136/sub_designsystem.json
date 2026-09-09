@@ -1,0 +1,65 @@
+[
+  {
+    "criterion": "DS-ICON-1",
+    "screen": "r_sidebar_expanded",
+    "severity": 2,
+    "evidence": "The shared SideNav widget (lib/widgets/side_nav.dart, comment: 'The one dark left-hand navigation every shell renders now... one list, one look, everywhere') renders a leading icon for every top-level item in adminNav() (lib/widgets/nav_model.dart: Dashboard=Icons.dashboard_outlined, People=Icons.people_outline, Scientific outputs=Icons.article_outlined, Projects=Icons.work_outline, Structure=Icons.account_tree_outlined, Reports=Icons.summarize_outlined, Data browser=Icons.table_chart_outlined, Settings=Icons.settings_outlined), but researcherNav() sets icon: on none of its items (Research Activity Summary, Personal Information, My Outputs, etc.). Visually confirmed: r_sidebar_expanded/r_home/phone_r_drawer show plain indented text with zero icons, while a_dashboard/a_people/a_projects show a Material icon before every top-level label. Neither template defines this shared component (researcher template used a top-nav+tabs, admin template's own sidebar markup also has no icons at all), so this is an inconsistency introduced by the app itself between its two modes of one nominally shared component.",
+    "screenshot": "screens/r_sidebar_expanded.png",
+    "measurement": null,
+    "recommendation": "Give every top-level NavItem an icon in researcherNav() (lib/widgets/nav_model.dart) to match adminNav(), or remove icons from adminNav() — pick one rule and apply it in both modes of the one shared SideNav."
+  },
+  {
+    "criterion": "DS-ICON-1",
+    "screen": "r_welcome_start",
+    "severity": 2,
+    "evidence": "The three 'Getting started' summary cards use raw Unicode emoji as icons (lib/app/welcome_pack_content.dart lines 48/54/60: icon: '👥', '📍', '🌐'), rendering as full-colour platform emoji (blue people glyph, red map pin, blue globe) next to plain white cards — a completely different icon family from the monochrome Material Icons vector glyphs used everywhere else in the app (sidebar nav, buttons, alerts, status chips). The same three emoji recur on anon_welcome_start (public/anonymous variant) and the download cards on r_welcome_docs/logos use 📄/📕/📊 similarly. Carmela's template used the same emoji as icon placeholders in the Figma export, so the app inherited rather than resolved this inconsistency.",
+    "screenshot": "screens/r_welcome_start.png",
+    "measurement": null,
+    "recommendation": "Replace the emoji icons in welcome_pack_content.dart (people/pin/globe/doc/pdf/spreadsheet) with Material Icons (e.g. Icons.groups_outlined, Icons.location_on_outlined, Icons.language, Icons.description_outlined) so the Welcome pack matches the vector-icon system used in the rest of the portal."
+  },
+  {
+    "criterion": "DS-ICON-1",
+    "screen": "r_profile",
+    "severity": 1,
+    "evidence": "On the same detail header row, the 'Edit' button uses Icons.edit (default/filled glyph, lib/widgets/detail_scaffold.dart line 422) directly beside the 'Connect ORCID' button which uses Icons.badge_outlined (lib/app/my_profile.dart line 482) — a filled-style icon and an outlined-style icon side by side in the same button row. A broader grep of lib/ confirms this isn't isolated: filled icons (Icons.star, Icons.close, Icons.check, Icons.event, Icons.merge, Icons.sync, Icons.construction, Icons.error, Icons.download...) and _outlined icons (Icons.info_outline, Icons.people_outline, Icons.verified_outlined, Icons.check_circle_outline, Icons.mail_outline...) are mixed throughout with no consistent rule for which family a given control gets. The same clash (Edit filled + Connect ORCID/identifier outlined icons) is visible again on a_person.",
+    "screenshot": "screens/r_profile.png",
+    "measurement": null,
+    "recommendation": "Standardise on one Material Icons style (the sidebar already commits to _outlined) and swap the filled variants (Icons.edit -> Icons.edit_outlined, Icons.star -> Icons.star_outline where not a toggle state, etc.) so stroke weight is uniform across a given screen."
+  },
+  {
+    "criterion": "DS-BRAND-1",
+    "screen": "a_people",
+    "severity": 2,
+    "evidence": "The Status filter dropdown ('a_confirmar' -> displayed as 'a confirmar', via widgets/queue_list.dart's replaceAll('_',' ') humanizer) presents the value with a space, but the identical status rendered as a row pill (public/people_list.dart line ~175: StatusPill(status, tone: ...) passes the raw string straight through with no humanization) shows the literal snake_case 'a_confirmar' with the underscore intact, next to sibling pills reading the clean word 'active'. Same value, two different presentations on one screen; the raw form also leaves an unlocalized Portuguese admin-status code sitting in an otherwise English UI.",
+    "screenshot": "screens/a_people.png",
+    "measurement": null,
+    "recommendation": "Route the person-list StatusPill's label through the same humanizer used for the filter dropdown (or a shared status-label map), so 'a_confirmar' renders as 'To confirm' / 'a confirmar' consistently everywhere the value appears."
+  },
+  {
+    "criterion": "DS-BTN-1",
+    "screen": "r_outputs",
+    "severity": 1,
+    "evidence": "The same 'add an output' action appears twice on this screen in two different button variants: the top-right 'Add output' is a filled navy primary button (matches template .btn-primary), while 'Timeline · 0' has its own '+ Add' rendered as a plain blue text link (tertiary/ghost style) directly below it.",
+    "screenshot": "screens/r_outputs.png",
+    "measurement": null,
+    "recommendation": "Pick one variant for the add-output affordance per screen region — if the Timeline's '+ Add' is meant to be secondary, use the outline button style already defined in the theme rather than a bare text link, so it isn't confused with a different action tier from the primary 'Add output' button above it."
+  },
+  {
+    "criterion": "DS-BRAND-1",
+    "screen": "r_unknown_route",
+    "severity": 3,
+    "evidence": "The 404 page abandons the app's visual system entirely: no sidebar, no card shell, no branded wordmark styling — just a bare navy title bar reading 'Page Not Found' over the sand background, with the raw internal exception string 'GoException: no routes for location: /nope/404' printed directly to the user, and a single blue 'Home' text link. Every other screen in the inventory (including anon/error states) keeps at least the dark top bar + sand content shell; this one shows framework internals instead of a designed error state.",
+    "screenshot": "screens/r_unknown_route.png",
+    "measurement": null,
+    "recommendation": "Build a real 404 page using the existing Panel/WipPage shell (icon + heading + message + a real button, not a raw exception string) so unknown routes look like part of the product, not an uncaught error."
+  },
+  {
+    "criterion": "DS-FORM-1",
+    "screen": "r_add_output_dialog",
+    "severity": 1,
+    "evidence": "Both app dialogs (r_add_output_dialog and r_profile_edit_dialog) render every field with the label floating inside the empty input box (Material 'filled/outlined' label-as-placeholder pattern) rather than Carmela's template form, whose .field label sits as static 11.5px muted text above each input (unidcom-researcher.html .field/.field label rules, used in the New Request form). The app is internally consistent between its own two dialogs, but both diverge from the only form pattern the template actually specifies.",
+    "screenshot": "screens/r_add_output_dialog.png",
+    "measurement": null,
+    "recommendation": "If the Material floating-label style is the intended direction going forward, note it as a deliberate deviation from the Figma form pattern; otherwise move labels above the fields to match the template's .field/label convention before any more admin/researcher forms are built."
+  }
+]

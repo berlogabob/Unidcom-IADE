@@ -1,0 +1,74 @@
+[
+ {
+  "criterion": "DS-A11Y-1",
+  "screen": "r_home",
+  "severity": 4,
+  "evidence": "At the desktop breakpoint (≥900 px) the left navigation is absent from the accessibility tree: the DOM holds 17 flt-semantics nodes on /app/home and none is a sidebar row, group header, 'Switch to admin', 'Public site' or 'Sign out'. Verified after hover, 5×Tab, wheel scroll, resize to 1000 px and reload (probe 2026-09-09). The same SideNav widget inside the phone Drawer exposes every row as role=button (hierarchy/phone_r_drawer.json). Admin mode identical (hierarchy/a_dashboard.json has no 'People', 'Structure' or 'Reports' node).",
+  "screenshot": "screens/r_home.png",
+  "measurement": "hierarchy/r_home.json: 9 labelled nodes, 0 navigation nodes; hierarchy/phone_r_drawer.json: 31 navigation nodes",
+  "recommendation": "Treat as a release blocker for keyboard and screen-reader users: the only way to move between sections on desktop is the mouse. Reproduce with `flutter build web --dart-define=E2E=true` and inspect flt-semantics; suspect the Row/SizedBox desktop branch in lib/widgets/app_shell.dart:66-75 vs the Drawer branch. Add a widget test asserting the SideNav rows are present in the semantics tree at 1280 px; add a Maestro assert on a sidebar label at desktop width so the regression is caught."
+ },
+ {
+  "criterion": "H5",
+  "screen": "a_admin_review",
+  "severity": 3,
+  "evidence": "Reject on a pending output fires immediately: lib/app/review_queue.dart `_rejectOutput(id)` calls rejectOutput() with no dialog, no reason field and no undo, while 'Approve all pending' on the same page does confirm. The row disappears with no feedback (flow review_queue, screenshot flow_review_queue after_reject).",
+  "screenshot": "screens/a_admin_review.png",
+  "measurement": null,
+  "recommendation": "Mirror the Approve-all pattern: confirm with the title in the dialog, capture an optional reason (which also closes the BP-13 gap: the researcher never learns why), and show a snackbar with Undo."
+ },
+ {
+  "criterion": "NAV-1",
+  "screen": "r_outputs_add",
+  "severity": 3,
+  "evidence": "On /app/outputs/add the sidebar highlights 'My Outputs', not 'Add Scientific Output'. navSelected() in lib/widgets/nav_model.dart returns the first item whose prefix matches, and '/app/outputs' matches before the exact '/app/outputs/add' row. Same for /app/profile/* leaves vs 'Personal Information'. Reproduced by the heuristics reviewer on r_profile_identifiers, r_profile_bio, r_profile_areas_wip, r_profile_interests_wip (all highlight 'Personal Information').",
+  "screenshot": "screens/r_add_output_dialog.png",
+  "measurement": null,
+  "recommendation": "Prefer the longest matching route in navSelected() (exact match, then longest prefix)."
+ },
+ {
+  "criterion": "VD-GES-1",
+  "screen": "r_home",
+  "severity": 2,
+  "evidence": "The sidebar footer (avatar, 'Switch to admin', 'Public site', 'Sign out') is painted over the scrolling nav list with no separator: 'Add Scientific Output' is cut off behind the footer at 1280×900 in every researcher screenshot, and the 5 rows below it are unreachable until the user discovers the list scrolls.",
+  "screenshot": "screens/r_add_output_dialog.png",
+  "measurement": "hierarchy/phone_r_drawer.json: list rows extend past the 844 px viewport; desktop list clipped at y≈760 by the footer",
+  "recommendation": "Give the footer a top border and background, and add bottom padding to the ListView equal to the footer height; or pin the footer below the list instead of over it."
+ },
+ {
+  "criterion": "FLOW-1",
+  "screen": "r_welcome_start",
+  "severity": 2,
+  "evidence": "The committed Maestro regression suite no longer matches the build: 7 assertions across 6 flows wait for 'Your first 5 steps', which the Welcome pack now renders as 'Your first steps' (hierarchy/r_welcome_start.json). auth_gate, researcher_mode, admin_mode, featured_star, orcid_error and support_request would all time out at that step. README still says 'Six flows … the regression suite'.",
+  "screenshot": "screens/r_welcome_start.png",
+  "measurement": "grep -c 'Your first 5 steps' .maestro/*.yaml → 7",
+  "recommendation": "Update the six YAMLs and run them in CI (they are not in ci.yml), or the suite stops being a suite."
+ },
+ {
+  "criterion": "ST-EMPTY",
+  "screen": "r_outputs_import",
+  "severity": 2,
+  "evidence": "Import & Synchronisation shows an 'ORCID Sync' heading with only 'My ORCID publications · 0 / Nothing new' beneath it for a researcher with no ORCID iD on file, and no explanation that nothing can sync until an iD is registered, nor a link to Researcher Identifiers. DB: 158 of 184 people have no ORCID, so this is the majority case.",
+  "screenshot": "screens/r_outputs_import.png",
+  "measurement": "SQL: 26/184 people with orcid; 1 466 candidates pending for the 26 who have one (max 281 for one person)",
+  "recommendation": "Branch the empty state: no iD → explain and link to Identifiers; iD but nothing staged → say when the weekly sync last ran and offer a manual sync."
+ },
+ {
+  "criterion": "H1",
+  "screen": "r_home_status",
+  "severity": 2,
+  "evidence": "Profile Status shows 'draft' as a raw lower-case enum value in the stat tile ('PROFILE STATUS / draft') while the same state is rendered as 'Awaiting UNIDCOM approval' elsewhere (lib/app/my_profile.dart profileStatusLabel). The tile also gives no next action, although the page exists to answer 'what do I do now?'.",
+  "screenshot": "screens/r_home.png",
+  "measurement": null,
+  "recommendation": "Use profileStatusLabel() in the tile and add the next step ('Confirm my profile →')."
+ },
+ {
+  "criterion": "H6",
+  "screen": "r_profile_areas_wip",
+  "severity": 2,
+  "evidence": "8 of the 25 researcher sidebar leaves open the same 'Work in progress' page (Research Areas, Research Interests, Edit Scientific Outputs, Validation & Duplicates, Documentation, FAQs, plus two headings inside Import & Synchronisation). The rows look identical to working ones, so a researcher learns which third of the navigation works by trial. This was a deliberate 8 Sep decision (one-to-one with the IA), recorded here as its usability cost.",
+  "screenshot": "screens/r_profile_areas_wip.png",
+  "measurement": "8 WIP leaves / 25 rows = 32 %",
+  "recommendation": "Mark WIP rows visually (muted + 'soon' pill) or hide them behind the v2 flag until built; keep the IA in the model, not in the pilot's sidebar."
+ }
+]
