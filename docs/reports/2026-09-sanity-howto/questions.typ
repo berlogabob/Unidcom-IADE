@@ -1,48 +1,28 @@
-// Questions for the Sanity website agency. Send as PDF or paste the text.
-// Build: ./build.sh
+// Questions for the website agency. One page, one table. Build: ./build.sh
 #import "lib.typ": *
 
 #show: report.with((
   title: "UNIDCOM — questions for the website agency",
   author: ("UNIDCOM/IADE",),
-  footer: "UNIDCOM · Sanity website · questions for the agency · September 2026",
+  footer: "UNIDCOM · new website · questions for the agency · September 2026",
   lang: "en",
 ))
 
 #title-block(
-  "Sanity website — five questions before we connect our database",
-  subtitle: "UNIDCOM Research Information Management System (RIMS) ↔ Sanity project vj0axykv",
-  standfirst: [UNIDCOM keeps its research directory (people, projects, scientific outputs) in its own database and admin portal. We have read the public Sanity dataset of the new site and want to feed it from our database *without breaking the site or overwriting your editorial work*. Nothing will be written to `vj0axykv` before questions 2 and 5 are answered.],
+  "New UNIDCOM website — questions before we connect our database",
+  standfirst: [UNIDCOM keeps its own database of researchers, projects and publications. We would like the new website to show that information automatically, so that nobody has to type it twice. Before we change anything on your side we need to understand how the site is built and who owns what.],
 )
-
-#kpi-row((
-  ("249", "Members in Sanity", "159 are also in our database"),
-  ("1 596", "Outputs in Sanity", "2011–2023; ours start in 2024"),
-  ("43", "Projects in Sanity", "2012–2021; ours are current"),
-  ("0", "Writes made so far", "read-only comparison only"),
-))
-
-= Questions
 
 #data-table(
-  ("#", "Question", "Why we ask"),
+  ("#", "Question", "What we need to know"),
   (
-    ([1], [*Hosting.* Where is the Sanity-backed frontend deployed, and is it live anywhere yet? `unidcom-iade.pt` still serves the WordPress site.], [We need to see the rendered result of any change.]),
-    ([2], [*Studio schema.* Can we get access to the Sanity Studio repository (`sanity/schemaTypes`), or an export of the schema and validation rules?], [Our documents must match your types exactly (e.g. `member.type`, `flexibleDate`, `team`).]),
-    ([3], [*Publishing.* Does the site read Sanity live, or does it need a revalidate / rebuild hook after content changes? If so, which endpoint and secret?], [Writing a document is not the same as updating a page.]),
-    ([4], [*Editorial ownership.* Who edits Sanity today, and which fields do you consider editorial (photos, short bios, cover images, page copy) versus data we may update (names, ORCID, emails, project dates, publications)?], [We will never overwrite an editorial field; we need the list.]),
-    ([5], [*Access.* When we are ready, an Editor API token for `vj0axykv`, and whether a staging dataset exists or can be created.], [First runs go to a sandbox, never straight to production.]),
+    ([1], [*Where does the new site live, and is it public yet?*], [The address of the new site (and of any preview or staging version). Today `unidcom-iade.pt` still shows the old WordPress site.]),
+    ([2], [*How is the content structured?*], [The definition of the content types in Sanity (the Studio project, or an export of its schema): which fields exist for a person, a project, a publication, and which values are allowed.]),
+    ([3], [*How does a change in Sanity reach the pages?*], [Whether the site reads Sanity live, or needs to be rebuilt after an edit. If it needs a rebuild, how that is triggered.]),
+    ([4], [*Who edits the content today, and what should we leave alone?*], [The people who maintain the site, and the fields they consider theirs: photos, biographies, cover images, page texts. We will only update factual data such as names, ORCID, emails, project dates and publication lists, and never the fields you name here.]),
+    ([5], [*How can our system be allowed to write, safely?*], [A separate test dataset (or a copy of the content) where we can try our updates first, and later an API token with write access to the real content. Nothing will be written to the real site before you have seen the test.]),
+    ([6], [*What is the plan for the old site and for launch?*], [When the new site goes live, what happens to `unidcom-iade.pt`, and whether the people pages of the old site are redirected.]),
+    ([7], [*Who is our technical contact?*], [One person on your side for these questions, and the channel you prefer.]),
   ),
-  widths: (0.7cm, 1fr, 5.2cm), right-from: 99,
+  widths: (0.7cm, 5.4cm, 1fr), right-from: 99,
 )
-
-= What we intend to do, in order
-
-#scorecard((
-  ("Read-only comparison of both datasets", "Done", "ok", "no writes to Sanity"),
-  ("Link the 159 shared people inside our database", "In progress", "info", "admin-reviewed, logged, reversible"),
-  ("Push new people, projects and publications to a sandbox dataset", "Pending (blocked on 2 and 5)", "warn", "new documents only; existing members untouched"),
-  ("Push to the production dataset", "Not started", "neutral", "after your review of the sandbox"),
-))
-
-#callout(title: "Contact", tone: "info")[André Berloga · andre.berloga\@gmail.com · UNIDCOM/IADE, Universidade Europeia]
