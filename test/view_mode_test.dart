@@ -141,6 +141,17 @@ void main() {
         );
       }
     });
+
+    test('admin requests open the review queue in v1 admin mode', () {
+      expect(
+        redirect(
+          '/app/admin/requests',
+          adminAccount: true,
+          adminMode: true,
+        ),
+        '/app/admin/review',
+      );
+    });
   });
 
   group('restoring the mode after a refresh', () {

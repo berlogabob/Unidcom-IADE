@@ -262,6 +262,9 @@ String? modeRedirect(
   if (!v2 && location.startsWith('/app/requests')) {
     return '/app/home';
   }
+  if (!v2 && location.startsWith('/app/admin/requests')) {
+    return '/app/admin/review';
+  }
   // M2 welcome sections: a bookmark must not open a page v1 pretends does not exist.
   final slug = location.startsWith('/app/welcome/')
       ? location.substring('/app/welcome/'.length)
