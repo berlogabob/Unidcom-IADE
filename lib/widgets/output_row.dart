@@ -53,6 +53,7 @@ class OutputRow extends StatelessWidget {
     this.year,
     this.type,
     this.detail,
+    this.status,
     this.trailing,
     this.onTap,
     this.issueCodes,
@@ -64,6 +65,7 @@ class OutputRow extends StatelessWidget {
   final int? year;
   final String? type;
   final String? detail;
+  final String? status;
   final Widget? trailing;
   final VoidCallback? onTap;
 
@@ -75,10 +77,12 @@ class OutputRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusTone = _statusTone(detail);
+    final statusTone = _statusTone(status ?? detail);
     final meta = [
       if (year != null) year.toString(),
-      if (statusTone == null && detail != null && detail!.isNotEmpty) detail!,
+      if (detail != null && detail!.isNotEmpty &&
+          (statusTone == null || detail != status))
+        detail!,
     ].join(' · ');
 
     final codes = issueCodes ?? const [];
@@ -162,7 +166,7 @@ class OutputRow extends StatelessWidget {
               ],
               if (statusTone != null) ...[
                 const SizedBox(width: 12),
-                StatusPill(detail!, tone: statusTone),
+                StatusPill(status ?? detail!, tone: statusTone),
               ],
               if (trailingWidget != null) ...[
                 const SizedBox(width: 12),

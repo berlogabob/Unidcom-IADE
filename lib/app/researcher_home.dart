@@ -7,6 +7,7 @@ import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/output_row.dart';
 import '../widgets/panels.dart';
+import 'my_profile.dart' show profileStatusLabel;
 
 /// Home-page fetch, public so the split-out `/app/home/*` leaves (see
 /// portal_pages.dart) can each load it independently instead of the researcher
@@ -184,7 +185,7 @@ class OverviewStats extends StatelessWidget {
         ),
       AccentStatCard(
         label: 'PROFILE STATUS',
-        value: status.replaceAll('_', ' '),
+        value: profileStatusLabel(status),
         tone: status == 'approved' ? AccentTone.good : AccentTone.warn,
       ),
       // M2 — Rui, 14 Aug: "Last verified → hide"

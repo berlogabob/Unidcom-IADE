@@ -33,4 +33,26 @@ void main() {
     );
     expect(find.text('More'), findsNothing);
   });
+
+  testWidgets('Overview shows a human-readable pending profile status', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: OverviewStats(
+            person: {'profile_status': 'pending_review'},
+            data: (
+              person: {'profile_status': 'pending_review'},
+              outputs: const [],
+              requests: const [],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Awaiting UNIDCOM approval'), findsOneWidget);
+    expect(find.text('pending_review'), findsNothing);
+  });
 }
