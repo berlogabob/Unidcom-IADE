@@ -18,4 +18,5 @@ if [ ! -f fonts/Inter.ttf ]; then
 fi
 
 typst compile --root ../../.. --font-path fonts --ignore-system-fonts report.typ ux-audit-report.pdf
+typst compile --root ../../.. --font-path fonts --ignore-system-fonts summary.typ ux-audit-summary.pdf
 echo "wrote $(pwd)/ux-audit-report.pdf"
