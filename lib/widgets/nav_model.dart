@@ -28,22 +28,31 @@ class NavGroup {
   final String? route; // header tap lands here (section landing page)
 }
 
-/// Which group headers are collapsed, keyed by [NavGroup.label]. Persisted
-/// per browser tab (sessionStorage on web, see view_mode_store) so a
-/// researcher's open/closed sections survive navigating around but not a
-/// shared machine's next visitor.
-final collapsedGroups = ValueNotifier<Set<String>>(
-  decodeCollapsed(loadStored('nav_collapsed')),
-);
+/// Accordion: exactly one section is open at a time (Rui, 9 Sep briefing).
+/// Stored per browser tab as `"<label>|<path>"` (sessionStorage, see
+/// view_mode_store) — an empty label means "all closed". The stored choice
+/// only applies while the path it was made on is current; on any other path
+/// the open section is the one that owns the active route, so navigating to
+/// a leaf in another section opens that section.
+final expandedGroup = ValueNotifier<String?>(loadStored('nav_expanded'));
 
-Set<String> decodeCollapsed(String? raw) =>
-    raw == null || raw.isEmpty ? {} : raw.split('|').toSet();
+String? openGroup(List<NavGroup> groups, String path) {
+  final raw = expandedGroup.value;
+  if (raw != null) {
+    final i = raw.lastIndexOf('|');
+    if (i >= 0 && raw.substring(i + 1) == path) {
+      final label = raw.substring(0, i);
+      return label.isEmpty ? null : label;
+    }
+  }
+  return navGroupOf(groups, path)?.label ??
+      groups.firstWhere((g) => g.label.isNotEmpty, orElse: () => groups.first).label;
+}
 
-void toggleGroup(String label) {
-  final next = {...collapsedGroups.value};
-  next.contains(label) ? next.remove(label) : next.add(label);
-  collapsedGroups.value = next;
-  store('nav_collapsed', next.join('|'));
+void toggleGroup(String label, {required List<NavGroup> groups, required String path}) {
+  final next = openGroup(groups, path) == label ? '' : label;
+  expandedGroup.value = '$next|$path';
+  store('nav_expanded', expandedGroup.value!);
 }
 
 /// M2 (milestone 2) welcome sections — hidden in v1, not deleted.

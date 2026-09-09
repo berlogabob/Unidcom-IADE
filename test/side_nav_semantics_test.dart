@@ -61,7 +61,7 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(1280, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    collapsedGroups.value = {};
+    expandedGroup.value = null;
     final router = GoRouter(
       initialLocation: '/app/home',
       routes: [

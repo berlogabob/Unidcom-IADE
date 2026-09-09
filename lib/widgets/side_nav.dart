@@ -37,12 +37,13 @@ class SideNav extends StatelessWidget {
         children: [
           header,
           Expanded(
-            child: ValueListenableBuilder<Set<String>>(
-              valueListenable: collapsedGroups,
-              builder: (context, collapsed, _) => ListView(
+            child: ValueListenableBuilder<String?>(
+              valueListenable: expandedGroup,
+              builder: (context, _, _) => ListView(
                 padding: const EdgeInsets.fromLTRB(0, 14, 0, 44),
                 children: [
                   for (final group in groups) ...[
+                    // Accordion: one open section (see openGroup()).
                     // Rui, 8 Sep (D4): headers must read as headers; a group
                     // with no label (the top one, in both navs) gets none
                     // and is never collapsible.
@@ -50,10 +51,10 @@ class SideNav extends StatelessWidget {
                       _groupHeader(
                         context,
                         group,
-                        isCollapsed: collapsed.contains(group.label),
+                        isCollapsed: group.label != openGroup(groups, path),
                         isActive: _ownsActive(group, active),
                       ),
-                    if (group.label.isEmpty || !collapsed.contains(group.label))
+                    if (group.label.isEmpty || group.label == openGroup(groups, path))
                       ..._items(context, group, active),
                   ],
                 ],
@@ -86,12 +87,13 @@ class SideNav extends StatelessWidget {
   List<Widget> _items(BuildContext context, NavGroup group, NavItem? active) =>
       [
         for (final item in group.items) ...[
-          _row(context, item, item == active, indent: 16),
+          // Leaves sit inset from their section header (Rui, 9 Sep briefing).
+          _row(context, item, item == active, indent: 30),
           // Always rendered, not just when active or an ancestor of the active
           // route — the admin IA is small enough (max one level) that hiding
           // them would cost more than it saves.
           for (final child in item.children)
-            _row(context, child, child == active, indent: 28, fontSize: 13),
+            _row(context, child, child == active, indent: 42, fontSize: 13),
         ],
       ];
 
@@ -121,7 +123,7 @@ class SideNav extends StatelessWidget {
             child: InkWell(
               onTap: () => group.route != null
                   ? context.go(group.route!)
-                  : toggleGroup(group.label),
+                  : toggleGroup(group.label, groups: groups, path: path),
               child: Padding(
                 padding: EdgeInsets.fromLTRB(showActive ? 13 : 16, 14, 0, 6),
                 child: Text(
@@ -144,7 +146,8 @@ class SideNav extends StatelessWidget {
               size: 18,
             ),
             tooltip: isCollapsed ? 'Show section' : 'Hide section',
-            onPressed: () => toggleGroup(group.label),
+            onPressed: () =>
+                toggleGroup(group.label, groups: groups, path: path),
           ),
         ],
       ),

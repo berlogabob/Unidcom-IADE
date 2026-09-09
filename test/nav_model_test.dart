@@ -219,17 +219,17 @@ void main() {
       ['Key Contacts'],
     );
   });
-  test('decodeCollapsed round-trips through toggleGroup', () {
-    expect(collapsedGroups.value, isEmpty);
-    toggleGroup('My Profile');
-    expect(collapsedGroups.value, {'My Profile'});
-    toggleGroup('My Profile');
-    expect(collapsedGroups.value, isEmpty);
-  });
-  test('decodeCollapsed parses the stored pipe-delimited set', () {
-    expect(decodeCollapsed(null), isEmpty);
-    expect(decodeCollapsed(''), isEmpty);
-    expect(decodeCollapsed('My Profile|Overview'), {'My Profile', 'Overview'});
+  test('accordion: the open section follows the active route until toggled', () {
+    expandedGroup.value = null;
+    final groups = researcherNav(signedIn: true);
+    expect(openGroup(groups, '/app/home'), 'Overview');
+    expect(openGroup(groups, '/app/outputs/import'), 'Scientific Outputs');
+    toggleGroup('My Profile', groups: groups, path: '/app/home');
+    expect(openGroup(groups, '/app/home'), 'My Profile');
+    toggleGroup('My Profile', groups: groups, path: '/app/home');
+    expect(openGroup(groups, '/app/home'), isNull, reason: 'toggling the open one closes all');
+    expect(openGroup(groups, '/app/profile'), 'My Profile', reason: 'other paths ignore the stored choice');
+    expandedGroup.value = null;
   });
   test('navGroupOf finds the owning group', () {
     final groups = researcherNav(signedIn: true);

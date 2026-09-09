@@ -10,7 +10,7 @@ void main() {
   );
 
   tearDown(() {
-    collapsedGroups.value = {};
+    expandedGroup.value = null;
   });
 
   testWidgets('active row carries the key and its label appears once', (
@@ -113,24 +113,30 @@ void main() {
     expect(find.text('0'), findsNothing);
   });
 
-  testWidgets('a section header can be collapsed and expanded', (tester) async {
+  testWidgets('only one section is open: opening My Profile closes Overview', (
+    tester,
+  ) async {
+    final groups = researcherNav(signedIn: true);
     await tester.pumpWidget(
       host(
         SideNav(
-          groups: researcherNav(signedIn: true),
+          groups: groups,
           path: '/app/home',
           header: const SizedBox(),
           footer: const SizedBox(),
         ),
       ),
     );
-    expect(find.text('Biography'), findsOneWidget);
+    // /app/home belongs to Overview, so that is the one open section.
+    expect(find.text('Research Activity Summary'), findsOneWidget);
+    expect(find.text('Biography'), findsNothing);
 
     await tester.tap(find.byKey(const Key('nav-toggle-My Profile')));
     await tester.pump();
 
-    expect(find.text('Biography'), findsNothing);
-    expect(collapsedGroups.value, contains('My Profile'));
+    expect(find.text('Biography'), findsOneWidget);
+    expect(find.text('Research Activity Summary'), findsNothing);
+    expect(openGroup(groups, '/app/home'), 'My Profile');
   });
 
   testWidgets('tapping a group header label navigates to its landing route', (
@@ -149,7 +155,7 @@ void main() {
     expect(find.byKey(const Key('nav-group-My Profile')), findsOneWidget);
   });
 
-  testWidgets('a collapsed section shows the closed chevron and tooltip', (
+  testWidgets('a closed section shows the closed chevron and tooltip', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -163,9 +169,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byKey(const Key('nav-toggle-My Profile')));
-    await tester.pump();
-
+    // Accordion: on /app/home only Overview is open; My Profile is closed.
     expect(
       find.descendant(
         of: find.byKey(const Key('nav-toggle-My Profile')),
@@ -173,14 +177,18 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byTooltip('Show section'), findsOneWidget);
+    expect(find.byTooltip('Show section'), findsWidgets);
+    expect(find.byTooltip('Hide section'), findsOneWidget);
   });
 
-  testWidgets('toggling a section twice restores its items', (tester) async {
+  testWidgets('toggling the open section closes it; a new path reopens by route', (
+    tester,
+  ) async {
+    final groups = researcherNav(signedIn: true);
     await tester.pumpWidget(
       host(
         SideNav(
-          groups: researcherNav(signedIn: true),
+          groups: groups,
           path: '/app/home',
           header: const SizedBox(),
           footer: const SizedBox(),
@@ -188,13 +196,13 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byKey(const Key('nav-toggle-My Profile')));
+    await tester.tap(find.byKey(const Key('nav-toggle-Overview')));
     await tester.pump();
-    await tester.tap(find.byKey(const Key('nav-toggle-My Profile')));
-    await tester.pump();
+    expect(find.text('Research Activity Summary'), findsNothing);
+    expect(openGroup(groups, '/app/home'), isNull);
 
-    expect(find.text('Biography'), findsOneWidget);
-    expect(collapsedGroups.value, isEmpty);
+    // The stored choice is bound to /app/home; another path follows its owner.
+    expect(openGroup(groups, '/app/profile/bio'), 'My Profile');
   });
 
   testWidgets('footer separates from and does not cover the last nav row', (
@@ -212,7 +220,7 @@ void main() {
         host(
           SideNav(
             groups: researcherNav(signedIn: true),
-            path: '/app/home',
+            path: '/app/help/faq', // accordion: FAQs is only rendered while its section is open
             header: const SizedBox(),
             footer: const SizedBox(height: 160),
           ),
