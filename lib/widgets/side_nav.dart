@@ -40,7 +40,7 @@ class SideNav extends StatelessWidget {
             child: ValueListenableBuilder<Set<String>>(
               valueListenable: collapsedGroups,
               builder: (context, collapsed, _) => ListView(
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                padding: const EdgeInsets.fromLTRB(0, 14, 0, 44),
                 children: [
                   for (final group in groups) ...[
                     // Rui, 8 Sep (D4): headers must read as headers; a group
@@ -60,7 +60,18 @@ class SideNav extends StatelessWidget {
               ),
             ),
           ),
-          footer,
+          Container(
+            key: const Key('nav-footer'),
+            decoration: BoxDecoration(
+              color: AppColors.sidebar,
+              border: Border(
+                top: BorderSide(
+                  color: AppColors.textOnDarkMuted.withValues(alpha: 0.25),
+                ),
+              ),
+            ),
+            child: footer,
+          ),
         ],
       ),
     );

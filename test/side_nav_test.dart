@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/widgets/nav_model.dart';
 import 'package:unidcom_iade/widgets/side_nav.dart';
+import 'package:unidcom_iade/theme/tokens.dart';
 
 void main() {
   Widget host(Widget child) => MaterialApp(
@@ -194,5 +195,47 @@ void main() {
 
     expect(find.text('Biography'), findsOneWidget);
     expect(collapsedGroups.value, isEmpty);
+  });
+
+  testWidgets('footer separates from and does not cover the last nav row', (
+    tester,
+  ) async {
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    for (final size in [const Size(1280, 900), const Size(390, 844)]) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      await tester.pumpWidget(
+        host(
+          SideNav(
+            groups: researcherNav(signedIn: true),
+            path: '/app/home',
+            header: const SizedBox(),
+            footer: const SizedBox(height: 160),
+          ),
+        ),
+      );
+
+      await tester.scrollUntilVisible(find.text('FAQs'), 100);
+      final footer = tester.widget<Container>(
+        find.byKey(const Key('nav-footer')),
+      );
+      final decoration = footer.decoration! as BoxDecoration;
+      expect(decoration.color, AppColors.sidebar);
+      expect(
+        decoration.border!.top.color,
+        AppColors.textOnDarkMuted.withValues(alpha: 0.25),
+      );
+      expect(
+        tester.getRect(find.text('FAQs')).overlaps(
+          tester.getRect(find.byKey(const Key('nav-footer'))),
+        ),
+        isFalse,
+      );
+      expect(tester.takeException(), isNull);
+    }
   });
 }
