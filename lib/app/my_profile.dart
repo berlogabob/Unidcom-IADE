@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/enrich_client.dart';
@@ -377,63 +378,13 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   /// Always on screen and never a toggle — "dont do it as toggle - just show".
   /// Sits last, below the outputs, because that is where it was asked to go.
   Widget _orcidCandidates(BuildContext context) {
-    return Panel(
-      title: 'My ORCID publications · ${_candidates.length}',
-      trailing: _candidates.isEmpty
-          ? null
-          : FilledButton.icon(
-              onPressed: _addingAll ? null : _addAllCandidates,
-              icon: _addingAll
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.library_add_outlined, size: 18),
-              label: Text(_addingAll ? 'Adding...' : 'Add all'),
-            ),
-      padding: EdgeInsets.zero,
-      child: _candidates.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Nothing new from ORCID. Publications you add there show up '
-                'here for you to confirm.',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-              ),
-            )
-          : Column(
-              children: [
-                for (final candidate in _candidates)
-                  ListTile(
-                    title: Text(candidate['title'] as String? ?? 'Untitled'),
-                    subtitle: Text(candidateSubtitle(candidate)),
-                    trailing: Wrap(
-                      spacing: 8,
-                      children: [
-                        TextButton(
-                          onPressed: _addingAll
-                              ? null
-                              : () => _reviewCandidate(
-                                  candidate['id'] as String,
-                                  promote: false,
-                                ),
-                          child: const Text('Not mine'),
-                        ),
-                        FilledButton(
-                          onPressed: _addingAll
-                              ? null
-                              : () => _reviewCandidate(
-                                  candidate['id'] as String,
-                                  promote: true,
-                                ),
-                          child: const Text('Add'),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
+    return OrcidCandidatesPanel(
+      orcid: _person?['orcid'] as String?,
+      candidates: _candidates,
+      addingAll: _addingAll,
+      onAddAll: _addAllCandidates,
+      onReviewCandidate: (id, promote) =>
+          _reviewCandidate(id, promote: promote),
     );
   }
 
@@ -524,6 +475,115 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           ),
         ],
       ],
+    );
+  }
+}
+
+class OrcidCandidatesPanel extends StatelessWidget {
+  const OrcidCandidatesPanel({
+    super.key,
+    required this.orcid,
+    required this.candidates,
+    required this.addingAll,
+    required this.onAddAll,
+    required this.onReviewCandidate,
+  });
+
+  final String? orcid;
+  final List<Map<String, dynamic>> candidates;
+  final bool addingAll;
+  final Future<void> Function() onAddAll;
+  final void Function(String id, bool promote) onReviewCandidate;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasOrcid = orcid?.isNotEmpty ?? false;
+    return Panel(
+      title: 'My ORCID publications · ${candidates.length}',
+      trailing: !hasOrcid || candidates.isEmpty
+          ? null
+          : FilledButton.icon(
+              onPressed: addingAll ? null : onAddAll,
+              icon: addingAll
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.library_add_outlined, size: 18),
+              label: Text(addingAll ? 'Adding...' : 'Add all'),
+            ),
+      padding: EdgeInsets.zero,
+      child: !hasOrcid
+          ? Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'No ORCID iD is on file for you, so nothing can be '
+                    'synchronised yet.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  ),
+                  TextButton(
+                    onPressed: () => context.go('/app/profile/identifiers'),
+                    child: const Text('Add your ORCID iD'),
+                  ),
+                ],
+              ),
+            )
+          : candidates.isEmpty
+          ? const Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Nothing new from ORCID. Publications you add there show up '
+                    'here for you to confirm.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Works are checked every Monday morning; anything you add '
+                    'on ORCID appears here after the next check.',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: [
+                for (final candidate in candidates)
+                  ListTile(
+                    title: Text(candidate['title'] as String? ?? 'Untitled'),
+                    subtitle: Text(candidateSubtitle(candidate)),
+                    trailing: Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton(
+                          onPressed: addingAll
+                              ? null
+                              : () => onReviewCandidate(
+                                  candidate['id'] as String,
+                                  false,
+                                ),
+                          child: const Text('Not mine'),
+                        ),
+                        FilledButton(
+                          onPressed: addingAll
+                              ? null
+                              : () => onReviewCandidate(
+                                  candidate['id'] as String,
+                                  true,
+                                ),
+                          child: const Text('Add'),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 }
