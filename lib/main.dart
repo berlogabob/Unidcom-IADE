@@ -292,7 +292,10 @@ final _router = GoRouter(
     if (state.error != null) {
       reportError(state.error!, null, context: 'go_router');
     }
-    return AppShell(child: const NotFoundPage());
+    // Not inside AppShell: errorBuilder runs outside the ShellRoute, so there
+    // is no GoRouterState for the shell to read — it threw and left a blank
+    // page (seen in the 2026-09-09 re-audit, r_unknown_route).
+    return const Scaffold(body: NotFoundPage());
   },
   redirect: (context, state) {
     final hasSession = Supabase.instance.client.auth.currentSession != null;
