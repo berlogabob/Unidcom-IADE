@@ -4,9 +4,10 @@ import 'data_page.dart';
 import 'merge.dart';
 import 'reports.dart';
 import 'review_queue.dart';
+import 'sanity_merge.dart';
 
 /// The tools /app/admin/:tool can show. Anything else redirects to review.
-const adminTools = ['reports', 'review', 'merge', 'data'];
+const adminTools = ['reports', 'review', 'merge', 'sanity', 'data'];
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key, required this.tool});
@@ -18,6 +19,7 @@ class AdminScreen extends StatelessWidget {
     return switch (tool) {
       'reports' => const ReportsScreen(),
       'merge' => const MergeScreen(),
+      'sanity' => const SanityMergeScreen(),
       'data' => const DataScreen(),
       _ => const ReviewQueueScreen(),
     };

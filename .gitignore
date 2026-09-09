@@ -150,3 +150,9 @@ audit/*/screens/
 audit/*/hierarchy/
 audit/*/measurements.json
 docs/reports/*/fonts/
+
+# Sanity dataset dumps (public data, but 2k+ JSON files of other people) — keep local
+sanity-dump/
+
+# Comparison CSVs may contain person-level data; keep them local
+docs/reports/2026-09-sanity-vs-supabase/*.csv

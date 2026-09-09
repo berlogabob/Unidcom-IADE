@@ -15,6 +15,7 @@ void main() {
     '/app/admin/review',
     '/app/admin/reports',
     '/app/admin/merge',
+    '/app/admin/sanity',
     '/app/admin/data',
     '/app/profile',
     '/app/profile/identifiers',

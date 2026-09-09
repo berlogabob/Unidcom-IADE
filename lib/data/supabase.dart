@@ -2,7 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../view_mode_store.dart';
+import 'sanity_projection.dart';
 import 'taxonomy.dart';
+
+export 'sanity_projection.dart';
 
 final db = Supabase.instance.client;
 
@@ -240,6 +243,117 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
         .eq('id', id)
         .single();
     return Map<String, dynamic>.from(row);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<List<Map<String, dynamic>>> fetchSanityMatches() async {
+  try {
+    final rows = await db
+        .from('sanity_member_matches')
+        .select()
+        .order('ambiguous', ascending: false)
+        .order('match_kind')
+        .order('sanity_name');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<List<Map<String, dynamic>>> fetchSanityMembers({
+  String query = '',
+  String? decision,
+  bool? listed,
+}) async {
+  try {
+    var request = db
+        .from('sanity_docs')
+        .select('id, doc, decision')
+        .eq('type', 'member');
+    request = decision == null
+        ? request.filter('decision', 'is', null)
+        : request.eq('decision', decision);
+    final q = query.trim();
+    if (q.isNotEmpty) request = request.ilike('doc->>name', '%$q%');
+    if (listed != null) {
+      request = request.eq(
+        'doc->>unlistedFromPeopleList',
+        listed ? 'false' : 'true',
+      );
+    }
+    // ponytail: client-side set difference is enough at this snapshot size;
+    // move exclusion into SQL if the Sanity queue becomes large.
+    final matches = await fetchSanityMatches();
+    final matchedIds = matches.map((row) => row['sanity_id'] as String).toSet();
+    return (await request).where((row) => !matchedIds.contains(row['id'])).map((
+      row,
+    ) {
+      final doc = Map<String, dynamic>.from(row['doc'] as Map);
+      return {
+        ...sanityMemberToPerson(doc),
+        'sanity_id': row['id'],
+        'sanity_unlisted': doc['unlistedFromPeopleList'] == true,
+        'decision': row['decision'],
+      };
+    }).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<List<Map<String, dynamic>>> fetchPeopleWithoutSanity() async {
+  try {
+    final rows = await db
+        .from('people')
+        .select('id, preferred_name, status, membership_type, email')
+        .filter('merged_into', 'is', null)
+        .filter('sanity_id', 'is', null)
+        .order('preferred_name');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> linkSanityMember(
+  String personId,
+  String sanityId,
+  Map<String, dynamic> fields,
+) async {
+  try {
+    await db.rpc(
+      'link_sanity_member',
+      params: {
+        'p_person': personId,
+        'p_sanity_id': sanityId,
+        'p_fields': fields,
+      },
+    );
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<String> importSanityMember(String sanityId) async {
+  try {
+    final id = await db.rpc(
+      'import_sanity_member',
+      params: {'p_sanity_id': sanityId},
+    );
+    return id.toString();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> setSanityDecision(String sanityId, String? decision) async {
+  try {
+    await db.rpc(
+      'set_sanity_decision',
+      params: {'p_sanity_id': sanityId, 'p_decision': decision},
+    );
   } catch (error) {
     throw Exception(_error(error));
   }

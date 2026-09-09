@@ -48,10 +48,16 @@ String? openGroup(List<NavGroup> groups, String path) {
     }
   }
   return navGroupOf(groups, path)?.label ??
-      groups.firstWhere((g) => g.label.isNotEmpty, orElse: () => groups.first).label;
+      groups
+          .firstWhere((g) => g.label.isNotEmpty, orElse: () => groups.first)
+          .label;
 }
 
-void toggleGroup(String label, {required List<NavGroup> groups, required String path}) {
+void toggleGroup(
+  String label, {
+  required List<NavGroup> groups,
+  required String path,
+}) {
   final next = openGroup(groups, path) == label ? '' : label;
   expandedGroup.value = '$next|$path';
   store('nav_expanded', expandedGroup.value!);
@@ -88,7 +94,11 @@ List<NavGroup> researcherNav({required bool signedIn}) => signedIn
           NavItem('Add Scientific Output', '/app/outputs/add'),
           NavItem('Edit Scientific Outputs', '/app/outputs/edit', wip: true),
           NavItem('Import & Synchronisation', '/app/outputs/import'),
-          NavItem('Validation & Duplicates', '/app/outputs/validation', wip: true),
+          NavItem(
+            'Validation & Duplicates',
+            '/app/outputs/validation',
+            wip: true,
+          ),
         ], route: '/app/outputs'),
         ..._welcomeGroups(signedIn: true),
       ]
@@ -129,7 +139,10 @@ List<NavGroup> adminNav() => [
       'People',
       '/people',
       icon: Icons.people_outline,
-      children: [NavItem('Merge duplicates', '/app/admin/merge')],
+      children: [
+        NavItem('Merge duplicates', '/app/admin/merge'),
+        NavItem('Sanity merge', '/app/admin/sanity'),
+      ],
     ),
   ]),
   NavGroup('Research', [

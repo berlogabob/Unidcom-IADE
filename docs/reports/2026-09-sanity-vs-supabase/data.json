@@ -1,0 +1,386 @@
+{
+  "inventory": {
+    "types": {
+      "analytics": {
+        "sanity": "1",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "articleCategory": {
+        "sanity": "2",
+        "bucket": "taxonomies",
+        "supabase": null
+      },
+      "cluster": {
+        "sanity": "12",
+        "bucket": "research directory",
+        "supabase": "5"
+      },
+      "edicaoIade": {
+        "sanity": "16",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "event": {
+        "sanity": "42",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "eventType": {
+        "sanity": "8",
+        "bucket": "taxonomies",
+        "supabase": null
+      },
+      "externalResearcher": {
+        "sanity": "36",
+        "bucket": "research directory",
+        "supabase": null
+      },
+      "form": {
+        "sanity": "2",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "funder": {
+        "sanity": "7",
+        "bucket": "taxonomies",
+        "supabase": null
+      },
+      "iadePressItem": {
+        "sanity": "2",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "interestPosition": {
+        "sanity": "2",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "journal": {
+        "sanity": "1",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "lab": {
+        "sanity": "5",
+        "bucket": "research directory",
+        "supabase": "5"
+      },
+      "labType": {
+        "sanity": "5",
+        "bucket": "taxonomies",
+        "supabase": null
+      },
+      "member": {
+        "sanity": "249",
+        "bucket": "research directory",
+        "supabase": "184"
+      },
+      "memberType": {
+        "sanity": "12",
+        "bucket": "taxonomies",
+        "supabase": null
+      },
+      "openPosition": {
+        "sanity": "9",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "outputType": {
+        "sanity": "6",
+        "bucket": "taxonomies",
+        "supabase": null
+      },
+      "page": {
+        "sanity": "10",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "podcast": {
+        "sanity": "1",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "proceeding": {
+        "sanity": "8",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "proceedingType": {
+        "sanity": "2",
+        "bucket": "taxonomies",
+        "supabase": null
+      },
+      "project": {
+        "sanity": "43",
+        "bucket": "research directory",
+        "supabase": "33"
+      },
+      "projectType": {
+        "sanity": "6",
+        "bucket": "taxonomies",
+        "supabase": null
+      },
+      "redirectsConfig": {
+        "sanity": "1",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "researchOutput": {
+        "sanity": "1,596",
+        "bucket": "research directory",
+        "supabase": "365"
+      },
+      "sanity.fileAsset": {
+        "sanity": "19",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "sanity.imageAsset": {
+        "sanity": "358",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "scientificArea": {
+        "sanity": "3",
+        "bucket": "taxonomies",
+        "supabase": null
+      },
+      "selectList": {
+        "sanity": "1",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "sessionType": {
+        "sanity": "6",
+        "bucket": "taxonomies",
+        "supabase": null
+      },
+      "testimonial": {
+        "sanity": "4",
+        "bucket": "site-editorial",
+        "supabase": null
+      },
+      "website": {
+        "sanity": "1",
+        "bucket": "site-editorial",
+        "supabase": null
+      }
+    },
+    "research_supabase": {
+      "people": "184",
+      "projects": "33",
+      "outputs": "365",
+      "labs": "5",
+      "clusters": "5"
+    },
+    "research_sanity": "1,941",
+    "taxonomy_sanity": "57",
+    "editorial_sanity": "478"
+  },
+  "people": {
+    "sanity_count": "249",
+    "matches": "159",
+    "match_kinds": {
+      "email": "130",
+      "name": "16",
+      "orcid": "13"
+    },
+    "ambiguous": "0",
+    "field_diffs": {
+      "preferred_name": {
+        "only_in_supabase": "0",
+        "only_in_sanity": "0",
+        "both_but_different": "94"
+      },
+      "email": {
+        "only_in_supabase": "6",
+        "only_in_sanity": "6",
+        "both_but_different": "2"
+      },
+      "orcid": {
+        "only_in_supabase": "12",
+        "only_in_sanity": "37",
+        "both_but_different": "0"
+      },
+      "ciencia_id": {
+        "only_in_supabase": "20",
+        "only_in_sanity": "1",
+        "both_but_different": "0"
+      },
+      "bio": {
+        "only_in_supabase": "68",
+        "only_in_sanity": "8",
+        "both_but_different": "34"
+      },
+      "photo": {
+        "only_in_supabase": "57",
+        "only_in_sanity": "8",
+        "both_but_different": "46"
+      }
+    },
+    "sanity_only": {
+      "listed": {
+        "count": "32",
+        "by_member_type": "Ph. D. Student in international mobility: 9; —: 7; Doctorate Researcher: 4; External Advisory Board: 3; Integrated: 3; Ph.D. Candidate: 2; +3 more",
+        "with_email": "2",
+        "with_photo": "8",
+        "with_bio": "7"
+      },
+      "unlisted": {
+        "count": "58",
+        "by_member_type": "Ph.D. Candidate: 19; Doctorate Researcher: 18; Integrated: 13; Visiting researcher: 3; Other: 2; External Advisory Board: 1; +2 more",
+        "with_email": "29",
+        "with_photo": "30",
+        "with_bio": "40"
+      },
+      "by_member_type": "Doctorate Researcher: 22; Ph.D. Candidate: 21; Integrated: 16; Ph. D. Student in international mobility: 9; —: 7; External Advisory Board: 4; +5 more"
+    },
+    "supabase_only": {
+      "count": "26",
+      "by_status": "a_confirmar: 22; active: 3; inactive: 1",
+      "by_membership_type": "external: 22; collaborator: 2; integrated: 2"
+    }
+  },
+  "projects": {
+    "sanity_count": "43",
+    "sanity_status": "completed: 26; ongoing: 17",
+    "sanity_years": "2012–2021",
+    "with_funder": "8",
+    "with_team": "36",
+    "supabase_count": "33",
+    "supabase_category": "Labs: 22; Operação: 4; Eventos: 3; Estratégia: 2; Outputs: 1; —: 1",
+    "supabase_status": "active: 26; planned: 4; completed: 3",
+    "supabase_years": "2026-02-23–2028-02-29",
+    "title_overlap": "0"
+  },
+  "outputs": {
+    "sanity_count": "1,596",
+    "sanity_years": "2011–2023",
+    "with_link": "304",
+    "with_members": "1,200",
+    "supabase_count": "365",
+    "supabase_macro_type": "Formação avançada: 110; Actividades de gestão e auxílio à UNIDCOM: 55; Livros: 50; Organização de Seminários e Conferências: 36; Artigos em revistas: 26; Participação em projectos de investigação: 23; +5 more",
+    "supabase_reporting_year": "2025: 340; —: 12; 2024: 7; 2017: 2; 2018: 2; 2016: 1; +1 more",
+    "title_overlap": "1"
+  },
+  "labs_clusters": {
+    "labs_linked": "5",
+    "labs_total": "5",
+    "clusters_linked": "5",
+    "clusters_total": "5",
+    "legacy_clusters": "7"
+  },
+  "editorial": [
+    {
+      "type": "analytics",
+      "count": "1",
+      "note": "analytics configuration",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "edicaoIade",
+      "count": "16",
+      "note": "IADE editions",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "event",
+      "count": "42",
+      "note": "events and event listings",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "form",
+      "count": "2",
+      "note": "contact and signup forms",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "iadePressItem",
+      "count": "2",
+      "note": "IADE press items",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "interestPosition",
+      "count": "2",
+      "note": "open positions",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "journal",
+      "count": "1",
+      "note": "journal issues",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "openPosition",
+      "count": "9",
+      "note": "open positions",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "page",
+      "count": "10",
+      "note": "site pages and landing copy",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "podcast",
+      "count": "1",
+      "note": "podcast episodes",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "proceeding",
+      "count": "8",
+      "note": "conference proceedings",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "redirectsConfig",
+      "count": "1",
+      "note": "redirect rules",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "sanity.fileAsset",
+      "count": "19",
+      "note": "site editorial content",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "sanity.imageAsset",
+      "count": "358",
+      "note": "site editorial content",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "selectList",
+      "count": "1",
+      "note": "editorial select lists",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "testimonial",
+      "count": "4",
+      "note": "testimonials",
+      "supabase_counterpart": "none"
+    },
+    {
+      "type": "website",
+      "count": "1",
+      "note": "site configuration",
+      "supabase_counterpart": "none"
+    }
+  ],
+  "decisions": {
+    "link_matched_people": "159",
+    "review_ambiguous": "0",
+    "import_listed_members": "32",
+    "ignore_unlisted_members": "58",
+    "legacy_projects": "43",
+    "legacy_outputs": "1,596"
+  }
+}
