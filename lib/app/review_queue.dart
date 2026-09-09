@@ -200,7 +200,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                             : Align(
                                 alignment: Alignment.centerLeft,
                                 child: StatusPill(
-                                  status,
+                                  queueStatusLabel(status),
                                   tone: _statusTone(status),
                                 ),
                               ),

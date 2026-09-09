@@ -984,34 +984,38 @@ Widget _logoRow({
   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
   child: Row(
     children: [
-      Container(
-        width: 58,
-        height: 32,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: background,
-          borderRadius: BorderRadius.circular(5),
-        ),
-        child: Text(
-          swatch,
-          style: TextStyle(
-            color: foreground,
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
+      Column(
+        children: [
+          Container(
+            width: 58,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(5),
+            ),
+            child: Text(
+              swatch,
+              style: TextStyle(
+                color: foreground,
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
-        ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
       const SizedBox(width: 12),
-      Expanded(
-        child: Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+      const Spacer(),
       Text(
         format,
         style: const TextStyle(

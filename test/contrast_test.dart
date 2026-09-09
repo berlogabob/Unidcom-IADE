@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:unidcom_iade/app/welcome_pack.dart';
 import 'package:unidcom_iade/theme/tokens.dart';
 
 /// WCAG 2.1 relative luminance and contrast ratio.
@@ -80,5 +81,17 @@ void main() {
     ]) {
       expect(contrast(fg, bg), greaterThanOrEqualTo(4.5), reason: name);
     }
+  });
+
+  testWidgets('logo labels sit outside their colour swatches', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: WelcomePackPage(section: 'logos'))),
+    );
+
+    final swatch = tester.getRect(find.text('IADE').first);
+    final label = tester.getRect(find.text('Positive').first);
+    expect(label.top, greaterThanOrEqualTo(swatch.bottom));
+    expect(contrast(AppColors.textPrimary, AppColors.cardBg),
+        greaterThanOrEqualTo(4.5));
   });
 }

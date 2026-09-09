@@ -3,6 +3,15 @@ import 'package:flutter/material.dart';
 import 'detail_scaffold.dart';
 import 'search_bar.dart';
 
+String queueStatusLabel(String value) => const {
+  'a_confirmar': 'To confirm',
+  'pending_review': 'Awaiting approval',
+  'pending': 'Pending',
+  'approved': 'Approved',
+  'rejected': 'Rejected',
+  'draft': 'Draft',
+}[value] ?? value.replaceAll('_', ' ');
+
 /// Standard filter dropdown with an "All" (null) option.
 Widget filterDropdown(
   String label,
@@ -29,7 +38,7 @@ Widget filterDropdown(
         const Text('All'),
         for (final item in values)
           Text(
-            item.replaceAll('_', ' '),
+            queueStatusLabel(item),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -37,7 +46,7 @@ Widget filterDropdown(
       items: [
         const DropdownMenuItem(value: null, child: Text('All')),
         for (final item in values)
-          DropdownMenuItem(value: item, child: Text(item.replaceAll('_', ' '))),
+          DropdownMenuItem(value: item, child: Text(queueStatusLabel(item))),
       ],
       onChanged: onChanged,
     ),

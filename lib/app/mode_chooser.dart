@@ -36,7 +36,7 @@ class ModeChooserScreen extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               const Text(
-                'You can switch at any time from your name, top right.',
+                'You can switch at any time from the bottom of the sidebar.',
                 style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               ),
               const SizedBox(height: 24),
