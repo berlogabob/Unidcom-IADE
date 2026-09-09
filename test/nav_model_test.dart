@@ -83,6 +83,28 @@ void main() {
       'Scientific outputs',
     );
   });
+  test('nav selection prefers exact and longest matching routes', () {
+    final researcher = researcherNav(signedIn: true);
+    expect(navSelected(researcher, '/app/outputs/add')?.label, 'Add Scientific Output');
+    expect(navSelected(researcher, '/app/profile/identifiers')?.label, 'Researcher Identifiers');
+    expect(navSelected(researcher, '/app/profile')?.label, 'Personal Information');
+    expect(navSelected(researcher, '/app/outputs')?.label, 'My Outputs');
+    expect(navSelected(researcher, '/app/home/alerts')?.label, 'Alerts & Notifications');
+
+    final admin = adminNav();
+    expect(navSelected(admin, '/people/abc')?.label, 'People');
+    expect(navSelected(admin, '/app/admin/merge')?.label, 'Merge duplicates');
+    expect(navSelected(admin, '/app/admin/review')?.label, 'Pending approval');
+  });
+  test('nav group selection prefers exact and longest matching routes', () {
+    final researcher = researcherNav(signedIn: true);
+    expect(navGroupOf(researcher, '/app/outputs/add')?.label, 'Scientific Outputs');
+    expect(navGroupOf(researcher, '/app/profile/identifiers')?.label, 'My Profile');
+
+    final admin = adminNav();
+    expect(navGroupOf(admin, '/app/admin/merge')?.label, '');
+    expect(navGroupOf(admin, '/app/admin/review')?.label, 'Research');
+  });
   test('researcher nav is one-to-one with the IA tree', () {
     final groups = researcherNav(signedIn: true);
     expect(groups.map((g) => g.label).toList(), [

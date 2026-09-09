@@ -160,40 +160,47 @@ List<NavGroup> adminNav() => [
 
 /// The item (top-level or child) that owns [path], for highlighting and the
 /// mobile app-bar title. Children win over their parent.
+int? _navMatchScore(NavItem item, String path) {
+  if (path == item.route) return 1000000 + item.route.length;
+  var score = path.startsWith('${item.route}/') ? item.route.length : 0;
+  for (final prefix in item.prefixes) {
+    if (path.startsWith(prefix) && prefix.length > score) score = prefix.length;
+  }
+  return score == 0 ? null : score;
+}
+
 NavItem? navSelected(List<NavGroup> groups, String path) {
+  NavItem? best;
+  int? bestScore;
   for (final g in groups) {
     for (final i in g.items) {
-      for (final c in i.children) {
-        if (c.matches(path)) {
-          return c;
+      for (final item in [...i.children, i]) {
+        final score = _navMatchScore(item, path);
+        if (score != null && (bestScore == null || score > bestScore)) {
+          best = item;
+          bestScore = score;
         }
       }
     }
   }
-  for (final g in groups) {
-    for (final i in g.items) {
-      if (i.matches(path)) {
-        return i;
-      }
-    }
-  }
-  return null;
+  return best;
 }
 
 /// The group that owns [path] — the header a collapsed active row should
 /// still surface itself under.
 NavGroup? navGroupOf(List<NavGroup> groups, String path) {
+  NavGroup? best;
+  int? bestScore;
   for (final g in groups) {
     for (final i in g.items) {
-      if (i.matches(path)) {
-        return g;
-      }
-      for (final c in i.children) {
-        if (c.matches(path)) {
-          return g;
+      for (final item in [...i.children, i]) {
+        final score = _navMatchScore(item, path);
+        if (score != null && (bestScore == null || score > bestScore)) {
+          best = g;
+          bestScore = score;
         }
       }
     }
   }
-  return null;
+  return best;
 }
