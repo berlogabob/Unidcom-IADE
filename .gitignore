@@ -136,3 +136,11 @@ app.*.symbols
 # Maestro credentials — never commit
 .maestro/.env
 notes/
+
+# Local tool output and session transcripts — never commit
+/20??-??-??-*.txt
+graphify-out/
+.pi-runs/
+.config/
+.flutter
+RAW_DATA/
