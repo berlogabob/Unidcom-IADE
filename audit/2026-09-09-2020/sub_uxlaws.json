@@ -1,0 +1,83 @@
+[
+ {
+  "criterion": "LAW-MILLER-1",
+  "screen": "r_sidebar_expanded",
+  "severity": 1,
+  "evidence": "Improved since the previous run (severity 3): the sidebar is now a true accordion with exactly one group open. But the visible-at-once count is still 11 rows: 6 group headers (OVERVIEW, MY PROFILE, SCIENTIFIC OUTPUTS, RESEARCH ADMINISTRATION, COMMUNICATION, HELP & CONTACTS) plus the 5 leaves of the open OVERVIEW group (Research Activity Summary, Recent Scientific Outputs, Alerts & Notifications, Profile Status, Getting Started) — 2 over the 9-item ceiling. Confirmed by the identical 11-item count measured for the phone drawer's equivalent accordion (measurements.json phone_r_drawer oversized_groups items:11); the desktop capture did not get its own oversized_groups entry but the same nav structure is visible.",
+  "screenshot": "screens/r_sidebar_expanded.png",
+  "measurement": null,
+  "recommendation": "Trim the header row further (e.g. hide 1-2 leaves behind a 'more' toggle in the open group) or accept — this is now only marginally over Miller's ceiling and is a large improvement over the prior flat, fully-expanded sidebar."
+ },
+ {
+  "criterion": "LAW-MILLER-1",
+  "screen": "phone_r_drawer",
+  "severity": 2,
+  "evidence": "Improved since the previous run (severity 3, 12/22-item flat list) but still over: the accordion drawer shows 6 group headers (OVERVIEW, MY PROFILE, SCIENTIFIC OUTPUTS, RESEARCH ADMINISTRATION, COMMUNICATION, HELP & CONTACTS) plus 5 leaves of the open SCIENTIFIC OUTPUTS group (My Outputs, Add Scientific Output, Edit Scientific Outputs 'soon', Import & Synchronisation, Validation & Duplicates 'soon') = 11 items simultaneously visible, confirmed by measurements.json.",
+  "screenshot": "screens/phone_r_drawer.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-914\", \"items\": 11, \"limit\": 9}",
+  "recommendation": "On the narrower 390px viewport especially, keep the ceiling tighter than desktop: collapse to section headers only until a section is tapped, or cap the open group at ~3 leaves with a 'show more' for placeholder ('soon') rows."
+ },
+ {
+  "criterion": "LAW-MILLER-1",
+  "screen": "a_dashboard",
+  "severity": 2,
+  "evidence": "Unchanged pattern from the previous run, and slightly worse: the admin dashboard KPI grid is now 18 tiles above the fold (ORCID Linked, Profiles Validated, Outputs Approved, DOI Coverage, Researchers, Outputs, Journal Articles, Needs Verification, Missing ORCID, Ciência ID on File, Unclaimed ORCID Candidates, Publications Missing DOI, Labs, Projects, Clusters, Verified Outputs, Lab Allocations, Mentorships), immediately followed by 'Outputs by type' rows and a quartile chart on the same undifferentiated panel, with no category sub-headers. measurements.json's oversized-group count for this panel grew from 90 (previous run) to 96.",
+  "screenshot": "screens/a_dashboard.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-30\", \"items\": 96, \"limit\": 9}",
+  "recommendation": "Cluster the KPI tiles under 3-4 labeled sub-headers (People, Outputs, Structure, Reporting) of ≤9 tiles each instead of one undifferentiated grid."
+ },
+ {
+  "criterion": "LAW-JAKOB-1",
+  "screen": "r_account_menu",
+  "severity": 2,
+  "evidence": "Persists unchanged: the top-right header identity block (avatar 'EB', 'E2E Bot', 'External researcher · UNIDCOM / IADE') is still non-interactive in hierarchy/r_account_menu.json (clickable=false on all three text nodes, e.g. bounds [320,13][381,36] and [320,38][547,55]), so clicking the header name still produces no account/mode menu — this run's captured screen is identical to r_home/r_sidebar_expanded, confirming nothing opened. Every mainstream web app puts an account/mode-switch menu behind that top-right identity, and here the only working equivalent is at the bottom of the sidebar.",
+  "screenshot": "screens/r_account_menu.png",
+  "measurement": null,
+  "recommendation": "Add a real top-right account/mode menu (or at minimum make the identity block clickable, routing to the same switch/sign-out actions currently only available at the bottom of the sidebar)."
+ },
+ {
+  "criterion": "LAW-FITTS-1",
+  "screen": "a_person",
+  "severity": 2,
+  "evidence": "Persists unchanged: the 'Remove' control on a person's timeline entry is still a confirmed clickable target only 40×6px (measurements.json small_tap_targets, assumed:false), roughly a quarter of the 24px minimum height, with no visual button styling.",
+  "screenshot": "screens/a_person.png",
+  "measurement": "small_tap_targets: {\"label\":\"Remove\",\"w\":40,\"h\":6,\"assumed\":false}",
+  "recommendation": "Render 'Remove' as a proper button/icon-button with at least a 24px (ideally 44px) hit box, not a 6px text sliver."
+ },
+ {
+  "criterion": "LAW-FITTS-1",
+  "screen": "r_profile_edit_dialog",
+  "severity": 2,
+  "evidence": "Persists unchanged: the 'Integration year' field in the 'Edit researcher' modal is still a confirmed clickable control only 528×7px (measurements.json small_tap_targets, assumed:false), while every sibling field in the same dialog (Preferred name, Legal name, Email, Phone, ORCID, Ciencia ID, PhD, Join date, Exit date) renders at full input height.",
+  "screenshot": "screens/r_profile_edit_dialog.png",
+  "measurement": "small_tap_targets: {\"label\":\"Integration year\",\"w\":528,\"h\":7,\"assumed\":false}",
+  "recommendation": "Give the Integration year field the same input height/padding as its siblings (Join date, Exit date) in the same form."
+ },
+ {
+  "criterion": "LAW-HICK-2",
+  "screen": "r_profile_edit_dialog",
+  "severity": 2,
+  "evidence": "Persists unchanged: the 'Edit researcher' dialog still presents 14 fields (Preferred name, Legal name, Bio, Photo URL, Email, Job title, Phone, ORCID, Ciencia ID, PhD, Join date, Exit date, Integration year, plus Cancel/Save) in one continuous, unsectioned, scrolling modal — measurements.json again flags it as an oversized group ({\"items\":14,\"limit\":9}). No headings or steps separate identity fields from academic-identifier fields from employment-date fields. (By contrast, the newer 'Add output' dialog now front-loads a DOI + Look-up step and only shows 6 form fields — well under the limit — demonstrating the app already knows how to do progressive disclosure elsewhere.)",
+  "screenshot": "screens/r_profile_edit_dialog.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-791\", \"items\": 14, \"limit\": 9}",
+  "recommendation": "Split into labeled sub-sections (Identity, Identifiers, Employment) within the same dialog, or turn it into a 2-3 step wizard so no single view demands scanning 14 fields at once."
+ },
+ {
+  "criterion": "LAW-HICK-1",
+  "screen": "a_people",
+  "severity": 2,
+  "evidence": "Persists unchanged: the People filter/action bar still bundles many simultaneous, mostly ungrouped controls — Search, a separated top-right 'Add person' button, then 3 dropdowns (Membership, Status, Profile) and 3 toggle chips (Missing ORCID, Needs verification, Has outputs) with no visual grouping label, plus the '184 people' count — measurements.json again measures this cluster as an oversized group of 10 against a limit of 9.",
+  "screenshot": "screens/a_people.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-126\", \"items\": 10, \"limit\": 9}",
+  "recommendation": "Collapse the 3 toggle chips into a single 'More filters' disclosure, or group the 3 dropdowns and 3 chips under a visible 'Filters' label so the choice set doesn't read as one undifferentiated row of 6+."
+ },
+ {
+  "criterion": "LAW-FITTS-1",
+  "screen": "a_objective",
+  "severity": 1,
+  "evidence": "New: the small cluster-code pills shown wherever objectives/clusters/projects cross-link to each other (e.g. the 'Clusters' row on a_objective: ● C3, ● R3, ● T3, ● E3, ● F3) are confirmed clickable targets only 22px tall — measurements.json lists 5 such pills on this screen alone ('C3: Crafting Cooperation and Coexistence' 42×22, 'R3: Rethinking for Regeneration and Resilience' 41×22, 'T3…' 41×22, 'E3…' 41×22, 'F3…' 40×22, all assumed:false), 2px under the 24px minimum. The same undersized pill component recurs on a_cluster (e.g. 'UNID.9', 'UNID.8', 'UNID.6', 'UNID.7', 'UNID.2', 'UNID.3', 'UNID.4', all 22px tall), a_lab ('SDI.1', 'SDI.2', 'SDI.3', all 22px tall) and a_project ('R3', 'BiD', 'UNID.6', all 22px tall) — a systemic, if minor, shortfall across the shared tag/badge component.",
+  "screenshot": "screens/a_objective.png",
+  "measurement": "small_tap_targets: {\"label\":\"C3: Crafting Cooperation and Coexistence\",\"w\":42,\"h\":22,\"assumed\":false} (and 4 siblings on this screen; same 22px-tall pattern repeats on a_cluster, a_lab, a_project)",
+  "recommendation": "Bump the shared cluster/objective/project tag-pill component's vertical padding by ~2px so it clears the 24px tap-target minimum everywhere it's used."
+ }
+]

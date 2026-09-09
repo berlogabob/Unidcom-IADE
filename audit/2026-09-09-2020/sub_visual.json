@@ -1,0 +1,65 @@
+[
+ {
+  "criterion": "VD-COL-2",
+  "screen": "a_dashboard",
+  "severity": 2,
+  "evidence": "Decorative colour coding without a rule (consistency debt, not a task blocker): Worse than previously reported. The KPI tile grid grew to 18 tiles and now uses a fifth top-border color that isn't a defined semantic accent at all: pixel-sampling the top border of the 'Researchers', 'Publications Missing Doi', 'Labs', 'Clusters' and 'Mentorships' tiles all return RGB(112,110,104), which is exactly lib/theme/tokens.dart AppColors.textFaint (0xFF706E68) — a color the token file defines and comments explicitly for text-contrast tuning, not as a tile/border accent. It now sits alongside teal (Outputs, Verified Outputs), blue (Journal Articles, Projects, Lab Allocations), red (Needs Verification, Missing Orcid) and amber (Ciência Id On File, Unclaimed Orcid Candidates) with no visible rule: two structurally identical plain-count tiles ('Labs' and 'Projects') get different colors (grey vs blue), and 'Clusters' now differs from its previous run color despite being an unchanged plain count. Same tiles/colors repeat on phone_a_dashboard.",
+  "screenshot": "screens/a_dashboard.png",
+  "measurement": null,
+  "recommendation": "Stop repurposing a text-contrast token (textFaint) as a fifth ad-hoc border accent. Define one explicit rule for tile accents (e.g. teal = healthy/neutral count, amber/red = needs-attention, blue reserved for a named 'structure' category) and apply it consistently to all 18 tiles; drop the grey variant entirely."
+ },
+ {
+  "criterion": "VD-COL-2",
+  "screen": "r_home",
+  "severity": 2,
+  "evidence": "Persists unchanged since both previous runs. The 'OUTPUTS' and 'PROFILE STATUS' stat cards on the researcher home still share one continuous amber/warn top border even though 'Outputs: 0' is a neutral count with no problem — only 'Profile Status' is a legitimate warning state. Same pair repeats identically on phone_r_home.",
+  "screenshot": "screens/r_home.png",
+  "measurement": null,
+  "recommendation": "Apply the amber/warn accent only to the card whose state needs attention (Profile Status); give the neutral Outputs count a neutral border/no accent."
+ },
+ {
+  "criterion": "VD-TYPE-1",
+  "screen": "a_admin_data",
+  "severity": 1,
+  "evidence": "Persists unchanged since previous run. In the 'people' table of the raw Data Browser, the 'bio' column still renders full free-text paragraphs at roughly 12-13px, below the 16px floor for text meant to be read rather than scanned as a short label/ID, and is also cut off mid-sentence at the viewport edge.",
+  "screenshot": "screens/a_admin_data.png",
+  "measurement": null,
+  "recommendation": "For long free-text columns (bio, notes), either truncate with an expand-on-click affordance shown at readable size, or bump the cell font size for these specific columns instead of reusing the compact ID/date-column size."
+ },
+ {
+  "criterion": "VD-RESP-1",
+  "screen": "a_admin_reports",
+  "severity": 2,
+  "evidence": "The previously-reported Type column overflow is confirmed fixed (values wrap within the column and show a full-text tooltip on hover, visible in this run's screenshot). The Subtype column still exhibits the original problem: values such as 'Membro da comissão cientifi' are cut off exactly at the 1280px viewport edge mid-word, with no ellipsis, tooltip, or horizontal-scroll affordance.",
+  "screenshot": "screens/a_admin_reports.png",
+  "measurement": null,
+  "recommendation": "Extend the fix already applied to the Type column (wrap + hover tooltip) to the Subtype column and any other column that can overflow the viewport."
+ },
+ {
+  "criterion": "VD-HIER-2",
+  "screen": "anon_welcome_logos",
+  "severity": 1,
+  "evidence": "Persists unchanged. Edge-alignment measurement still shows the same four 3px near-miss offsets among the logo-swatch card elements (edge pairs at x=325/328, 328/331, 344/347, 375/378) — the swatch chip, label, and download-icon are not on a shared grid column. Same layout/offsets repeat verbatim on r_welcome_logos.",
+  "screenshot": "screens/anon_welcome_logos.png",
+  "measurement": "alignment_near_misses: [{edges_px:[325,328],offset:3},{edges_px:[328,331],offset:3},{edges_px:[344,347],offset:3},{edges_px:[375,378],offset:3}]",
+  "recommendation": "Snap the swatch/label/icon elements inside each logo card to the same left-edge grid column so repeated cards align pixel-for-pixel."
+ },
+ {
+  "criterion": "VD-COL-4",
+  "screen": "flow_add_output_3_duplicate_blocked",
+  "severity": 2,
+  "evidence": "New dialog state since previous audit. When 'Look up' finds the DOI already exists, the blocking message 'Already in the directory: ... (approved)' renders in plain body-text color with no icon, tint, or border — visually indistinguishable from ordinary helper text in the same dialog. This is inconsistent with how the app treats other blocking/attention states: e.g. r_home's 'Your profile is awaiting confirmation' alert uses an amber warning icon plus amber text. The only cue that Save is now blocked is the Save button itself turning a slightly lighter navy, which is easy to miss.",
+  "screenshot": "screens/flow_add_output_3_duplicate_blocked.png",
+  "measurement": null,
+  "recommendation": "Give the duplicate-blocked message the same visual treatment the app already uses for attention states elsewhere (warning icon + amber or neutral-info tint), so a blocked Save is obvious without reading the button state."
+ },
+ {
+  "criterion": "VD-RESP-1",
+  "screen": "phone_a_review",
+  "severity": 1,
+  "evidence": "The strip is scrollable since round 5 (every tab reachable — the F-037 fix holds); what remains is the missing scroll affordance. At 390px the 'Pending approval' tab strip ('Profiles to approve', 'Outputs to approve', Needs re-verification, Suggestions, Activity, Needs attention, ORCID works — 7 tabs on desktop) is hard-clipped at the viewport edge: only the first two tab labels are fully visible and a single stray letter 'I' from the third tab bleeds past the edge, with no fade, arrow, or other affordance signaling more tabs exist off-screen.",
+  "screenshot": "screens/phone_a_review.png",
+  "measurement": null,
+  "recommendation": "On narrow viewports, either wrap the tab strip or add a visible scroll cue (edge fade/gradient or chevron) so users know to swipe for the remaining tabs."
+ }
+]

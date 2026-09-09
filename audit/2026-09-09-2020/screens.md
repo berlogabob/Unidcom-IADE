@@ -1,6 +1,6 @@
 # Screen inventory
 
-Crawler: Playwright/Chromium 1280×900 (phone rows 390×844). Build: `flutter build web --dart-define=E2E=true` (v1), commit 7d628bb, served from build/web on :8123.
+Crawler: Playwright/Chromium 1280×900 (phone rows 390×844). Build: `flutter build web --dart-define=E2E=true` (v1), commit 5c4cb7c, served from build/web on :8123.
 
 | Screen | Mode | How reached | Files | Note |
 |---|---|---|---|---|
@@ -49,11 +49,11 @@ Crawler: Playwright/Chromium 1280×900 (phone rows 390×844). Build: `flutter bu
 | r_settings | researcher | openLink #/app/settings | screens/r_settings.png · hierarchy/r_settings.json |  |
 | r_deeplink_people | researcher | openLink #/people | screens/r_deeplink_people.png · hierarchy/r_deeplink_people.json | expected: bounced to /app/home |
 | r_deeplink_requests_v2 | researcher | openLink #/app/requests | screens/r_deeplink_requests_v2.png · hierarchy/r_deeplink_requests_v2.json | v2 route: expected bounce |
-| r_unknown_route | researcher | openLink #/nope/404 — recaptured on daaf308 after the blank-404 regression found in this run was fixed | screens/r_unknown_route.png · hierarchy/r_unknown_route.json | unknown route; the first capture (7d628bb) was a blank grey page: errorBuilder wrapped the page in AppShell, which has no GoRouterState there |
+| r_unknown_route | researcher | openLink #/nope/404 | screens/r_unknown_route.png · hierarchy/r_unknown_route.json | unknown route |
 | r_profile_edit_dialog | researcher | /app/profile → Edit | screens/r_profile_edit_dialog.png · hierarchy/r_profile_edit_dialog.json |  |
 | r_add_output_dialog | researcher | /app/outputs/add → Add output | screens/r_add_output_dialog.png · hierarchy/r_add_output_dialog.json |  |
 | r_sidebar_expanded | researcher | /app/home default sidebar | screens/r_sidebar_expanded.png · hierarchy/r_sidebar_expanded.json |  |
-| r_account_menu | researcher | sidebar footer, not clicked (recaptured: the first pass clicked "Switch to admin" and flipped the phone captures to admin mode) | screens/r_account_menu.png · hierarchy/r_account_menu.json |  |
+| r_account_menu | researcher | sidebar footer: Switch to admin / Public site / Sign out (not clicked) | screens/r_account_menu.png · hierarchy/r_account_menu.json |  |
 | phone_r_home | researcher (390px) | openLink #/app/home | screens/phone_r_home.png · hierarchy/phone_r_home.json |  |
 | phone_r_profile | researcher (390px) | openLink #/app/profile | screens/phone_r_profile.png · hierarchy/phone_r_profile.json |  |
 | phone_r_outputs | researcher (390px) | openLink #/app/outputs | screens/phone_r_outputs.png · hierarchy/phone_r_outputs.json |  |
@@ -89,7 +89,7 @@ Crawler: Playwright/Chromium 1280×900 (phone rows 390×844). Build: `flutter bu
 
 ## Flow-suite evidence
 
-Driven by Playwright (`audit/tools/flows.py`, see `flows-results.json`). The `review_queue` flow now exercises the F-005 confirmation dialog (reason typed, Reject, snackbar with Undo). The flows that write to the live database were cleaned up afterwards — note the protect trigger reverts a non-admin status reset, so the reset needs triggers bypassed:
+Driven by Playwright (`audit/tools/flows.py`, see `flows-results.json`). `add_output` now exercises the DOI-first dialog: Look up on a known DOI pre-fills the form, Save is blocked with 'Already in the directory', then a fresh title is saved manually. `review_queue` rejects it with a reason. Cleanup afterwards (triggers bypassed):
 
 ```sql
 begin; set local session_replication_role = replica;
@@ -103,9 +103,10 @@ commit;
 | Screen | Mode | How reached | Files | Note |
 |---|---|---|---|---|
 | flow_add_output_1_dialog | flow `add_output` | step evidence: dialog | screens/flow_add_output_1_dialog.png | flow suite |
-| flow_add_output_2_validation | flow `add_output` | step evidence: validation | screens/flow_add_output_2_validation.png | flow suite |
-| flow_add_output_3_after_add | flow `add_output` | step evidence: after add | screens/flow_add_output_3_after_add.png | flow suite |
-| flow_add_output_4_in_my_outputs | flow `add_output` | step evidence: in my outputs | screens/flow_add_output_4_in_my_outputs.png | flow suite |
+| flow_add_output_2_doi_prefilled | flow `add_output` | step evidence: doi prefilled | screens/flow_add_output_2_doi_prefilled.png | flow suite |
+| flow_add_output_3_duplicate_blocked | flow `add_output` | step evidence: duplicate blocked | screens/flow_add_output_3_duplicate_blocked.png | flow suite |
+| flow_add_output_4_after_add | flow `add_output` | step evidence: after add | screens/flow_add_output_4_after_add.png | flow suite |
+| flow_add_output_5_in_my_outputs | flow `add_output` | step evidence: in my outputs | screens/flow_add_output_5_in_my_outputs.png | flow suite |
 | flow_admin_mode_1_dashboard | flow `admin_mode` | step evidence: dashboard | screens/flow_admin_mode_1_dashboard.png | flow suite |
 | flow_admin_mode_2_back_to_researcher | flow `admin_mode` | step evidence: back to researcher | screens/flow_admin_mode_2_back_to_researcher.png | flow suite |
 | flow_auth_gate_1_bounced_to_login | flow `auth_gate` | step evidence: bounced to login | screens/flow_auth_gate_1_bounced_to_login.png | flow suite |
@@ -130,4 +131,3 @@ commit;
 - v2-only surfaces (Support requests, Approve/Auto-fill/ORCID sync buttons) — compiled out of the pilot build.
 - Research Areas / Interests / Edit outputs / Validation / Documentation / FAQs render the shared WipPage.
 - Maestro flows `featured_star.yaml` (E2E account owns no output to star) and `support_request.yaml` (v2 only).
-- The crawl ran on commit 7d628bb; the flows on e5b8847 (adds only the OutputRow duplicate-status fix found during this run).

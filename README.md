@@ -61,6 +61,10 @@ is silently discarded for everyone else.
 
 Admins insert directly, through `createOutput`. Both routes open the same
 dialog, so the taxonomy cascade is the only way a category is ever set.
+Since round 6 the dialog starts from a DOI: `lookupDoi()` (Crossref) pre-fills
+the fields, and `find_similar_outputs()` runs before Save — an exact DOI match
+blocks, a title similarity of 0.8 or more warns and asks; manual entry is the
+fallback, not the default.
 
 Because `flutter analyze` and `flutter test` only ever see v1, CI carries a
 `--dart-define=V2=true` build step — it is the only thing that catches a break

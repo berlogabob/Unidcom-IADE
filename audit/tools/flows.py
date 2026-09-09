@@ -92,11 +92,24 @@ def add_output(f, pg):
     do_login(f, pg); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Your first steps", 30)
     f.step("open #/app/outputs/add"); pg.goto(f"{BASE}/#/app/outputs/add"); f.expect("^Add output$", 20)
     f.step("tap Add output"); click(pg, "^Add output$"); f.expect("^Title$", 10); f.shot("dialog")
-    f.step("tap Save with empty form"); click(pg, "^Save$"); pg.wait_for_timeout(800); f.expect("A title is required|required", 5); f.shot("validation")
-    f.step("type title"); typein(pg, "Title", "E2E UX audit output (delete me)")
+    # BP-07: DOI-first — an existing, approved DOI must be recognised and blocked (BP-16)
+    f.step("type a DOI already in the directory"); typein(pg, r"DOI \(or paste the doi.org link\)", "10.1007/978-3-031-73705-3_15")
+    f.step("tap Look up"); click(pg, "^Look up$")
+    filled = False
+    for _ in range(40):  # Crossref round trip; Flutter only materialises the focused field, so focus Title and read it
+        pg.wait_for_timeout(500)
+        try: click(pg, "^Title$", timeout=2)
+        except Exception: continue
+        val = pg.evaluate("() => (document.activeElement && document.activeElement.value) || ''")
+        if "imagery analysis requirements" in val.lower(): filled = True; break
+    if not filled: f.errors.append("DOI lookup did not pre-fill the title")
+    f.shot("doi_prefilled")
+    f.step("tap Save"); click(pg, "^Save$"); f.expect("Already in the directory", 15); f.shot("duplicate_blocked")
+    # manual fallback
+    f.step("clear DOI, type a fresh title"); typein(pg, r"DOI \(or paste the doi.org link\)", ""); typein(pg, "Title", "E2E UX audit output (delete me)")
     f.step("tap Save"); click(pg, "^Save$"); pg.wait_for_timeout(2500); f.shot("after_add")
     f.step("open #/app/outputs"); pg.goto(f"{BASE}/#/app/outputs"); f.expect("E2E UX audit output", 20); f.shot("in_my_outputs")
-    if not visible(pg, "Pending|pending|Awaiting", 5): f.warnings.append("no status tag on the new pending output in My Outputs (finding, not a task failure)")
+    if not visible(pg, "Pending|pending|Awaiting", 5): f.warnings.append("no status tag on the new pending output in My Outputs (finding)")
 
 def review_queue(f, pg):
     do_login(f, pg); f.step("tap As an administrator"); pick(f, pg, "As an administrator"); f.expect("ORCID LINKED|OUTPUTS APPROVED", 30)
@@ -127,7 +140,7 @@ if __name__ == "__main__":
     run("admin_mode", ".maestro/admin_mode.yaml", admin_mode)
     run("orcid_error", ".maestro/orcid_error.yaml", orcid_error)
     run("profile_confirm", "(new) profile_confirm — researcher confirms draft profile", profile_confirm, "writes people.profile_status for the E2E account; cleanup: update people set profile_status='draft' where email='andre.berloga+e2e@gmail.com'")
-    run("add_output", "(new) add_output — researcher records an output manually", add_output, "creates a pending output; cleanup: delete from outputs where title like 'E2E UX audit output%'")
+    run("add_output", "(new) add_output — DOI lookup, duplicate block, then manual entry", add_output, "creates a pending output; cleanup: delete from outputs where title like 'E2E UX audit output%'")
     run("review_queue", "(new) review_queue — admin sees, confirms-all, rejects", review_queue, "Reject has no confirmation dialog in code (review_queue.dart _rejectOutput)")
     results.append(dict(name="featured_star", passed=None, duration_s=0, steps=0, errors=["NOT RUN: the E2E account has 0 outputs to star"], yaml=".maestro/featured_star.yaml", note="not run"))
     results.append(dict(name="support_request", passed=None, duration_s=0, steps=0, errors=["NOT RUN: v2-only route, compiled out of the pilot build"], yaml=".maestro/support_request.yaml", note="not run"))

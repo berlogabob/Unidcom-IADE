@@ -1,0 +1,101 @@
+[
+ {
+  "criterion": "H1",
+  "screen": "a_deeplink_profile",
+  "severity": 2,
+  "evidence": "Persists from the previous run (2026-09-09-1601). Personal Information (/app/profile) still ends in a large blank area below the status-pill row (External researcher / Inactive / Profile not confirmed / Edit / Connect ORCID) — confirmed again on a_deeplink_profile.png, where the last visible content is at y≈300 out of a 900px-tall viewport, with nothing below.",
+  "screenshot": "screens/a_deeplink_profile.png",
+  "measurement": null,
+  "recommendation": "Render the same Personal Information sections (bio, identifiers, areas) inline or add an explicit note/placeholder explaining why the page is short, instead of ending in unexplained empty space."
+ },
+ {
+  "criterion": "H10",
+  "screen": "login",
+  "severity": 2,
+  "evidence": "Persists from the previous run. The sign-in form still offers only 'Sign in' (email/password) and 'Sign in with ORCID iD' — no 'Forgot password' or account-recovery link anywhere on the screen.",
+  "screenshot": "screens/login.png",
+  "measurement": null,
+  "recommendation": "Add a password-recovery link under the password field so users who forget their credentials are not stuck."
+ },
+ {
+  "criterion": "H5",
+  "screen": "r_add_output_dialog",
+  "severity": 2,
+  "evidence": "Persists from the previous run. When a researcher opens 'Add output' and skips the new DOI field (manual entry path), the Category dropdown still defaults to 'All' — a list-filter value, not a valid category for a single record — confirmed again on r_add_output_dialog.png.",
+  "screenshot": "screens/r_add_output_dialog.png",
+  "measurement": null,
+  "recommendation": "Default Category to a blank/placeholder state and make it required, rather than reusing the 'All' filter value as the default for a new record."
+ },
+ {
+  "criterion": "H5",
+  "screen": "r_profile_edit_dialog",
+  "severity": 2,
+  "evidence": "Persists from the previous run. 'Join date (YYYY-MM-DD)' and 'Exit date (YYYY-MM-DD)' are still plain free-text fields; the required format is communicated only via placeholder text, with no date picker or input mask to prevent malformed entries.",
+  "screenshot": "screens/r_profile_edit_dialog.png",
+  "measurement": null,
+  "recommendation": "Use a date picker or masked input for the date fields instead of relying on placeholder-text instructions alone."
+ },
+ {
+  "criterion": "H4",
+  "screen": "r_outputs_import",
+  "severity": 2,
+  "evidence": "Persists from the previous run. Now that ORCID Sync correctly explains a missing ORCID iD (F-021), the 'Ciência Vitae Sync' and 'Other Data Sources' rows directly below it still use the same green-tinted, wrench-icon card styling as genuine 'Work in progress' placeholders elsewhere (r_profile_areas_wip, r_help_docs_wip, r_outputs_edit_wip, etc.) but omit the words 'Work in progress', so it remains unclear whether these two rows are working controls or placeholders.",
+  "screenshot": "screens/r_outputs_import.png",
+  "measurement": null,
+  "recommendation": "Either wire these rows up or label them 'Work in progress' the same way every other placeholder in the app is labelled."
+ },
+ {
+  "criterion": "H4",
+  "screen": "r_outputs",
+  "severity": 1,
+  "evidence": "Persists from the previous run. The top-right button still says 'Add output' while the inline control next to the Timeline heading still says only 'Add' — two labels for the same action, visible together on r_outputs.png.",
+  "screenshot": "screens/r_outputs.png",
+  "measurement": null,
+  "recommendation": "Use one consistent label ('Add output') for both entry points to the same action."
+ },
+ {
+  "criterion": "H2",
+  "screen": "a_objective",
+  "severity": 1,
+  "evidence": "Persists from the previous run. The objective detail page still shows cluster codes as bare pills ('C3', 'R3', 'T3', 'E3', 'F3') with no tooltip or expansion of what each code stands for.",
+  "screenshot": "screens/a_objective.png",
+  "measurement": null,
+  "recommendation": "Add a tooltip or short label next to each cluster pill spelling out the cluster name."
+ },
+ {
+  "criterion": "H2",
+  "screen": "flow_add_output_4_after_add",
+  "severity": 2,
+  "evidence": "New with the DOI-first Add output flow. After 'Look up' auto-fills the category from a real DOI, the researcher's My Outputs timeline shows the category as a bare, all-caps Portuguese token 'LIVROS' (Portuguese for 'Books') sitting next to the English 'pending' status tag, in an otherwise fully English interface (sidebar, buttons, headings). The same untranslated-taxonomy pattern recurs on a_dashboard.png ('Formação avançada', 'Gestão & apoio UNIDCOM', 'Seminários & conferências' as chart/list labels) and a_admin_reports.png (Type/Subtype columns showing e.g. 'Organização de Seminários e Conferências'). A researcher who does not read Portuguese cannot tell what category their own output was filed under.",
+  "screenshot": "screens/flow_add_output_4_after_add.png",
+  "measurement": null,
+  "recommendation": "Localize or translate the output category/type taxonomy for display in the English UI (or at minimum expand the abbreviation/label on hover), rather than surfacing the raw Portuguese FCT taxonomy value as a UI chip."
+ },
+ {
+  "criterion": "H5",
+  "screen": "flow_add_output_2_doi_prefilled",
+  "severity": 2,
+  "evidence": "New in the DOI-prefill flow. Once 'Look up' pulls in a real DOI record, the dialog now also shows a Subcategory field, which defaults to 'All' — the same list-filter value previously flagged for the Category field, now reappearing one field over. 'All' is not a valid subcategory for a single saved record. Confirmed again on flow_add_output_3_duplicate_blocked.png where Subcategory is still 'All' after the duplicate warning appears.",
+  "screenshot": "screens/flow_add_output_2_doi_prefilled.png",
+  "measurement": null,
+  "recommendation": "Leave Subcategory blank/required when the looked-up record doesn't map to one, instead of defaulting to the 'All' filter value."
+ },
+ {
+  "criterion": "H1",
+  "screen": "a_dashboard",
+  "severity": 2,
+  "evidence": "The KPI tiles use a colored top border that reads as a status signal, but the coding is inconsistent with the underlying values: DOI COVERAGE (45/365 ≈ 12%) carries the same green top border as ORCID LINKED, PROFILES VALIDATED and OUTPUTS APPROVED (365/365, i.e. fully complete), while MISSING ORCID (158/184) and NEEDS VERIFICATION (181) get a red top border. An admin scanning tile colors at a glance would read DOI Coverage as healthy when it is actually the biggest data-quality gap on the page.",
+  "screenshot": "screens/a_dashboard.png",
+  "measurement": null,
+  "recommendation": "Tie the tile's accent color to the metric's actual health (e.g. color DOI Coverage by its completion ratio) rather than a fixed per-metric-category color, or drop the color coding in favor of a neutral style plus an explicit label."
+ },
+ {
+  "criterion": "H8",
+  "screen": "r_profile",
+  "severity": 1,
+  "evidence": "The same status is shown twice at once: the top banner reads '● Profile not confirmed · Check your data below, then confirm · Confirm my profile', and immediately below it the pill row repeats '● Profile not confirmed' again alongside External researcher / Inactive. No new information is added by the second instance.",
+  "screenshot": "screens/r_profile.png",
+  "measurement": null,
+  "recommendation": "Show the 'Profile not confirmed' state once — keep the actionable banner with its CTA and drop the duplicate pill, or fold the CTA into the pill row."
+ }
+]

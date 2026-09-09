@@ -91,7 +91,7 @@ if prev_files:
         if key(x) in prev_keys: x["previous_id"] = prev_keys[key(x)]["id"]
 
 out = {"app": "UNIDCOM RIMS researcher portal (Unidcom-IADE)", "platform": "web", "device": "Playwright Chromium 1280×900 / 390×844", "date": "2026-09-09",
-       "commit": "7d628bb (crawl) / e5b8847 (flows) / daaf308 (404 recapture)", "build": "flutter build web --dart-define=E2E=true (v1)", "screens_audited": len(screens),
+       "commit": "5c4cb7c", "build": "flutter build web --dart-define=E2E=true (v1)", "screens_audited": len(screens),
        "flows": [{k: r[k] for k in ("name", "passed", "duration_s", "steps", "yaml")} for r in flows], "metrics": metrics, "trend": trend, "findings": merged}
 (RUN / "findings.json").write_text(json.dumps(out, indent=2, ensure_ascii=False))
 print(json.dumps(metrics, indent=1))

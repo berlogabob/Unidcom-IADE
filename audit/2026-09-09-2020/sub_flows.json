@@ -1,0 +1,38 @@
+[
+ {
+  "criterion": "ST-LOAD",
+  "screen": "state_error_backend_down",
+  "severity": 2,
+  "evidence": "Persists from the previous run (2026-09-09-1601). state_error_backend_down.png and state_error_dashboard_down.png are both captured at 3s into a Supabase-blocked load and still show only a bare unlabeled spinner dot -- no 'still trying', elapsed-time, or retry-now affordance. flows-results.json's flow suite (7/7 passed) confirms the app does eventually reach a correct classified error, but per this run's screens.md note the classified error + Retry button only appears after the client's 20s timeout, so a user watching this frame gets no sign for up to ~20s that the app knows anything is wrong. Not in the fixed/merged list for this run -- kept as-is.",
+  "screenshot": "screens/state_error_backend_down.png",
+  "measurement": "spinner-only frame at 3s; first user-facing error/Retry affordance not until ~20s; unchanged from previous run",
+  "recommendation": "Show progressive feedback during the wait (e.g. 'Still connecting...' after 3-5s) instead of a bare spinner for up to 20s before the classified error with Retry appears."
+ },
+ {
+  "criterion": "NAV-4",
+  "screen": "a_admin_review",
+  "severity": 2,
+  "evidence": "Persists from the previous run. a_admin_review.png (Pending approval) still layers a secondary flat tab row of 7 items (Profiles to approve, Outputs to approve, Needs re-verification, Suggestions, Activity, Needs attention, ORCID works) on top of the single left-sidebar leaf 'Pending approval' -- no other screen in the inventory combines a sidebar with a secondary tab bar, and 7 tabs exceeds the ~5 a single flat row should hold. Confirmed worse on the 390px viewport: phone_a_review.png shows only 'Profiles to approve' and 'Outputs to approve' fully visible with a third tab clipped at the right edge and no visible scroll affordance, so 5 of the 7 sub-views are effectively hidden on mobile. Not in the fixed/merged list for this run.",
+  "screenshot": "screens/a_admin_review.png",
+  "measurement": "7 tabs in one row on desktop; only ~2.3 tabs visible with no scroll cue on the 390px phone capture (phone_a_review.png); unchanged from previous run",
+  "recommendation": "Either split the 7 sub-views into their own sidebar leaves (consistent with the rest of the IA) or reduce/group the tabs (e.g. a dropdown for the 3 least-used), and on narrow viewports add a visible scroll indicator or convert to a select control."
+ },
+ {
+  "criterion": "ST-EMPTY",
+  "screen": "state_empty_people_search",
+  "severity": 1,
+  "evidence": "Five-state coverage sampled across data screens for this run: | Screen | ST-IDLE | ST-LOAD | ST-SUCCESS | ST-ERROR | ST-EMPTY | |---|---|---|---|---|---| | People search | present | n/a | present | n/a | present (weak) | | People (backend down, @3s) | n/a | present (silent/unbounded @3s) | n/a | present (delayed, classified error+Retry only after the 20s client timeout) | n/a | | Dashboard (backend down, @3s) | n/a | present (silent/unbounded @3s) | n/a | present (delayed, same 20s timeout) | n/a | | Cold boot | n/a | present (splash, F-023 -- fixed since previous run) | n/a | n/a | n/a | | My Outputs after add | n/a | n/a | present (pending chip, flow_add_output_5_in_my_outputs.png) | n/a | n/a | | Review queue reject | n/a | n/a | present (snackbar + Undo, flow_review_queue_5_after_reject.png) | n/a | n/a |. state_empty_people_search.png itself still handles the empty state reasonably ('No people found', filters and search term still visible so the cause is inferable), but offers no explicit next step (e.g. a 'Clear search' action) beyond manually editing the search box.",
+  "screenshot": "screens/state_empty_people_search.png",
+  "measurement": "0 people / 0 next-step affordance besides editing the search field; unchanged from previous run",
+  "recommendation": "Add a 'Clear filters/search' button to the empty result state so the next step is explicit rather than implicit."
+ },
+ {
+  "criterion": "NAV-1",
+  "screen": "a_deeplink_profile",
+  "severity": 1,
+  "evidence": "New this run. Deep-linking to the researcher-only route #/app/profile while signed in as admin (a_deeplink_profile.png) renders the researcher's own 'Confirm my profile' content correctly, but none of the admin sidebar items (Dashboard, People, Merge duplicates, Research, Data & Reporting, Settings) is shown selected/highlighted -- contrast with a_person.png and a_output.png, where the matching parent leaf (People / Scientific outputs) stays visibly selected (white bold text) for any detail sub-page. hierarchy/a_deeplink_profile.json confirms no sidebar node carries a selected state. The top bar still reads 'External researcher · UNIDCOM / IADE', which describes the profile being viewed, not the admin's own location, so a user landing here (e.g. via a bookmark or shared link) has no 'where am I' cue in the persistent chrome.",
+  "screenshot": "screens/a_deeplink_profile.png",
+  "measurement": "0 of 6 admin sidebar leaves shown selected while on this page, vs. always-selected parent on every other admin detail page sampled",
+  "recommendation": "Either hide the admin sidebar/show a dedicated 'My profile' entry when an admin views their own researcher profile, or suppress this cross-mode route entirely and redirect admins to the equivalent People > self detail view."
+ }
+]

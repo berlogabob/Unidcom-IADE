@@ -33,7 +33,7 @@
     ([Task success rate], [100 %], [100 %], [7 of 7 runnable journeys, 0 errors]),
     ([Mean steps per journey], [7.9], [8.1], [tap/input count]),
     ([Defect density], [0.50], [0.41], [findings per screen]),
-    ([Automated tests], [165], [183], [`flutter test`]),
+    ([Automated tests], [165], [183], [`flutter test` — 199 after round 6]),
     ([Researchers who can sign in], [26 / 184], [26 / 184], [`people.orcid` filled — unchanged, the adoption ceiling]),
   ),
   widths: (4.2cm, 2cm, 2cm, 1fr), right-from: 99,
@@ -60,6 +60,8 @@
 )
 
 Also fixed in the round: sidebar footer overlap, humanised status labels, chooser copy, stale Maestro assertions, phone review tabs and report table.
+
+*Round 6, same evening* (`audit/2026-09-09-2020`): the six remaining severity-2 defects fixed, DOI-first Add output with a duplicate guard (BP-07, BP-16), three data-quality tiles (BP-36), sidebar accordion. Third run: 0 / 0 / 24 / 15 findings, weighted 63 (ten new severity-1/2 polish items on the new surfaces), best-practice 62 / 100, task success 100 %, verdict #pill("READY", tone: "ok").
 
 = What is left
 

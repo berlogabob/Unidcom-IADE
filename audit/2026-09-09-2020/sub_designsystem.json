@@ -1,0 +1,83 @@
+[
+ {
+  "criterion": "DS-FDBK-1",
+  "screen": "flow_orcid_error_1_error_shown",
+  "severity": 2,
+  "evidence": "New inconsistency: the just-documented feedback rule (lib/widgets/detail_scaffold.dart comment: 'inline text under a field validates that field only; SnackBar reports the result of an action ... the AsyncView banner reports that a screen could not load its data') is broken by its own author on the login screen. main.dart's _LoginScreenState.initState renders the ORCID broker error BOTH inline under the password field (permanent red Text, matches the 'field validation' channel) AND via showSnack() in the same postFrameCallback (the 'action result' channel) -- the identical string 'No UNIDCOM profile is registered for ORCID iD 0000-0002-1825-0097. Contact an admin.' appears twice on screen at once (as inline text above the Sign in button, and as the bottom dark bar). Compare state_login_error.png: a wrong-password failure (also an action result, from _signIn's AuthException handler) shows only the bottom SnackBar, with no inline text at all -- so the two 'wrong credentials' failures on the exact same screen use two different numbers of feedback channels for the same category of error.",
+  "screenshot": "screens/flow_orcid_error_1_error_shown.png",
+  "measurement": null,
+  "recommendation": "Pick one channel for the ORCID-broker sign-in failure to match the plain-password failure: drop the inline Text block (or drop the showSnack call) in _LoginScreenState.initState so both auth-failure paths render through the same single channel."
+ },
+ {
+  "criterion": "DS-FDBK-1",
+  "screen": "state_error_backend_down",
+  "severity": 2,
+  "evidence": "Persists since the previous run, despite the intervening fix documenting one rule per feedback type: AsyncView (lib/widgets/detail_scaffold.dart) is coded to swap to a FailureView banner (icon + plain-language message + Try again / Sign in button) once its future errors, and both the People list (lib/public/people_list.dart) and the Dashboard (lib/app/dashboard.dart) do wrap their data fetch in AsyncView -- but with Supabase blocked, state_error_backend_down and state_error_dashboard_down both still render only the shell chrome and an indefinite single-dot progress spinner, never reaching the banner. The designed load-failure state exists in code but never surfaces for an unreachable backend, leaving the user stuck on a spinner with zero feedback and no retry action.",
+  "screenshot": "screens/state_error_backend_down.png",
+  "measurement": null,
+  "recommendation": "Give the underlying Supabase fetch a bounded timeout so the future actually rejects when the backend is unreachable, letting AsyncView's existing FailureView banner (which already has the right copy and a retry button) fire instead of spinning forever."
+ },
+ {
+  "criterion": "DS-COL-1",
+  "screen": "r_profile_identifiers",
+  "severity": 1,
+  "evidence": "New component: the 'soon' pill next to Research Areas / Research Interests (lib/widgets/side_nav.dart _row(), used identically in the sidebar itself on r_sidebar_expanded/r_profile/phone_r_drawer) is a fully hollow, unfilled outline ring (Border.all(textOnDarkMuted), transparent fill, fully rounded). Every other pill/badge already in the app fills its background: StatusPill and TypeBadge (lib/widgets/panels.dart) pair a coloured dot or uppercase label with a tinted PillTone background, and the sidebar's own unread-count badge (same side_nav.dart file, a few lines below the wip pill) is a solid amber-filled circle. The new wip tag is a fourth, unrelated treatment introduced without reusing the PillTone/tint system already in place.",
+  "screenshot": "screens/r_profile_identifiers.png",
+  "measurement": null,
+  "recommendation": "Render the 'soon' tag as a PillTone.grey StatusPill/TypeBadge (tinted background, no dot) instead of a bespoke bordered-only container, so it reads as the same badge family as the count badge two lines below it and the status pills elsewhere."
+ },
+ {
+  "criterion": "DS-COL-1",
+  "screen": "a_dashboard",
+  "severity": 1,
+  "evidence": "The dashboard's AccentTone system (lib/widgets/panels.dart AccentStatCard) uses its 3px top-border colour to signal health (teal=good, amber=warn, red=urgent, blue=info, grey=neutral) -- but the tone assignment among the plain entity-count tiles is arbitrary: Labs and Clusters (two of the three newly added structure tiles, dashboard.dart _StatTilesRow) render with no tone (grey/neutral), while Projects -- the same kind of flat total, right beside them -- is hardcoded AccentTone.info (blue) for no data-driven reason. The same split repeats one row down: Lab allocations is hardcoded AccentTone.info (blue) while the parallel Mentorships tile (also a plain per-year count) gets no tone (grey). Elsewhere on the same screen blue and grey are used to mean something (Journal articles=info vs Researchers=neutral distinguishes a metric worth drilling into from a headline count); here the same two colours are applied to indistinguishable metrics, undermining the colour-as-signal convention the rest of the screen relies on.",
+  "screenshot": "screens/a_dashboard.png",
+  "measurement": null,
+  "recommendation": "Give Labs/Projects/Clusters and Lab allocations/Mentorships the same tone (drop the hardcoded AccentTone.info on Projects and Lab allocations, or apply it to all four/two consistently) so the top-border colour keeps meaning something rather than varying tile-to-tile within one group of otherwise-identical counts."
+ },
+ {
+  "criterion": "DS-ICON-1",
+  "screen": "r_sidebar_expanded",
+  "severity": 2,
+  "evidence": "Unchanged since the previous run: the shared SideNav widget still renders every admin top-level item (Dashboard/People/Scientific outputs/Projects/Structure/Settings, visible on a_dashboard/a_people) with a leading Material icon, while every researcher nav item (Research Activity Summary, Recent Scientific Outputs, My Outputs, Profile Status, etc., visible here and on r_home/phone_r_drawer) is still plain indented text with zero icons. Same shared component, two different rules for its own two modes.",
+  "screenshot": "screens/r_sidebar_expanded.png",
+  "measurement": null,
+  "recommendation": "Give every top-level NavItem an icon in researcherNav() (lib/widgets/nav_model.dart) to match adminNav(), or drop icons from adminNav() -- one rule, both modes of the one shared SideNav."
+ },
+ {
+  "criterion": "DS-ICON-1",
+  "screen": "r_welcome_start",
+  "severity": 2,
+  "evidence": "Unchanged since the previous run: the three 'Getting started' summary cards still use raw full-colour Unicode emoji (people, red map pin, blue globe) as icons, a different family from the monochrome outlined Material icons used everywhere else (sidebar, buttons, status pills, alerts).",
+  "screenshot": "screens/r_welcome_start.png",
+  "measurement": null,
+  "recommendation": "Replace the emoji icons in welcome_pack_content.dart with Material Icons (Icons.groups_outlined, Icons.location_on_outlined, Icons.language) so the Welcome pack matches the vector-icon system used elsewhere."
+ },
+ {
+  "criterion": "DS-ICON-1",
+  "screen": "r_profile",
+  "severity": 1,
+  "evidence": "Unchanged since the previous run: on the Personal Information header row, 'Edit' still uses a filled pencil glyph (Icons.edit) directly beside 'Connect ORCID', which uses an outlined badge glyph (Icons.badge_outlined) -- a filled icon and an outlined icon in the same button row.",
+  "screenshot": "screens/r_profile.png",
+  "measurement": null,
+  "recommendation": "Standardise on the outlined Material Icons style already used by the sidebar and swap the filled Icons.edit for Icons.edit_outlined wherever it sits next to outlined controls."
+ },
+ {
+  "criterion": "DS-BTN-1",
+  "screen": "r_outputs",
+  "severity": 1,
+  "evidence": "Unchanged since the previous run: the add-output action still appears twice in two variants on one screen -- the top-right 'Add output' is a filled navy primary button, while the 'Timeline · 0' section's '+ Add' directly below is a plain blue text link (tertiary/ghost style) for the same action.",
+  "screenshot": "screens/r_outputs.png",
+  "measurement": null,
+  "recommendation": "Use the theme's outline/secondary button style for the Timeline '+ Add' instead of a bare text link, so it reads as a lower-tier variant of the same button family rather than a different control type."
+ },
+ {
+  "criterion": "DS-FORM-1",
+  "screen": "r_add_output_dialog",
+  "severity": 1,
+  "evidence": "Unchanged since the previous run: every field in the Add output dialog (DOI, Title, Full reference, Category, Reporting year, Output status) still renders with the label floating inside the filled input box, diverging from Carmela's template form (static label above the input, unidcom-researcher.html's New Request form). Internally consistent between the app's own dialogs (r_add_output_dialog, r_profile_edit_dialog) but both still diverge from the Figma export's only form pattern.",
+  "screenshot": "screens/r_add_output_dialog.png",
+  "measurement": null,
+  "recommendation": "If the floating-label Material pattern is the deliberate direction going forward, document the deviation; otherwise move labels above fields to match the template's convention before more forms are built."
+ }
+]

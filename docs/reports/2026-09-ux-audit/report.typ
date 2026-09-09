@@ -230,7 +230,52 @@ cluster codes without expansion, and small alignment offsets.
   be onboarded on this build.
 ]
 
-= 8. Baseline measurements for future runs
+= 8. Third run — after round 6 (same day, evening)
+
+Round 6 closed the six severity-2 items that were defects rather than decisions,
+added DOI-first Add output with a duplicate guard (BP-07, BP-16) and three
+data-quality tiles (BP-36); the sidebar became an accordion during the afternoon
+briefing. Run `audit/2026-09-09-2020`, same tooling, trend against the second run.
+
+#kpi-row((
+  ("0 / 0", "Sev 4 / sev 3", "was 0 / 1"),
+  ("63", "Severity-weighted score", "was 61 — 10 new sev-1/2 items on new surfaces"),
+  ("6 / 10 / 1", "Fixed / new / regressed", "28 persisting, mostly by decision"),
+  ("62 / 100", "Best-practice score", "was 57 · BP-07, BP-16, BP-36 met"),
+))
+
+#data-table(
+  ("Metric", "First run", "Re-run", "Third run"),
+  (
+    ([Findings 4 / 3 / 2 / 1], [2 / 9 / 26 / 6], [0 / 1 / 25 / 8], [0 / 0 / 24 / 15]),
+    ([Task success rate], [100 %], [100 %], [100 %]),
+    ([Mean steps per flow], [7.9], [8.1], [8.4 — add_output now 13 steps]),
+    ([Automated tests], [165], [183], [199]),
+  ),
+  widths: (1fr, 2.4cm, 2.4cm, 4.2cm), right-from: 99,
+)
+
+#v(4pt)
+*Verified on the live build:* human status labels on the profile header;
+the empty ORCID-sync explanation with a link to Identifiers; the v1 admin
+redirect; placeholder rows marked _soon_; the startup splash; Add output
+opening on a DOI field, pre-filling from Crossref, blocking an existing DOI
+and warning on a near-identical title; the dashboard's CIÊNCIA ID,
+unclaimed-candidate and missing-DOI tiles.
+
+*Why the score did not fall:* the reviewers found ten new severity-1/2 items,
+most on the surfaces just added — Subcategory left at _All_ after a DOI
+import, the imported category shown as its raw label, the blocking message
+styled as body text, 18 dashboard tiles in five border colours without a
+rule, the profile status shown twice. Half a day of polish, listed in the
+run's `report.md`.
+
+#callout(title: "Verdict after the third run", tone: "info")[
+  #pill("READY", tone: "ok") — no severity-3 or 4 finding open. What remains is
+  polish on new work and product decisions already taken.
+]
+
+= 9. Baseline measurements for future runs
 
 #data-table(
   ("Metric", "How measured", "Baseline (first run)"),

@@ -29,8 +29,9 @@ HIER_JS = """
     const a = {bounds: `[${Math.round(r.left)},${Math.round(r.top)}][${Math.round(r.right)},${Math.round(r.bottom)}]`};
     let own = '';
     for (const n of el.childNodes) { if (n.nodeType === 3) own += n.textContent; else if (n.nodeType === 1 && !n.tagName.toLowerCase().startsWith('flt-') && n.tagName !== 'INPUT') own += n.textContent; }
-    const lbl = el.getAttribute('aria-label') || (el.tagName === 'INPUT' ? (el.value || el.placeholder || '') : '') || own.trim();
+    const lbl = el.getAttribute('aria-label') || ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') ? (el.value || el.placeholder || '') : '') || own.trim();
     if (lbl) a.text = lbl;
+    if ((el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') && el.value) a.value = el.value;
     const role = el.getAttribute('role'); if (role) a.role = role;
     const flags = el.getAttribute('flt-tappable') !== null || role === 'button' || role === 'link' || role === 'checkbox' || role === 'radio' || role === 'textbox' || el.tagName === 'INPUT' || el.tagName === 'BUTTON' || (el.getAttribute('tabindex') !== null && role !== 'text');
     a.clickable = flags ? 'true' : 'false';
@@ -78,7 +79,7 @@ def settle(page, min_nodes=3, timeout=25):
 def find(page, pattern, clickable_only=True):
     """Smallest semantics node whose text matches pattern. Returns (x,y,w,h,text) or None."""
     rx = re.compile(pattern)
-    nodes = [a for a in flatten(semantics(page), []) if a.get("text") and rx.search(a["text"])]
+    nodes = [a for a in flatten(semantics(page), []) if (a.get("text") and rx.search(a["text"])) or (a.get("value") and rx.search(a["value"]))]
     if clickable_only:
         c = [a for a in nodes if a.get("clickable") == "true"]
         nodes = c or nodes
@@ -115,7 +116,13 @@ def typein(page, label, text):
     if loc.count():
         loc.click(); loc.fill(""); loc.fill(text); page.wait_for_timeout(150); return
     click(page, f"^{label}$"); page.wait_for_timeout(200)  # Flutter text field whose label is a sibling semantics node
-    page.keyboard.type(text, delay=10); page.wait_for_timeout(150)
+    # clear: select-all is swallowed by Flutter and End stops at the visual line end,
+    # so delete backwards then forwards; titles run to ~100 chars over two lines
+    for _ in range(3):
+        for _ in range(120): page.keyboard.press("Backspace", delay=1)
+        for _ in range(120): page.keyboard.press("Delete", delay=1)
+    if text: page.keyboard.type(text, delay=10)
+    page.wait_for_timeout(150)
 
 def capture(page, name, mode, how, note=""):
     settle(page)
@@ -248,7 +255,7 @@ with sync_playwright() as p:
     browser.close()
 
 with open(RUN / "screens.md", "w") as f:
-    f.write("# Screen inventory\n\nCrawler: Playwright/Chromium 1280×900 (phone rows 390×844). Build: `flutter build web --dart-define=E2E=true` (v1), commit 7d628bb, served from build/web on :8123.\n\n| Screen | Mode | How reached | Files | Note |\n|---|---|---|---|---|\n")
+    f.write("# Screen inventory\n\nCrawler: Playwright/Chromium 1280×900 (phone rows 390×844). Build: `flutter build web --dart-define=E2E=true` (v1), commit 5c4cb7c, served from build/web on :8123.\n\n| Screen | Mode | How reached | Files | Note |\n|---|---|---|---|---|\n")
     for n, m, h, note in inventory:
         f.write(f"| {n} | {m} | {h} | screens/{n}.png · hierarchy/{n}.json | {note} |\n")
     f.write("\n## NOT COVERED\n\n- ORCID OAuth sign-in (third-party login; not automatable safely).\n- v2-only surfaces (Support requests, Approve/Auto-fill/ORCID sync buttons) — compiled out of the pilot build.\n- Research Areas / Interests / Edit outputs / Validation / Documentation / FAQs render the shared WipPage.\n")
