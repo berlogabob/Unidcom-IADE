@@ -161,7 +161,11 @@ class SideNav extends StatelessWidget {
     required double indent,
     double fontSize = 14,
   }) {
-    final color = isActive ? AppColors.textOnDark : AppColors.textOnDarkMuted;
+    final color = item.wip
+        ? AppColors.textOnDarkMuted
+        : isActive
+        ? AppColors.textOnDark
+        : AppColors.textOnDarkMuted;
     return InkWell(
       onTap: () {
         context.go(item.route);
@@ -196,6 +200,21 @@ class SideNav extends StatelessWidget {
                 ),
               ),
             ),
+            if (item.wip)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.textOnDarkMuted),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  'soon',
+                  style: TextStyle(
+                    color: AppColors.textOnDarkMuted,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
             if (badges.containsKey(item.route))
               FutureBuilder<int>(
                 future: badges[item.route],

@@ -62,6 +62,23 @@ void main() {
       expect(i.route.startsWith('/app/welcome/'), isTrue, reason: i.route);
     }
   });
+  test('WIP leaves match the routes whose builders return WipPage', () {
+    // Verified against the WipPage(title: ...) builders in lib/main.dart;
+    // importing main.dart here would initialize Supabase.
+    const wipRoutes = {
+      '/app/profile/areas',
+      '/app/profile/interests',
+      '/app/outputs/edit',
+      '/app/outputs/validation',
+      '/app/help/docs',
+      '/app/help/faq',
+    };
+    final actual = flat(researcherNav(signedIn: true))
+        .where((i) => i.wip)
+        .map((i) => i.route)
+        .toSet();
+    expect(actual, wipRoutes);
+  });
   test('M2 welcome sections are not in any nav', () {
     for (final i in flat(researcherNav(signedIn: true))) {
       final isWelcomeRoute = i.route.startsWith('/app/welcome/');

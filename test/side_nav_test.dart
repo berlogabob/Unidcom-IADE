@@ -113,6 +113,22 @@ void main() {
     expect(find.text('0'), findsNothing);
   });
 
+  testWidgets('WIP researcher leaves show soon pills', (tester) async {
+    await tester.pumpWidget(
+      host(
+        SideNav(
+          groups: researcherNav(signedIn: true),
+          path: '/app/profile',
+          header: const SizedBox(),
+          footer: const SizedBox(),
+        ),
+      ),
+    );
+    expect(find.text('Research Areas'), findsOneWidget);
+    expect(find.text('Research Interests'), findsOneWidget);
+    expect(find.text('soon'), findsNWidgets(2));
+  });
+
   testWidgets('only one section is open: opening My Profile closes Overview', (
     tester,
   ) async {
