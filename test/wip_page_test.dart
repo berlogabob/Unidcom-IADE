@@ -13,4 +13,10 @@ void main() {
     expect(find.text('Work in progress'), findsOneWidget);
     expect(find.text('x'), findsOneWidget);
   });
+
+  testWidgets('not found page hides router exception details', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: NotFoundPage()));
+    expect(find.textContaining("can't find"), findsOneWidget);
+    expect(find.textContaining('GoException'), findsNothing);
+  });
 }
