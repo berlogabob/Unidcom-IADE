@@ -568,6 +568,9 @@ class OutputEditDialog extends StatefulWidget {
     this.onFindDoi,
     this.onMerge,
     this.asResearcher = false,
+    this.lookup = lookupDoi,
+    this.findSimilar = findSimilarOutputs,
+    this.create,
   });
 
   final Map<String, dynamic>? output;
@@ -583,6 +586,10 @@ class OutputEditDialog extends StatefulWidget {
   /// has no write grant on `outputs`; the RPC is their doorway, and it stamps
   /// the record pending for review.
   final bool asResearcher;
+  final Future<DoiWork?> Function(String doi) lookup;
+  final Future<List<Map<String, dynamic>>> Function({String? doi, String? title})
+      findSimilar;
+  final Future<String> Function(Map<String, dynamic> fields)? create;
 
   @override
   State<OutputEditDialog> createState() => _OutputEditDialogState();
@@ -602,6 +609,13 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
   late final Future<List<TaxonomyNode>> _taxonomy = fetchOutputTaxonomy();
   bool _saving = false;
   String? _titleError;
+  final _titleFocus = FocusNode();
+  bool _lookingUp = false;
+  String? _lookupMessage;
+  Map<String, dynamic>? _doiMatch;
+  List<Map<String, dynamic>> _titleMatches = [];
+  String? _checkedDoi;
+  String? _checkedTitle;
 
   bool get _creating => widget.output?['id'] == null;
 
@@ -610,6 +624,7 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
 
   @override
   void dispose() {
+    _titleFocus.dispose();
     for (final c in [
       _title,
       _doi,
@@ -634,7 +649,55 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
     return value.isEmpty ? null : value;
   }
 
-  Future<void> _save() async {
+  Future<void> _lookup() async {
+    setState(() {
+      _lookingUp = true;
+      _lookupMessage = null;
+      _doiMatch = null;
+      _titleMatches = [];
+    });
+    try {
+      final work = await widget.lookup(_doi.text);
+      if (!mounted) return;
+      if (work == null) {
+        setState(() => _lookupMessage =
+            'No record found for that DOI — fill in the details below.');
+        return;
+      }
+      setState(() {
+        _title.text = work.title;
+        _titleError = null;
+        _doi.text = work.doi;
+        if (work.year != null) _reportingYear.text = '${work.year}';
+        _fullReference.text = [
+          work.authors.join(', '),
+          work.containerTitle,
+          if (work.year != null) '${work.year}',
+        ].where((part) => part.isNotEmpty).join(' · ');
+        switch (work.type) {
+          case 'journal-article':
+            _category = ['Artigos em revistas'];
+          case 'book':
+          case 'book-chapter':
+            _category = ['Livros'];
+        }
+      });
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
+    } finally {
+      if (mounted) setState(() => _lookingUp = false);
+    }
+  }
+
+  void _openMatch(Map<String, dynamic> match) {
+    final router = GoRouter.of(context);
+    Navigator.of(context).pop(false);
+    router.go('/outputs/${match['id']}');
+  }
+
+  Future<void> _save({bool saveAnyway = false}) async {
+    if (_saving || _lookingUp) return;
+
     // title is the one NOT NULL column, and the RPC raises on a blank one.
     // Catching it here means a typo costs a glance, not a round trip.
     if (_text(_title) == null) {
@@ -646,6 +709,30 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
       _saving = true;
     });
     try {
+      if (_creating) {
+        final doi = cleanDoi(_doi.text);
+        final title = _text(_title);
+        final confirmed = saveAnyway && _titleMatches.isNotEmpty &&
+            doi == _checkedDoi && title == _checkedTitle;
+        if (!confirmed) {
+          final matches = await widget.findSimilar(doi: doi, title: title);
+          if (!mounted) return;
+          final doiMatch = matches.where((row) => row['match'] == 'doi').firstOrNull;
+          final titleMatches = matches.where((row) =>
+              row['match'] == 'title' && (row['score'] as num? ?? 0) >= 0.8)
+              .take(3).toList();
+          setState(() {
+            _checkedDoi = doi;
+            _checkedTitle = title;
+            _doiMatch = doiMatch;
+            _titleMatches = doiMatch == null ? titleMatches : [];
+          });
+          if (doiMatch != null || titleMatches.isNotEmpty) {
+            setState(() => _saving = false);
+            return;
+          }
+        }
+      }
       final fields = {
         'title': _text(_title),
         'doi': _text(_doi),
@@ -668,9 +755,9 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
         await updateOutput(widget.output!['id'] as String, fields);
       } else if (widget.asResearcher) {
         // Forces pending/manual/unidcom server-side and links the author.
-        await createMyOutput(fields);
+        await (widget.create ?? createMyOutput)(fields);
       } else {
-        await createOutput(fields);
+        await (widget.create ?? createOutput)(fields);
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
@@ -691,10 +778,52 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_creating) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _doi,
+                        enabled: !_lookingUp && !_saving,
+                        decoration: const InputDecoration(
+                          labelText: 'DOI (or paste the doi.org link)',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: (_) => setState(() {
+                          _doiMatch = null;
+                          _titleMatches = [];
+                          _lookupMessage = null;
+                        }),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: _lookingUp || _saving ? null : _lookup,
+                      child: Text(_lookingUp ? 'Looking up…' : 'Look up'),
+                    ),
+                  ],
+                ),
+                if (_lookupMessage != null) Text(_lookupMessage!),
+                if (_doiMatch != null) ...[
+                  Text('Already in the directory: ${_doiMatch!['title']} '
+                      '(${_doiMatch!['approval_status']})'),
+                  TextButton(
+                    onPressed: () => _openMatch(_doiMatch!),
+                    child: const Text('Open'),
+                  ),
+                ],
+                TextButton(
+                  onPressed: () => _titleFocus.requestFocus(),
+                  child: const Text('No DOI? Enter the details manually'),
+                ),
+                const SizedBox(height: 12),
+              ],
               // Was missing entirely — the dialog only ever edited existing
               // rows, so nothing had to supply the one required column.
               TextField(
                 controller: _title,
+                focusNode: _titleFocus,
+                enabled: !_saving && !_lookingUp,
                 decoration: InputDecoration(
                   labelText: 'Title',
                   border: const OutlineInputBorder(),
@@ -707,7 +836,7 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
                 },
               ),
               const SizedBox(height: 12),
-              editField(_doi, 'DOI'),
+              if (!_creating) editField(_doi, 'DOI'),
               editField(_fullReference, 'Full reference', maxLines: 4),
               const SizedBox(height: 4),
               FutureBuilder<List<TaxonomyNode>>(
@@ -752,6 +881,29 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
                   ),
                 ),
               ],
+              if (_titleMatches.isNotEmpty)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (final match in _titleMatches) ...[
+                          Text('Looks like ${match['title']} '
+                              '(${match['reporting_year'] ?? 'Unknown year'})'),
+                          TextButton(
+                            onPressed: _saving ? null : () => _openMatch(match),
+                            child: const Text("It's the same — open it"),
+                          ),
+                        ],
+                        TextButton(
+                          onPressed: _saving ? null : () => _save(saveAnyway: true),
+                          child: const Text("It's different — save anyway"),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               if (widget.onFindDoi != null || widget.onMerge != null) ...[
                 const Divider(height: 24),
                 Align(
@@ -780,7 +932,7 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
           ),
         ),
       ),
-      actions: editorActions(context, saving: _saving, onSave: _save),
+      actions: editorActions(context, saving: _saving || _lookingUp, onSave: _save),
     );
   }
 }

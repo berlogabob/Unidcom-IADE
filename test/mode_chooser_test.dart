@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/app/mode_chooser.dart';
 import 'package:unidcom_iade/data/taxonomy.dart';
+import 'package:unidcom_iade/data/enrich_client.dart';
 import 'package:unidcom_iade/public/output_page.dart';
 import 'package:unidcom_iade/widgets/taxonomy_picker.dart';
 
@@ -237,4 +238,109 @@ void main() {
       expect(find.textContaining('UNIDCOM reviews'), findsNothing);
     });
   });
+  group('DOI-first output', () {
+    Future<void> pumpDialog(
+      WidgetTester tester, {
+      DoiWork? work,
+      List<Map<String, dynamic>> matches = const [],
+      required List<Map<String, dynamic>> created,
+      bool asResearcher = true,
+    }) async {
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(body: OutputEditDialog(
+          asResearcher: asResearcher,
+          lookup: (_) async => work,
+          findSimilar: ({doi, title}) async {
+            expect(title, isNotEmpty);
+            return matches;
+          },
+          create: (fields) async {
+            created.add(fields);
+            return 'new-output';
+          },
+        )),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('DOI hit fills title, year, DOI and reference', (tester) async {
+      await pumpDialog(tester, created: [], work: DoiWork(
+        title: 'Design research', year: 2025, type: 'journal-article',
+        containerTitle: 'Design Journal', authors: ['A Researcher'],
+        doi: '10.1234/design',
+      ));
+      await tester.enterText(find.widgetWithText(TextField,
+          'DOI (or paste the doi.org link)'), 'https://doi.org/10.1234/design');
+      await tester.tap(find.text('Look up'));
+      await tester.pumpAndSettle();
+      expect(find.text('Design research'), findsOneWidget);
+      expect(find.text('2025'), findsOneWidget);
+      expect(tester.widget<TaxonomyPicker>(find.byType(TaxonomyPicker)).value,
+          ['Artigos em revistas']);
+      expect(find.text('10.1234/design'), findsOneWidget);
+      expect(find.text('A Researcher · Design Journal · 2025'), findsOneWidget);
+    });
+
+    testWidgets('DOI miss preserves manual details', (tester) async {
+      await pumpDialog(tester, created: []);
+      await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Manual title');
+      await tester.tap(find.text('Look up'));
+      await tester.pumpAndSettle();
+      expect(find.text('No record found for that DOI — fill in the details below.'),
+          findsOneWidget);
+      expect(find.text('Manual title'), findsOneWidget);
+    });
+
+    testWidgets('DOI duplicate blocks creation', (tester) async {
+      final created = <Map<String, dynamic>>[];
+      await pumpDialog(tester, created: created, matches: [
+        {'id': 'existing', 'title': 'Existing output',
+          'approval_status': 'pending', 'match': 'doi', 'score': 1.0},
+      ]);
+      await tester.enterText(find.widgetWithText(TextField, 'Title'), 'New title');
+      await tester.enterText(find.widgetWithText(TextField,
+          'DOI (or paste the doi.org link)'), 'https://doi.org/10.1234/design');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(find.text('Already in the directory: Existing output (pending)'),
+          findsOneWidget);
+      expect(find.text('Open'), findsOneWidget);
+      expect(created, isEmpty);
+    });
+
+    testWidgets('title warning requires save anyway, including admin', (tester) async {
+      final created = <Map<String, dynamic>>[];
+      await pumpDialog(tester, created: created, asResearcher: false, matches: [
+        {'id': 'existing', 'title': 'Similar output', 'reporting_year': 2024,
+          'match': 'title', 'score': 0.8},
+      ]);
+      await tester.enterText(find.widgetWithText(TextField, 'Title'), 'New title');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(find.text('Looks like Similar output (2024)'), findsOneWidget);
+      expect(created, isEmpty);
+      await tester.tap(find.text("It's different — save anyway"));
+      await tester.pumpAndSettle();
+      expect(created.single['title'], 'New title');
+    });
+
+    testWidgets('manual path focuses title and saves without matches', (tester) async {
+      final created = <Map<String, dynamic>>[];
+      await pumpDialog(tester, created: created);
+      await tester.tap(find.text('No DOI? Enter the details manually'));
+      await tester.pump();
+      final title = find.widgetWithText(TextField, 'Title');
+      expect(tester.widget<TextField>(title).focusNode!.hasFocus, isTrue);
+      await tester.enterText(title, 'Manual output');
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(created.single['title'], 'Manual output');
+      expect(created.single['doi'], isNull);
+    });
+  });
+
 }
