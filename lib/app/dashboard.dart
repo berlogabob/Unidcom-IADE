@@ -126,32 +126,34 @@ class _StatTilesRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (pilot) {
-      return _buildTiles([
-        AccentStatCard(
-          label: 'ORCID linked',
-          value:
-              '${data.pilotKpis['orcidLinked']} / ${data.pilotKpis['people']}',
-          tone: AccentTone.good,
-        ),
-        AccentStatCard(
-          label: 'Profiles validated',
-          value:
-              '${data.pilotKpis['profilesValidated']} / ${data.pilotKpis['people']}',
-          tone: AccentTone.good,
-        ),
-        AccentStatCard(
-          label: 'Outputs approved',
-          value:
-              '${data.pilotKpis['outputsApproved']} / ${data.pilotKpis['outputs']}',
-          tone: AccentTone.good,
-        ),
-        AccentStatCard(
-          label: 'DOI coverage',
-          value:
-              '${data.pilotKpis['doiCoverage']} / ${data.pilotKpis['outputs']}',
-          tone: AccentTone.good,
-        ),
-      ]);
+      return DashboardKpiTiles(
+        tiles: [
+          AccentStatCard(
+            label: 'ORCID linked',
+            value:
+                '${data.pilotKpis['orcidLinked']} / ${data.pilotKpis['people']}',
+            tone: AccentTone.good,
+          ),
+          AccentStatCard(
+            label: 'Profiles validated',
+            value:
+                '${data.pilotKpis['profilesValidated']} / ${data.pilotKpis['people']}',
+            tone: AccentTone.good,
+          ),
+          AccentStatCard(
+            label: 'Outputs approved',
+            value:
+                '${data.pilotKpis['outputsApproved']} / ${data.pilotKpis['outputs']}',
+            tone: AccentTone.good,
+          ),
+          AccentStatCard(
+            label: 'DOI coverage',
+            value:
+                '${data.pilotKpis['doiCoverage']} / ${data.pilotKpis['outputs']}',
+            tone: AccentTone.good,
+          ),
+        ],
+      );
     }
     final tiles = [
       AccentStatCard(label: 'Researchers', value: '${data.peopleCount}'),
@@ -200,10 +202,17 @@ class _StatTilesRow extends StatelessWidget {
       ),
     ];
 
-    return _buildTiles(tiles);
+    return DashboardKpiTiles(tiles: tiles);
   }
+}
 
-  Widget _buildTiles(List<AccentStatCard> tiles) {
+class DashboardKpiTiles extends StatelessWidget {
+  const DashboardKpiTiles({required this.tiles, super.key});
+
+  final List<AccentStatCard> tiles;
+
+  @override
+  Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth >= 700) {
@@ -217,16 +226,13 @@ class _StatTilesRow extends StatelessWidget {
             ],
           );
         }
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (var i = 0; i < tiles.length; i++) ...[
-                if (i > 0) const SizedBox(width: 12),
-                SizedBox(width: 150, child: tiles[i]),
-              ],
-            ],
-          ),
+        final width = (constraints.maxWidth - 12) / 2;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final tile in tiles) SizedBox(width: width, child: tile),
+          ],
         );
       },
     );
