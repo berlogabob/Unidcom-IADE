@@ -20,9 +20,8 @@ void main() {
       expect(find.text('How do you want to continue?'), findsOneWidget);
       expect(find.text('As a researcher'), findsOneWidget);
       expect(find.text('As an administrator'), findsOneWidget);
-      // Nobody should think this is a one-way door.
       expect(
-        find.textContaining('switch at any time'),
+        find.text('You can switch at any time from the bottom of the sidebar.'),
         findsOneWidget,
       );
     });
