@@ -29,6 +29,9 @@ class PersonOutputRow extends StatelessWidget {
       status: output['approval_status'] == 'approved'
           ? null
           : output['approval_status'] as String?,
+      rejectionReason: output['approval_status'] == 'rejected'
+          ? output['rejection_reason'] as String?
+          : null,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
