@@ -1,7 +1,66 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/data/enrich_client.dart';
 
 void main() {
+  group('lookupDoi', () {
+    final fixture = {
+      'message': {
+        'title': ['A useful paper'],
+        'published-print': {'date-parts': [[2024, 3, 1]]},
+        'type': 'journal-article',
+        'container-title': ['Journal of Useful Papers'],
+        'author': [
+          {'given': 'Ada', 'family': 'Lovelace'},
+          {'given': 'Grace', 'family': 'Hopper'},
+        ],
+        'DOI': '10.1234/X',
+      },
+    };
+
+    test('parses a Crossref work', () async {
+      final work = await lookupDoi(
+        'https://doi.org/10.1234/X',
+        client: MockClient((request) async {
+          expect(request.url.path, '/works/10.1234%2Fx');
+          return http.Response(jsonEncode(fixture), 200);
+        }),
+      );
+
+      expect(work?.title, 'A useful paper');
+      expect(work?.year, 2024);
+      expect(work?.type, 'journal-article');
+      expect(work?.containerTitle, 'Journal of Useful Papers');
+      expect(work?.authors, ['Ada Lovelace', 'Grace Hopper']);
+      expect(work?.doi, '10.1234/x');
+    });
+
+    test('returns null for a 404', () async {
+      final work = await lookupDoi(
+        '10.1234/x',
+        client: MockClient((_) async => http.Response('', 404)),
+      );
+
+      expect(work, isNull);
+    });
+
+    test('normalizes DOI URL and case to the same request path', () async {
+      final paths = <String>[];
+      final client = MockClient((request) async {
+        paths.add(request.url.path);
+        return http.Response(jsonEncode(fixture), 200);
+      });
+
+      await lookupDoi('https://doi.org/10.1234/x', client: client);
+      await lookupDoi('10.1234/X', client: client);
+
+      expect(paths, ['/works/10.1234%2Fx', '/works/10.1234%2Fx']);
+    });
+  });
+
   group('cienciaIdFromOrcidPerson', () {
     test('extracts value when a CiênciaVitae identifier is present', () {
       final profile = {

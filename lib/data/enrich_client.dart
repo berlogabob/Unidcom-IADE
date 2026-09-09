@@ -45,6 +45,75 @@ String? _cleanDoi(String? value) {
   return match?.group(0)?.replaceFirst(RegExp(r'[).,;]+$'), '').toLowerCase();
 }
 
+class DoiWork {
+  final String title;
+  final int? year;
+  final String type;
+  final String containerTitle;
+  final List<String> authors;
+  final String doi;
+
+  DoiWork({
+    required this.title,
+    required this.year,
+    required this.type,
+    required this.containerTitle,
+    required List<String> authors,
+    required this.doi,
+  }) : authors = List.unmodifiable(authors);
+}
+
+Future<DoiWork?> lookupDoi(String doi, {http.Client? client}) async {
+  final normalized = _cleanDoi(doi);
+  if (normalized == null) return null;
+  final ownedClient = client ?? http.Client();
+  try {
+    final response = await ownedClient
+        .get(
+          Uri.parse(
+            'https://api.crossref.org/works/${Uri.encodeComponent(normalized)}',
+          ),
+          headers: {'User-Agent': _crossrefUa},
+        )
+        .timeout(const Duration(seconds: 8));
+    if (response.statusCode < 200 || response.statusCode >= 300) return null;
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final message = (data['message'] as Map?)?.cast<String, dynamic>();
+    if (message == null) return null;
+
+    int? year;
+    for (final key in ['published-print', 'published-online', 'published', 'issued']) {
+      final parts = ((message[key] as Map?)?['date-parts'] as List?)?.firstOrNull;
+      final value = (parts as List?)?.firstOrNull;
+      if (value is int) {
+        year = value;
+        break;
+      }
+    }
+    final authors = [
+      for (final author in (message['author'] as List? ?? []))
+        if (author is Map)
+          _clean('${author['given'] ?? ''} ${author['family'] ?? ''}'),
+    ].where((author) => author.isNotEmpty).toList();
+
+    return DoiWork(
+      title: _clean((message['title'] as List?)?.firstOrNull?.toString()),
+      year: year,
+      type: _clean(message['type'] as String?),
+      containerTitle: _clean(
+        (message['container-title'] as List?)?.firstOrNull?.toString(),
+      ),
+      authors: authors,
+      doi: normalized,
+    );
+  } catch (_) {
+    return null;
+  } finally {
+    if (client == null) ownedClient.close();
+  }
+}
+
 String? _bareOrcid(String? value) {
   final match = RegExp(
     r'\d{4}-\d{4}-\d{4}-[\dX]{4}',

@@ -572,6 +572,17 @@ String? cleanDoi(String? value) {
   return match?.group(0)?.replaceAll(RegExp(r'[).,;]+$'), '').toLowerCase();
 }
 
+Future<List<Map<String, dynamic>>> findSimilarOutputs({
+  String? doi,
+  String? title,
+}) async {
+  final rows = await db.rpc(
+    'find_similar_outputs',
+    params: {'p_doi': cleanDoi(doi), 'p_title': title},
+  );
+  return List<Map<String, dynamic>>.from(rows as List);
+}
+
 Future<void> updateOutput(String id, Map<String, dynamic> fields) async {
   try {
     // A pasted https://doi.org/10.x/y would otherwise become an invalid_doi
