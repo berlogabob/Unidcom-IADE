@@ -159,3 +159,4 @@ deno test supabase/functions/orcid-auth/
 | `docs/research/2026-09-rims-best-practices.md` | cited RIMS/CRIS best-practice research, framework matrix, BP-01…38 checklist |
 | `audit/2026-09-09-1136/` | UX/UI audit run: screenshots, hierarchies, flow results, `findings.json`, `report.md` (`audit/tools/` reruns it) |
 | `docs/reports/2026-09-ux-audit/` | stakeholder UX audit report (Typst + PDF); `ux-audit-summary.pdf` is the 2-page version |
+| `docs/reports/2026-09-briefing-kit/` | decision record: quick layout edits in briefings (hot reload for menus, design canvas for layout) and the transfer loop |
