@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
@@ -47,6 +48,45 @@ class WipPage extends StatelessWidget {
                   const SizedBox(height: 8),
                   mutedText(context, note!),
                 ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class NotFoundPage extends StatelessWidget {
+  const NotFoundPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: AppColors.pageBg,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Panel(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.search_off,
+                  color: AppColors.textMuted,
+                  size: 32,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "We can't find that page.",
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => context.go('/'),
+                  child: const Text('Home'),
+                ),
               ],
             ),
           ),

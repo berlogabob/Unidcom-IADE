@@ -23,6 +23,10 @@ void main() {
         );
       }
     });
+
+    test('anonymous M2 welcome slugs redirect to start', () {
+      expect(anonymousRedirect('/app/welcome/docs'), '/app/welcome/start');
+    });
   });
 
   group('needsAuth: the directory is internal now', () {

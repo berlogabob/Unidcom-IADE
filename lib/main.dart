@@ -181,6 +181,38 @@ Future<void> _boot() async {
 bool needsAuth(String location) =>
     location != '/login' && !location.startsWith('/app/welcome');
 
+String? anonymousRedirect(String location) {
+  if (!v2 &&
+      location.startsWith('/app/welcome/') &&
+      welcomeSlugsM2.contains(location.substring('/app/welcome/'.length))) {
+    return '/app/welcome/start';
+  }
+  return needsAuth(location) ? '/login' : null;
+}
+
+Widget parameterizedRouteWidget(String path, String value) => switch (path) {
+  '/people/:id' => PersonPageScreen(key: ValueKey(value), id: value),
+  '/outputs/:id' => OutputPageScreen(key: ValueKey(value), id: value),
+  '/projects/:id' => ProjectPageScreen(key: ValueKey(value), id: value),
+  '/labs/:id' => LabPageScreen(key: ValueKey(value), id: value),
+  '/clusters/:id' => ClusterPageScreen(key: ValueKey(value), id: value),
+  '/objectives/:id' => ObjectivePageScreen(key: ValueKey(value), id: value),
+  '/conferences/:key' => ConferencePageScreen(
+    key: ValueKey(value),
+    confKey: value,
+  ),
+  '/app/requests/:id' => PortalShell(
+    key: ValueKey(value),
+    child: RequestFormPage(key: ValueKey(value), requestId: value),
+  ),
+  '/app/admin/:tool' => AdminScreen(key: ValueKey(value), tool: value),
+  '/app/welcome/:section' => PortalShell(
+    key: ValueKey(value),
+    child: WelcomePackPage(key: ValueKey(value), section: value),
+  ),
+  _ => throw ArgumentError.value(path, 'path'),
+};
+
 /// Everything the centre-wide view owns: the directory, the admin screens and
 /// the dashboards. Researcher mode has no way to reach any of it, because a
 /// researcher was promised "only things connected to him, no extra".
@@ -256,21 +288,17 @@ final _router = GoRouter(
     GoRouterRefreshStream(Supabase.instance.client.auth.onAuthStateChange),
     data.viewMode,
   ]),
+  errorBuilder: (context, state) {
+    if (state.error != null) {
+      reportError(state.error!, null, context: 'go_router');
+    }
+    return AppShell(child: const NotFoundPage());
+  },
   redirect: (context, state) {
     final hasSession = Supabase.instance.client.auth.currentSession != null;
     final onLogin = state.matchedLocation == '/login';
-    if (!hasSession && needsAuth(state.matchedLocation)) return '/login';
-    // M2 welcome sections: a bookmark must not open a page v1 pretends does not exist.
-    if (!v2) {
-      final slug = state.matchedLocation.startsWith('/app/welcome/')
-          ? state.matchedLocation.substring('/app/welcome/'.length)
-          : null;
-      if (slug != null && welcomeSlugsM2.contains(slug)) {
-        return '/app/welcome/start';
-      }
-    }
     // Anonymous callers are on the Welcome pack and have no mode to pick.
-    if (!hasSession) return null;
+    if (!hasSession) return anonymousRedirect(state.matchedLocation);
     if (onLogin) {
       return data.isAdminAccount && !data.modeChosen
           ? '/app/mode'
@@ -292,20 +320,26 @@ final _router = GoRouter(
         GoRoute(path: '/people', builder: (_, _) => const PeopleListScreen()),
         GoRoute(
           path: '/people/:id',
-          builder: (_, state) =>
-              PersonPageScreen(id: state.pathParameters['id']!),
+          builder: (_, state) => parameterizedRouteWidget(
+            '/people/:id',
+            state.pathParameters['id']!,
+          ),
         ),
         GoRoute(path: '/projects', builder: (_, _) => const ProjectsScreen()),
         GoRoute(
           path: '/projects/:id',
-          builder: (_, state) =>
-              ProjectPageScreen(id: state.pathParameters['id']!),
+          builder: (_, state) => parameterizedRouteWidget(
+            '/projects/:id',
+            state.pathParameters['id']!,
+          ),
         ),
         GoRoute(path: '/outputs', builder: (_, _) => const OutputsScreen()),
         GoRoute(
           path: '/outputs/:id',
-          builder: (_, state) =>
-              OutputPageScreen(id: state.pathParameters['id']!),
+          builder: (_, state) => parameterizedRouteWidget(
+            '/outputs/:id',
+            state.pathParameters['id']!,
+          ),
         ),
         GoRoute(
           path: '/conferences',
@@ -313,23 +347,32 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/conferences/:key',
-          builder: (_, state) =>
-              ConferencePageScreen(confKey: state.pathParameters['key']!),
+          builder: (_, state) => parameterizedRouteWidget(
+            '/conferences/:key',
+            state.pathParameters['key']!,
+          ),
         ),
         GoRoute(path: '/structure', builder: (_, _) => const StructureScreen()),
         GoRoute(
           path: '/labs/:id',
-          builder: (_, state) => LabPageScreen(id: state.pathParameters['id']!),
+          builder: (_, state) => parameterizedRouteWidget(
+            '/labs/:id',
+            state.pathParameters['id']!,
+          ),
         ),
         GoRoute(
           path: '/clusters/:id',
-          builder: (_, state) =>
-              ClusterPageScreen(id: state.pathParameters['id']!),
+          builder: (_, state) => parameterizedRouteWidget(
+            '/clusters/:id',
+            state.pathParameters['id']!,
+          ),
         ),
         GoRoute(
           path: '/objectives/:id',
-          builder: (_, state) =>
-              ObjectivePageScreen(id: state.pathParameters['id']!),
+          builder: (_, state) => parameterizedRouteWidget(
+            '/objectives/:id',
+            state.pathParameters['id']!,
+          ),
         ),
         GoRoute(
           path: '/app/mode',
@@ -351,8 +394,10 @@ final _router = GoRouter(
               adminTools.contains(state.pathParameters['tool'])
               ? null
               : '/app/admin/review',
-          builder: (_, state) =>
-              AdminScreen(tool: state.pathParameters['tool']!),
+          builder: (_, state) => parameterizedRouteWidget(
+            '/app/admin/:tool',
+            state.pathParameters['tool']!,
+          ),
         ),
         GoRoute(
           path: '/app/profile',
@@ -425,8 +470,9 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/app/requests/:id',
-          builder: (_, state) => PortalShell(
-            child: RequestFormPage(requestId: state.pathParameters['id']),
+          builder: (_, state) => parameterizedRouteWidget(
+            '/app/requests/:id',
+            state.pathParameters['id']!,
           ),
         ),
         GoRoute(
@@ -471,10 +517,9 @@ final _router = GoRouter(
         GoRoute(path: '/app/welcome', redirect: (_, _) => '/app/welcome/start'),
         GoRoute(
           path: '/app/welcome/:section',
-          builder: (_, state) => PortalShell(
-            child: WelcomePackPage(
-              section: state.pathParameters['section'] ?? 'start',
-            ),
+          builder: (_, state) => parameterizedRouteWidget(
+            '/app/welcome/:section',
+            state.pathParameters['section'] ?? 'start',
           ),
         ),
         GoRoute(path: '/app/settings', builder: (_, _) => const SettingsPage()),
