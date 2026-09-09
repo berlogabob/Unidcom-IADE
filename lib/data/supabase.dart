@@ -230,7 +230,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
         .from('people')
         .select(
           'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, job_title, phone, '
-          'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
+          'orcid, ciencia_id, sanity_id, profile_status, public_visibility, last_verified_at, '
           'join_date, exit_date, phd, notes, integration_year, auth_user_id, '
           'featured_outputs, '
           // category_path feeds the timeline's cascade filter — without it
@@ -243,6 +243,96 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
         .eq('id', id)
         .single();
     return Map<String, dynamic>.from(row);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<Map<String, int>> bulkLinkSanityMatches() async {
+  try {
+    final rows = await db.rpc('bulk_link_sanity_matches');
+    final row = (rows as List).first as Map;
+    return {
+      'linked': (row['linked'] as num).toInt(),
+      'suggestions': (row['suggestions'] as num).toInt(),
+      'skipped': (row['skipped'] as num).toInt(),
+    };
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<Map<String, String>> fetchPersonFieldSources(String personId) async {
+  try {
+    final rows = await db
+        .from('person_field_sources')
+        .select('field, source')
+        .eq('person_id', personId);
+    return {
+      for (final row in rows) row['field'] as String: row['source'] as String,
+    };
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+bool _teamContainsRef(Object? value, String sanityId) {
+  if (value is Map) {
+    if (value['_ref'] == sanityId) return true;
+    return value.values.any((item) => _teamContainsRef(item, sanityId));
+  }
+  if (value is List) {
+    return value.any((item) => _teamContainsRef(item, sanityId));
+  }
+  return false;
+}
+
+Future<Map<String, dynamic>> fetchSanityArchive(String sanityId) async {
+  try {
+    // ponytail: filter 43 project docs in Dart; move to jsonb SQL if the archive grows.
+    final projects = await db
+        .from('sanity_docs')
+        .select('doc')
+        .eq('type', 'project');
+    final legacyProjects = <Map<String, dynamic>>[];
+    for (final row in projects) {
+      final doc = Map<String, dynamic>.from(row['doc'] as Map);
+      final team = doc['team'];
+      if (team is! Map ||
+          ![
+            'pi',
+            'coPi',
+            'members',
+            'phdStudents',
+            'supervisors',
+            'others',
+            'mentors',
+          ].any((key) => _teamContainsRef(team[key], sanityId))) {
+        continue;
+      }
+      final startingDate = doc['startingDate'];
+      final year = startingDate is Map
+          ? (startingDate['year']?.toString() ??
+                startingDate['date']?.toString().substring(0, 4))
+          : startingDate?.toString().substring(0, 4);
+      legacyProjects.add({
+        'title': doc['title'],
+        'slug': doc['slug'],
+        'status': doc['status'],
+        'year': year,
+      });
+    }
+    final outputs = await db
+        .from('sanity_docs')
+        .select('id')
+        .eq('type', 'researchOutput')
+        .contains('doc', {
+          'members': [
+            {'_ref': sanityId},
+          ],
+        })
+        .count(CountOption.exact);
+    return {'projects': legacyProjects, 'outputs': outputs.count};
   } catch (error) {
     throw Exception(_error(error));
   }

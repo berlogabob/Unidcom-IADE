@@ -24,6 +24,7 @@ class _SanityMergeScreenState extends State<SanityMergeScreen> {
       fetchPeopleWithoutSanity();
   String _query = '';
   bool? _listed;
+  bool _statusMismatch = false;
 
   Future<List<Map<String, dynamic>>> _loadSanityOnly() =>
       fetchSanityMembers(query: _query, listed: _listed);
@@ -67,25 +68,52 @@ class _SanityMergeScreenState extends State<SanityMergeScreen> {
   Widget _matchesTab() => AsyncView<List<Map<String, dynamic>>>(
     future: _matches,
     retry: () async => fetchSanityMatches(),
-    builder: (context, rows) => RefreshIndicator(
-      onRefresh: () async => _refresh(),
-      child: rows.isEmpty
-          ? ListView(
-              children: const [
-                Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Text('No matches'),
-                  ),
+    builder: (context, rows) {
+      final visible = rows.where((row) {
+        if (!_statusMismatch) return true;
+        final unlisted = row['sanity_unlisted'] == true;
+        return (unlisted && row['status'] == 'active') ||
+            (!unlisted && row['status'] != 'active');
+      }).toList();
+      final safe = rows.where((row) {
+        final conflicts = row['conflicts'] as Map?;
+        return row['match_kind'] != 'name' &&
+            row['ambiguous'] != true &&
+            !(conflicts?.containsKey('email') ?? false);
+      }).length;
+      return RefreshIndicator(
+        onRefresh: () async => _refresh(),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Row(
+              children: [
+                FilledButton.icon(
+                  onPressed: safe == 0 ? null : () => _bulkLink(safe),
+                  icon: const Icon(Icons.link),
+                  label: Text('Link $safe safe matches'),
+                ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: const Text('Status mismatch'),
+                  selected: _statusMismatch,
+                  onSelected: (selected) =>
+                      setState(() => _statusMismatch = selected),
                 ),
               ],
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: rows.length,
-              itemBuilder: (context, index) => _matchPanel(rows[index]),
             ),
-    ),
+            const SizedBox(height: 12),
+            if (visible.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(child: Text('No matches')),
+              )
+            else
+              for (final row in visible) _matchPanel(row),
+          ],
+        ),
+      );
+    },
   );
 
   Widget _matchPanel(Map<String, dynamic> match) {
@@ -107,12 +135,22 @@ class _SanityMergeScreenState extends State<SanityMergeScreen> {
       'status': match['sanity_unlisted'] == true ? 'inactive' : 'active',
       'membership_type': null,
     };
+    final mismatch =
+        (match['sanity_unlisted'] == true && match['status'] == 'active') ||
+        (match['sanity_unlisted'] != true && match['status'] != 'active');
     return Panel(
       title: match['sanity_name'] as String? ?? 'Unnamed',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(subtitle, style: const TextStyle(color: AppColors.textMuted)),
+          if (mismatch)
+            Text(
+              match['sanity_unlisted'] == true
+                  ? 'not listed on site / active here'
+                  : 'listed on site / not active here',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerRight,
@@ -129,6 +167,40 @@ class _SanityMergeScreenState extends State<SanityMergeScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _bulkLink(int safe) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(
+          'Sets the Sanity link on $safe people. No person field is changed; '
+          'ORCID, bio, photo and name-form values from Sanity go to Suggestions for review.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      final result = await bulkLinkSanityMatches();
+      if (!mounted) return;
+      showSnack(
+        context,
+        'Linked ${result['linked']} · ${result['suggestions']} suggestions filed · ${result['skipped']} skipped',
+      );
+      _refresh();
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
+    }
   }
 
   Widget _sanityTab() => Padding(

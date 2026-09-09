@@ -8,6 +8,7 @@ import '../data/enrich_client.dart';
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/suggestion_tile.dart';
+import '../widgets/panels.dart';
 import 'person/featured_outputs.dart';
 import 'person/orcid_sync_dialog.dart';
 import 'person/output_row.dart';
@@ -72,6 +73,9 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
   late Future<List<Map<String, dynamic>>> _suggestions =
       fetchSuggestionsForPerson(widget.id);
   late Future<List<Map<String, dynamic>>> _roles = fetchPersonRoles(widget.id);
+  late Future<Map<String, String>> _sources = fetchPersonFieldSources(
+    widget.id,
+  );
   bool _enriching = false;
   bool _syncing = false;
 
@@ -80,6 +84,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
       _person = fetchPerson(widget.id);
       _suggestions = fetchSuggestionsForPerson(widget.id);
       _roles = fetchPersonRoles(widget.id);
+      _sources = fetchPersonFieldSources(widget.id);
     });
   }
 
@@ -201,6 +206,36 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     );
   }
 
+  Widget _sanityArchiveSection(String? sanityId) {
+    if (sanityId == null) return const SizedBox.shrink();
+    return FutureBuilder<Map<String, dynamic>>(
+      future: fetchSanityArchive(sanityId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        final archive = snapshot.data!;
+        final projects = (archive['projects'] as List)
+            .cast<Map<String, dynamic>>();
+        return Panel(
+          title: 'Sanity archive',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final project in projects)
+                Text(
+                  [
+                    project['title'],
+                    project['year'],
+                    project['status'],
+                  ].whereType<String>().join(' · '),
+                ),
+              Text('${archive['outputs']} legacy outputs in Sanity'),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _addRole() async {
     final added = await showPersonRoleDialog(context, widget.id);
     if (added == true && mounted) _refresh();
@@ -231,110 +266,131 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
             .where((membership) => membership['labs'] is Map)
             .toList();
 
-        return DetailBody(
-          children: [
-            ...widget.leading,
-            if (widget.sections.contains(PersonSection.personal)) ...[
-              personHeader(
-                context,
-                person,
-                admin: admin,
-                isOwner: isOwner,
-                hasLinkedOrcid: hasLinkedOrcid,
-                enriching: _enriching,
-                syncing: _syncing,
-                onEdit: () => _edit(person, canEditGovernance: admin),
-                onConnectOrcid: _connectOrcid,
-                onAutoFill: () => _autoFill(person),
-                onCheckOrcidSync: _checkOrcidSync,
-                onApprove: _approve,
-              ),
-              if (admin) _suggestionsSection(),
-              ...personLabsSection(
-                context,
-                labMemberships,
-                onOpenLab: (id) => context.go('/labs/$id'),
-              ),
-            ],
-            if (widget.sections.contains(PersonSection.identifiers)) ...[
-              const SizedBox(height: 24),
-              ...personIdentifiersSections(
-                context,
-                person,
-                onOpen: _open,
-                onConnectOrcid: _connectOrcid,
-                showConnect: isOwner && !hasLinkedOrcid,
-              ),
-            ],
-            if (widget.sections.contains(PersonSection.biography)) ...[
-              const SizedBox(height: 24),
-              ...personBioSection(context, person),
-            ],
-            if (widget.sections.contains(PersonSection.outputs)) ...[
-              () {
-                final highlights = ordered
-                    .where((author) => featured.contains(outputIdOf(author)))
-                    .toList();
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    sectionHeader(context, 'Highlights · ${highlights.length}'),
-                    const SizedBox(height: 8),
-                    if (highlights.isEmpty)
-                      mutedText(
-                        context,
-                        'No highlights yet — star outputs in the timeline below',
-                      )
-                    else
-                      for (final author in highlights)
-                        PersonOutputRow(
-                          author: author,
-                          isFeatured: true,
-                          onToggle: admin || isOwner
-                              ? (id) => _toggleFeatured(person, featured, id)
-                              : null,
-                          onTap: (id) => context.go('/outputs/$id'),
-                        ),
-                  ],
-                );
-              }(),
-              const SizedBox(height: 24),
-              PersonTimelineSection(
-                roles: _roles,
-                authors: ordered,
-                labMemberships: labMemberships,
-                featured: featured,
-                admin: admin,
-                isOwner: isOwner,
-                onToggleFeatured: (id) => _toggleFeatured(person, featured, id),
-                onRefresh: _refresh,
-                onAddRole: _addRole,
-                onOpenOutput: (id) => context.go('/outputs/$id'),
-                onOpenLab: (id) => context.go('/labs/$id'),
-              ),
-              if (external.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                sectionHeader(
-                  context,
-                  'Other affiliations · ${external.length}',
-                ),
-                const SizedBox(height: 4),
-                mutedText(
-                  context,
-                  'Published before or outside IADE/UNIDCOM. '
-                  'Not counted in unit reports.',
-                ),
-                const SizedBox(height: 8),
-                for (final author in external)
-                  PersonOutputRow(
-                    author: author,
-                    isFeatured: false,
-                    onTap: (id) => context.go('/outputs/$id'),
+        return FutureBuilder<Map<String, String>>(
+          future: _sources,
+          builder: (context, sourceSnapshot) {
+            final sources = sourceSnapshot.data ?? const <String, String>{};
+            return DetailBody(
+              children: [
+                ...widget.leading,
+                if (widget.sections.contains(PersonSection.personal)) ...[
+                  personHeader(
+                    context,
+                    person,
+                    admin: admin,
+                    isOwner: isOwner,
+                    hasLinkedOrcid: hasLinkedOrcid,
+                    enriching: _enriching,
+                    syncing: _syncing,
+                    onEdit: () => _edit(person, canEditGovernance: admin),
+                    onConnectOrcid: _connectOrcid,
+                    onAutoFill: () => _autoFill(person),
+                    onCheckOrcidSync: _checkOrcidSync,
+                    onApprove: _approve,
+                    sources: admin ? sources : const {},
                   ),
+                  if (admin) _suggestionsSection(),
+                  if (admin)
+                    _sanityArchiveSection(person['sanity_id'] as String?),
+                  ...personLabsSection(
+                    context,
+                    labMemberships,
+                    onOpenLab: (id) => context.go('/labs/$id'),
+                  ),
+                ],
+                if (widget.sections.contains(PersonSection.identifiers)) ...[
+                  const SizedBox(height: 24),
+                  ...personIdentifiersSections(
+                    context,
+                    person,
+                    onOpen: _open,
+                    onConnectOrcid: _connectOrcid,
+                    showConnect: isOwner && !hasLinkedOrcid,
+                    sources: admin ? sources : const {},
+                  ),
+                ],
+                if (widget.sections.contains(PersonSection.biography)) ...[
+                  const SizedBox(height: 24),
+                  ...personBioSection(
+                    context,
+                    person,
+                    sources: admin ? sources : const {},
+                  ),
+                ],
+                if (widget.sections.contains(PersonSection.outputs)) ...[
+                  () {
+                    final highlights = ordered
+                        .where(
+                          (author) => featured.contains(outputIdOf(author)),
+                        )
+                        .toList();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        sectionHeader(
+                          context,
+                          'Highlights · ${highlights.length}',
+                        ),
+                        const SizedBox(height: 8),
+                        if (highlights.isEmpty)
+                          mutedText(
+                            context,
+                            'No highlights yet — star outputs in the timeline below',
+                          )
+                        else
+                          for (final author in highlights)
+                            PersonOutputRow(
+                              author: author,
+                              isFeatured: true,
+                              onToggle: admin || isOwner
+                                  ? (id) =>
+                                        _toggleFeatured(person, featured, id)
+                                  : null,
+                              onTap: (id) => context.go('/outputs/$id'),
+                            ),
+                      ],
+                    );
+                  }(),
+                  const SizedBox(height: 24),
+                  PersonTimelineSection(
+                    roles: _roles,
+                    authors: ordered,
+                    labMemberships: labMemberships,
+                    featured: featured,
+                    admin: admin,
+                    isOwner: isOwner,
+                    onToggleFeatured: (id) =>
+                        _toggleFeatured(person, featured, id),
+                    onRefresh: _refresh,
+                    onAddRole: _addRole,
+                    onOpenOutput: (id) => context.go('/outputs/$id'),
+                    onOpenLab: (id) => context.go('/labs/$id'),
+                  ),
+                  if (external.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    sectionHeader(
+                      context,
+                      'Other affiliations · ${external.length}',
+                    ),
+                    const SizedBox(height: 4),
+                    mutedText(
+                      context,
+                      'Published before or outside IADE/UNIDCOM. '
+                      'Not counted in unit reports.',
+                    ),
+                    const SizedBox(height: 8),
+                    for (final author in external)
+                      PersonOutputRow(
+                        author: author,
+                        isFeatured: false,
+                        onTap: (id) => context.go('/outputs/$id'),
+                      ),
+                  ],
+                ],
+                ...widget.trailing,
               ],
-            ],
-            ...widget.trailing,
-          ],
+            );
+          },
         );
       },
     );

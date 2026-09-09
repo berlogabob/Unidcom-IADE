@@ -5,6 +5,7 @@ import '../../data/features.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/detail_scaffold.dart';
 import '../../widgets/queue_list.dart' show queueStatusLabel;
+import '../../widgets/source_chip.dart';
 
 Widget personHeader(
   BuildContext context,
@@ -19,6 +20,7 @@ Widget personHeader(
   required VoidCallback onAutoFill,
   required VoidCallback onCheckOrcidSync,
   required VoidCallback onApprove,
+  Map<String, String> sources = const {},
 }) {
   final name = person['preferred_name'] as String? ?? 'Unnamed';
   final photo = (person['photo_url'] as String? ?? '').trim();
@@ -56,38 +58,56 @@ Widget personHeader(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 36,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              foregroundImage: photo.isEmpty ? null : NetworkImage(photo),
-              child: Text(
-                _initials(name),
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: theme.colorScheme.onPrimaryContainer,
+            Column(
+              children: [
+                CircleAvatar(
+                  radius: 36,
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  foregroundImage: photo.isEmpty ? null : NetworkImage(photo),
+                  child: Text(
+                    _initials(name),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 4),
+                SourceChip(sources['photo_url']),
+              ],
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    style: const TextStyle(
-                      color: AppColors.textOnDark,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Row(
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          color: AppColors.textOnDark,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SourceChip(sources['preferred_name']),
+                    ],
                   ),
                   if (subtitle.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: AppColors.textOnDarkMuted,
-                        fontSize: 13,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            color: AppColors.textOnDarkMuted,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SourceChip(sources['legal_name']),
+                      ],
                     ),
                   ],
                   if (identifiers.any(
@@ -198,26 +218,33 @@ List<Widget> personIdentifiersSections(
   required ValueChanged<String> onOpen,
   required VoidCallback onConnectOrcid,
   required bool showConnect,
+  Map<String, String> sources = const {},
 }) => [
   sectionHeader(context, 'ORCID'),
   const SizedBox(height: 8),
-  _orcidSection(context, person, onOpen, onConnectOrcid, showConnect),
+  _orcidSection(context, person, onOpen, onConnectOrcid, showConnect, sources),
   const SizedBox(height: 24),
   sectionHeader(context, 'Ciência ID'),
   const SizedBox(height: 8),
-  _cienciaSection(context, person, onOpen),
+  _cienciaSection(context, person, onOpen, sources),
   const SizedBox(height: 24),
   sectionHeader(context, 'Other Identifiers'),
   const SizedBox(height: 8),
-  _otherIdentifiers(context, person, onOpen),
+  _otherIdentifiers(context, person, onOpen, sources),
 ];
 
 /// Biography leaf: the About heading plus bio/notes.
 List<Widget> personBioSection(
   BuildContext context,
-  Map<String, dynamic> person,
-) => [
-  sectionHeader(context, 'About'),
+  Map<String, dynamic> person, {
+  Map<String, String> sources = const {},
+}) => [
+  Row(
+    children: [
+      Expanded(child: sectionHeader(context, 'About')),
+      SourceChip(sources['bio']),
+    ],
+  ),
   const SizedBox(height: 8),
   _bio(context, person),
 ];
@@ -250,6 +277,7 @@ Widget _orcidSection(
   ValueChanged<String> onOpen,
   VoidCallback onConnectOrcid,
   bool showConnect,
+  Map<String, String> sources,
 ) {
   final orcid = (person['orcid'] as String? ?? '').trim();
   return Column(
@@ -258,6 +286,7 @@ Widget _orcidSection(
       _InfoRow(
         icon: Icons.badge_outlined,
         label: 'ORCID',
+        labelTrailing: SourceChip(sources['orcid']),
         child: orcid.isEmpty
             ? mutedText(context, 'Not set')
             : _link(context, orcid, 'https://orcid.org/$orcid', onOpen),
@@ -278,11 +307,13 @@ Widget _cienciaSection(
   BuildContext context,
   Map<String, dynamic> person,
   ValueChanged<String> onOpen,
+  Map<String, String> sources,
 ) {
   final ciencia = (person['ciencia_id'] as String? ?? '').trim();
   return _InfoRow(
     icon: Icons.fingerprint,
     label: 'Ciência ID',
+    labelTrailing: SourceChip(sources['ciencia_id']),
     child: ciencia.isEmpty
         ? mutedText(context, 'Not set')
         : _link(
@@ -298,6 +329,7 @@ Widget _otherIdentifiers(
   BuildContext context,
   Map<String, dynamic> person,
   ValueChanged<String> onOpen,
+  Map<String, String> sources,
 ) {
   final email = (person['email'] as String? ?? '').trim();
   final verified = person['last_verified_at'] as String?;
@@ -309,6 +341,7 @@ Widget _otherIdentifiers(
       _InfoRow(
         icon: Icons.mail_outline,
         label: 'Email',
+        labelTrailing: SourceChip(sources['email']),
         child: email.isEmpty
             ? mutedText(context, 'Not set')
             : _link(context, email, 'mailto:$email', onOpen),
@@ -413,11 +446,13 @@ class _InfoRow extends StatelessWidget {
   const _InfoRow({
     required this.icon,
     required this.label,
+    this.labelTrailing,
     required this.child,
   });
 
   final IconData icon;
   final String label;
+  final Widget? labelTrailing;
   final Widget child;
 
   @override
@@ -432,11 +467,21 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 96,
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                if (labelTrailing != null) ...[
+                  const SizedBox(width: 4),
+                  labelTrailing!,
+                ],
+              ],
             ),
           ),
           Expanded(child: child),
