@@ -25,6 +25,23 @@ enum ReportKind {
   final bool usesTypeFilter;
 }
 
+class ReportTypeCell extends StatelessWidget {
+  const ReportTypeCell(this.label, {super.key});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 220,
+      child: Tooltip(
+        message: label,
+        child: Text(label, maxLines: 2, overflow: TextOverflow.ellipsis),
+      ),
+    );
+  }
+}
+
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
 
@@ -257,7 +274,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                           ),
                                         ),
                                         DataCell(
-                                          Text(output['type'] as String? ?? ''),
+                                          ReportTypeCell(
+                                            output['type'] as String? ?? '',
+                                          ),
                                         ),
                                         DataCell(
                                           Text(
