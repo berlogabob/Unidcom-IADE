@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../app/my_profile.dart' show profileStatusLabel;
 import '../../data/features.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/detail_scaffold.dart';
+import '../../widgets/queue_list.dart' show queueStatusLabel;
 
 Widget personHeader(
   BuildContext context,
@@ -27,10 +29,19 @@ Widget personHeader(
     ('Ciência ID', (person['ciencia_id'] as String? ?? '').trim()),
     ('Email', (person['email'] as String? ?? '').trim()),
   ];
+  final membershipType = person['membership_type'] as String?;
+  final status = person['status'] as String?;
+  final profileStatus = person['profile_status'] as String?;
   final chips = statusChips([
-    person['membership_type'],
-    person['status'],
-    person['profile_status'],
+    switch (membershipType) {
+      'integrated' => 'Integrated researcher',
+      'collaborator' => 'Collaborator',
+      'external' => 'External researcher',
+      final value? => queueStatusLabel(value),
+      _ => null,
+    },
+    if (status != null && status != 'active') queueStatusLabel(status),
+    if (profileStatus != null) profileStatusLabel(profileStatus),
   ]);
 
   return Column(

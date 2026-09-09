@@ -10,6 +10,7 @@ String queueStatusLabel(String value) => const {
   'approved': 'Approved',
   'rejected': 'Rejected',
   'draft': 'Draft',
+  'inactive': 'Inactive',
 }[value] ?? value.replaceAll('_', ' ');
 
 /// Standard filter dropdown with an "All" (null) option.
