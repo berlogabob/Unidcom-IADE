@@ -10,6 +10,7 @@ flows = json.loads((RUN / "flows-results.json").read_text())
 bp = json.loads((RUN / "bp-scorecard.json").read_text())
 meas = json.loads((RUN / "measurements.json").read_text())
 sev = M["findings_by_severity"]
+N = json.loads((RUN / "narrative.json").read_text()) if (RUN / "narrative.json").exists() else {"top": "", "criticism": "", "recommendations": ""}
 bpc = Counter(b["status"] for b in bp)
 bp_score = round(100 * (bpc["yes"] + 0.5 * bpc["partial"]) / len(bp))
 verdict = "NOT READY" if sev["4"] else ("READY WITH FIXES" if sev["3"] else "READY")
@@ -28,17 +29,11 @@ out.append(f"""# UX/UI Audit — UNIDCOM RIMS researcher portal (web, Playwright
 
 {M['findings_total']} findings ({sev['4']} severity-4, {sev['3']} severity-3, {sev['2']} severity-2, {sev['1']} severity-1) across {M['screens_audited']} screens, task success rate {M['task_success_rate_pct']:.0f} % on {M['flows_run']} of {M['flows_defined']} defined flows, best-practice score {bp_score} / 100 ({bpc['yes']} yes · {bpc['partial']} partial · {bpc['no']} no of {len(bp)} BP items).
 
-The three findings that matter most:
-
-1. **The desktop navigation is invisible to assistive technology (F-001).** At ≥900 px the whole sidebar — 25 rows, the mode switch, sign-out — has no accessibility nodes. Keyboard and screen-reader users cannot move between sections. The phone drawer exposes the same rows correctly, so this is a layout-branch defect, not a design choice.
-2. **A person page keeps showing the previous researcher when only the id changes (F-002).** Verified twice: the page under Celia's URL and under the E2E account's URL were byte-identical, and a hash change after a fresh load still showed the old record. An admin can edit the wrong researcher.
-3. **Workflow state is silent where the researcher looks (F-005, F-009).** A newly added output shows no "pending" tag in My Outputs, and an admin's Reject fires with no confirmation, no reason and no feedback — the researcher never learns that or why their item vanished.
-
-Every flow that could be run passed: the pilot's core loop (sign in → choose mode → confirm profile → add an output → admin queue → decision) works end to end. The findings are about *legibility* of that loop, not its existence.
+{N['top']}
 
 ## Background & Objectives
 
-- App: UNIDCOM RIMS researcher portal, `Unidcom-IADE` repo, commit `73259d4` (round 4, one-to-one sidebar, merged 2026-09-08). Build: `flutter build web --dart-define=E2E=true`, v1 (pilot) feature set — v2-only controls (Support requests, Approve/Auto-fill/ORCID-sync on the profile band, Find DOI) are compiled out and were not audited.
+- App: UNIDCOM RIMS researcher portal, `Unidcom-IADE` repo, commit `{F['commit']}` ({N.get('build_note', '')}). Build: `flutter build web --dart-define=E2E=true`, v1 (pilot) feature set — v2-only controls (Support requests, Approve/Auto-fill/ORCID-sync on the profile band, Find DOI) are compiled out and were not audited.
 - Trigger: pilot cohort onboarding in September 2026; no UX/UI audit had been done (the 2026-08-07 `AUDIT.md` covered engineering, security and operations).
 - Companion documents: `docs/research/2026-09-rims-best-practices.md` (cited RIMS/CRIS best practice + BP checklist) and `docs/reports/2026-09-ux-audit/` (stakeholder PDF).
 
@@ -100,39 +95,14 @@ Scored against the checklist in `docs/research/2026-09-rims-best-practices.md`. 
 |---|---|---|---|
 """)
 for b in bp: out.append(f"| {b['id']} | {b['status']} | {b['evidence']} | {b['gap']} |\n")
-out.append("""
+out.append(f"""
 **Where the portal is ahead of the field for its size:** the data model (link rows for authorship, unique DOI, full audit trail), the approval gate feeding a nightly, fail-closed public build, ORCID harvesting into a staging table, and a real merge tool. These are the parts commercial systems charge for and small units usually skip.
 
 **Where it trails every system surveyed:** the *entry* experience — a blank form instead of an identifier lookup (BP-07), no title-similarity warning (BP-16), no draft/withdraw (BP-11/12), no reviewer comment (BP-13), and no status tag in the researcher's own list (BP-21). Pure, Converis, Elements and Haplo all start from a DOI/ORCID lookup and show the workflow state on the researcher's list; FCT's own guidance makes CIÊNCIA ID coverage and the five representative outputs the unit-level facts that matter (BP-34, BP-36), and neither is surfaced yet.
 
-## Design criticism — what was built vs what was designed vs what the research says
+{N['criticism']}
 
-**Against Carmela's templates.** The tokens are faithful (navy sidebar, sand page, teal accent, 10 px radius) and the 2026-08-07 palette correction kept the brand teal while moving load-bearing text to the darker teal — the right call. Divergence is in the components, not the colours: the template's row pills and status tags are replaced by raw enum strings in several places (`draft`, `pending_review`, `a_confirmar` — F-016, F-012, F-019); the template's icon system is mixed with emoji in the Welcome pack (F-014); the dashboard tiles use three accent colours where the template uses one (F-037); and the 404 page drops the shell entirely (F-006).
-
-**Against the research.** Two deliberate decisions carry a usability bill that this audit prices: (1) the one-to-one sidebar (8 Sep) puts 25 rows in the researcher's primary navigation, a third of them placeholders, and the whole thing lives in a scrolling column whose lower half is under a footer (F-007, F-023, F-035) — Miller and Hick both argue for the six section headers as the visible menu and leaves on the landing pages; (2) the v1/v2 split (10 Aug, Rui: 'fewer controls, all of them working') removed Find DOI from the researcher path, so the one control every surveyed system leads with is behind the flag (BP-07). Both are documented choices, not drift — the recommendation is to revisit them with these numbers rather than to undo them silently.
-
-**Drift rather than decision:** the desktop sidebar losing its semantics (F-001), the person page not re-fetching on id change (F-002), the highlight following the wrong row (F-008), the Maestro suite asserting text that no longer exists (F-015), and Reject without confirm or feedback (F-005). None of these was chosen; each is a regression or an omission a test would have caught.
-
-**The public site** (Hugo) is the stronger surface: fail-closed allowlists, ORCID links per person, nightly sync green for the last five days, 76 publications and 183 people published from the same rows the portal manages. Its open items are content (bios in Portuguese under `lang="en"`, photos) rather than UX.
-
-## Recommendations
-
-Ordered by severity, then by cost. The first four are a day's work together.
-
-1. **F-001 sidebar semantics** — reproduce with the E2E build, fix the desktop branch, and pin it with a widget test that asserts the SideNav rows exist in the semantics tree at 1280 px.
-2. **F-002 person page refetch** — `ValueKey(id)` on the page in the route builder (one line) or `didUpdateWidget`; add a test that navigates A→B.
-3. **F-005 Reject** — confirm + optional reason + snackbar with Undo; store the reason on the output so the researcher sees it (closes BP-13).
-4. **F-009 status tag in My Outputs** — reuse the pill from `lib/widgets/output_row.dart` in the timeline row (closes BP-21).
-5. **F-008 highlight** — longest-prefix match in `navSelected()`.
-6. **F-007 / F-023 / F-035 sidebar** — show section headers only by default, mark WIP rows, fix the footer overlap. Revisit with Rui with the Miller/Hick numbers.
-7. **F-003 / F-004** — make the anonymous Welcome pack consistent (same sidebar signed in or out; M2 slugs redirect instead of a login wall).
-8. **F-006** — friendly 404 inside the shell, no exception text.
-9. **F-010 / F-037 / F-036** — phone: wrap KPI tiles, scrollable tab strip, truncate the Type column.
-10. **F-015** — fix the six Maestro YAMLs and run them in CI, or adopt `audit/tools/flows.py` as the suite.
-11. **BP-07** — DOI-first Add output for researchers (the Crossref client exists); **BP-16** title-similarity warning; **BP-36** add CIÊNCIA ID coverage and unclaimed-candidate counts to the dashboard.
-12. **HEART instrumentation** — the five events above; report them in the pilot demo.
-
-Design-system debt worth batching: enum-to-label helper used everywhere a status is shown (F-012, F-016, F-019), one icon family (F-013, F-014, F-040), one accent on KPI tiles (F-033, F-034), consistent button variant for the same action (F-038, F-041).
+{N['recommendations']}
 
 """)
 T = F.get("trend")

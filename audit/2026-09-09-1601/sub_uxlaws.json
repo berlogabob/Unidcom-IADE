@@ -1,0 +1,74 @@
+[
+ {
+  "criterion": "LAW-MILLER-1",
+  "screen": "r_sidebar_expanded",
+  "severity": 3,
+  "evidence": "Unchanged since the previous run: the persistent researcher sidebar still holds nav rows across 6 collapsible groups (OVERVIEW, MY PROFILE, SCIENTIFIC OUTPUTS, WELCOME PACK, HELP, SETTINGS; per screens.md's r_* route inventory that's 5+6+5+8+3+1 = 28 leaf destinations). On the 1280x900 viewport only OVERVIEW (5: Research Activity Summary, Recent Scientific Outputs, Alerts & Notifications, Profile Status, Getting Started) and MY PROFILE (6: Personal Information, Researcher Identifiers, Biography, Research Areas, Research Interests, Profile Status) fit before the fold, plus a 2-row sliver of SCIENTIFIC OUTPUTS (My Outputs, Add Scientific Output) clipped by the footer. WELCOME PACK, HELP and SETTINGS still require scrolling to even discover, and every group still renders expanded by default rather than collapsing to a Miller-safe count.",
+  "screenshot": "screens/r_sidebar_expanded.png",
+  "measurement": null,
+  "recommendation": "Collapse all but the current section's group by default (accordion behavior, one open group at a time) so the visible option count stays near 7±2, and let the active route auto-expand only its own group."
+ },
+ {
+  "criterion": "LAW-MILLER-1",
+  "screen": "phone_r_drawer",
+  "severity": 3,
+  "evidence": "The 390px drawer still renders one flat, fully-expanded nav list past Miller's ceiling: measurements.json flags it as an oversized group ({\"label\":\"flt-semantic-node-1019\",\"items\":12,\"limit\":9}) — Dashboard, People, Merge duplicates, a RESEARCH section (Scientific outputs, Pending approval, Projects, Structure) and a DATA & REPORTING section (Reports, Data browser, Settings), all shown open simultaneously with no progressive disclosure, same pattern as the previous run (then 22 items on the researcher-mode drawer; the underlying 'show every section open' behavior is what persists).",
+  "screenshot": "screens/phone_r_drawer.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-1019\", \"items\": 12, \"limit\": 9}",
+  "recommendation": "On mobile especially, default to only the active group expanded; consider a two-level drawer (sections first, rows on tap) instead of one long list with every section pre-opened."
+ },
+ {
+  "criterion": "LAW-MILLER-1",
+  "screen": "a_dashboard",
+  "severity": 2,
+  "evidence": "The admin dashboard still renders KPI tiles as one undifferentiated grid with no category headers: 15 tiles visible above the fold (ORCID Linked, Profiles Validated, Outputs Approved, DOI Coverage, Researchers, Outputs, Journal Articles, Needs Verification, Missing ORCID, Labs, Projects, Clusters, Verified Outputs, Lab Allocations, Mentorships), immediately followed by 'Outputs by type' (10 rows), a quartile chart, 'People by category', 'Projects by cluster' and 'Projects by lab' panels on the same scroll. measurements.json still flattens the whole panel into one oversized semantic group ({\"items\":90,\"limit\":9}) — same violation as the previous run, now with 3 more KPI tiles than before and still no sub-grouping (e.g. People vs Outputs vs Structure vs Reporting).",
+  "screenshot": "screens/a_dashboard.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-36\", \"items\": 90, \"limit\": 9}",
+  "recommendation": "Cluster the KPI tiles under 3-4 labeled sub-headers (People, Outputs, Structure, Reporting) of ≤9 tiles each instead of one undifferentiated grid."
+ },
+ {
+  "criterion": "LAW-JAKOB-1",
+  "screen": "r_account_menu",
+  "severity": 2,
+  "evidence": "The mode_chooser copy fix (F-018) now correctly says 'You can switch at any time from the bottom of the sidebar,' matching where the real controls live — but the underlying Jakob's-law violation it was covering for is still present: the header identity block (avatar 'EB' + 'E2E Bot' + role text, top-right) remains non-interactive (clickable=\"false\" on all three text nodes in hierarchy/r_account_menu.json, bounds e.g. [320,13][381,36]), so there is still no account/mode-switch affordance where virtually every web app puts one. The crawler's scripted 'top-right name → menu' action again produced no menu — the captured screen is unchanged from the underlying page (this run it matches a_dashboard's content almost node-for-node) because there was nothing to click.",
+  "screenshot": "screens/r_account_menu.png",
+  "measurement": null,
+  "recommendation": "Add a real top-right account/mode menu (or at minimum make the identity block clickable and route it to the same switch/sign-out actions currently only available at the bottom of the sidebar)."
+ },
+ {
+  "criterion": "LAW-FITTS-1",
+  "screen": "a_person",
+  "severity": 2,
+  "evidence": "The 'Remove' control on a person's timeline entry is still a confirmed clickable target only 40×6px (measurements.json small_tap_targets, assumed:false), an order of magnitude under the 24px minimum, with no visual button styling — unchanged from the previous run.",
+  "screenshot": "screens/a_person.png",
+  "measurement": "small_tap_targets: {\"label\":\"Remove\",\"w\":40,\"h\":6,\"assumed\":false}",
+  "recommendation": "Render 'Remove' as a proper button/icon-button with at least a 24px (ideally 44px) hit box, not a 6px text sliver."
+ },
+ {
+  "criterion": "LAW-FITTS-1",
+  "screen": "r_profile_edit_dialog",
+  "severity": 2,
+  "evidence": "The 'Integration year' field in the 'Edit researcher' modal is still a confirmed clickable control only 528×7px (measurements.json small_tap_targets, assumed:false) — unchanged from the previous run — while every sibling field in the same dialog (Preferred name, Legal name, Email, Phone, ORCID, Ciencia ID, PhD, Join date, Exit date) renders at full input height.",
+  "screenshot": "screens/r_profile_edit_dialog.png",
+  "measurement": "small_tap_targets: {\"label\":\"Integration year\",\"w\":528,\"h\":7,\"assumed\":false}",
+  "recommendation": "Give the Integration year field the same input height/padding as its siblings (Join date, Exit date) in the same form."
+ },
+ {
+  "criterion": "LAW-HICK-2",
+  "screen": "r_profile_edit_dialog",
+  "severity": 2,
+  "evidence": "The 'Edit researcher' dialog still presents 14 fields (Preferred name, Legal name, Bio, Photo URL, Email, Job title, Phone, ORCID, Ciencia ID, PhD, Join date, Exit date, Integration year, plus Cancel/Save) in one continuous, unsectioned, scrolling modal — measurements.json again flags it as an oversized group ({\"items\":14,\"limit\":9}), unchanged from the previous run. No headings or steps separate identity fields from academic-identifier fields from employment-date fields.",
+  "screenshot": "screens/r_profile_edit_dialog.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-793\", \"items\": 14, \"limit\": 9}",
+  "recommendation": "Split into labeled sub-sections (Identity, Identifiers, Employment) within the same dialog, or turn it into a 2-3 step wizard so no single view demands scanning 14 fields at once."
+ },
+ {
+  "criterion": "LAW-HICK-1",
+  "screen": "a_people",
+  "severity": 2,
+  "evidence": "The People filter/action bar still bundles many simultaneous, mostly ungrouped controls: Search, a now-separated top-right 'Add person' button, then on the row below 3 dropdowns (Membership, Status, Profile) and 3 toggle chips (Missing ORCID, Needs verification, Has outputs) with no visual separation between them, plus the '184 people' count — measurements.json measures this cluster (with the results list) as an oversized group of 10 against a limit of 9. 'Add person' is now visually separated from the filters (a partial fix versus the previous run), but the 3 filter dropdowns and 3 toggle chips remain one flat, ungrouped row of 6 simultaneous choices.",
+  "screenshot": "screens/a_people.png",
+  "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-126\", \"items\": 10, \"limit\": 9}",
+  "recommendation": "Collapse the 3 toggle chips into a single 'More filters' disclosure, or group the 3 dropdowns and 3 chips under a visible 'Filters' label so the choice set doesn't read as one undifferentiated row of 6+."
+ }
+]

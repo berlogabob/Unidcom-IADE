@@ -1,0 +1,47 @@
+[
+ {
+  "criterion": "VD-COL-2",
+  "screen": "r_home",
+  "severity": 2,
+  "evidence": "Unchanged since previous audit. The 'OUTPUTS' and 'PROFILE STATUS' stat cards still share one continuous amber/warn-colored top border. 'Profile Status: draft/awaiting approval' is legitimately a warning state, but 'Outputs: 0' is a neutral count with no problem, yet it carries the same warning-amber accent, diluting the color's meaning. Same mis-pairing repeats on r_home_summary (identical card pair, identical shared amber bar) and on the phone layout (phone_r_home).",
+  "screenshot": "screens/r_home.png",
+  "measurement": null,
+  "recommendation": "Apply the amber/warn accent only to the card whose state actually needs attention (Profile Status); give the neutral Outputs count a neutral border/no accent."
+ },
+ {
+  "criterion": "VD-COL-2",
+  "screen": "a_dashboard",
+  "severity": 2,
+  "evidence": "Unchanged since previous audit. The 12 KPI tiles are one repeated component (label + big number + colored top border) but the accent color still splits arbitrarily between plain counts: teal for 'Orcid Linked', 'Profiles Validated', 'Outputs Approved', 'Doi Coverage', 'Outputs', 'Verified Outputs', but blue for structurally identical plain counts 'Journal Articles', 'Projects', 'Clusters', 'Lab Allocations'. Red is correctly reserved for the two problem metrics ('Needs Verification', 'Missing Orcid'), but the teal/blue split among the rest has no visible rule and reads as arbitrary decoration.",
+  "screenshot": "screens/a_dashboard.png",
+  "measurement": null,
+  "recommendation": "Standardize on one neutral accent (teal) for all plain-count tiles; reserve blue for a specific, named category of meaning (e.g. 'grouping/structure' metrics) if one is intended, otherwise drop the second neutral color entirely."
+ },
+ {
+  "criterion": "VD-TYPE-1",
+  "screen": "a_admin_data",
+  "severity": 1,
+  "evidence": "Unchanged since previous audit. In the 'people' table of the raw Data Browser, the 'bio' column still renders full free-text paragraphs (e.g. three researchers' bios) at roughly 12-13px, below the 16px floor for text meant to be read rather than scanned as a short label/ID.",
+  "screenshot": "screens/a_admin_data.png",
+  "measurement": null,
+  "recommendation": "For long free-text columns (bio, notes), either truncate with an expand-on-click affordance shown at readable size, or bump the cell font size for these specific columns instead of reusing the compact ID/date-column size."
+ },
+ {
+  "criterion": "VD-RESP-1",
+  "screen": "a_admin_reports",
+  "severity": 2,
+  "evidence": "The previously-reported Type column overflow is fixed (values now wrap within the column and show a full-text tooltip on hover). However the adjacent Subtype column exhibits the same underlying problem: values such as 'Membro da comissão cientifi', 'Orador por convite em confe...' are cut off exactly at the 1280px viewport edge mid-word, with no ellipsis, tooltip, or horizontal-scroll affordance indicating more content exists off-screen.",
+  "screenshot": "screens/a_admin_reports.png",
+  "measurement": null,
+  "recommendation": "Extend the same fix already applied to the Type column (wrap + hover tooltip, or a horizontal-scroll container with a visible scrollbar/edge fade) to the Subtype column and any other columns that can overflow the viewport."
+ },
+ {
+  "criterion": "VD-HIER-2",
+  "screen": "anon_welcome_logos",
+  "severity": 1,
+  "evidence": "Edge-alignment measurement shows four separate 3px near-miss offsets among the logo-swatch card elements (edge pairs at x=325/328, 328/331, 344/347, 375/378), i.e. the swatch chip, label, and download-icon elements in the 'Logos & brand assets' cards are not sitting on a shared grid column. Same layout is reused verbatim on r_welcome_logos with identical offsets.",
+  "screenshot": "screens/anon_welcome_logos.png",
+  "measurement": "alignment_near_misses: [{edges_px:[325,328],offset:3},{edges_px:[328,331],offset:3},{edges_px:[344,347],offset:3},{edges_px:[375,378],offset:3}]",
+  "recommendation": "Snap the swatch/label/icon elements inside each logo card to the same left-edge grid column so repeated cards align pixel-for-pixel."
+ }
+]

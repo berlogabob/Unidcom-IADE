@@ -193,12 +193,9 @@ with sync_playwright() as p:
     page.goto(f"{BASE}/#/app/home"); settle(page)
     f = find(page, "^Overview$", clickable_only=False)
     page.screenshot(path=str(RUN / "screens" / "r_sidebar_expanded.png")); inventory.append(("r_sidebar_expanded", "researcher", "/app/home default sidebar", ""))
-    # account menu (top right)
-    try:
-        click(page, "Account|account menu|Switch|andre|E2E", timeout=5); page.wait_for_timeout(500)
-        capture(page, "r_account_menu", "researcher", "top-right name → menu"); page.keyboard.press("Escape")
-    except Exception as e:
-        print("  account menu not found:", e)
+    # account controls live in the sidebar footer (F-018): capture, never click —
+    # "Switch to admin" is a real button now that the sidebar has semantics.
+    capture(page, "r_account_menu", "researcher", "sidebar footer: Switch to admin / Public site / Sign out (not clicked)")
     # phone width
     page.set_viewport_size(PHONE)
     for route, name in [("/app/home", "phone_r_home"), ("/app/profile", "phone_r_profile"), ("/app/outputs", "phone_r_outputs")]:
@@ -251,7 +248,7 @@ with sync_playwright() as p:
     browser.close()
 
 with open(RUN / "screens.md", "w") as f:
-    f.write("# Screen inventory\n\nCrawler: Playwright/Chromium 1280×900 (phone rows 390×844). Build: `flutter build web --dart-define=E2E=true` (v1), commit 73259d4, served from build/web on :8123.\n\n| Screen | Mode | How reached | Files | Note |\n|---|---|---|---|---|\n")
+    f.write("# Screen inventory\n\nCrawler: Playwright/Chromium 1280×900 (phone rows 390×844). Build: `flutter build web --dart-define=E2E=true` (v1), commit 7d628bb, served from build/web on :8123.\n\n| Screen | Mode | How reached | Files | Note |\n|---|---|---|---|---|\n")
     for n, m, h, note in inventory:
         f.write(f"| {n} | {m} | {h} | screens/{n}.png · hierarchy/{n}.json | {note} |\n")
     f.write("\n## NOT COVERED\n\n- ORCID OAuth sign-in (third-party login; not automatable safely).\n- v2-only surfaces (Support requests, Approve/Auto-fill/ORCID sync buttons) — compiled out of the pilot build.\n- Research Areas / Interests / Edit outputs / Validation / Documentation / FAQs render the shared WipPage.\n")

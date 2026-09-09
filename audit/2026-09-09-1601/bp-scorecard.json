@@ -1,0 +1,230 @@
+[
+ {
+  "id": "BP-01",
+  "status": "yes",
+  "evidence": "output_authors(output_id, person_id, role, author_position) — SQL information_schema 2026-09-09",
+  "gap": ""
+ },
+ {
+  "id": "BP-02",
+  "status": "partial",
+  "evidence": "membership_type (integrated 46 / collaborator 109 / external 22 / null 7) plus join_date/exit_date live on the person row; lab membership is a link table with a year. No dated unit-membership history.",
+  "gap": "A person who changes category loses history; FCT cycles need it."
+ },
+ {
+  "id": "BP-03",
+  "status": "partial",
+  "evidence": "10 macro_type values are the FCT activity-report categories in Portuguese (e.g. 'Artigos em revistas', 'Actividades de gestão e auxílio à UNIDCOM'); category_path cascade below them. No CASRAI/CERIF mapping.",
+  "gap": "Map the two publication macro-types to CASRAI terms; label the rest as activities, not outputs."
+ },
+ {
+  "id": "BP-04",
+  "status": "yes",
+  "evidence": "people.orcid (26/184 filled), people.ciencia_id (25/184); both shown on Researcher Identifiers (screens/r_profile_identifiers.png)",
+  "gap": "Coverage, not capability: 158 researchers have no ORCID on file, so cannot sign in."
+ },
+ {
+  "id": "BP-05",
+  "status": "yes",
+  "evidence": "outputs.doi with UNIQUE INDEX outputs_doi_key; 45/365 filled, 0 duplicates",
+  "gap": ""
+ },
+ {
+  "id": "BP-06",
+  "status": "partial",
+  "evidence": "outputs has approval_status only; people/projects have public_visibility. The public site adds a fail-closed macro_type allowlist in unidcom-site/scripts/sync.py (76 of 365 rows publish).",
+  "gap": "The publish decision is spread over three mechanisms in two repos; a single visibility column on outputs would make it visible in the portal."
+ },
+ {
+  "id": "BP-07",
+  "status": "no",
+  "evidence": "Add output opens a blank dialog: Title, DOI, Full reference, Category, Reporting year, Output status (screens/r_add_output_dialog.png). DOI is a plain text field; 'Find DOI' is v2 and admin-only on the detail page.",
+  "gap": "Start from DOI lookup (Crossref client already exists in lib/data/enrich_client.dart) and pre-fill title/year/type."
+ },
+ {
+  "id": "BP-08",
+  "status": "yes",
+  "evidence": "Weekly orcid-sync.yml stages works into output_candidates (1 471 rows, 26 people); Import & Synchronisation lists them with Add / Add all; admins see Import as… / Dismiss (candidate_tile.dart)",
+  "gap": "Researchers get Add but no Dismiss/Not mine, so 1 466 candidates stay pending forever (max 281 for one person)."
+ },
+ {
+  "id": "BP-09",
+  "status": "partial",
+  "evidence": "'Add all' for a researcher's candidates; 'Approve all pending (N)' for admins. No checkbox selection, no bulk reject.",
+  "gap": "All-or-one only."
+ },
+ {
+  "id": "BP-10",
+  "status": "partial",
+  "evidence": "Manual form is the only path. No required-field legend; Title validates on submit with inline text (flow_add_output_2_validation.png).",
+  "gap": "Mark Title as required up front; explain what Full reference is for."
+ },
+ {
+  "id": "BP-11",
+  "status": "partial",
+  "evidence": "outputs: pending → approved | rejected (check constraint, migration 20260804120000). people: draft → pending_review → approved. No draft state for outputs; a researcher's save is an immediate submission.",
+  "gap": "No way to save an incomplete output privately."
+ },
+ {
+  "id": "BP-12",
+  "status": "partial",
+  "evidence": "Approve/Reject are admin-only (RLS is_admin on outputs_write; create_my_output forces pending). No withdraw for the researcher.",
+  "gap": "Researcher cannot retract a pending item."
+ },
+ {
+  "id": "BP-13",
+  "status": "partial",
+  "evidence": "Reject now asks for a reason (F-005 fix, PR 38); the researcher sees it under the rejected output in My Outputs. No 'returned for correction' state — rejected is terminal unless an admin undoes it.",
+  "gap": "No return-with-comment loop, only reject-with-reason."
+ },
+ {
+  "id": "BP-14",
+  "status": "no",
+  "evidence": "output_status holds 'Planeado' (6) / 'Concluído' (46) / null (313) and is not consulted by approval.",
+  "gap": ""
+ },
+ {
+  "id": "BP-15",
+  "status": "yes",
+  "evidence": "change_log(subject_type, subject_id, field, old_value, new_value, source, actor, changed_at): 605 rows, 365 output approvals, 186 profile transitions",
+  "gap": "Non-admin edits are not logged (cl_write is admin-only; AUDIT.md)."
+ },
+ {
+  "id": "BP-16",
+  "status": "partial",
+  "evidence": "DOI duplicate is caught by the unique index and surfaced as 'That DOI already belongs to another output' on the detail page; title_norm exists but no similarity check at entry — 8 title_norm groups are duplicated in the live table.",
+  "gap": "Title-similarity warning before save."
+ },
+ {
+  "id": "BP-17",
+  "status": "partial",
+  "evidence": "Outputs list has an Issues filter and the detail page offers Merge duplicates when a cluster ≥ 2; the review queue row itself shows no duplicate badge (screens/flow_review_queue_3_FAIL.png).",
+  "gap": ""
+ },
+ {
+  "id": "BP-18",
+  "status": "yes",
+  "evidence": "merge_people RPC + mergeOutputs, merge matrix UI (screens/a_admin_merge.png); reassigns output_authors/project_members",
+  "gap": ""
+ },
+ {
+  "id": "BP-19",
+  "status": "partial",
+  "evidence": "Client-side: Title required, data retained, inline error (flow_add_output_2_validation.png). Server: create_my_output whitelists the payload and forces status/source/affiliation.",
+  "gap": "Other fields unvalidated (year accepts any text until save)."
+ },
+ {
+  "id": "BP-20",
+  "status": "no",
+  "evidence": "Single inline error only; no summary, no focus management.",
+  "gap": ""
+ },
+ {
+  "id": "BP-21",
+  "status": "yes",
+  "evidence": "My Outputs timeline shows a 'pending' / 'rejected' pill on each non-approved row (F-009 fix, PR 32); rejected rows carry the reason (PR 38).",
+  "gap": ""
+ },
+ {
+  "id": "BP-22",
+  "status": "partial",
+  "evidence": "Overview → Alerts card: 'Your profile is awaiting confirmation' with link (screens/r_home.png). No alert for missing ORCID/CIÊNCIA ID, unclaimed candidates or drafts.",
+  "gap": ""
+ },
+ {
+  "id": "BP-23",
+  "status": "no",
+  "evidence": "Dialog → Save; no review step.",
+  "gap": ""
+ },
+ {
+  "id": "BP-24",
+  "status": "partial",
+  "evidence": "Admin Reports uses DataTable (Title, Year, Type, Subtype, Authors, DOI/URL) with no onSort; Data browser renders 4 856 semantics nodes on one screen (measurements.json a_admin_data).",
+  "gap": "Sorting and pagination."
+ },
+ {
+  "id": "BP-25",
+  "status": "partial",
+  "evidence": "Outputs: Category cascade + Approval + Issues dropdowns (screens/a_outputs.png); Reports: Year. No person filter, no filter chips, no one-click clear.",
+  "gap": ""
+ },
+ {
+  "id": "BP-26",
+  "status": "partial",
+  "evidence": "Reject now shows a SnackBar with Undo (live region); 'Approved N pending outputs' SnackBar unchanged; profile confirmation still has no announced confirmation beyond the tile changing.",
+  "gap": ""
+ },
+ {
+  "id": "BP-27",
+  "status": "partial",
+  "evidence": "Desktop sidebar rows are exposed to assistive technology again (F-001 fix, PR 34: Semantics(container: true) around the routed content pane). Reject is still a text link ≈42×20 px; star icon 24 px.",
+  "gap": "Target sizes on the queue row."
+ },
+ {
+  "id": "BP-28",
+  "status": "partial",
+  "evidence": "ORCID sign-in claims the person row (name, ORCID pre-filled). Not exercisable on device (third-party login).",
+  "gap": ""
+ },
+ {
+  "id": "BP-29",
+  "status": "partial",
+  "evidence": "Profile shows the iD as a link to https://orcid.org/<id> with a generic badge icon, not the ORCID iD icon (profile_sections.dart:252). Admins type iDs into people.orcid to register researchers (the sign-in registry gate).",
+  "gap": "Use the ORCID icon; label admin-entered iDs as unauthenticated."
+ },
+ {
+  "id": "BP-30",
+  "status": "partial",
+  "evidence": "Labels: 'Scientific Outputs', 'My Outputs', 'Import & Synchronisation', 'My ORCID publications'. ORCID says Works; CIÊNCIAVITAE says Produções; the FCT form says outputs.",
+  "gap": "Pick one vocabulary and say the ORCID word once in each heading."
+ },
+ {
+  "id": "BP-31",
+  "status": "no",
+  "evidence": "source_put_code exists on output_candidates (inbound only). No push to ORCID.",
+  "gap": ""
+ },
+ {
+  "id": "BP-32",
+  "status": "yes",
+  "evidence": "sync.yml nightly, last 5 runs success (2026-09-05…09-09); gates approval_status + public_visibility + macro_type allowlist; site holds 76 publications / 183 people = SQL counts",
+  "gap": ""
+ },
+ {
+  "id": "BP-33",
+  "status": "yes",
+  "evidence": "people/single.html renders the ORCID link; sync field allowlist excludes email, legal_name, notes",
+  "gap": ""
+ },
+ {
+  "id": "BP-34",
+  "status": "partial",
+  "evidence": "Reports page: Year filter, Generate PDF, Download CSV (screens/a_admin_reports.png); people.phd, people.ciencia_id, outputs.fct_selected exist, but fct_selected = 0 rows and the CSV has no CIÊNCIA ID / ORCID / PhD columns.",
+  "gap": "One 'FCT team' export."
+ },
+ {
+  "id": "BP-35",
+  "status": "yes",
+  "evidence": "Reports and Data browser are admin-nav only (nav_model.dart); researcher nav has neither (screens/r_home.png vs a_dashboard.png)",
+  "gap": ""
+ },
+ {
+  "id": "BP-36",
+  "status": "partial",
+  "evidence": "Dashboard tiles: ORCID linked 26/184, profiles validated 183/184, outputs approved 365/365, DOI coverage 45/365, 'Needs verification' (screens/a_dashboard.png). Missing: CIÊNCIA ID coverage, unclaimed candidates (1 466), stale drafts.",
+  "gap": ""
+ },
+ {
+  "id": "BP-37",
+  "status": "partial",
+  "evidence": "Admins edit any profile directly; change_log.actor records the admin. No delegate role, no 'on behalf of' marker.",
+  "gap": ""
+ },
+ {
+  "id": "BP-38",
+  "status": "partial",
+  "evidence": "auth.users.last_sign_in_at (3 of 5 accounts in 30 days) and change_log give sign-ins and first validation; no returning-user or task-completion instrumentation.",
+  "gap": "HEART instrumentation recommendation in the report."
+ }
+]

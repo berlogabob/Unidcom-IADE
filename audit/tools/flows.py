@@ -106,12 +106,14 @@ def review_queue(f, pg):
     if not visible(pg, "Approve all .* pending outputs\\?", 4): dom_click(pg, "^Approve all")
     f.expect("Approve all .* pending outputs\\?", 10); f.shot("confirm_dialog")
     f.step("tap Cancel"); click(pg, "^Cancel$"); pg.wait_for_timeout(500)
-    f.step("tap Reject on the E2E row"); click(pg, "^Reject$"); pg.wait_for_timeout(1500)
-    if visible(pg, "E2E UX audit output", 2): dom_click(pg, "^Reject$"); pg.wait_for_timeout(2000)
-    f.shot("after_reject")
-    gone = not visible(pg, "E2E UX audit output", 3)
+    f.step("tap Reject on the E2E row"); click(pg, "^Reject$")
+    f.expect("^Reject “", 10); f.shot("reject_dialog")  # F-005 fix: a confirmation dialog with a reason field
+    f.step("type a reason"); typein(pg, r"Reason \(shown to the researcher\)", "E2E audit: not a UNIDCOM output")
+    f.step("tap Reject in the dialog"); pg.get_by_role("button", name="Reject").last.click(); pg.wait_for_timeout(1500)
+    gone = not visible(pg, r"^E2E UX audit output", 10)  # anchored: the snackbar says "Rejected E2E …"
     if not gone: f.errors.append("row still present after Reject")
-    if not visible(pg, "rejected|Rejected|removed|Undo", 2): f.warnings.append("no feedback after Reject (finding)")
+    f.shot("after_reject")
+    if not visible(pg, "^Rejected .*|^Undo$", 5): f.warnings.append("no feedback after Reject (finding)")
 
 if __name__ == "__main__":
     only = set(sys.argv[2:])

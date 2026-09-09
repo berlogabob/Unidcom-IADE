@@ -15,7 +15,7 @@
 
 #title-block(
   "UNIDCOM RIMS",
-  subtitle: "UX/UI Audit — researcher portal, 9 September 2026",
+  subtitle: "UX/UI Audit — researcher portal, 9 September 2026 (with same-day re-run)",
   meta-line: [Portal build 73259d4 (round 4, 8 Sep) · v1 pilot feature set · 86 screens, 7 flows · Prepared 9 September 2026],
   standfirst: [The pilot's core loop works end to end — every journey that could be run
   passed. Two defects still block onboarding: the desktop navigation is invisible to
@@ -23,12 +23,12 @@
   the wrong researcher. Neither is a design choice; both are a day's fix with a test.],
 )
 
-#block(above: 10pt, below: 8pt)[*Release verdict:* #pill("NOT READY", tone: "bad") — 2 blockers and 9 high-priority findings open; task success is not the problem, legibility and reach are.]
+#block(above: 10pt, below: 8pt)[*Release verdict:* #pill("NOT READY", tone: "bad") at the first run — 2 blockers and 9 high-priority findings; #pill("READY WITH FIXES", tone: "warn") after the same-day fix round and re-run (§7). Sections 1–6 record the first run as found; §7 records what changed.]
 
 #kpi-row((
   ("43", "Findings", "2 sev-4 · 9 sev-3 · 26 sev-2 · 6 sev-1"),
   ("100 %", "Task success", "7 of 7 runnable flows passed"),
-  ("51 / 100", "Best-practice score", "9 yes · 21 partial · 8 no of 38"),
+  ("51 → 57", "Best-practice score", "first run → re-run, of 38 items"),
 ))
 
 #callout(title: "The decision needed from you", tone: "warn")[
@@ -176,7 +176,61 @@ under an English page, photos), not UX.
 + *BP-07 DOI-first entry, BP-16 title warning, BP-36 dashboard counts* — two days, the highest-value feature work before the demo.
 + *HEART instrumentation* — five events (`mode_chosen`, `profile_confirmed`, `output_added`, `candidate_claimed`, `review_decision`); three already exist in `change_log`.
 
-= 7. Measurements for the next run
+= 7. Re-run after the fixes — same day
+
+Round 5 fixed the two blockers and nine high-priority findings in ten
+pull requests (#32–#39 plus two follow-ups), each pinned by a widget test;
+the test suite went from 165 to 183. The audit tooling was then run again
+on the merged build (`audit/2026-09-09-1601`), same 86 screens, same seven
+flows, same five review passes, with the trend computed by (criterion, screen).
+
+#kpi-row((
+  ("0", "Blockers", "was 2"),
+  ("61", "Severity-weighted score", "was 93 · target ≤ 60"),
+  ("16 / 7 / 0", "Fixed / new / regressed", "27 persisting, mostly by decision"),
+  ("57 / 100", "Best-practice score", "was 51 · BP-21 met, BP-13/27 partly"),
+))
+
+#data-table(
+  ("Metric", "First run", "Re-run"),
+  (
+    ([Findings by severity 4 / 3 / 2 / 1], [2 / 9 / 26 / 6], [0 / 1 / 25 / 8]),
+    ([Task success rate], [100 %], [100 %]),
+    ([Mean steps per flow], [7.9], [8.1]),
+    ([Defect density], [0.50 per screen], [0.41 per screen]),
+    ([Automated tests], [165], [183]),
+  ),
+  widths: (1fr, 3cm, 3cm), right-from: 1,
+)
+
+#v(4pt)
+*Verified fixed on the live build:* desktop sidebar exposed to assistive
+technology (42 semantics nodes on the researcher home, was 17); person page
+switches record on id change; anonymous M2 slug redirects; branded 404;
+correct sidebar highlight; status pill in My Outputs; Reject with
+confirmation, reason, Undo and the reason shown to the researcher; phone
+dashboard, review tabs and report table; logo labels; humanised status
+labels; chooser copy; sidebar footer; Maestro assertions.
+
+*Found by the re-run and fixed the same afternoon:* the queue row printed
+"pending" twice after the pill change; the new 404 page rendered blank
+because it was wrapped in the app shell outside the router. Both now have
+tests — the argument for keeping this crawl in the routine.
+
+*Remaining severity 3 (one):* the 25-row researcher sidebar (Miller/Hick),
+a product decision for Rui. The seven new findings are all severity 2 or 1:
+raw status chips on the researcher's own profile header, three feedback
+patterns for one message type, the thin Personal Information page left by
+the E4 split, the v2 admin route landing on a queue instead of redirecting,
+cluster codes without expansion, and small alignment offsets.
+
+#callout(title: "Release verdict after the re-run", tone: "info")[
+  #pill("READY WITH FIXES", tone: "warn") — no blocker open; the one
+  high-priority item is a design decision, not a defect. The pilot cohort can
+  be onboarded on this build.
+]
+
+= 8. Measurements for the next run
 
 #data-table(
   ("Metric", "How measured", "9 Sep 2026"),
@@ -194,7 +248,7 @@ under an English page, photos), not UX.
 )
 
 #text(size: 8.5pt, fill: muted)[Trend comparison is by (criterion, screen) pair between
-`findings.json` files; this is the first run, so there is no trend yet. Rerun:
+`findings.json` files; §7 is the first such comparison. Rerun:
 `audit/tools/README.md`. Screenshots and accessibility trees are kept out of git —
 they contain researcher emails from the admin data browser — and live only in the
 audit machine's `audit/2026-09-09-1136/screens` and `hierarchy` folders.]

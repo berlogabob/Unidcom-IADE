@@ -1,0 +1,101 @@
+[
+ {
+  "criterion": "H4",
+  "screen": "r_welcome_affiliation",
+  "severity": 2,
+  "evidence": "Accepted as designed in round 5 (`researcherNav(signedIn: false)`): an anonymous visitor sees only the Welcome-pack groups, a signed-in researcher the full portal sidebar for the same /app/welcome/* page. Recorded as a deliberate difference, not drift; the residual cost is that the two sidebars style the same section differently. Persists from the previous run. For an anonymous visitor, the welcome-pack routes (/app/welcome/*, /app/help/*) show a dedicated sidebar (RESEARCH ADMINISTRATION / COMMUNICATION / HELP & CONTACTS) with the current item highlighted — confirmed on anon_welcome_start.png and anon_deeplink_people bounce flow. For a signed-in researcher visiting the identical /app/welcome/affiliation route, the sidebar is silently swapped for the generic app sidebar (OVERVIEW / MY PROFILE / SCIENTIFIC OUTPUTS) which has no 'Affiliation Guidelines' item at all, so nothing is highlighted and the researcher loses the 'you are here' cue. The same reproduces on r_welcome_start/fct/report/signature/social/logos/contacts and r_help_links/r_help_docs_wip/r_help_faq_wip. Note the highlighting mechanism itself works correctly elsewhere in the researcher sidebar (e.g. r_outputs.png shows 'My Outputs' highlighted, r_profile_bio.png shows 'Biography' highlighted, r_landing_after_choose.png shows 'Getting Started' highlighted) — only these welcome-pack/help sub-pages have no corresponding nav entry to highlight.",
+  "screenshot": "screens/r_welcome_affiliation.png",
+  "measurement": null,
+  "recommendation": "Give researchers the same welcome-pack/help sub-nav anon visitors get (or add matching leaf items under Overview/Help with correct active-state highlighting) so the sidebar always reflects where the user is."
+ },
+ {
+  "criterion": "H1",
+  "screen": "a_deeplink_profile",
+  "severity": 2,
+  "evidence": "Personal Information (/app/profile) is a thin page: identity header, status pills and Edit / Connect ORCID, then empty space — identical content in both runs (hierarchy/r_profile.json vs the first run's), so not a regression but the cost of the E4 split that moved bio, identifiers and areas onto their own leaves. An admin following the researcher-only route sees the same thin page.",
+  "screenshot": "screens/a_deeplink_profile.png",
+  "measurement": "hierarchy/phone_r_profile.json max child bound y=844 (== viewport height, no scrollable overflow) vs hierarchy/r_profile.json max bound y=1513 (scrollable, full sections present)",
+  "recommendation": "Render the same Personal Information sections regardless of viewport width or admin/researcher context; if a section is intentionally omitted for a given mode, show a placeholder or note explaining why rather than ending the page in blank space."
+ },
+ {
+  "criterion": "H10",
+  "screen": "login",
+  "severity": 2,
+  "evidence": "Persists from the previous run. The sign-in form offers only 'Sign in' (email/password) and 'Sign in with ORCID iD' — there is still no 'Forgot password' or account-recovery link anywhere on the screen.",
+  "screenshot": "screens/login.png",
+  "measurement": null,
+  "recommendation": "Add a password-recovery link under the password field so users who forget their credentials aren't stuck."
+ },
+ {
+  "criterion": "H5",
+  "screen": "r_add_output_dialog",
+  "severity": 2,
+  "evidence": "Persists from the previous run. The 'Add output' dialog's Category dropdown still defaults to 'All' when creating a brand-new output (confirmed again on flow_add_output_2_validation.png, where the title-required inline error appears but Category is still 'All'). 'All' is a list-filter concept, not a valid category for a single record.",
+  "screenshot": "screens/r_add_output_dialog.png",
+  "measurement": null,
+  "recommendation": "Default the Category field to a blank/placeholder state (or the most common real category) and make it a required field, rather than defaulting to the 'All' filter value."
+ },
+ {
+  "criterion": "H5",
+  "screen": "r_profile_edit_dialog",
+  "severity": 2,
+  "evidence": "Persists from the previous run. 'Join date (YYYY-MM-DD)' and 'Exit date (YYYY-MM-DD)' are still plain free-text fields; the required format is communicated only via placeholder text, with no date picker or input mask to prevent malformed entries.",
+  "screenshot": "screens/r_profile_edit_dialog.png",
+  "measurement": null,
+  "recommendation": "Use a date picker or masked input for the date fields instead of relying on placeholder-text instructions alone."
+ },
+ {
+  "criterion": "H4",
+  "screen": "r_outputs_import",
+  "severity": 2,
+  "evidence": "Persists from the previous run. The 'Ciência Vitae Sync' and 'Other Data Sources' rows still use the same green-tinted, wrench-icon card styling that other genuinely-placeholder pages use with an explicit 'Work in progress' label (compare r_profile_areas_wip.png, r_help_docs_wip.png, r_help_faq_wip.png, r_outputs_edit_wip.png, r_outputs_validation_wip.png, r_profile_interests_wip.png, which all pair the wrench icon with the words 'Work in progress'). These two rows use the wrench-icon look but omit the 'Work in progress' text, so it is unclear whether they are working, clickable controls or placeholders.",
+  "screenshot": "screens/r_outputs_import.png",
+  "measurement": null,
+  "recommendation": "Either make these rows functional or label them 'Work in progress' the same way every other placeholder in the app is labelled, so the same visual style always means the same thing."
+ },
+ {
+  "criterion": "H4",
+  "screen": "r_outputs",
+  "severity": 1,
+  "evidence": "Persists from the previous run. Two different labels are still used for the same 'add an output' action on the same screen: the top-right button says 'Add output' while the inline control next to the Timeline heading says just 'Add' (both visible together on r_outputs.png).",
+  "screenshot": "screens/r_outputs.png",
+  "measurement": null,
+  "recommendation": "Use one consistent label ('Add output') for both entry points to the same action."
+ },
+ {
+  "criterion": "H6",
+  "screen": "r_profile_areas_wip",
+  "severity": 2,
+  "evidence": "Persists from the previous run (reporting once for the pattern, per instructions). Research Areas, Research Interests, Edit Outputs, Validation & Duplicates, Documentation and FAQs are all still listed as ordinary, clickable sidebar items indistinguishable from working sections (confirmed again on r_profile_areas_wip.png, r_profile_interests_wip.png, r_outputs_edit_wip.png, r_outputs_validation_wip.png, r_help_docs_wip.png, r_help_faq_wip.png); only after clicking does a 'Work in progress' card reveal the feature doesn't exist yet. No badge/label in the sidebar itself signals this in advance.",
+  "screenshot": "screens/r_profile_areas_wip.png",
+  "measurement": null,
+  "recommendation": "Mark not-yet-implemented sidebar items with a 'Coming soon' badge (or disable/grey them) so users don't have to click through to discover a dead end."
+ },
+ {
+  "criterion": "H1",
+  "screen": "state_loading_cold",
+  "severity": 2,
+  "evidence": "Persists from the previous run. At +250ms into a cold load, the screen is still entirely blank white — no spinner, logo, or skeleton UI indicates the app is starting up.",
+  "screenshot": "screens/state_loading_cold.png",
+  "measurement": null,
+  "recommendation": "Show a lightweight loading indicator (logo/spinner) immediately at first paint instead of a blank white screen, especially for slower connections."
+ },
+ {
+  "criterion": "H4",
+  "screen": "a_admin_requests_v2",
+  "severity": 2,
+  "evidence": "screens.md marks #/app/admin/requests as a 'v2 route: expected redirect' (a compiled-out, pilot-v1-unsupported surface, listed under NOT COVERED as 'v2-only surfaces'). Instead of redirecting, or showing the app's usual wrench-icon 'Work in progress' card used consistently for every other unbuilt feature, it renders a fully-styled, apparently-functional dashboard: three stat tiles (Submitted/Approved/Completed, all 0) plus All/Submitted/Approved/Rejected/Completed filter tabs and a 'Requests' list showing 'No requests.' An admin has no way to tell this is an unfinished v2 feature rather than a genuinely empty, working queue.",
+  "screenshot": "screens/a_admin_requests_v2.png",
+  "measurement": null,
+  "recommendation": "Either gate this route behind the same redirect used for other compiled-out v2 surfaces, or replace it with the standard wrench + 'Work in progress' placeholder card used everywhere else in the app, so the placeholder pattern stays consistent."
+ },
+ {
+  "criterion": "H2",
+  "screen": "a_objective",
+  "severity": 1,
+  "evidence": "The objective detail page shows cluster codes as bare pills ('C3', 'R3', 'T3', 'E3', 'F3') with no expansion or tooltip, and the objective itself is only identified as 'UNID.9' in the breadcrumb-style header alongside its plain-language title. A new admin unfamiliar with the FCT/UNIDCOM cluster taxonomy has no in-page way to learn what C3/R3/T3/E3/F3 stand for.",
+  "screenshot": "screens/a_objective.png",
+  "measurement": null,
+  "recommendation": "Add a tooltip or short label next to each cluster code pill spelling out the cluster name (as the Structure > Clusters list presumably already has), rather than showing bare internal codes."
+ }
+]

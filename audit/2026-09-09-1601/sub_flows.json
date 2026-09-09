@@ -1,0 +1,38 @@
+[
+ {
+  "criterion": "ST-LOAD",
+  "screen": "state_loading_cold",
+  "severity": 2,
+  "evidence": "Persists from the previous run (2026-09-09-1136). Cold-start screenshot taken at +250ms is still fully blank white with zero content; hierarchy/state_loading_cold.json still returns only an empty semantics tree — no splash, no spinner, no branding is rendered while the Flutter engine boots. No fix was made to this surface between runs (it is not in the fixed/merged list for this run).",
+  "screenshot": "screens/state_loading_cold.png",
+  "measurement": "capture at +250ms, 0 semantic nodes, unchanged from previous run",
+  "recommendation": "Ship a static HTML/CSS splash (logo or spinner) shown before the Flutter engine attaches, so cold load never presents a blank white frame."
+ },
+ {
+  "criterion": "NAV-4",
+  "screen": "a_admin_review",
+  "severity": 2,
+  "evidence": "Persists from the previous run. a_admin_review.png (Pending approval) still adds a secondary row of 7 top tabs (Profiles to approve, Outputs to approve, Needs re-verification, Suggestions, Activity, Needs attention, ORCID works) on top of the single left-sidebar entry \"Pending approval\". No other screen in the inventory combines the sidebar with a secondary flat tab bar, and 7 tabs in one row exceeds the ~5 a single flat tab row should hold. Not in the fixed/merged list for this run.",
+  "screenshot": "screens/a_admin_review.png",
+  "measurement": "7 tabs in one row, unique to this screen, unchanged from previous run",
+  "recommendation": "Either split the 7 sub-views into their own sidebar leaves (consistent with the rest of the IA) or reduce/group the tabs (e.g. a dropdown for the 3 least-used) so no single tab row exceeds ~5 items."
+ },
+ {
+  "criterion": "ST-EMPTY",
+  "screen": "state_empty_people_search",
+  "severity": 1,
+  "evidence": "Five-state coverage sampled across data screens, updated for this run's fixes: | Screen | ST-IDLE | ST-LOAD | ST-SUCCESS | ST-ERROR | ST-EMPTY | |---|---|---|---|---|---| | People search | present | n/a | present | n/a | present (weak) | | People (backend down, @3s) | n/a | present (silent/unbounded @3s) | n/a | present (delayed, classified error+Retry appears only after the 20s client timeout) | n/a | | Dashboard (backend down, @3s) | n/a | present (silent/unbounded @3s) | n/a | present (delayed, same 20s timeout) | n/a | | Cold boot | n/a | MISSING | n/a | n/a | n/a | | My Outputs after add | n/a | n/a | present (pending chip) -- FIXED this run, see flow_add_output_4_in_my_outputs.png | n/a | n/a | | Review queue reject | n/a | n/a | present (snackbar + Undo) -- FIXED this run, see flow_review_queue_5_after_reject.png | n/a | n/a |. state_empty_people_search.png itself still does the empty state reasonably well (\"No people found\", filters and search term still visible so the cause is inferable), but still offers no explicit next step (e.g. a \"Clear search\" action) beyond editing the search box by hand.",
+  "screenshot": "screens/state_empty_people_search.png",
+  "measurement": "0 people / 0 next-step affordance besides editing the search field",
+  "recommendation": "Add a \"Clear filters/search\" button to the empty result state so the next step is explicit rather than implicit."
+ },
+ {
+  "criterion": "ST-LOAD",
+  "screen": "state_error_backend_down",
+  "severity": 2,
+  "evidence": "state_error_backend_down.png and state_error_dashboard_down.png are both captured at 3s into a Supabase-blocked load and show only an unbounded, unlabeled loading dot -- no \"still trying\", no elapsed-time or retry-now affordance, no cap visible in this frame. Per the run's evidence, the classified error message with a Retry action only appears after the client's 20s timeout, so a user watching this frame for up to ~20s gets no visible sign the app is aware anything is wrong or how much longer to wait -- a purely silent wait, distinct from the eventual (correct) ST-ERROR state that follows it.",
+  "screenshot": "screens/state_error_backend_down.png",
+  "measurement": "spinner-only frame at 3s; first user-facing error/Retry affordance not until ~20s",
+  "recommendation": "Show progressive feedback during the wait (e.g. \"Still connecting...\" after 3-5s) rather than a bare spinner for up to 20s before the classified error with Retry appears."
+ }
+]

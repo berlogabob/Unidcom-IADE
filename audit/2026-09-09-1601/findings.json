@@ -1,0 +1,615 @@
+{
+  "app": "UNIDCOM RIMS researcher portal (Unidcom-IADE)",
+  "platform": "web",
+  "device": "Playwright Chromium 1280×900 / 390×844",
+  "date": "2026-09-09",
+  "commit": "7d628bb (crawl) / e5b8847 (flows) / daaf308 (404 recapture)",
+  "build": "flutter build web --dart-define=E2E=true (v1)",
+  "screens_audited": 82,
+  "flows": [
+    {
+      "name": "auth_gate",
+      "passed": true,
+      "duration_s": 7.0,
+      "steps": 6,
+      "yaml": ".maestro/auth_gate.yaml"
+    },
+    {
+      "name": "researcher_mode",
+      "passed": true,
+      "duration_s": 17.9,
+      "steps": 9,
+      "yaml": ".maestro/researcher_mode.yaml"
+    },
+    {
+      "name": "admin_mode",
+      "passed": true,
+      "duration_s": 8.4,
+      "steps": 8,
+      "yaml": ".maestro/admin_mode.yaml"
+    },
+    {
+      "name": "orcid_error",
+      "passed": true,
+      "duration_s": 3.7,
+      "steps": 3,
+      "yaml": ".maestro/orcid_error.yaml"
+    },
+    {
+      "name": "profile_confirm",
+      "passed": true,
+      "duration_s": 4.8,
+      "steps": 8,
+      "yaml": "(new) profile_confirm — researcher confirms draft profile"
+    },
+    {
+      "name": "add_output",
+      "passed": true,
+      "duration_s": 8.3,
+      "steps": 11,
+      "yaml": "(new) add_output — researcher records an output manually"
+    },
+    {
+      "name": "review_queue",
+      "passed": true,
+      "duration_s": 17.4,
+      "steps": 12,
+      "yaml": "(new) review_queue — admin sees, confirms-all, rejects"
+    },
+    {
+      "name": "featured_star",
+      "passed": null,
+      "duration_s": 0,
+      "steps": 0,
+      "yaml": ".maestro/featured_star.yaml"
+    },
+    {
+      "name": "support_request",
+      "passed": null,
+      "duration_s": 0,
+      "steps": 0,
+      "yaml": ".maestro/support_request.yaml"
+    }
+  ],
+  "metrics": {
+    "screens_audited": 82,
+    "flows_defined": 9,
+    "flows_run": 7,
+    "flows_passed": 7,
+    "task_success_rate_pct": 100.0,
+    "avg_steps_per_flow": 8.1,
+    "avg_duration_s": 9.6,
+    "flow_errors": 0,
+    "findings_total": 34,
+    "findings_by_severity": {
+      "4": 0,
+      "3": 1,
+      "2": 25,
+      "1": 8
+    },
+    "defect_density_per_screen": 0.41,
+    "severity_weighted_score": 61,
+    "dropped_untraceable": 0
+  },
+  "trend": {
+    "previous_run": "2026-09-09-1136",
+    "fixed": [
+      "F-001 DS-A11Y-1@r_home",
+      "F-002 H1@a_person_e2e_self",
+      "F-003 H1@anon_welcome_docs_m2",
+      "F-005 H5@a_admin_review",
+      "F-006 H9@r_unknown_route",
+      "F-008 NAV-1@r_outputs_add",
+      "F-009 ST-SUCCESS@flow_add_output_4_in_my_outputs",
+      "F-010 VD-RESP-1@phone_a_dashboard",
+      "F-011 VD-TYPE-3@anon_welcome_logos",
+      "F-012 DS-BRAND-1@a_people",
+      "F-015 FLOW-1@r_welcome_start",
+      "F-016 H1@r_home_status",
+      "F-018 H2@r_account_menu",
+      "F-019 H2@r_profile",
+      "F-035 VD-GES-1@r_home",
+      "F-037 VD-RESP-1@phone_a_review"
+    ],
+    "fixed_keys": [
+      "DS-A11Y-1@r_home",
+      "H1@a_person_e2e_self",
+      "H1@anon_welcome_docs_m2",
+      "H5@a_admin_review",
+      "H9@r_unknown_route",
+      "NAV-1@r_outputs_add",
+      "ST-SUCCESS@flow_add_output_4_in_my_outputs",
+      "VD-RESP-1@phone_a_dashboard",
+      "VD-TYPE-3@anon_welcome_logos",
+      "DS-BRAND-1@a_people",
+      "FLOW-1@r_welcome_start",
+      "H1@r_home_status",
+      "H2@r_account_menu",
+      "H2@r_profile",
+      "VD-GES-1@r_home",
+      "VD-RESP-1@phone_a_review"
+    ],
+    "new": [
+      "F-002 DS-BRAND-1@r_profile",
+      "F-003 DS-FDBK-1@state_error_backend_down",
+      "F-006 H1@a_deeplink_profile",
+      "F-008 H4@a_admin_requests_v2",
+      "F-018 LAW-JAKOB-1@r_account_menu",
+      "F-030 H2@a_objective",
+      "F-033 VD-HIER-2@anon_welcome_logos"
+    ],
+    "regressed": [],
+    "persisting": [
+      "F-001 (was F-007) LAW-MILLER-1@r_sidebar_expanded",
+      "F-004 (was F-013) DS-ICON-1@r_sidebar_expanded",
+      "F-005 (was F-014) DS-ICON-1@r_welcome_start",
+      "F-007 (was F-017) H10@login",
+      "F-009 (was F-020) H4@r_outputs_import",
+      "F-010 (was F-004) H4@r_welcome_affiliation",
+      "F-011 (was F-021) H5@r_add_output_dialog",
+      "F-012 (was F-022) H5@r_profile_edit_dialog",
+      "F-013 (was F-023) H6@r_profile_areas_wip",
+      "F-014 (was F-024) LAW-FITTS-1@a_person",
+      "F-015 (was F-025) LAW-FITTS-1@r_profile_edit_dialog",
+      "F-016 (was F-026) LAW-HICK-1@a_people",
+      "F-017 (was F-027) LAW-HICK-2@r_profile_edit_dialog",
+      "F-019 (was F-028) LAW-MILLER-1@a_dashboard",
+      "F-020 (was F-029) NAV-4@a_admin_review",
+      "F-021 (was F-030) ST-EMPTY@r_outputs_import",
+      "F-022 (was F-031) ST-LOAD@state_error_backend_down",
+      "F-023 (was F-032) ST-LOAD@state_loading_cold",
+      "F-024 (was F-033) VD-COL-2@a_dashboard",
+      "F-025 (was F-034) VD-COL-2@r_home",
+      "F-026 (was F-036) VD-RESP-1@a_admin_reports",
+      "F-027 (was F-038) DS-BTN-1@r_outputs",
+      "F-028 (was F-039) DS-FORM-1@r_add_output_dialog",
+      "F-029 (was F-040) DS-ICON-1@r_profile",
+      "F-031 (was F-041) H4@r_outputs",
+      "F-032 (was F-042) ST-EMPTY@state_empty_people_search",
+      "F-034 (was F-043) VD-TYPE-1@a_admin_data"
+    ],
+    "metric_deltas": {
+      "task_success_rate_pct": [
+        100.0,
+        100.0
+      ],
+      "avg_steps_per_flow": [
+        7.9,
+        8.1
+      ],
+      "findings_total": [
+        43,
+        34
+      ],
+      "severity_weighted_score": [
+        93,
+        61
+      ],
+      "defect_density_per_screen": [
+        0.5,
+        0.41
+      ]
+    },
+    "severity_deltas": {
+      "4": [
+        2,
+        0
+      ],
+      "3": [
+        9,
+        1
+      ],
+      "2": [
+        26,
+        25
+      ],
+      "1": [
+        6,
+        8
+      ]
+    }
+  },
+  "findings": [
+    {
+      "id": "F-001",
+      "criterion": "LAW-MILLER-1",
+      "screen": "r_sidebar_expanded",
+      "severity": 3,
+      "evidence": "Unchanged since the previous run: the persistent researcher sidebar still holds nav rows across 6 collapsible groups (OVERVIEW, MY PROFILE, SCIENTIFIC OUTPUTS, WELCOME PACK, HELP, SETTINGS; per screens.md's r_* route inventory that's 5+6+5+8+3+1 = 28 leaf destinations). On the 1280x900 viewport only OVERVIEW (5: Research Activity Summary, Recent Scientific Outputs, Alerts & Notifications, Profile Status, Getting Started) and MY PROFILE (6: Personal Information, Researcher Identifiers, Biography, Research Areas, Research Interests, Profile Status) fit before the fold, plus a 2-row sliver of SCIENTIFIC OUTPUTS (My Outputs, Add Scientific Output) clipped by the footer. WELCOME PACK, HELP and SETTINGS still require scrolling to even discover, and every group still renders expanded by default rather than collapsing to a Miller-safe count. [also LAW-MILLER-1 on phone_r_drawer: The 390px drawer still renders one flat, fully-expanded nav list past Miller's ceiling: measurements.json flags it as an oversized group ({\"label\":\"flt-semantic-node-1019\",\"items\":12,\"limit\":9}) — Das]",
+      "screenshot": "screens/r_sidebar_expanded.png",
+      "measurement": null,
+      "recommendation": "Collapse all but the current section's group by default (accordion behavior, one open group at a time) so the visible option count stays near 7±2, and let the active route auto-expand only its own group.",
+      "source": "uxlaws",
+      "previous_id": "F-007"
+    },
+    {
+      "id": "F-002",
+      "criterion": "DS-BRAND-1",
+      "screen": "r_profile",
+      "severity": 2,
+      "evidence": "New instance of the raw-status-code pattern the previous run flagged (and which was fixed for the People-list StatusPill): on the researcher's own Personal Information page, the status pill row reads '● external  ● inactive  ● pending_review' — two clean humanised words sitting directly beside a third pill still showing the literal snake_case value with the underscore intact. The same 'pending_review' pill recurs identically on flow_profile_confirm_2_after_confirm. Admin-side person detail pages (a_person: 'integrated · active · approved') show only clean humanised values, so this is a distinct, still-unhumanised code path for the profile_status field on the researcher's own profile.",
+      "screenshot": "screens/r_profile.png",
+      "measurement": null,
+      "recommendation": "Route the profile_status pill through the same status-label humanizer used elsewhere (and already applied to People-list StatusPill and the filter dropdown) so 'pending_review' renders as 'Pending review' consistently.",
+      "source": "designsystem"
+    },
+    {
+      "id": "F-003",
+      "criterion": "DS-FDBK-1",
+      "screen": "state_error_backend_down",
+      "severity": 2,
+      "evidence": "The app uses at least three different patterns for the same message type across screens: (1) inline red text under the form on auth failure (state_login_error: 'Invalid login credentials'; flow_orcid_error_1_error_shown: 'No UNIDCOM profile is registered for ORCID iD...'), (2) a bottom snackbar with an action for confirmations/undo (flow_review_queue_5_after_reject: 'Rejected E2E UX audit output (delete me)' + Undo; flow_profile_confirm_2_after_confirm: 'Profile submitted for approval'), and (3) nothing at all for a fully failed data load — state_error_backend_down and state_error_dashboard_down both show the shell chrome with an indefinite single-dot loading spinner in the content area and no error message, retry action, or any feedback whatsoever when Supabase is unreachable.",
+      "screenshot": "screens/state_error_backend_down.png",
+      "measurement": null,
+      "recommendation": "Give the backend-down state its own designed error card (icon + message + retry button, reusing the WipPage/Panel shell) instead of an indefinite spinner, and settle on one feedback pattern per message type (inline field errors vs. transient snackbars vs. full-page error states) rather than three ad hoc ones.",
+      "source": "designsystem"
+    },
+    {
+      "id": "F-004",
+      "criterion": "DS-ICON-1",
+      "screen": "r_sidebar_expanded",
+      "severity": 2,
+      "evidence": "Unchanged since the previous run: the shared SideNav widget renders a leading Material icon for every top-level item in the admin nav (a_people/a_dashboard/a_projects all show Dashboard/People/Scientific outputs/Projects/Structure/Reports/Data browser/Settings each with a glyph), but the researcher nav (visible here and on r_home, phone_r_drawer via its admin-mirrored order) still renders every item (Research Activity Summary, Recent Scientific Outputs, Alerts & Notifications, Profile Status, Getting Started, Personal Information, Researcher Identifiers, Biography, Research Areas, Research Interests, My Outputs, Add Scientific Output...) as plain indented text with zero icons. Same shared component, two different rules between its own two modes.",
+      "screenshot": "screens/r_sidebar_expanded.png",
+      "measurement": null,
+      "recommendation": "Give every top-level NavItem an icon in researcherNav() (lib/widgets/nav_model.dart) to match adminNav(), or drop icons from adminNav() — one rule, both modes of the one shared SideNav.",
+      "source": "designsystem",
+      "previous_id": "F-013"
+    },
+    {
+      "id": "F-005",
+      "criterion": "DS-ICON-1",
+      "screen": "r_welcome_start",
+      "severity": 2,
+      "evidence": "Unchanged since the previous run: the three 'Getting started' summary cards still use raw full-colour Unicode emoji (👥 people, 📍 red map pin, 🌐 blue globe) as icons, a completely different family from the monochrome outlined Material icons used everywhere else in the app (sidebar, buttons, status pills, alerts).",
+      "screenshot": "screens/r_welcome_start.png",
+      "measurement": "measurements.json r_welcome_start.alignment_near_misses shows the three emoji glyphs among the elements at edges 318-321px (1px offsets, consistent with their non-vector emoji rendering box vs. the surrounding vector-icon layout).",
+      "recommendation": "Replace the emoji icons in welcome_pack_content.dart with Material Icons (Icons.groups_outlined, Icons.location_on_outlined, Icons.language) so the Welcome pack matches the vector-icon system used in the rest of the portal.",
+      "source": "designsystem",
+      "previous_id": "F-014"
+    },
+    {
+      "id": "F-006",
+      "criterion": "H1",
+      "screen": "a_deeplink_profile",
+      "severity": 2,
+      "evidence": "Personal Information (/app/profile) is a thin page: identity header, status pills and Edit / Connect ORCID, then empty space — identical content in both runs (hierarchy/r_profile.json vs the first run's), so not a regression but the cost of the E4 split that moved bio, identifiers and areas onto their own leaves. An admin following the researcher-only route sees the same thin page.",
+      "screenshot": "screens/a_deeplink_profile.png",
+      "measurement": "hierarchy/phone_r_profile.json max child bound y=844 (== viewport height, no scrollable overflow) vs hierarchy/r_profile.json max bound y=1513 (scrollable, full sections present)",
+      "recommendation": "Render the same Personal Information sections regardless of viewport width or admin/researcher context; if a section is intentionally omitted for a given mode, show a placeholder or note explaining why rather than ending the page in blank space.",
+      "source": "heuristics"
+    },
+    {
+      "id": "F-007",
+      "criterion": "H10",
+      "screen": "login",
+      "severity": 2,
+      "evidence": "Persists from the previous run. The sign-in form offers only 'Sign in' (email/password) and 'Sign in with ORCID iD' — there is still no 'Forgot password' or account-recovery link anywhere on the screen.",
+      "screenshot": "screens/login.png",
+      "measurement": null,
+      "recommendation": "Add a password-recovery link under the password field so users who forget their credentials aren't stuck.",
+      "source": "heuristics",
+      "previous_id": "F-017"
+    },
+    {
+      "id": "F-008",
+      "criterion": "H4",
+      "screen": "a_admin_requests_v2",
+      "severity": 2,
+      "evidence": "screens.md marks #/app/admin/requests as a 'v2 route: expected redirect' (a compiled-out, pilot-v1-unsupported surface, listed under NOT COVERED as 'v2-only surfaces'). Instead of redirecting, or showing the app's usual wrench-icon 'Work in progress' card used consistently for every other unbuilt feature, it renders a fully-styled, apparently-functional dashboard: three stat tiles (Submitted/Approved/Completed, all 0) plus All/Submitted/Approved/Rejected/Completed filter tabs and a 'Requests' list showing 'No requests.' An admin has no way to tell this is an unfinished v2 feature rather than a genuinely empty, working queue.",
+      "screenshot": "screens/a_admin_requests_v2.png",
+      "measurement": null,
+      "recommendation": "Either gate this route behind the same redirect used for other compiled-out v2 surfaces, or replace it with the standard wrench + 'Work in progress' placeholder card used everywhere else in the app, so the placeholder pattern stays consistent.",
+      "source": "heuristics"
+    },
+    {
+      "id": "F-009",
+      "criterion": "H4",
+      "screen": "r_outputs_import",
+      "severity": 2,
+      "evidence": "Persists from the previous run. The 'Ciência Vitae Sync' and 'Other Data Sources' rows still use the same green-tinted, wrench-icon card styling that other genuinely-placeholder pages use with an explicit 'Work in progress' label (compare r_profile_areas_wip.png, r_help_docs_wip.png, r_help_faq_wip.png, r_outputs_edit_wip.png, r_outputs_validation_wip.png, r_profile_interests_wip.png, which all pair the wrench icon with the words 'Work in progress'). These two rows use the wrench-icon look but omit the 'Work in progress' text, so it is unclear whether they are working, clickable controls or placeholders.",
+      "screenshot": "screens/r_outputs_import.png",
+      "measurement": null,
+      "recommendation": "Either make these rows functional or label them 'Work in progress' the same way every other placeholder in the app is labelled, so the same visual style always means the same thing.",
+      "source": "heuristics",
+      "previous_id": "F-020"
+    },
+    {
+      "id": "F-010",
+      "criterion": "H4",
+      "screen": "r_welcome_affiliation",
+      "severity": 2,
+      "evidence": "Accepted as designed in round 5 (`researcherNav(signedIn: false)`): an anonymous visitor sees only the Welcome-pack groups, a signed-in researcher the full portal sidebar for the same /app/welcome/* page. Recorded as a deliberate difference, not drift; the residual cost is that the two sidebars style the same section differently. Persists from the previous run. For an anonymous visitor, the welcome-pack routes (/app/welcome/*, /app/help/*) show a dedicated sidebar (RESEARCH ADMINISTRATION / COMMUNICATION / HELP & CONTACTS) with the current item highlighted — confirmed on anon_welcome_start.png and anon_deeplink_people bounce flow. For a signed-in researcher visiting the identical /app/welcome/affiliation route, the sidebar is silently swapped for the generic app sidebar (OVERVIEW / MY PROFILE / SCIENTIFIC OUTPUTS) which has no 'Affiliation Guidelines' item at all, so nothing is highlighted and the researcher loses the 'you are here' cue. The same reproduces on r_welcome_start/fct/report/signature/social/logos/contacts and r_help_links/r_help_docs_wip/r_help_faq_wip. Note the highlighting mechanism itself works correctly elsewhere in the researcher sidebar (e.g. r_outputs.png shows 'My Outputs' highlighted, r_profile_bio.png shows 'Biography' highlighted, r_landing_after_choose.png shows 'Getting Started' highlighted) — only these welcome-pack/help sub-pages have no corresponding nav entry to highlight.",
+      "screenshot": "screens/r_welcome_affiliation.png",
+      "measurement": null,
+      "recommendation": "Give researchers the same welcome-pack/help sub-nav anon visitors get (or add matching leaf items under Overview/Help with correct active-state highlighting) so the sidebar always reflects where the user is.",
+      "source": "heuristics",
+      "previous_id": "F-004"
+    },
+    {
+      "id": "F-011",
+      "criterion": "H5",
+      "screen": "r_add_output_dialog",
+      "severity": 2,
+      "evidence": "Persists from the previous run. The 'Add output' dialog's Category dropdown still defaults to 'All' when creating a brand-new output (confirmed again on flow_add_output_2_validation.png, where the title-required inline error appears but Category is still 'All'). 'All' is a list-filter concept, not a valid category for a single record.",
+      "screenshot": "screens/r_add_output_dialog.png",
+      "measurement": null,
+      "recommendation": "Default the Category field to a blank/placeholder state (or the most common real category) and make it a required field, rather than defaulting to the 'All' filter value.",
+      "source": "heuristics",
+      "previous_id": "F-021"
+    },
+    {
+      "id": "F-012",
+      "criterion": "H5",
+      "screen": "r_profile_edit_dialog",
+      "severity": 2,
+      "evidence": "Persists from the previous run. 'Join date (YYYY-MM-DD)' and 'Exit date (YYYY-MM-DD)' are still plain free-text fields; the required format is communicated only via placeholder text, with no date picker or input mask to prevent malformed entries.",
+      "screenshot": "screens/r_profile_edit_dialog.png",
+      "measurement": null,
+      "recommendation": "Use a date picker or masked input for the date fields instead of relying on placeholder-text instructions alone.",
+      "source": "heuristics",
+      "previous_id": "F-022"
+    },
+    {
+      "id": "F-013",
+      "criterion": "H6",
+      "screen": "r_profile_areas_wip",
+      "severity": 2,
+      "evidence": "Persists from the previous run (reporting once for the pattern, per instructions). Research Areas, Research Interests, Edit Outputs, Validation & Duplicates, Documentation and FAQs are all still listed as ordinary, clickable sidebar items indistinguishable from working sections (confirmed again on r_profile_areas_wip.png, r_profile_interests_wip.png, r_outputs_edit_wip.png, r_outputs_validation_wip.png, r_help_docs_wip.png, r_help_faq_wip.png); only after clicking does a 'Work in progress' card reveal the feature doesn't exist yet. No badge/label in the sidebar itself signals this in advance. [orchestrator: Unchanged (product decision deferred): 8 of the 25 researcher sidebar leaves open the same 'Work in progress' page and look identical to working rows.]",
+      "screenshot": "screens/r_profile_areas_wip.png",
+      "measurement": null,
+      "recommendation": "Mark not-yet-implemented sidebar items with a 'Coming soon' badge (or disable/grey them) so users don't have to click through to discover a dead end.",
+      "source": "heuristics",
+      "previous_id": "F-023"
+    },
+    {
+      "id": "F-014",
+      "criterion": "LAW-FITTS-1",
+      "screen": "a_person",
+      "severity": 2,
+      "evidence": "The 'Remove' control on a person's timeline entry is still a confirmed clickable target only 40×6px (measurements.json small_tap_targets, assumed:false), an order of magnitude under the 24px minimum, with no visual button styling — unchanged from the previous run.",
+      "screenshot": "screens/a_person.png",
+      "measurement": "small_tap_targets: {\"label\":\"Remove\",\"w\":40,\"h\":6,\"assumed\":false}",
+      "recommendation": "Render 'Remove' as a proper button/icon-button with at least a 24px (ideally 44px) hit box, not a 6px text sliver.",
+      "source": "uxlaws",
+      "previous_id": "F-024"
+    },
+    {
+      "id": "F-015",
+      "criterion": "LAW-FITTS-1",
+      "screen": "r_profile_edit_dialog",
+      "severity": 2,
+      "evidence": "The 'Integration year' field in the 'Edit researcher' modal is still a confirmed clickable control only 528×7px (measurements.json small_tap_targets, assumed:false) — unchanged from the previous run — while every sibling field in the same dialog (Preferred name, Legal name, Email, Phone, ORCID, Ciencia ID, PhD, Join date, Exit date) renders at full input height.",
+      "screenshot": "screens/r_profile_edit_dialog.png",
+      "measurement": "small_tap_targets: {\"label\":\"Integration year\",\"w\":528,\"h\":7,\"assumed\":false}",
+      "recommendation": "Give the Integration year field the same input height/padding as its siblings (Join date, Exit date) in the same form.",
+      "source": "uxlaws",
+      "previous_id": "F-025"
+    },
+    {
+      "id": "F-016",
+      "criterion": "LAW-HICK-1",
+      "screen": "a_people",
+      "severity": 2,
+      "evidence": "The People filter/action bar still bundles many simultaneous, mostly ungrouped controls: Search, a now-separated top-right 'Add person' button, then on the row below 3 dropdowns (Membership, Status, Profile) and 3 toggle chips (Missing ORCID, Needs verification, Has outputs) with no visual separation between them, plus the '184 people' count — measurements.json measures this cluster (with the results list) as an oversized group of 10 against a limit of 9. 'Add person' is now visually separated from the filters (a partial fix versus the previous run), but the 3 filter dropdowns and 3 toggle chips remain one flat, ungrouped row of 6 simultaneous choices.",
+      "screenshot": "screens/a_people.png",
+      "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-126\", \"items\": 10, \"limit\": 9}",
+      "recommendation": "Collapse the 3 toggle chips into a single 'More filters' disclosure, or group the 3 dropdowns and 3 chips under a visible 'Filters' label so the choice set doesn't read as one undifferentiated row of 6+.",
+      "source": "uxlaws",
+      "previous_id": "F-026"
+    },
+    {
+      "id": "F-017",
+      "criterion": "LAW-HICK-2",
+      "screen": "r_profile_edit_dialog",
+      "severity": 2,
+      "evidence": "The 'Edit researcher' dialog still presents 14 fields (Preferred name, Legal name, Bio, Photo URL, Email, Job title, Phone, ORCID, Ciencia ID, PhD, Join date, Exit date, Integration year, plus Cancel/Save) in one continuous, unsectioned, scrolling modal — measurements.json again flags it as an oversized group ({\"items\":14,\"limit\":9}), unchanged from the previous run. No headings or steps separate identity fields from academic-identifier fields from employment-date fields.",
+      "screenshot": "screens/r_profile_edit_dialog.png",
+      "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-793\", \"items\": 14, \"limit\": 9}",
+      "recommendation": "Split into labeled sub-sections (Identity, Identifiers, Employment) within the same dialog, or turn it into a 2-3 step wizard so no single view demands scanning 14 fields at once.",
+      "source": "uxlaws",
+      "previous_id": "F-027"
+    },
+    {
+      "id": "F-018",
+      "criterion": "LAW-JAKOB-1",
+      "screen": "r_account_menu",
+      "severity": 2,
+      "evidence": "The mode_chooser copy fix (F-018) now correctly says 'You can switch at any time from the bottom of the sidebar,' matching where the real controls live — but the underlying Jakob's-law violation it was covering for is still present: the header identity block (avatar 'EB' + 'E2E Bot' + role text, top-right) remains non-interactive (clickable=\"false\" on all three text nodes in hierarchy/r_account_menu.json, bounds e.g. [320,13][381,36]), so there is still no account/mode-switch affordance where virtually every web app puts one. The crawler's scripted 'top-right name → menu' action again produced no menu — the captured screen is unchanged from the underlying page (this run it matches a_dashboard's content almost node-for-node) because there was nothing to click.",
+      "screenshot": "screens/r_account_menu.png",
+      "measurement": null,
+      "recommendation": "Add a real top-right account/mode menu (or at minimum make the identity block clickable and route it to the same switch/sign-out actions currently only available at the bottom of the sidebar).",
+      "source": "uxlaws"
+    },
+    {
+      "id": "F-019",
+      "criterion": "LAW-MILLER-1",
+      "screen": "a_dashboard",
+      "severity": 2,
+      "evidence": "The admin dashboard still renders KPI tiles as one undifferentiated grid with no category headers: 15 tiles visible above the fold (ORCID Linked, Profiles Validated, Outputs Approved, DOI Coverage, Researchers, Outputs, Journal Articles, Needs Verification, Missing ORCID, Labs, Projects, Clusters, Verified Outputs, Lab Allocations, Mentorships), immediately followed by 'Outputs by type' (10 rows), a quartile chart, 'People by category', 'Projects by cluster' and 'Projects by lab' panels on the same scroll. measurements.json still flattens the whole panel into one oversized semantic group ({\"items\":90,\"limit\":9}) — same violation as the previous run, now with 3 more KPI tiles than before and still no sub-grouping (e.g. People vs Outputs vs Structure vs Reporting).",
+      "screenshot": "screens/a_dashboard.png",
+      "measurement": "oversized_groups: {\"label\": \"flt-semantic-node-36\", \"items\": 90, \"limit\": 9}",
+      "recommendation": "Cluster the KPI tiles under 3-4 labeled sub-headers (People, Outputs, Structure, Reporting) of ≤9 tiles each instead of one undifferentiated grid.",
+      "source": "uxlaws",
+      "previous_id": "F-028"
+    },
+    {
+      "id": "F-020",
+      "criterion": "NAV-4",
+      "screen": "a_admin_review",
+      "severity": 2,
+      "evidence": "Persists from the previous run. a_admin_review.png (Pending approval) still adds a secondary row of 7 top tabs (Profiles to approve, Outputs to approve, Needs re-verification, Suggestions, Activity, Needs attention, ORCID works) on top of the single left-sidebar entry \"Pending approval\". No other screen in the inventory combines the sidebar with a secondary flat tab bar, and 7 tabs in one row exceeds the ~5 a single flat tab row should hold. Not in the fixed/merged list for this run.",
+      "screenshot": "screens/a_admin_review.png",
+      "measurement": "7 tabs in one row, unique to this screen, unchanged from previous run",
+      "recommendation": "Either split the 7 sub-views into their own sidebar leaves (consistent with the rest of the IA) or reduce/group the tabs (e.g. a dropdown for the 3 least-used) so no single tab row exceeds ~5 items.",
+      "source": "flows",
+      "previous_id": "F-029"
+    },
+    {
+      "id": "F-021",
+      "criterion": "ST-EMPTY",
+      "screen": "r_outputs_import",
+      "severity": 2,
+      "evidence": "Unchanged since the first run (out of round-5 scope): Import & Synchronisation shows an 'ORCID Sync' heading with only 'My ORCID publications · 0 / Nothing new' for a researcher with no ORCID iD on file, and no explanation or link to Researcher Identifiers. 158 of 184 people have no ORCID.",
+      "screenshot": "screens/r_outputs_import.png",
+      "measurement": "SQL: 26/184 people with orcid; 1 466 candidates pending",
+      "recommendation": "Branch the empty state: no iD → explain and link to Identifiers; iD but nothing staged → show last sync time and offer a manual sync.",
+      "source": "orchestrator",
+      "previous_id": "F-030"
+    },
+    {
+      "id": "F-022",
+      "criterion": "ST-LOAD",
+      "screen": "state_error_backend_down",
+      "severity": 2,
+      "evidence": "state_error_backend_down.png and state_error_dashboard_down.png are both captured at 3s into a Supabase-blocked load and show only an unbounded, unlabeled loading dot -- no \"still trying\", no elapsed-time or retry-now affordance, no cap visible in this frame. Per the run's evidence, the classified error message with a Retry action only appears after the client's 20s timeout, so a user watching this frame for up to ~20s gets no visible sign the app is aware anything is wrong or how much longer to wait -- a purely silent wait, distinct from the eventual (correct) ST-ERROR state that follows it.",
+      "screenshot": "screens/state_error_backend_down.png",
+      "measurement": "spinner-only frame at 3s; first user-facing error/Retry affordance not until ~20s",
+      "recommendation": "Show progressive feedback during the wait (e.g. \"Still connecting...\" after 3-5s) rather than a bare spinner for up to 20s before the classified error with Retry appears.",
+      "source": "flows",
+      "previous_id": "F-031"
+    },
+    {
+      "id": "F-023",
+      "criterion": "ST-LOAD",
+      "screen": "state_loading_cold",
+      "severity": 2,
+      "evidence": "Persists from the previous run (2026-09-09-1136). Cold-start screenshot taken at +250ms is still fully blank white with zero content; hierarchy/state_loading_cold.json still returns only an empty semantics tree — no splash, no spinner, no branding is rendered while the Flutter engine boots. No fix was made to this surface between runs (it is not in the fixed/merged list for this run). [also H1 on state_loading_cold: Persists from the previous run. At +250ms into a cold load, the screen is still entirely blank white — no spinner, logo, or skeleton UI indicates the app is starting up.]",
+      "screenshot": "screens/state_loading_cold.png",
+      "measurement": "capture at +250ms, 0 semantic nodes, unchanged from previous run",
+      "recommendation": "Ship a static HTML/CSS splash (logo or spinner) shown before the Flutter engine attaches, so cold load never presents a blank white frame.",
+      "source": "flows",
+      "previous_id": "F-032"
+    },
+    {
+      "id": "F-024",
+      "criterion": "VD-COL-2",
+      "screen": "a_dashboard",
+      "severity": 2,
+      "evidence": "Unchanged since previous audit. The 12 KPI tiles are one repeated component (label + big number + colored top border) but the accent color still splits arbitrarily between plain counts: teal for 'Orcid Linked', 'Profiles Validated', 'Outputs Approved', 'Doi Coverage', 'Outputs', 'Verified Outputs', but blue for structurally identical plain counts 'Journal Articles', 'Projects', 'Clusters', 'Lab Allocations'. Red is correctly reserved for the two problem metrics ('Needs Verification', 'Missing Orcid'), but the teal/blue split among the rest has no visible rule and reads as arbitrary decoration.",
+      "screenshot": "screens/a_dashboard.png",
+      "measurement": null,
+      "recommendation": "Standardize on one neutral accent (teal) for all plain-count tiles; reserve blue for a specific, named category of meaning (e.g. 'grouping/structure' metrics) if one is intended, otherwise drop the second neutral color entirely.",
+      "source": "visual",
+      "previous_id": "F-033"
+    },
+    {
+      "id": "F-025",
+      "criterion": "VD-COL-2",
+      "screen": "r_home",
+      "severity": 2,
+      "evidence": "Unchanged since previous audit. The 'OUTPUTS' and 'PROFILE STATUS' stat cards still share one continuous amber/warn-colored top border. 'Profile Status: draft/awaiting approval' is legitimately a warning state, but 'Outputs: 0' is a neutral count with no problem, yet it carries the same warning-amber accent, diluting the color's meaning. Same mis-pairing repeats on r_home_summary (identical card pair, identical shared amber bar) and on the phone layout (phone_r_home).",
+      "screenshot": "screens/r_home.png",
+      "measurement": null,
+      "recommendation": "Apply the amber/warn accent only to the card whose state actually needs attention (Profile Status); give the neutral Outputs count a neutral border/no accent.",
+      "source": "visual",
+      "previous_id": "F-034"
+    },
+    {
+      "id": "F-026",
+      "criterion": "VD-RESP-1",
+      "screen": "a_admin_reports",
+      "severity": 2,
+      "evidence": "The previously-reported Type column overflow is fixed (values now wrap within the column and show a full-text tooltip on hover). However the adjacent Subtype column exhibits the same underlying problem: values such as 'Membro da comissão cientifi', 'Orador por convite em confe...' are cut off exactly at the 1280px viewport edge mid-word, with no ellipsis, tooltip, or horizontal-scroll affordance indicating more content exists off-screen.",
+      "screenshot": "screens/a_admin_reports.png",
+      "measurement": null,
+      "recommendation": "Extend the same fix already applied to the Type column (wrap + hover tooltip, or a horizontal-scroll container with a visible scrollbar/edge fade) to the Subtype column and any other columns that can overflow the viewport.",
+      "source": "visual",
+      "previous_id": "F-036"
+    },
+    {
+      "id": "F-027",
+      "criterion": "DS-BTN-1",
+      "screen": "r_outputs",
+      "severity": 1,
+      "evidence": "Unchanged since the previous run: the add-output action appears twice in two variants on one screen — the top-right 'Add output' is a filled navy primary button, while the 'Timeline · 0' section's '+ Add' directly below is a plain blue text link (tertiary/ghost style) for functionally the same action.",
+      "screenshot": "screens/r_outputs.png",
+      "measurement": null,
+      "recommendation": "Use the theme's outline/secondary button style for the Timeline '+ Add' instead of a bare text link, so it reads as a lower-tier variant of the same button family rather than a different control type.",
+      "source": "designsystem",
+      "previous_id": "F-038"
+    },
+    {
+      "id": "F-028",
+      "criterion": "DS-FORM-1",
+      "screen": "r_add_output_dialog",
+      "severity": 1,
+      "evidence": "Unchanged since the previous run: every field in the Add output dialog (Title, DOI, Full reference, Category, Reporting year, Output status) renders with the label floating inside the empty input box (Material filled/outlined pattern), diverging from Carmela's template form (.field/label as static text above the input, used in unidcom-researcher.html's New Request form). The app is internally consistent between its own dialogs (r_add_output_dialog, r_profile_edit_dialog) but both diverge from the only form pattern the Figma export specifies.",
+      "screenshot": "screens/r_add_output_dialog.png",
+      "measurement": null,
+      "recommendation": "If the floating-label Material pattern is the deliberate direction going forward, document the deviation; otherwise move labels above fields to match the template's convention before more forms are built.",
+      "source": "designsystem",
+      "previous_id": "F-039"
+    },
+    {
+      "id": "F-029",
+      "criterion": "DS-ICON-1",
+      "screen": "r_profile",
+      "severity": 1,
+      "evidence": "Unchanged since the previous run: on the Personal Information header row, 'Edit' uses a filled pencil glyph (Icons.edit) directly beside 'Connect ORCID', which uses an outlined badge glyph (Icons.badge_outlined) — a filled icon and an outlined icon in the same button row. The same clash recurs on a_output and a_lab, where the 'Edit' pencil is filled while surrounding row icons (ORCID/Ciência ID glyphs on r_profile_identifiers) are outlined.",
+      "screenshot": "screens/r_profile.png",
+      "measurement": null,
+      "recommendation": "Standardise on the outlined Material Icons style already used by the sidebar and swap the filled Icons.edit for Icons.edit_outlined wherever it sits next to outlined controls.",
+      "source": "designsystem",
+      "previous_id": "F-040"
+    },
+    {
+      "id": "F-030",
+      "criterion": "H2",
+      "screen": "a_objective",
+      "severity": 1,
+      "evidence": "The objective detail page shows cluster codes as bare pills ('C3', 'R3', 'T3', 'E3', 'F3') with no expansion or tooltip, and the objective itself is only identified as 'UNID.9' in the breadcrumb-style header alongside its plain-language title. A new admin unfamiliar with the FCT/UNIDCOM cluster taxonomy has no in-page way to learn what C3/R3/T3/E3/F3 stand for.",
+      "screenshot": "screens/a_objective.png",
+      "measurement": null,
+      "recommendation": "Add a tooltip or short label next to each cluster code pill spelling out the cluster name (as the Structure > Clusters list presumably already has), rather than showing bare internal codes.",
+      "source": "heuristics"
+    },
+    {
+      "id": "F-031",
+      "criterion": "H4",
+      "screen": "r_outputs",
+      "severity": 1,
+      "evidence": "Persists from the previous run. Two different labels are still used for the same 'add an output' action on the same screen: the top-right button says 'Add output' while the inline control next to the Timeline heading says just 'Add' (both visible together on r_outputs.png).",
+      "screenshot": "screens/r_outputs.png",
+      "measurement": null,
+      "recommendation": "Use one consistent label ('Add output') for both entry points to the same action.",
+      "source": "heuristics",
+      "previous_id": "F-041"
+    },
+    {
+      "id": "F-032",
+      "criterion": "ST-EMPTY",
+      "screen": "state_empty_people_search",
+      "severity": 1,
+      "evidence": "Five-state coverage sampled across data screens, updated for this run's fixes: | Screen | ST-IDLE | ST-LOAD | ST-SUCCESS | ST-ERROR | ST-EMPTY | |---|---|---|---|---|---| | People search | present | n/a | present | n/a | present (weak) | | People (backend down, @3s) | n/a | present (silent/unbounded @3s) | n/a | present (delayed, classified error+Retry appears only after the 20s client timeout) | n/a | | Dashboard (backend down, @3s) | n/a | present (silent/unbounded @3s) | n/a | present (delayed, same 20s timeout) | n/a | | Cold boot | n/a | MISSING | n/a | n/a | n/a | | My Outputs after add | n/a | n/a | present (pending chip) -- FIXED this run, see flow_add_output_4_in_my_outputs.png | n/a | n/a | | Review queue reject | n/a | n/a | present (snackbar + Undo) -- FIXED this run, see flow_review_queue_5_after_reject.png | n/a | n/a |. state_empty_people_search.png itself still does the empty state reasonably well (\"No people found\", filters and search term still visible so the cause is inferable), but still offers no explicit next step (e.g. a \"Clear search\" action) beyond editing the search box by hand.",
+      "screenshot": "screens/state_empty_people_search.png",
+      "measurement": "0 people / 0 next-step affordance besides editing the search field",
+      "recommendation": "Add a \"Clear filters/search\" button to the empty result state so the next step is explicit rather than implicit.",
+      "source": "flows",
+      "previous_id": "F-042"
+    },
+    {
+      "id": "F-033",
+      "criterion": "VD-HIER-2",
+      "screen": "anon_welcome_logos",
+      "severity": 1,
+      "evidence": "Edge-alignment measurement shows four separate 3px near-miss offsets among the logo-swatch card elements (edge pairs at x=325/328, 328/331, 344/347, 375/378), i.e. the swatch chip, label, and download-icon elements in the 'Logos & brand assets' cards are not sitting on a shared grid column. Same layout is reused verbatim on r_welcome_logos with identical offsets.",
+      "screenshot": "screens/anon_welcome_logos.png",
+      "measurement": "alignment_near_misses: [{edges_px:[325,328],offset:3},{edges_px:[328,331],offset:3},{edges_px:[344,347],offset:3},{edges_px:[375,378],offset:3}]",
+      "recommendation": "Snap the swatch/label/icon elements inside each logo card to the same left-edge grid column so repeated cards align pixel-for-pixel.",
+      "source": "visual"
+    },
+    {
+      "id": "F-034",
+      "criterion": "VD-TYPE-1",
+      "screen": "a_admin_data",
+      "severity": 1,
+      "evidence": "Unchanged since previous audit. In the 'people' table of the raw Data Browser, the 'bio' column still renders full free-text paragraphs (e.g. three researchers' bios) at roughly 12-13px, below the 16px floor for text meant to be read rather than scanned as a short label/ID.",
+      "screenshot": "screens/a_admin_data.png",
+      "measurement": null,
+      "recommendation": "For long free-text columns (bio, notes), either truncate with an expand-on-click affordance shown at readable size, or bump the cell font size for these specific columns instead of reusing the compact ID/date-column size.",
+      "source": "visual",
+      "previous_id": "F-043"
+    }
+  ]
+}

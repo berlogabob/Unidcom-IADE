@@ -1,0 +1,10 @@
+[
+  {"criterion": "ST-EMPTY", "screen": "r_outputs_import", "severity": 2,
+   "evidence": "Unchanged since the first run (out of round-5 scope): Import & Synchronisation shows an 'ORCID Sync' heading with only 'My ORCID publications · 0 / Nothing new' for a researcher with no ORCID iD on file, and no explanation or link to Researcher Identifiers. 158 of 184 people have no ORCID.",
+   "screenshot": "screens/r_outputs_import.png", "measurement": "SQL: 26/184 people with orcid; 1 466 candidates pending",
+   "recommendation": "Branch the empty state: no iD → explain and link to Identifiers; iD but nothing staged → show last sync time and offer a manual sync."},
+  {"criterion": "H6", "screen": "r_profile_areas_wip", "severity": 2,
+   "evidence": "Unchanged (product decision deferred): 8 of the 25 researcher sidebar leaves open the same 'Work in progress' page and look identical to working rows.",
+   "screenshot": "screens/r_profile_areas_wip.png", "measurement": "8 WIP leaves / 25 rows = 32 %",
+   "recommendation": "Mark WIP rows visually or hide them behind the v2 flag until built."}
+]

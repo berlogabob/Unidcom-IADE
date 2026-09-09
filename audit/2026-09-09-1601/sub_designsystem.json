@@ -1,0 +1,65 @@
+[
+ {
+  "criterion": "DS-ICON-1",
+  "screen": "r_sidebar_expanded",
+  "severity": 2,
+  "evidence": "Unchanged since the previous run: the shared SideNav widget renders a leading Material icon for every top-level item in the admin nav (a_people/a_dashboard/a_projects all show Dashboard/People/Scientific outputs/Projects/Structure/Reports/Data browser/Settings each with a glyph), but the researcher nav (visible here and on r_home, phone_r_drawer via its admin-mirrored order) still renders every item (Research Activity Summary, Recent Scientific Outputs, Alerts & Notifications, Profile Status, Getting Started, Personal Information, Researcher Identifiers, Biography, Research Areas, Research Interests, My Outputs, Add Scientific Output...) as plain indented text with zero icons. Same shared component, two different rules between its own two modes.",
+  "screenshot": "screens/r_sidebar_expanded.png",
+  "measurement": null,
+  "recommendation": "Give every top-level NavItem an icon in researcherNav() (lib/widgets/nav_model.dart) to match adminNav(), or drop icons from adminNav() — one rule, both modes of the one shared SideNav."
+ },
+ {
+  "criterion": "DS-ICON-1",
+  "screen": "r_welcome_start",
+  "severity": 2,
+  "evidence": "Unchanged since the previous run: the three 'Getting started' summary cards still use raw full-colour Unicode emoji (👥 people, 📍 red map pin, 🌐 blue globe) as icons, a completely different family from the monochrome outlined Material icons used everywhere else in the app (sidebar, buttons, status pills, alerts).",
+  "screenshot": "screens/r_welcome_start.png",
+  "measurement": "measurements.json r_welcome_start.alignment_near_misses shows the three emoji glyphs among the elements at edges 318-321px (1px offsets, consistent with their non-vector emoji rendering box vs. the surrounding vector-icon layout).",
+  "recommendation": "Replace the emoji icons in welcome_pack_content.dart with Material Icons (Icons.groups_outlined, Icons.location_on_outlined, Icons.language) so the Welcome pack matches the vector-icon system used in the rest of the portal."
+ },
+ {
+  "criterion": "DS-ICON-1",
+  "screen": "r_profile",
+  "severity": 1,
+  "evidence": "Unchanged since the previous run: on the Personal Information header row, 'Edit' uses a filled pencil glyph (Icons.edit) directly beside 'Connect ORCID', which uses an outlined badge glyph (Icons.badge_outlined) — a filled icon and an outlined icon in the same button row. The same clash recurs on a_output and a_lab, where the 'Edit' pencil is filled while surrounding row icons (ORCID/Ciência ID glyphs on r_profile_identifiers) are outlined.",
+  "screenshot": "screens/r_profile.png",
+  "measurement": null,
+  "recommendation": "Standardise on the outlined Material Icons style already used by the sidebar and swap the filled Icons.edit for Icons.edit_outlined wherever it sits next to outlined controls."
+ },
+ {
+  "criterion": "DS-BTN-1",
+  "screen": "r_outputs",
+  "severity": 1,
+  "evidence": "Unchanged since the previous run: the add-output action appears twice in two variants on one screen — the top-right 'Add output' is a filled navy primary button, while the 'Timeline · 0' section's '+ Add' directly below is a plain blue text link (tertiary/ghost style) for functionally the same action.",
+  "screenshot": "screens/r_outputs.png",
+  "measurement": null,
+  "recommendation": "Use the theme's outline/secondary button style for the Timeline '+ Add' instead of a bare text link, so it reads as a lower-tier variant of the same button family rather than a different control type."
+ },
+ {
+  "criterion": "DS-FORM-1",
+  "screen": "r_add_output_dialog",
+  "severity": 1,
+  "evidence": "Unchanged since the previous run: every field in the Add output dialog (Title, DOI, Full reference, Category, Reporting year, Output status) renders with the label floating inside the empty input box (Material filled/outlined pattern), diverging from Carmela's template form (.field/label as static text above the input, used in unidcom-researcher.html's New Request form). The app is internally consistent between its own dialogs (r_add_output_dialog, r_profile_edit_dialog) but both diverge from the only form pattern the Figma export specifies.",
+  "screenshot": "screens/r_add_output_dialog.png",
+  "measurement": null,
+  "recommendation": "If the floating-label Material pattern is the deliberate direction going forward, document the deviation; otherwise move labels above fields to match the template's convention before more forms are built."
+ },
+ {
+  "criterion": "DS-BRAND-1",
+  "screen": "r_profile",
+  "severity": 2,
+  "evidence": "New instance of the raw-status-code pattern the previous run flagged (and which was fixed for the People-list StatusPill): on the researcher's own Personal Information page, the status pill row reads '● external  ● inactive  ● pending_review' — two clean humanised words sitting directly beside a third pill still showing the literal snake_case value with the underscore intact. The same 'pending_review' pill recurs identically on flow_profile_confirm_2_after_confirm. Admin-side person detail pages (a_person: 'integrated · active · approved') show only clean humanised values, so this is a distinct, still-unhumanised code path for the profile_status field on the researcher's own profile.",
+  "screenshot": "screens/r_profile.png",
+  "measurement": null,
+  "recommendation": "Route the profile_status pill through the same status-label humanizer used elsewhere (and already applied to People-list StatusPill and the filter dropdown) so 'pending_review' renders as 'Pending review' consistently."
+ },
+ {
+  "criterion": "DS-FDBK-1",
+  "screen": "state_error_backend_down",
+  "severity": 2,
+  "evidence": "The app uses at least three different patterns for the same message type across screens: (1) inline red text under the form on auth failure (state_login_error: 'Invalid login credentials'; flow_orcid_error_1_error_shown: 'No UNIDCOM profile is registered for ORCID iD...'), (2) a bottom snackbar with an action for confirmations/undo (flow_review_queue_5_after_reject: 'Rejected E2E UX audit output (delete me)' + Undo; flow_profile_confirm_2_after_confirm: 'Profile submitted for approval'), and (3) nothing at all for a fully failed data load — state_error_backend_down and state_error_dashboard_down both show the shell chrome with an indefinite single-dot loading spinner in the content area and no error message, retry action, or any feedback whatsoever when Supabase is unreachable.",
+  "screenshot": "screens/state_error_backend_down.png",
+  "measurement": null,
+  "recommendation": "Give the backend-down state its own designed error card (icon + message + retry button, reusing the WipPage/Panel shell) instead of an indefinite spinner, and settle on one feedback pattern per message type (inline field errors vs. transient snackbars vs. full-page error states) rather than three ad hoc ones."
+ }
+]
