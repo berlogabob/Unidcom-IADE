@@ -169,7 +169,7 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
                                             if (status != null) ...[
                                               const SizedBox(width: 12),
                                               StatusPill(
-                                                status,
+                                                queueStatusLabel(status),
                                                 tone: switch (status) {
                                                   'active' => PillTone.teal,
                                                   'a_confirmar' =>
