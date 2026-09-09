@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:unidcom_iade/app/my_profile.dart';
+import 'package:unidcom_iade/public/person/profile_sections.dart';
 
 void main() {
   group('mySlots', () {
@@ -85,6 +86,44 @@ void main() {
         'appears here after the next check.',
       ),
       findsOneWidget,
+    );
+  });
+
+  testWidgets('renders human-readable profile status chips', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => personHeader(
+            context,
+            {
+              'preferred_name': 'Researcher',
+              'membership_type': 'external',
+              'status': 'inactive',
+              'profile_status': 'pending_review',
+            },
+            admin: false,
+            isOwner: true,
+            hasLinkedOrcid: true,
+            enriching: false,
+            syncing: false,
+            onEdit: () {},
+            onConnectOrcid: () {},
+            onAutoFill: () {},
+            onCheckOrcidSync: () {},
+            onApprove: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('External researcher'), findsOneWidget);
+    expect(find.text('Inactive'), findsOneWidget);
+    expect(find.text('Awaiting UNIDCOM approval'), findsOneWidget);
+    expect(
+      tester
+          .widgetList<Text>(find.byType(Text))
+          .every((text) => !(text.data?.contains('_') ?? false)),
+      isTrue,
     );
   });
 }
