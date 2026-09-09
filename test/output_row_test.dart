@@ -112,4 +112,30 @@ void main() {
 
     expect(find.text('approved'), findsNothing);
   });
+
+  testWidgets('rejected timeline output shows the rejection reason', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PersonOutputRow(
+            author: {
+              'role': 'Author',
+              'outputs': {
+                'id': '1',
+                'title': 'Rejected output',
+                'approval_status': 'rejected',
+                'rejection_reason': 'Please add the missing DOI.',
+              },
+            },
+            isFeatured: false,
+            onTap: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Please add the missing DOI.'), findsOneWidget);
+  });
 }

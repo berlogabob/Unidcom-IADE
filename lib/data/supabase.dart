@@ -233,7 +233,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           // category_path feeds the timeline's cascade filter — without it
           // every output reads as unclassified and any picked category
           // filters the list to zero. Caught on the deployed build.
-          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path,approval_status)), '
+          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path,approval_status,rejection_reason)), '
           'lab_members(is_coordinator, year, labs(id, code, name)), '
           'person_tags(tags(name))',
         )
@@ -639,11 +639,27 @@ Future<void> approveOutput(String id) async {
   }
 }
 
-Future<void> rejectOutput(String id) async {
+Future<void> rejectOutput(String id, {String? reason}) async {
   try {
     await db
         .from('outputs')
-        .update({'approval_status': 'rejected'})
+        .update({
+          'approval_status': 'rejected',
+          'rejection_reason': reason?.trim().isEmpty == true
+              ? null
+              : reason?.trim(),
+        })
+        .eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> undoReject(String id) async {
+  try {
+    await db
+        .from('outputs')
+        .update({'approval_status': 'pending', 'rejection_reason': null})
         .eq('id', id);
   } catch (error) {
     throw Exception(_error(error));

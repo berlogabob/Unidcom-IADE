@@ -21,6 +21,40 @@ PillTone _statusTone(String status) {
   return PillTone.grey;
 }
 
+Future<bool?> showRejectOutputDialog(
+  BuildContext context, {
+  required String title,
+  required Future<void> Function(String? reason) onReject,
+}) {
+  final reason = TextEditingController();
+  return showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('Reject “$title”?'),
+      content: TextField(
+        controller: reason,
+        maxLines: 4,
+        decoration: const InputDecoration(
+          labelText: 'Reason (shown to the researcher)',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () async {
+            await onReject(reason.text);
+            if (context.mounted) Navigator.of(context).pop(true);
+          },
+          child: const Text('Reject'),
+        ),
+      ],
+    ),
+  );
+}
+
 class ReviewQueueScreen extends StatefulWidget {
   const ReviewQueueScreen({super.key});
 
@@ -62,9 +96,26 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
     _refresh();
   }
 
-  Future<void> _rejectOutput(String id) async {
-    await rejectOutput(id);
+  Future<void> _rejectOutput(String id, String title) async {
+    final rejected = await showRejectOutputDialog(
+      context,
+      title: title,
+      onReject: (reason) => rejectOutput(id, reason: reason),
+    );
+    if (rejected != true || !mounted) return;
     _refresh();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Rejected $title'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () async {
+            await undoReject(id);
+            if (mounted) _refresh();
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _approveAllPendingOutputs(int count) async {
@@ -254,8 +305,10 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                                   spacing: 8,
                                   children: [
                                     TextButton(
-                                      onPressed: () =>
-                                          _rejectOutput(output['id'] as String),
+                                      onPressed: () => _rejectOutput(
+                                        output['id'] as String,
+                                        output['title'] as String? ?? 'Untitled',
+                                      ),
                                       child: const Text('Reject'),
                                     ),
                                     FilledButton(

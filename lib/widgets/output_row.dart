@@ -54,6 +54,7 @@ class OutputRow extends StatelessWidget {
     this.type,
     this.detail,
     this.status,
+    this.rejectionReason,
     this.trailing,
     this.onTap,
     this.issueCodes,
@@ -66,6 +67,7 @@ class OutputRow extends StatelessWidget {
   final String? type;
   final String? detail;
   final String? status;
+  final String? rejectionReason;
   final Widget? trailing;
   final VoidCallback? onTap;
 
@@ -142,6 +144,14 @@ class OutputRow extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (rejectionReason?.trim().isNotEmpty == true)
+                      Text(
+                        rejectionReason!.trim(),
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
                     if (meta.isNotEmpty) ...[
                       const SizedBox(height: 3),
                       Text(
