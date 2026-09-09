@@ -69,13 +69,35 @@ metrics = {
     "severity_weighted_score": sum(x["severity"] for x in merged),
     "dropped_untraceable": len(dropped),
 }
+# trend vs the newest previous run (by (criterion, screen) pair)
+prev_files = sorted(f for f in RUN.parent.glob("*/findings.json") if f.parent != RUN and f.parent.name < RUN.name)
+trend = None
+if prev_files:
+    prev = json.loads(prev_files[-1].read_text())
+    key = lambda x: f"{x['criterion']}@{x['screen']}"
+    now_keys = {key(x): x for x in merged}; prev_keys = {key(x): x for x in prev["findings"]}
+    prev_fixed = set((prev.get("trend") or {}).get("fixed_keys", []))
+    trend = {
+        "previous_run": prev_files[-1].parent.name,
+        "fixed": [f"{prev_keys[k]['id']} {k}" for k in prev_keys if k not in now_keys],
+        "fixed_keys": [k for k in prev_keys if k not in now_keys],
+        "new": [f"{now_keys[k]['id']} {k}" for k in now_keys if k not in prev_keys and k not in prev_fixed],
+        "regressed": [f"{now_keys[k]['id']} {k}" for k in now_keys if k in prev_fixed],
+        "persisting": [f"{now_keys[k]['id']} (was {prev_keys[k]['id']}) {k}" for k in now_keys if k in prev_keys],
+        "metric_deltas": {m: [prev["metrics"].get(m), metrics.get(m)] for m in ("task_success_rate_pct", "avg_steps_per_flow", "findings_total", "severity_weighted_score", "defect_density_per_screen")},
+        "severity_deltas": {s: [prev["metrics"]["findings_by_severity"].get(s, 0), metrics["findings_by_severity"][s]] for s in ("4", "3", "2", "1")},
+    }
+    for x in merged:
+        if key(x) in prev_keys: x["previous_id"] = prev_keys[key(x)]["id"]
+
 out = {"app": "UNIDCOM RIMS researcher portal (Unidcom-IADE)", "platform": "web", "device": "Playwright Chromium 1280×900 / 390×844", "date": "2026-09-09",
        "commit": "73259d4", "build": "flutter build web --dart-define=E2E=true (v1)", "screens_audited": len(screens),
-       "flows": [{k: r[k] for k in ("name", "passed", "duration_s", "steps", "yaml")} for r in flows], "metrics": metrics, "findings": merged}
+       "flows": [{k: r[k] for k in ("name", "passed", "duration_s", "steps", "yaml")} for r in flows], "metrics": metrics, "trend": trend, "findings": merged}
 (RUN / "findings.json").write_text(json.dumps(out, indent=2, ensure_ascii=False))
 print(json.dumps(metrics, indent=1))
 print("by source:", Counter(x["source"] for x in merged))
 print("by criterion (top):", Counter(x["criterion"] for x in merged).most_common(12))
 print("dropped:", dropped[:10])
+if trend: print("trend vs", trend["previous_run"], "fixed", len(trend["fixed"]), "new", len(trend["new"]), "regressed", len(trend["regressed"]), "persisting", len(trend["persisting"]))
 for x in merged:
     if x["severity"] >= 3: print(x["id"], x["severity"], x["criterion"], x["screen"], "—", x["evidence"][:110])

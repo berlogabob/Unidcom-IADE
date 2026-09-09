@@ -52,7 +52,7 @@ env:
 
 # 2. Researcher mode: own things only.
 - extendedWaitUntil:
-    visible: "Your first 5 steps"
+    visible: "Your first steps"
     timeout: 20000
     label: "Continuing as a researcher lands on the Welcome pack"
 # Anchored: the Welcome pack prose contains "Projects, researchers and
@@ -77,6 +77,11 @@ env:
 - assertVisible:
     text: "My Outputs"
     label: "The researcher's own outputs item is unambiguous"
+# F-001 guard (UX audit 2026-09-09): at desktop width the sidebar rows must exist in
+# the semantics tree, otherwise keyboard and screen-reader users have no navigation.
+- assertVisible:
+    text: "Research Activity Summary"
+    label: "Sidebar rows are exposed to assistive technology at desktop width"
 
 # 3. Typing a directory URL is not a way around the mode.
 - openLink: "${BASE_URL}/#/people"

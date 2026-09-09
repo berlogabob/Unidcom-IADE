@@ -51,7 +51,7 @@ env:
 
 # Landing on the Welcome pack is the only proof the credentials were accepted.
 - extendedWaitUntil:
-    visible: "Your first 5 steps"
+    visible: "Your first steps"
     timeout: 20000
 
 - openLink: "${BASE_URL}/#/app/requests"

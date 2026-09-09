@@ -37,7 +37,7 @@ env:
 # other place an anonymous visitor can stand is the pack.
 - openLink: "${BASE_URL}/?v=stale#/app/welcome/start"
 - extendedWaitUntil:
-    visible: "Your first 5 steps"
+    visible: "Your first steps"
     timeout: 30000
 - openLink: "${BASE_URL}/?v=stale#/login"
 - extendedWaitUntil:

@@ -134,6 +134,25 @@ Ordered by severity, then by cost. The first four are a day's work together.
 
 Design-system debt worth batching: enum-to-label helper used everywhere a status is shown (F-012, F-016, F-019), one icon family (F-013, F-014, F-040), one accent on KPI tiles (F-033, F-034), consistent button variant for the same action (F-038, F-041).
 
+""")
+T = F.get("trend")
+if T:
+    out.append(f"""## Trend vs previous run ({T['previous_run']})
+
+| Metric | Previous | Now | Δ |
+|---|---|---|---|
+""")
+    for m, (a, b) in T["metric_deltas"].items():
+        out.append(f"| {m} | {a} | {b} | {round(b - a, 2) if isinstance(a, (int, float)) and isinstance(b, (int, float)) else ''} |\n")
+    for s_, (a, b) in T["severity_deltas"].items():
+        out.append(f"| findings sev {s_} | {a} | {b} | {b - a:+d} |\n")
+    out.append(f"""
+- **Fixed ({len(T['fixed'])}):** {', '.join(T['fixed']) or '—'}
+- **New ({len(T['new'])}):** {', '.join(T['new']) or '—'}
+- **Regressed ({len(T['regressed'])}):** {', '.join(T['regressed']) or '—'}
+- **Persisting ({len(T['persisting'])}):** {', '.join(T['persisting']) or '—'}
+""")
+out.append(f"""
 ## Appendix
 
 ### A. Screen inventory

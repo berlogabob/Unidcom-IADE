@@ -277,10 +277,11 @@ Ordered by severity, then by cost. The first four are a day's work together.
 
 Design-system debt worth batching: enum-to-label helper used everywhere a status is shown (F-012, F-016, F-019), one icon family (F-013, F-014, F-040), one accent on KPI tiles (F-033, F-034), consistent button variant for the same action (F-038, F-041).
 
+
 ## Appendix
 
 ### A. Screen inventory
-See `screens.md` ({M['screens_audited']} crawled screens + 21 flow-step screenshots + 4 verification screenshots). Files: `screens/<name>.png`, `hierarchy/<name>.json` — **kept out of git** (they contain researcher emails from the admin data browser); they exist only on the audit machine, alongside `measurements.json`.
+See `screens.md` (86 crawled screens + 21 flow-step screenshots + 4 verification screenshots). Files: `screens/<name>.png`, `hierarchy/<name>.json` — **kept out of git** (they contain researcher emails from the admin data browser); they exist only on the audit machine, alongside `measurements.json`.
 
 ### B. Flow results
 

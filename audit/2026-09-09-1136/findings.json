@@ -91,6 +91,7 @@
     "severity_weighted_score": 93,
     "dropped_untraceable": 0
   },
+  "trend": null,
   "findings": [
     {
       "id": "F-001",

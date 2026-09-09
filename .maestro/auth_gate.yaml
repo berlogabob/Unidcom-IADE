@@ -35,7 +35,7 @@ env:
 #    public site before they have an account.
 - openLink: "${BASE_URL}/#/app/welcome/start"
 - extendedWaitUntil:
-    visible: "Your first 5 steps"
+    visible: "Your first steps"
     timeout: 20000
     label: "Welcome pack is reachable without a session"
 # Every other nav target is gated, so an anonymous visitor must not be offered
@@ -90,7 +90,7 @@ env:
     commands:
       - tapOn: "Continue as researcher"
 - extendedWaitUntil:
-    visible: "Your first 5 steps"
+    visible: "Your first steps"
     timeout: 20000
     label: "Login landed on the Welcome pack"
 

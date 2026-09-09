@@ -70,7 +70,7 @@ env:
     id: "My profile"
 - tapOn: "Switch to researcher"
 - extendedWaitUntil:
-    visible: "Your first 5 steps"
+    visible: "Your first steps"
     timeout: 20000
     label: "Switching back lands in researcher mode"
 - assertNotVisible:
