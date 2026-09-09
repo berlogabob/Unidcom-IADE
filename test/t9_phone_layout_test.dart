@@ -21,6 +21,9 @@ void main() {
                 'PROFILES VALIDATED',
                 'OUTPUTS APPROVED',
                 'DOI COVERAGE',
+                'CIÊNCIA ID ON FILE',
+                'UNCLAIMED ORCID CANDIDATES',
+                'PUBLICATIONS MISSING DOI',
               ])
                 AccentStatCard(label: label, value: '1 / 1'),
             ],
@@ -33,7 +36,16 @@ void main() {
     expect(find.text('PROFILES VALIDATED'), findsOneWidget);
     expect(find.text('OUTPUTS APPROVED'), findsOneWidget);
     expect(find.text('DOI COVERAGE'), findsOneWidget);
+    expect(find.text('CIÊNCIA ID ON FILE'), findsOneWidget);
+    expect(find.text('UNCLAIMED ORCID CANDIDATES'), findsOneWidget);
+    expect(find.text('PUBLICATIONS MISSING DOI'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  test('data quality tone warns only above 50% missing', () {
+    expect(dataQualityTone(5, 10), AccentTone.neutral);
+    expect(dataQualityTone(6, 10), AccentTone.warn);
+    expect(dataQualityTone(1, 0), AccentTone.neutral);
   });
 
   testWidgets('review queue tabs fit a phone width', (tester) async {

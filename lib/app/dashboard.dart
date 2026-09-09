@@ -177,6 +177,32 @@ class _StatTilesRow extends StatelessWidget {
         value: '${data.missingOrcid}',
         tone: AccentTone.urgent,
       ),
+      AccentStatCard(
+        label: 'CIÊNCIA ID on file',
+        value:
+            '${data.pilotKpis['cienciaIdOnFile']} / ${data.pilotKpis['people']}',
+        tone: dataQualityTone(
+          data.pilotKpis['people']! - data.pilotKpis['cienciaIdOnFile']!,
+          data.pilotKpis['people']!,
+        ),
+      ),
+      AccentStatCard(
+        label: 'Unclaimed ORCID candidates',
+        value: '${data.pilotKpis['unclaimedOrcidCandidates']}',
+        tone: dataQualityTone(
+          data.pilotKpis['unclaimedOrcidCandidates']!,
+          data.pilotKpis['orcidCandidates']!,
+        ),
+      ),
+      AccentStatCard(
+        label: 'Publications missing DOI',
+        value:
+            '${data.pilotKpis['publicationsMissingDoi']} / ${data.pilotKpis['publications']}',
+        tone: dataQualityTone(
+          data.pilotKpis['publicationsMissingDoi']!,
+          data.pilotKpis['publications']!,
+        ),
+      ),
       AccentStatCard(label: 'Labs', value: '${data.labCount}'),
       AccentStatCard(
         label: 'Projects',
@@ -205,6 +231,11 @@ class _StatTilesRow extends StatelessWidget {
     return DashboardKpiTiles(tiles: tiles);
   }
 }
+
+AccentTone dataQualityTone(int missing, int total) =>
+    total > 0 && missing / total > 0.5
+        ? AccentTone.warn
+        : AccentTone.neutral;
 
 class DashboardKpiTiles extends StatelessWidget {
   const DashboardKpiTiles({required this.tiles, super.key});

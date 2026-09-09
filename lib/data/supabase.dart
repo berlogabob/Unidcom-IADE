@@ -1016,6 +1016,30 @@ Future<Map<String, int>> fetchPilotKpis() async {
           .select('doi, approval_status')
           .filter('merged_into', 'is', null),
     ]);
+    final counts = await Future.wait<int>([
+      db
+          .from('people')
+          .count(CountOption.exact)
+          .filter('merged_into', 'is', null)
+          .not('ciencia_id', 'is', null)
+          .neq('ciencia_id', ''),
+      db
+          .from('output_candidates')
+          .count(CountOption.exact)
+          .eq('status', 'pending'),
+      db.from('output_candidates').count(CountOption.exact),
+      db
+          .from('outputs')
+          .count(CountOption.exact)
+          .filter('merged_into', 'is', null)
+          .inFilter('macro_type', ['Artigos em revistas', 'Livros']),
+      db
+          .from('outputs')
+          .count(CountOption.exact)
+          .filter('merged_into', 'is', null)
+          .inFilter('macro_type', ['Artigos em revistas', 'Livros'])
+          .or('doi.is.null,doi.eq.'),
+    ]);
     final people = rows[0];
     final outputs = rows[1];
     bool hasText(Map<String, dynamic> row, String field) =>
@@ -1037,6 +1061,11 @@ Future<Map<String, int>> fetchPilotKpis() async {
           .where((row) => row['approval_status'] == 'approved')
           .length,
       'doiCoverage': outputs.where((row) => hasText(row, 'doi')).length,
+      'cienciaIdOnFile': counts[0],
+      'unclaimedOrcidCandidates': counts[1],
+      'orcidCandidates': counts[2],
+      'publications': counts[3],
+      'publicationsMissingDoi': counts[4],
     };
   } catch (error) {
     throw Exception(_error(error));
