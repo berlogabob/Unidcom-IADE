@@ -82,8 +82,11 @@ class OutputRow extends StatelessWidget {
     final statusTone = _statusTone(status ?? detail);
     final meta = [
       if (year != null) year.toString(),
-      if (detail != null && detail!.isNotEmpty &&
-          (statusTone == null || detail != status))
+      // The status pill already says it: never repeat a status-looking
+      // detail as meta text (the review queue passes 'pending' as detail).
+      if (detail != null &&
+          detail!.isNotEmpty &&
+          (statusTone == null || (status != null && detail != status)))
         detail!,
     ].join(' · ');
 

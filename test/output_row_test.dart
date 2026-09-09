@@ -67,6 +67,25 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a status passed as detail is shown once, as the pill', (
+    tester,
+  ) async {
+    // The review queue passes 'pending' as detail; after F-009 the pill took
+    // over and the meta text repeated it. Regression seen in the 2026-09-09
+    // re-audit (flow_review_queue after_reject).
+    tester.view.physicalSize = const Size(900, 400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: OutputRow(title: 'Queued output', detail: 'pending'),
+        ),
+      ),
+    );
+    expect(find.text('pending'), findsOneWidget);
+  });
+
   testWidgets('pending timeline output renders its status', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
