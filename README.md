@@ -165,4 +165,5 @@ deno test supabase/functions/orcid-auth/
 | `docs/reports/2026-09-ux-audit/` | stakeholder UX audit report (Typst + PDF); `ux-audit-summary.pdf` is the 2-page version |
 | `docs/reports/2026-09-sanity-vs-supabase/` | Sanity archive versus Supabase current-unit comparison (Typst + PDF) |
 | `docs/sanity-agency-questions.md` | questions for the website agency that gate any write to the official Sanity project |
+| `docs/reports/2026-09-sanity-howto/` | Sanity bridge how-to (test the bulk link, verify, undo) and the agency questions as one-page PDFs |
 | `docs/reports/2026-09-briefing-kit/` | decision record: quick layout edits in briefings (hot reload for menus, design canvas for layout) and the transfer loop |
