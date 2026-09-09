@@ -26,6 +26,9 @@ class PersonOutputRow extends StatelessWidget {
       year: output['reporting_year'] as int?,
       type: output['type'] as String?,
       detail: author['role'] as String?,
+      status: output['approval_status'] == 'approved'
+          ? null
+          : output['approval_status'] as String?,
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

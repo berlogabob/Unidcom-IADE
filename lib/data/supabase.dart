@@ -233,7 +233,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           // category_path feeds the timeline's cascade filter — without it
           // every output reads as unclassified and any picked category
           // filters the list to zero. Caught on the deployed build.
-          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path)), '
+          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path,approval_status)), '
           'lab_members(is_coordinator, year, labs(id, code, name)), '
           'person_tags(tags(name))',
         )

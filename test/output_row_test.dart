@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:unidcom_iade/public/person/output_row.dart';
 import 'package:unidcom_iade/widgets/output_row.dart';
 
 // The UNIDCOM taxonomy is Portuguese and verbose. Its longest label is 77
@@ -64,5 +65,51 @@ void main() {
     await pumpRow(tester);
     expect(find.text('2025'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('pending timeline output renders its status', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PersonOutputRow(
+            author: {
+              'role': 'Author',
+              'outputs': {
+                'id': '1',
+                'title': 'Pending output',
+                'approval_status': 'pending',
+              },
+            },
+            isFeatured: false,
+            onTap: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('pending'), findsOneWidget);
+  });
+
+  testWidgets('approved timeline output has no status pill', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PersonOutputRow(
+            author: {
+              'role': 'Author',
+              'outputs': {
+                'id': '1',
+                'title': 'Approved output',
+                'approval_status': 'approved',
+              },
+            },
+            isFeatured: false,
+            onTap: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('approved'), findsNothing);
   });
 }
