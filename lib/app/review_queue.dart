@@ -28,6 +28,33 @@ class ReviewQueueScreen extends StatefulWidget {
   State<ReviewQueueScreen> createState() => _ReviewQueueScreenState();
 }
 
+class ReviewQueueTabs extends StatelessWidget {
+  const ReviewQueueTabs({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const ColoredBox(
+      color: AppColors.cardBg,
+      child: TabBar(
+        isScrollable: true,
+        labelColor: AppColors.textPrimary,
+        unselectedLabelColor: AppColors.textMuted,
+        indicatorColor: AppColors.teal,
+        dividerColor: AppColors.cardBorder,
+        tabs: [
+          Tab(text: 'Profiles to approve'),
+          Tab(text: 'Outputs to approve'),
+          Tab(text: 'Needs re-verification'),
+          Tab(text: 'Suggestions'),
+          Tab(text: 'Activity'),
+          Tab(text: 'Needs attention'),
+          Tab(text: 'ORCID works'),
+        ],
+      ),
+    );
+  }
+}
+
 class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
   late Future<List<Map<String, dynamic>>> _pendingPeople = fetchPendingPeople();
   late Future<List<Map<String, dynamic>>> _pendingOutputs =
@@ -142,25 +169,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
       length: 7,
       child: Column(
         children: [
-          const ColoredBox(
-            color: AppColors.cardBg,
-            child: TabBar(
-              isScrollable: true,
-              labelColor: AppColors.textPrimary,
-              unselectedLabelColor: AppColors.textMuted,
-              indicatorColor: AppColors.teal,
-              dividerColor: AppColors.cardBorder,
-              tabs: [
-                Tab(text: 'Profiles to approve'),
-                Tab(text: 'Outputs to approve'),
-                Tab(text: 'Needs re-verification'),
-                Tab(text: 'Suggestions'),
-                Tab(text: 'Activity'),
-                Tab(text: 'Needs attention'),
-                Tab(text: 'ORCID works'),
-              ],
-            ),
-          ),
+          const ReviewQueueTabs(),
           Expanded(
             child: ListTileTheme(
               data: const ListTileThemeData(

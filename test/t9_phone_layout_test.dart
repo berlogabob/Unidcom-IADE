@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/app/dashboard.dart';
+import 'package:unidcom_iade/app/review_queue.dart';
 import 'package:unidcom_iade/widgets/panels.dart';
 
 void main() {
@@ -31,6 +32,33 @@ void main() {
     expect(find.text('PROFILES VALIDATED'), findsOneWidget);
     expect(find.text('OUTPUTS APPROVED'), findsOneWidget);
     expect(find.text('DOI COVERAGE'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('review queue tabs fit a phone width', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: DefaultTabController(length: 7, child: ReviewQueueTabs()),
+        ),
+      ),
+    );
+
+    for (final label in [
+      'Profiles to approve',
+      'Outputs to approve',
+      'Needs re-verification',
+      'Suggestions',
+      'Activity',
+      'Needs attention',
+      'ORCID works',
+    ]) {
+      expect(find.text(label), findsOneWidget);
+    }
     expect(tester.takeException(), isNull);
   });
 }
