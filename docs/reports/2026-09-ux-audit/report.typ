@@ -230,10 +230,10 @@ cluster codes without expansion, and small alignment offsets.
   be onboarded on this build.
 ]
 
-= 8. Measurements for the next run
+= 8. Baseline measurements for future runs
 
 #data-table(
-  ("Metric", "How measured", "9 Sep 2026"),
+  ("Metric", "How measured", "Baseline (first run)"),
   (
     ([Task success rate], [7 runnable flows, all passed, 0 errors, 2 warnings], [100 %]),
     ([Mean steps per flow], [tap/input count per journey], [7.9]),
