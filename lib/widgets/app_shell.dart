@@ -69,7 +69,11 @@ class _AppShellState extends State<AppShell> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(width: 240, child: nav),
-                Expanded(child: widget.child),
+                Expanded(
+                  // Contain the nested Navigator's route semantics barrier so
+                  // it cannot hide the sidebar painted before this pane.
+                  child: Semantics(container: true, child: widget.child),
+                ),
               ],
             ),
           );
