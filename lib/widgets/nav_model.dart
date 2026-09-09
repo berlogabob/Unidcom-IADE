@@ -7,12 +7,14 @@ class NavItem {
     this.label,
     this.route, {
     this.icon,
+    this.wip = false,
     List<String>? prefixes,
     this.children = const [],
   }) : prefixes = prefixes ?? const [];
   final String label;
   final String route;
   final IconData? icon; // top-level items carry one; children don't
+  final bool wip;
   final List<String> prefixes; // extra path prefixes that select this item
   final List<NavItem> children;
   bool matches(String path) =>
@@ -77,16 +79,16 @@ List<NavGroup> researcherNav({required bool signedIn}) => signedIn
           NavItem('Personal Information', '/app/profile'),
           NavItem('Researcher Identifiers', '/app/profile/identifiers'),
           NavItem('Biography', '/app/profile/bio'),
-          NavItem('Research Areas', '/app/profile/areas'),
-          NavItem('Research Interests', '/app/profile/interests'),
+          NavItem('Research Areas', '/app/profile/areas', wip: true),
+          NavItem('Research Interests', '/app/profile/interests', wip: true),
           NavItem('Profile Status', '/app/profile/status'),
         ], route: '/app/profile'),
         NavGroup('Scientific Outputs', [
           NavItem('My Outputs', '/app/outputs'),
           NavItem('Add Scientific Output', '/app/outputs/add'),
-          NavItem('Edit Scientific Outputs', '/app/outputs/edit'),
+          NavItem('Edit Scientific Outputs', '/app/outputs/edit', wip: true),
           NavItem('Import & Synchronisation', '/app/outputs/import'),
-          NavItem('Validation & Duplicates', '/app/outputs/validation'),
+          NavItem('Validation & Duplicates', '/app/outputs/validation', wip: true),
         ], route: '/app/outputs'),
         ..._welcomeGroups(signedIn: true),
       ]
@@ -114,8 +116,8 @@ List<NavGroup> _welcomeGroups({required bool signedIn}) => [
   NavGroup('Help & Contacts', [
     NavItem('Key Contacts', '/app/welcome/contacts'),
     if (signedIn) NavItem('Quick Links', '/app/help/links'),
-    if (signedIn) NavItem('Documentation', '/app/help/docs'),
-    if (signedIn) NavItem('FAQs', '/app/help/faq'),
+    if (signedIn) NavItem('Documentation', '/app/help/docs', wip: true),
+    if (signedIn) NavItem('FAQs', '/app/help/faq', wip: true),
   ], route: '/app/welcome/contacts'),
 ];
 
