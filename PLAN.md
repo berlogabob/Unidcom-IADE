@@ -625,14 +625,15 @@ Run notes: two tasks by file (nav model + its two tests; router + welcome conten
 
 | # | Task | Owner | Acceptance check | PR |
 |---|---|---|---|---|
-| D4.1 | `MyProfileScreen` renders personal + identifiers + biography on `/app/profile` (sections = all three) | luna | `my_profile_sections_test`: 3 section headers on one route | [ ] |
-| D4.2 | `lib/data/profile_staging.dart`: `stageProfileChanges(personId, before, after)` → one `enrichment_suggestions` row per changed field (`source='researcher'`), reusing `signatureSuggestions` | luna | unit test: 3 changed fields → 3 rows, unchanged → 0 | [ ] |
-| D4.3 | Owner Edit dialog: "Save draft" keeps local, "Submit for review" calls D4.2 instead of `updatePerson`; admins unchanged | luna | widget test: owner submit → `stageProfileChanges` called, `updatePerson` not | [ ] |
-| D4.4 | `lib/widgets/status_strip.dart`: three pills ORCID / UNIDCOM review / Website from D2.2, D2.5, text + icon | luna | widget test: 3 pills, no colour-only state | [ ] |
-| D4.5 | Biography panel: "UNIDCOM biography" + "ORCID biography" (from `fetchOrcidSyncStatus`), Compare = side by side, "Import ORCID version" → one `bio` suggestion via D4.2 | luna | widget test with fake status: two columns, import stages 1 row | [ ] |
-| D4.6 | Identifiers: "Last synchronised <orcid_synced_at>" under ORCID | mini | `grep -n orcid_synced_at lib/public/person/profile_sections.dart` ≥ 1 | [ ] |
+| D4.1 | `MyProfileScreen` renders personal + identifiers + biography on `/app/profile` (sections = all three) | luna | `my_profile_sections_test`: 3 section headers on one route | [x] #54 — ✅ `personSectionsFor(MySection.personal)` = personal + identifiers + biography on `/app/profile`; `/app/profile/{identifiers,bio}` redirect in v1, still render in v2 |
+| D4.2 | `lib/data/profile_staging.dart`: `stageProfileChanges(personId, before, after)` → one `enrichment_suggestions` row per changed field (`source='researcher'`), reusing `signatureSuggestions` | luna | unit test: 3 changed fields → 3 rows, unchanged → 0 | [—] dropped — `signatureSuggestions()` + `proposeMyChanges()` already are this function; reused by D4.3 and D4.5, nothing new written |
+| D4.3 | Owner Edit dialog: "Save draft" keeps local, "Submit for review" calls D4.2 instead of `updatePerson`; admins unchanged | luna | widget test: owner submit → `stageProfileChanges` called, `updatePerson` not | [x] #55 — ✅ owner dialog "Propose changes to my profile", nine text fields, "Submit for review" → one suggestion row per changed field, never `updatePerson`; 4 widget tests via injected `stage`. No "Save draft" for field edits in v1 (closing the dialog is the draft) |
+| D4.4 | `lib/widgets/status_strip.dart`: three pills ORCID / UNIDCOM review / Website from D2.2, D2.5, text + icon | luna | widget test: 3 pills, no colour-only state | [x] #54 — ✅ `StatusStrip`: "ORCID · …", "UNIDCOM · …", "Website · …" from the D2 label helpers; Website = approved ∧ public_visibility; Confirm button kept |
+| D4.5 | Biography panel: "UNIDCOM biography" + "ORCID biography" (from `fetchOrcidSyncStatus`), Compare = side by side, "Import ORCID version" → one `bio` suggestion via D4.2 | luna | widget test with fake status: two columns, import stages 1 row | [x] #56 — ✅ two columns UNIDCOM / ORCID (stacked < 600 px), "Import ORCID version" stages a `bio` suggestion; "Matches ORCID" when equal; owner-only, lazy `fetchOrcidValues` |
+| D4.6 | Identifiers: "Last synchronised <orcid_synced_at>" under ORCID | mini | `grep -n orcid_synced_at lib/public/person/profile_sections.dart` ≥ 1 | [x] #56 — ✅ "Last synchronised <d Mon yyyy>" under ORCID from `people.orcid_synced_at` |
 
-**D4 KPI:** profile routes 6 → 1; owner writes to `people` from the portal = 0 (only via suggestions).
+**D4 KPI:** ✅ profile routes 6 → 1 (two v1 redirects, three retired earlier); owner writes to `people` from the portal = 0 (all staged). Measured on `main` 51baf81: `flutter analyze` 0, `flutter test` 217.
+Run notes: three tasks by file, Codex `gpt-5.6-luna`, 72k / 88k / 76k tokens; all three passed their greps and tests first time — the spec listed every affected test this round. Two orch touches: a colour token, nothing functional. Open: the ORCID pill's "Changes available" reads pending `output_candidates`, not profile-field differences (D7/D9 decide); live click-through of propose → Accept → profile still to be done by the user (DB half verified in D1.3).
 
 #### Wave D5 — Scientific Outputs, one page (luna; pure functions first)
 
@@ -693,17 +694,17 @@ Run notes: two tasks by file (nav model + its two tests; router + welcome conten
 |---|---|---|
 | Researcher sidebar leaves (v1) | 25 | 5 (D3) |
 | WIP pages reachable from v1 nav | 8 | 0 (D3) |
-| Researcher pages for profile / outputs | 6 / 5 | |
+| Researcher pages for profile / outputs | 6 / 5 | 1 / 5 (D4) |
 | Filters on own outputs | 2 | |
 | Role/membership rows on the outputs page | all | |
 | "papers" strings in `lib test .maestro` | ≥ 4 | 0 (D2) |
 | "All good" strings | 1 | 0 (D2) |
-| Distinct status dimensions shown to a researcher | 1 | |
-| Researcher direct writes to `people` from the portal | Edit dialog | |
+| Distinct status dimensions shown to a researcher | 1 | 3 (D4: ORCID · UNIDCOM · Website) |
+| Researcher direct writes to `people` from the portal | Edit dialog | 0 — staged as suggestions (D4) |
 | Researcher can edit own output | no | |
 | Website state independent of approval | no | |
 | Doc 2 §V acceptance lines passing | not measured | |
-| `flutter test` | 199 | 205 (D3) |
+| `flutter test` | 199 | 217 (D4) |
 | Pure-function files with tests added | 0 | 1 (D2: `status_labels.dart`) |
 
 Estimated size: 42 tasks; D1 sequential (orch), D2–D3 one wave each in parallel, D4–D8 two
