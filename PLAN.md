@@ -654,9 +654,11 @@ Run notes: two rounds. Round 1, three `luna` agents by file (pure filters 58k; d
 
 | # | Task | Owner | Acceptance check | PR |
 |---|---|---|---|---|
-| D6.1 | `lib/app/output_wizard.dart`: `Stepper` DOI (existing lookup + duplicate guard) → Type → Subtype → Metadata → Project → Review; fields reused from `OutputEditDialog` | luna | widget test: 6 steps, Next disabled until the step is valid | [ ] |
-| D6.2 | Subtype step shows only children of the chosen type (`childrenAt`) | mini | unit test on `childrenAt` cases | [ ] |
-| D6.3 | Project step lists the person's projects; Review calls `create_my_output(p_project_ids)` | luna | widget test: selected project ids passed to RPC | [ ] |
+| D6.1 | `lib/app/output_wizard.dart`: `Stepper` DOI (existing lookup + duplicate guard) → Type → Subtype → Metadata → Project → Review; fields reused from `OutputEditDialog` | luna | widget test: 6 steps, Next disabled until the step is valid | [x] #61 — ✅ `output_wizard.dart`: Stepper DOI → Type → Subtype → Metadata → Project → Review; DOI lookup + duplicate guard kept as step 0; types = taxonomy roots grouped Publications / Research activities (D1 `kind`); both researcher entry points open it, admins keep the dialog |
+| D6.2 | Subtype step shows only children of the chosen type (`childrenAt`) | mini | unit test on `childrenAt` cases | [x] #61 — ✅ subtypes via `childrenAt`, deeper levels through `TaxonomyPicker`; Subtype step skipped when the type has no children; 2 `childrenAt` cases added |
+| D6.3 | Project step lists the person's projects; Review calls `create_my_output(p_project_ids)` | luna | widget test: selected project ids passed to RPC | [x] #61 — ✅ Project step from new `fetchMyProjects` (skipped when none); Review → `createMyOutput(fields, projectIds:)` → D1.5 links only own projects |
+
+**D6 KPI:** ✅ one form → six steps, fields conditional on the type. Measured on `main` 0ada55d: `flutter analyze` 0, `flutter test` 249. Run notes: one `gpt-5.6-sol` agent, 152k tokens, green first time; the first launch was killed by a session interrupt before it wrote anything and relaunched with stdin closed. Deliberate simplification: no "Save draft" — `create_my_output` forces Submitted; a draft state would be a DB change deferred to v1.1 (PLAN §Phase D, decisions).
 
 #### Wave D7 — ORCID reconciliation as a view (luna)
 
@@ -705,7 +707,7 @@ Run notes: two rounds. Round 1, three `luna` agents by file (pure filters 58k; d
 | Researcher can edit own output | no | yes, as a proposal (D5) |
 | Website state independent of approval | no | |
 | Doc 2 §V acceptance lines passing | not measured | |
-| `flutter test` | 199 | 242 (D5) |
+| `flutter test` | 199 | 249 (D6) |
 | Pure-function files with tests added | 0 | 2 (`status_labels.dart`, `output_filters.dart`) |
 
 Estimated size: 42 tasks; D1 sequential (orch), D2–D3 one wave each in parallel, D4–D8 two
