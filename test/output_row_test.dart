@@ -83,7 +83,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('pending'), findsOneWidget);
+    expect(find.text('Submitted'), findsOneWidget);
   });
 
   testWidgets('pending timeline output renders its status', (tester) async {
@@ -106,7 +106,7 @@ void main() {
       ),
     );
 
-    expect(find.text('pending'), findsOneWidget);
+    expect(find.text('Submitted'), findsOneWidget);
   });
 
   testWidgets('approved timeline output has no status pill', (tester) async {

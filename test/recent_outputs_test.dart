@@ -72,7 +72,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Awaiting UNIDCOM approval'), findsOneWidget);
+    expect(find.text('Submitted'), findsOneWidget);
     expect(find.text('pending_review'), findsNothing);
   });
 }

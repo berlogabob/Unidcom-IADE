@@ -5,10 +5,10 @@ import 'search_bar.dart';
 
 String queueStatusLabel(String value) => const {
   'a_confirmar': 'To confirm',
-  'pending_review': 'Awaiting approval',
-  'pending': 'Pending',
+  'pending_review': 'Submitted',
+  'pending': 'Submitted',
   'approved': 'Approved',
-  'rejected': 'Rejected',
+  'rejected': 'Changes requested',
   'draft': 'Draft',
   'inactive': 'Inactive',
 }[value] ?? value.replaceAll('_', ' ');
