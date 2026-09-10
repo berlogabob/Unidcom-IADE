@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../view_mode_store.dart';
+import 'attention.dart';
 import 'taxonomy.dart';
 
 final db = Supabase.instance.client;
@@ -228,7 +229,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
         .select(
           'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, job_title, phone, '
           'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
-          'join_date, exit_date, phd, notes, integration_year, auth_user_id, '
+          'join_date, exit_date, phd, notes, integration_year, auth_user_id, updated_at, '
           'orcid_synced_at, featured_outputs, '
           // category_path feeds the timeline's cascade filter — without it
           // every output reads as unclassified and any picked category
@@ -2197,6 +2198,49 @@ Future<List<Map<String, dynamic>>> fetchMyRequests() async {
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {
     throw Exception(_error(error));
+  }
+}
+
+Future<List<Map<String, dynamic>>> fetchMySuggestions(String personId) async {
+  try {
+    final rows = await db
+        .from('enrichment_suggestions')
+        .select()
+        .eq('source', 'researcher')
+        .inFilter('status', const ['pending', 'rejected'])
+        .order('created_at', ascending: false);
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<int> attentionCount() async {
+  try {
+    final mine = await fetchMyPerson();
+    if (mine == null) return 0;
+    final id = mine['id'] as String;
+    final results = await Future.wait<Object>([
+      fetchPerson(id),
+      fetchMyCandidates(id),
+      fetchMySuggestions(id),
+    ]);
+    final person = results[0] as Map<String, dynamic>;
+    final outputs = [
+      for (final author
+          in person['output_authors'] as List<dynamic>? ?? const [])
+        if (author is Map && author['outputs'] is Map)
+          Map<String, dynamic>.from(author['outputs'] as Map),
+    ];
+    await mergeOutputQuality(outputs);
+    return attentionItems(
+      person: person,
+      outputs: outputs,
+      candidates: results[1] as List<Map<String, dynamic>>,
+      suggestions: results[2] as List<Map<String, dynamic>>,
+    ).length;
+  } catch (_) {
+    return 0;
   }
 }
 

@@ -66,6 +66,8 @@ void main() {
               person: {'profile_status': 'pending_review'},
               outputs: const [],
               requests: const [],
+              candidates: const [],
+              suggestions: const [],
             ),
           ),
         ),

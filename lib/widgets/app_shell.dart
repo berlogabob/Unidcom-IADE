@@ -33,6 +33,7 @@ class _AppShellState extends State<AppShell> {
     (people) => people.length,
   );
   late final Future<int> _pendingRequests = data.countPendingRequests();
+  late final Future<int> _attention = data.attentionCount();
   late final Future<Map<String, dynamic>?> _person = data.fetchMyPerson();
 
   @override
@@ -60,6 +61,7 @@ class _AppShellState extends State<AppShell> {
           badges: {
             '/people': _pendingPeople,
             '/app/admin/requests': _pendingRequests,
+            if (hasSession && !admin) '/app/home': _attention,
           },
         );
 
@@ -84,6 +86,25 @@ class _AppShellState extends State<AppShell> {
             title: Text(navSelected(groups, path)?.label ?? 'UNIDCOM'),
             backgroundColor: AppColors.sidebar,
             foregroundColor: AppColors.textOnDark,
+            actions: hasSession && !admin
+                ? [
+                    FutureBuilder<int>(
+                      future: _attention,
+                      builder: (context, snapshot) {
+                        final count = snapshot.data ?? 0;
+                        return IconButton(
+                          tooltip: 'Needs your attention',
+                          icon: Badge.count(
+                            count: count,
+                            isLabelVisible: count > 0,
+                            child: const Icon(Icons.notifications_outlined),
+                          ),
+                          onPressed: () => context.go('/app/home'),
+                        );
+                      },
+                    ),
+                  ]
+                : null,
           ),
           drawer: Drawer(
             width: 280,
@@ -95,6 +116,7 @@ class _AppShellState extends State<AppShell> {
               badges: {
                 '/people': _pendingPeople,
                 '/app/admin/requests': _pendingRequests,
+                if (hasSession && !admin) '/app/home': _attention,
               },
               onNavigate: () => Navigator.of(context).pop(),
             ),
