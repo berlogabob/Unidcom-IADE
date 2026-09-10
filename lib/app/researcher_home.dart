@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/attention.dart';
 import '../data/features.dart';
+import '../data/output_filters.dart';
 import '../data/supabase.dart';
+import '../public/person/featured_outputs.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/output_row.dart';
 import '../widgets/panels.dart';
+import '../widgets/status_strip.dart';
 import 'my_profile.dart' show profileStatusLabel;
 
 /// Home-page fetch, public so the split-out `/app/home/*` leaves (see
@@ -16,6 +20,8 @@ typedef HomeData = ({
   Map<String, dynamic>? person,
   List<Map<String, dynamic>> outputs,
   List<Map<String, dynamic>> requests,
+  List<Map<String, dynamic>> candidates,
+  List<Map<String, dynamic>> suggestions,
 });
 
 Future<HomeData> loadHomeData() async {
@@ -25,12 +31,16 @@ Future<HomeData> loadHomeData() async {
       person: null,
       outputs: const <Map<String, dynamic>>[],
       requests: const <Map<String, dynamic>>[],
+      candidates: const <Map<String, dynamic>>[],
+      suggestions: const <Map<String, dynamic>>[],
     );
   }
 
   final results = await Future.wait<Object>([
     fetchPerson(mine['id'] as String),
     fetchMyRequests(),
+    fetchMyCandidates(mine['id'] as String),
+    fetchMySuggestions(mine['id'] as String),
   ]);
   final person = results[0] as Map<String, dynamic>;
   final outputs =
@@ -44,10 +54,13 @@ Future<HomeData> loadHomeData() async {
           (a['reporting_year'] as int?) ?? 0,
         ),
       );
+  await mergeOutputQuality(outputs);
   return (
     person: person,
     outputs: outputs,
     requests: results[1] as List<Map<String, dynamic>>,
+    candidates: results[2] as List<Map<String, dynamic>>,
+    suggestions: results[3] as List<Map<String, dynamic>>,
   );
 }
 
@@ -81,7 +94,16 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  OverviewStats(person: person, data: data),
+                  _IdentityHeader(
+                    person: person,
+                    pendingCandidates: data.candidates
+                        .where(
+                          (candidate) =>
+                              candidate['status'] == 'pending' &&
+                              candidate['matched_output_id'] == null,
+                        )
+                        .length,
+                  ),
                   const SizedBox(height: 16),
                   LayoutBuilder(
                     builder: (context, constraints) {
@@ -90,6 +112,9 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
                           OverviewAlerts(
                             person: person,
                             requests: data.requests,
+                            outputs: data.outputs,
+                            candidates: data.candidates,
+                            suggestions: data.suggestions,
                           ),
                           const SizedBox(height: 16),
                           RecentOutputs(outputs: data.outputs),
@@ -97,11 +122,19 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
                       );
                       final right = Column(
                         children: [
+                          OutputSummary(
+                            outputs: data.outputs,
+                            featured: featuredOf(person).length,
+                          ),
+                          const SizedBox(height: 16),
+                          _SyncLine(
+                            person: person,
+                            pending: pendingProposals(data.suggestions),
+                          ),
                           if (v2) ...[
-                            _SupportRequests(requests: data.requests),
                             const SizedBox(height: 16),
+                            const QuickLinks(),
                           ],
-                          const QuickLinks(),
                         ],
                       );
                       if (constraints.maxWidth < 760) {
@@ -125,6 +158,159 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
           ),
         );
       },
+    );
+  }
+}
+
+class _IdentityHeader extends StatelessWidget {
+  const _IdentityHeader({
+    required this.person,
+    required this.pendingCandidates,
+  });
+
+  final Map<String, dynamic> person;
+  final int pendingCandidates;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = person['preferred_name'] as String? ?? 'Researcher';
+    final photo = (person['photo_url'] as String? ?? '').trim();
+    final job = (person['job_title'] as String? ?? '').trim();
+    final membership = membershipLabels[person['membership_type']] ?? '';
+    final role = job.isNotEmpty
+        ? job
+        : membership.isNotEmpty
+        ? membership
+        : 'Researcher';
+    final orcid = (person['orcid'] as String? ?? '').trim();
+    final initials = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .take(2)
+        .map((part) => part[0].toUpperCase())
+        .join();
+
+    return Panel(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundImage: photo.isEmpty ? null : NetworkImage(photo),
+            child: photo.isEmpty ? Text(initials) : null,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text('$role · UNIDCOM / IADE'),
+                if (orcid.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text('ORCID iD $orcid', style: const TextStyle(fontSize: 12)),
+                ],
+                const SizedBox(height: 12),
+                StatusStrip(
+                  person: person,
+                  pendingCandidates: pendingCandidates,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class OutputSummary extends StatelessWidget {
+  const OutputSummary({
+    super.key,
+    required this.outputs,
+    required this.featured,
+  });
+
+  final List<Map<String, dynamic>> outputs;
+  final int featured;
+
+  @override
+  Widget build(BuildContext context) {
+    final counts = countByType(outputs);
+    final classified = counts.entries
+        .where((entry) => entry.key != 'Unclassified')
+        .toList();
+    final unclassified = counts['Unclassified'];
+    final entries = [
+      ...classified.take(unclassified == null ? 6 : 5),
+      if (unclassified != null)
+        MapEntry<String, int>('Unclassified', unclassified),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        sectionHeader(context, 'Scientific Outputs · ${outputs.length}'),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final entry in entries)
+              InkWell(
+                onTap: () => context.go('/app/outputs'),
+                child: SizedBox(
+                  width: 150,
+                  child: AccentStatCard(
+                    label: entry.key,
+                    value: '${entry.value}',
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        InkWell(
+          onTap: () => context.go('/app/outputs'),
+          child: AccentStatCard(
+            label: 'FEATURED OUTPUTS',
+            value: '$featured / $maxFeaturedOutputs',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SyncLine extends StatelessWidget {
+  const _SyncLine({required this.person, required this.pending});
+
+  final Map<String, dynamic> person;
+  final int pending;
+
+  @override
+  Widget build(BuildContext context) {
+    String date(Object? value) {
+      final parsed = DateTime.tryParse(value?.toString() ?? '');
+      return parsed == null ? 'never' : _shortDate(parsed);
+    }
+
+    return mutedText(
+      context,
+      [
+        'ORCID last checked ${date(person['orcid_synced_at'])}',
+        'Profile updated ${date(person['updated_at'])}',
+        if (pending > 0)
+          '$pending ${pending == 1 ? 'change' : 'changes'} awaiting UNIDCOM review',
+      ].join(' · '),
     );
   }
 }
@@ -232,94 +418,78 @@ const _months = [
 
 String _shortDate(DateTime d) => '${d.day} ${_months[d.month - 1]} ${d.year}';
 
-/// Profile/support-request alerts. Public: also the body of the
+/// Researcher action list. Public: also the body of the
 /// `/app/home/alerts` leaf (see portal_pages.dart).
 class OverviewAlerts extends StatelessWidget {
   const OverviewAlerts({
     super.key,
     required this.person,
     required this.requests,
+    this.outputs = const [],
+    this.candidates = const [],
+    this.suggestions = const [],
     this.now,
   });
 
   final Map<String, dynamic> person;
   final List<Map<String, dynamic>> requests;
+  final List<Map<String, dynamic>> outputs;
+  final List<Map<String, dynamic>> candidates;
+  final List<Map<String, dynamic>> suggestions;
   final DateTime? now;
 
   @override
   Widget build(BuildContext context) {
-    final alerts =
-        <
-          ({
-            Color background,
-            Color foreground,
-            IconData icon,
-            String text,
-            String? route,
-          })
-        >[];
-    if (person['profile_status'] != 'approved') {
-      alerts.add((
-        background: AppColors.amberTintSoft,
-        foreground: AppColors.amberDark,
-        icon: Icons.warning_amber_rounded,
-        text: 'Your profile is awaiting confirmation',
-        route: '/app/profile',
-      ));
-    }
-    // v2: an alert whose only action is a link to a page v1 does not route to
-    // would be a dead end, and support requests are not part of the pilot.
-    if (v2 && requests.any((request) => request['status'] == 'rejected')) {
-      alerts.add((
-        background: AppColors.redTint,
-        foreground: AppColors.red,
-        icon: Icons.error_outline,
-        text: 'A support request was rejected',
-        route: '/app/requests',
-      ));
-    }
-    if (alerts.isEmpty) {
-      alerts.add((
-        background: AppColors.tealTint,
-        foreground: AppColors.tealDark,
-        icon: Icons.check_circle_outline,
-        text:
-            'No action required · Last checked ${_shortDate(now ?? DateTime.now())}',
-        route: null,
-      ));
-    }
+    final alerts = attentionItems(
+      person: person,
+      outputs: outputs,
+      candidates: candidates,
+      suggestions: suggestions,
+    );
 
     return Panel(
-      title: 'Alerts',
+      title: 'Needs Your Attention',
       padding: EdgeInsets.zero,
       child: Column(
         children: [
-          for (var i = 0; i < alerts.length; i++) ...[
-            if (i > 0) const Divider(height: 1),
-            // Material of its own: ListTile paints its tint on the nearest
-            // Material, which sits under the Panel's decorated box, so the
-            // alert colours never showed. Found by the D2 widget test.
+          if (alerts.isEmpty)
             Material(
-              color: alerts[i].background,
+              color: AppColors.tealTint,
               child: ListTile(
-                leading: Icon(
-                  alerts[i].icon,
-                  color: alerts[i].foreground,
-                  size: 20,
+                leading: const Icon(
+                  Icons.check_circle_outline,
+                  color: AppColors.tealDark,
                 ),
                 title: Text(
-                  alerts[i].text,
-                  style: TextStyle(color: alerts[i].foreground),
+                  'No action required · Last checked ${_shortDate(now ?? DateTime.now())}',
+                  style: const TextStyle(color: AppColors.tealDark),
                 ),
-                trailing: alerts[i].route == null
-                    ? null
-                    : Text('→', style: TextStyle(color: alerts[i].foreground)),
-                onTap: alerts[i].route == null
-                    ? null
-                    : () => context.go(alerts[i].route!),
               ),
-            ),
-          ],
+            )
+          else
+            for (var i = 0; i < alerts.length; i++) ...[
+              if (i > 0) const Divider(height: 1),
+              // One Material per row so ListTile's tint is visible.
+              Material(
+                color: AppColors.amberTintSoft,
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: AppColors.amberDark,
+                    size: 20,
+                  ),
+                  title: Text(
+                    alerts[i].text,
+                    style: const TextStyle(color: AppColors.amberDark),
+                  ),
+                  trailing: const Text(
+                    '→',
+                    style: TextStyle(color: AppColors.amberDark),
+                  ),
+                  onTap: () => context.go(alerts[i].route),
+                ),
+              ),
+            ],
         ],
       ),
     );
@@ -363,57 +533,6 @@ class _RecentOutputsState extends State<RecentOutputs> {
                     type: output['type'] as String?,
                     onTap: () => context.go('/outputs/${output['id']}'),
                   ),
-              ],
-            ),
-    );
-  }
-}
-
-class _SupportRequests extends StatelessWidget {
-  const _SupportRequests({required this.requests});
-
-  final List<Map<String, dynamic>> requests;
-
-  PillTone _tone(String status) => switch (status) {
-    'submitted' => PillTone.amber,
-    'approved' => PillTone.teal,
-    'rejected' => PillTone.red,
-    'completed' => PillTone.blue,
-    _ => PillTone.grey,
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    return Panel(
-      title: 'Support requests',
-      trailing: TextButton(
-        onPressed: () => context.go('/app/requests'),
-        child: const Text('See all →'),
-      ),
-      padding: EdgeInsets.zero,
-      child: requests.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('No requests yet.'),
-            )
-          : Column(
-              children: [
-                for (var i = 0; i < requests.take(3).length; i++) ...[
-                  if (i > 0) const Divider(height: 1),
-                  ListTile(
-                    title: Text(
-                      requests[i]['title'] as String? ?? 'Untitled request',
-                    ),
-                    subtitle: Text(requests[i]['type'] as String? ?? ''),
-                    trailing: StatusPill(
-                      (requests[i]['status'] as String? ?? 'draft').replaceAll(
-                        '_',
-                        ' ',
-                      ),
-                      tone: _tone(requests[i]['status'] as String? ?? 'draft'),
-                    ),
-                  ),
-                ],
               ],
             ),
     );
