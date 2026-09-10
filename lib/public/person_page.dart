@@ -73,6 +73,9 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
   late Future<List<Map<String, dynamic>>> _suggestions =
       fetchSuggestionsForPerson(widget.id);
   late Future<List<Map<String, dynamic>>> _roles = fetchPersonRoles(widget.id);
+  late final Future<Map<String, String>?> _orcidValues = fetchOrcidValues(
+    widget.id,
+  );
   bool _enriching = false;
   bool _syncing = false;
 
@@ -269,7 +272,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
             ],
             if (widget.sections.contains(PersonSection.biography)) ...[
               const SizedBox(height: 24),
-              ...personBioSection(context, person),
+              _bioSection(person, isOwner),
             ],
             if (widget.sections.contains(PersonSection.outputs)) ...[
               () {
@@ -339,6 +342,49 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
         );
       },
     );
+  }
+
+  Widget _bioSection(Map<String, dynamic> person, bool isOwner) {
+    final hasOrcid = (person['orcid'] as String? ?? '').trim().isNotEmpty;
+    if (!isOwner || !hasOrcid) {
+      return Column(children: personBioSection(context, person));
+    }
+    return FutureBuilder<Map<String, String>?>(
+      future: _orcidValues,
+      builder: (context, snapshot) {
+        final values = snapshot.data;
+        final orcidBio = values?['bio'];
+        if (snapshot.hasError || values == null) {
+          return Column(children: personBioSection(context, person));
+        }
+        return Column(
+          children: personBioSection(
+            context,
+            person,
+            orcidBio: orcidBio,
+            onImportOrcid: orcidBio == null || orcidBio.trim().isEmpty
+                ? null
+                : () => _importOrcidBiography(person, orcidBio),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _importOrcidBiography(
+    Map<String, dynamic> person,
+    String orcidBio,
+  ) async {
+    try {
+      await proposeMyChanges(
+        widget.id,
+        {'bio': person['bio'] as String?},
+        {'bio': orcidBio},
+      );
+      if (mounted) showSnack(context, 'Biography sent for UNIDCOM review');
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
+    }
   }
 
   /// Stars/unstars an output, keeping the array's order = display order.

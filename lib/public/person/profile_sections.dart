@@ -215,12 +215,77 @@ List<Widget> personIdentifiersSections(
 /// Biography leaf: the About heading plus bio/notes.
 List<Widget> personBioSection(
   BuildContext context,
-  Map<String, dynamic> person,
-) => [
-  sectionHeader(context, 'About'),
-  const SizedBox(height: 8),
-  _bio(context, person),
-];
+  Map<String, dynamic> person, {
+  String? orcidBio,
+  VoidCallback? onImportOrcid,
+}) {
+  final trimmedOrcidBio = orcidBio?.trim();
+  if (trimmedOrcidBio == null || trimmedOrcidBio.isEmpty) {
+    return [
+      sectionHeader(context, 'About'),
+      const SizedBox(height: 8),
+      _bio(context, person),
+    ];
+  }
+  if (trimmedOrcidBio == (person['bio'] as String? ?? '').trim()) {
+    return [
+      sectionHeader(context, 'About'),
+      const SizedBox(height: 8),
+      _bio(context, person),
+      const SizedBox(height: 8),
+      mutedText(context, 'Matches ORCID'),
+    ];
+  }
+
+  Widget column(String heading, Widget child) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      sectionHeader(context, heading),
+      const SizedBox(height: 8),
+      child,
+    ],
+  );
+
+  return [
+    LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = [
+          column(
+            'UNIDCOM biography',
+            ((person['bio'] as String? ?? '').trim().isEmpty)
+                ? mutedText(context, 'No bio yet')
+                : Text((person['bio'] as String).trim()),
+          ),
+          column('ORCID biography', Text(trimmedOrcidBio)),
+        ];
+        return constraints.maxWidth >= 600
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: columns[0]),
+                  const SizedBox(width: 24),
+                  Expanded(child: columns[1]),
+                ],
+              )
+            : Column(
+                children: [columns[0], const SizedBox(height: 16), columns[1]],
+              );
+      },
+    ),
+    if (onImportOrcid != null) ...[
+      const SizedBox(height: 12),
+      OutlinedButton.icon(
+        onPressed: onImportOrcid,
+        icon: const Icon(Icons.download_outlined),
+        label: const Text('Import ORCID version'),
+      ),
+      mutedText(
+        context,
+        'Importing proposes the ORCID text to UNIDCOM; nothing changes until it is approved.',
+      ),
+    ],
+  ];
+}
 
 /// Lab chips, grouped with Personal Information rather than the identifiers
 /// list — membership is who-you-are, not an identifier to look someone up by.
@@ -252,6 +317,22 @@ Widget _orcidSection(
   bool showConnect,
 ) {
   final orcid = (person['orcid'] as String? ?? '').trim();
+  final syncedAt = (person['orcid_synced_at'] as String? ?? '').trim();
+  final synced = syncedAt.isEmpty ? null : DateTime.tryParse(syncedAt);
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -262,6 +343,15 @@ Widget _orcidSection(
             ? mutedText(context, 'Not set')
             : _link(context, orcid, 'https://orcid.org/$orcid', onOpen),
       ),
+      if (synced != null)
+        _InfoRow(
+          icon: Icons.sync,
+          label: 'Last synchronised',
+          child: mutedText(
+            context,
+            '${synced.day} ${months[synced.month - 1]} ${synced.year}',
+          ),
+        ),
       if (showConnect) ...[
         const SizedBox(height: 8),
         OutlinedButton.icon(
