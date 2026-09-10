@@ -613,12 +613,13 @@ Run notes: five rows regrouped into three tasks by file so no two agents shared 
 
 | # | Task | Owner | Acceptance check | PR |
 |---|---|---|---|---|
-| D3.1 | `nav_model.dart`: `researcherNav` → five items, no children: Overview `/app/home`, My Profile `/app/profile`, Scientific Outputs `/app/outputs`, Resources & Guidance `/app/welcome/affiliation`, Help & Contacts `/app/welcome/contacts`. Removed leaves stay as `if (v2)` | luna | `nav_model_test`: 5 items in v1; `v1_surface_test`: 0 `wip` items | [ ] |
-| D3.2 | `main.dart`: old leaf routes (`/app/home/*`, `/app/profile/*`, `/app/outputs/{add,edit,import,validation}`, `/app/help/*`) redirect to their parent page, `?view=` carried | luna | `route_guard_test` lists each redirect | [ ] |
-| D3.3 | Welcome pack: one `PortalPage` "Resources & Guidance" with five headed sections (Affiliation, FCT, Email Signature, Social Media, Logos); Research Activity Reporting behind `v2` | luna | `v1_surface_test`: 5 headings, 0 "Research Activity Reporting" | [ ] |
-| D3.4 | `.maestro/*.yaml` labels follow D3.1 | mini | `grep -c "Scientific Outputs" .maestro/researcher_mode.yaml` ≥ 1 | [ ] |
+| D3.1 | `nav_model.dart`: `researcherNav` → five items, no children: Overview `/app/home`, My Profile `/app/profile`, Scientific Outputs `/app/outputs`, Resources & Guidance `/app/welcome/affiliation`, Help & Contacts `/app/welcome/contacts`. Removed leaves stay as `if (v2)` | luna | `nav_model_test`: 5 items in v1; `v1_surface_test`: 0 `wip` items | [x] #53 — ✅ `researcherNav(signedIn: true)` = one bare group, 5 items with icons; the 25-leaf tree unchanged under `V2=true`; Research Activity Reporting `if (v2)` in the anonymous nav too |
+| D3.2 | `main.dart`: old leaf routes (`/app/home/*`, `/app/profile/*`, `/app/outputs/{add,edit,import,validation}`, `/app/help/*`) redirect to their parent page, `?view=` carried | luna | `route_guard_test` lists each redirect | [x] #52 — ✅ 11 GoRoutes `redirect: v2 ? null : <parent>` (`/app/home/*` → home, `/app/profile/{areas,interests,status}` → profile, `/app/outputs/{edit,validation}` → outputs, `/app/help/{docs,faq}` → contacts); `/app/welcome/report` → resources. `identifiers`, `bio`, `add`, `import`, `help/links` kept for D4/D5 |
+| D3.3 | Welcome pack: one `PortalPage` "Resources & Guidance" with five headed sections (Affiliation, FCT, Email Signature, Social Media, Logos); Research Activity Reporting behind `v2` | luna | `v1_surface_test`: 5 headings, 0 "Research Activity Reporting" | [x] #52 — ✅ done as an index: welcome slug `resources` with five cards → the existing section pages (stacking five sections on one page would have been a wall); `v1_surface_test` asserts the five labels and no Research Activity Reporting |
+| D3.4 | `.maestro/*.yaml` labels follow D3.1 | mini | `grep -c "Scientific Outputs" .maestro/researcher_mode.yaml` ≥ 1 | [x] #52 — ✅ `researcher_mode.yaml`: "My Outputs" → "Scientific Outputs", F-001 semantics guard → "My Profile"; `side_nav_semantics_test` labels by orch |
 
-**D3 KPI:** researcher sidebar leaves 25 → 5; WIP pages reachable from v1 nav 8 → 0.
+**D3 KPI:** ✅ researcher sidebar leaves 25 → 5; WIP pages reachable from v1 nav 8 → 0. Measured on `main` da8fb1e: `flutter analyze` 0, `flutter test` 205.
+Run notes: two tasks by file (nav model + its two tests; router + welcome content + Maestro + surface test); Codex `gpt-5.6-luna`, 88k / 59k tokens; both passed their greps first time; one test outside D3-A's allowed list (`side_nav_semantics_test`) needed a two-label fix by orch — spec lesson from D2 not yet fully applied, see D4 specs. Open: login still lands on `/app/welcome/start` (P12.2), which the five-item sidebar highlights under Resources & Guidance — decide whether Overview should be the landing (Rui §5 suggests yes).
 
 #### Wave D4 — My Profile, one page (luna; D4.2 after D1)
 
@@ -690,8 +691,8 @@ Run notes: five rows regrouped into three tasks by file so no two agents shared 
 
 | Metric | Before | After |
 |---|---|---|
-| Researcher sidebar leaves (v1) | 25 | |
-| WIP pages reachable from v1 nav | 8 | |
+| Researcher sidebar leaves (v1) | 25 | 5 (D3) |
+| WIP pages reachable from v1 nav | 8 | 0 (D3) |
 | Researcher pages for profile / outputs | 6 / 5 | |
 | Filters on own outputs | 2 | |
 | Role/membership rows on the outputs page | all | |
@@ -702,7 +703,7 @@ Run notes: five rows regrouped into three tasks by file so no two agents shared 
 | Researcher can edit own output | no | |
 | Website state independent of approval | no | |
 | Doc 2 §V acceptance lines passing | not measured | |
-| `flutter test` | 199 | 204 (D2) |
+| `flutter test` | 199 | 205 (D3) |
 | Pure-function files with tests added | 0 | 1 (D2: `status_labels.dart`) |
 
 Estimated size: 42 tasks; D1 sequential (orch), D2–D3 one wave each in parallel, D4–D8 two
