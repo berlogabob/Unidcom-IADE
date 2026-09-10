@@ -300,6 +300,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         key: ValueKey('$status-${_candidates.length}'),
         id: person['id'] as String,
         sections: personSectionsFor(widget.section),
+        outputsOnly: widget.section == MySection.outputs,
         leading: [
           // Row, not a Wrap with a Spacer in it: Spacer is an Expanded, which
           // asserts outside a Flex, and inside a Wrap it silently takes the
