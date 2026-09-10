@@ -600,13 +600,14 @@ security definer like every RPC here (gated in body, accepted in §4). Pre-exist
 
 | # | Task | Owner | Acceptance check | PR |
 |---|---|---|---|---|
-| D2.1 | "Recent papers" → "Recent Outputs"; "My papers" → "Scientific Outputs" in `lib/`, `test/`, `.maestro/` | mini | `grep -rin "papers" lib test .maestro` = 0 | [ ] |
-| D2.2 | `lib/data/request_status.dart`-style map `reviewLabel()`: `pending` → "Submitted", `rejected` → "Changes requested", `approved` → "Approved"; `profileStatusLabel`: `pending_review` → "Submitted" | mini | unit test 4 cases; `grep -rn '"Awaiting UNIDCOM approval"' lib` = 0 | [ ] |
-| D2.3 | `researcher_home.dart`: empty alerts → "No action required · Last checked <today>" | mini | `grep -rn "All good" lib` = 0; `recent_outputs_test` green | [ ] |
-| D2.4 | `person_page.dart`: "Highlights · N" → "Featured outputs · N / 5" | mini | `featured_outputs_test` asserts the "/ 5" string | [ ] |
-| D2.5 | `websiteLabel()` + `orcidLabel()` maps (Not published / Pending / Published / Error; Not connected / Connected / Changes available / Synced) in `lib/data/status_labels.dart` | mini | unit test, one case per value | [ ] |
+| D2.1 | "Recent papers" → "Recent Outputs" ("My papers" was already gone since round 3) | luna (D2-A) | `grep -rin "papers" lib test .maestro` = 0 (fixture "Journal of Useful Papers" in `enrich_test` exempt) | [x] #51 — ✅ 0 |
+| D2.2 | `lib/data/status_labels.dart` `reviewLabel()`: `pending`/`pending_review` → "Submitted", `rejected` → "Changes requested", `approved` → "Approved"; `profileStatusLabel` and `queueStatusLabel` aligned; `OutputRow` pill shows the label, tone still keys on the raw code. `draft` profile keeps "Profile not confirmed" (pairs with the Confirm button) | luna (D2-B) | `status_labels_test` one case per value; `grep -rn "Awaiting UNIDCOM approval" lib` = 0 | [x] #50 — ✅ 0; two pre-existing `output_row_test` expectations on the raw code updated by orch |
+| D2.3 | `researcher_home.dart`: empty alerts → "No action required · Last checked <d Mon yyyy>"; `OverviewAlerts(now:)` for the test | luna (D2-A) | `grep -rn "All good" lib` = 0; `recent_outputs_test` asserts the string | [x] #51 — ✅ 0. Side find: alert tints never rendered (`ListTile` painted under the Panel's decorated box); each row now has its own `Material` |
+| D2.4 | `person_page.dart`: "Highlights · N" → `featuredHeader(n)` = "Featured outputs · N / 5"; empty copy updated; star tooltips (Maestro handles) untouched | luna (D2-C) | `featured_outputs_test` asserts the "/ 5" string; tooltip grep counts unchanged | [x] #49 — ✅ |
+| D2.5 | `websiteLabel()` + `orcidLabel()` in the same `status_labels.dart` (Not published / Pending publication / Published / Publication error; Not connected / Connected / Changes available / Sync error) | luna (D2-B) | unit test, one case per value | [x] #50 — ✅ |
 
-**D2 KPI:** zero "papers", zero "All good", zero raw status codes in the researcher view.
+**D2 KPI:** ✅ zero "papers", zero "All good", zero raw status codes in the researcher view. Measured on `main` a19125f: `flutter analyze` 0, `flutter test` 204.
+Run notes: five rows regrouped into three tasks by file so no two agents shared a file (D2.1+D2.3, D2.2+D2.5, D2.4); one git worktree per task; Codex `gpt-5.6-luna`, 39k / 52k / 73k tokens; all three passed their greps first time, one needed a test fix outside its allowed files (orch).
 
 #### Wave D3 — navigation (luna)
 
@@ -694,15 +695,15 @@ security definer like every RPC here (gated in body, accepted in §4). Pre-exist
 | Researcher pages for profile / outputs | 6 / 5 | |
 | Filters on own outputs | 2 | |
 | Role/membership rows on the outputs page | all | |
-| "papers" strings in `lib test .maestro` | ≥ 4 | |
-| "All good" strings | 1 | |
+| "papers" strings in `lib test .maestro` | ≥ 4 | 0 (D2) |
+| "All good" strings | 1 | 0 (D2) |
 | Distinct status dimensions shown to a researcher | 1 | |
 | Researcher direct writes to `people` from the portal | Edit dialog | |
 | Researcher can edit own output | no | |
 | Website state independent of approval | no | |
 | Doc 2 §V acceptance lines passing | not measured | |
-| `flutter test` | 199 | |
-| Pure-function files with tests added | 0 | |
+| `flutter test` | 199 | 204 (D2) |
+| Pure-function files with tests added | 0 | 1 (D2: `status_labels.dart`) |
 
 Estimated size: 42 tasks; D1 sequential (orch), D2–D3 one wave each in parallel, D4–D8 two
 waves in parallel with D5.1 / D7.1 / D9.1 first because their widgets depend on them, D9 last.
