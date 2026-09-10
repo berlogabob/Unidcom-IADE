@@ -61,6 +61,7 @@ class OutputRow extends StatelessWidget {
     this.issueCodes,
     this.errorCount = 0,
     this.warningCount = 0,
+    this.extraPills = const [],
   });
 
   final String title;
@@ -77,6 +78,7 @@ class OutputRow extends StatelessWidget {
   final List<String>? issueCodes;
   final int errorCount;
   final int warningCount;
+  final List<(String, PillTone)> extraPills;
 
   @override
   Widget build(BuildContext context) {
@@ -178,9 +180,21 @@ class OutputRow extends StatelessWidget {
                   child: TypeBadge(type!, tone: _typeTone(type!)),
                 ),
               ],
-              if (statusTone != null) ...[
+              if (statusTone != null || extraPills.isNotEmpty) ...[
                 const SizedBox(width: 12),
-                StatusPill(reviewLabel(status ?? detail), tone: statusTone),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    if (statusTone != null)
+                      StatusPill(
+                        reviewLabel(status ?? detail),
+                        tone: statusTone,
+                      ),
+                    for (final (label, tone) in extraPills)
+                      StatusPill(label, tone: tone),
+                  ],
+                ),
               ],
               if (trailingWidget != null) ...[
                 const SizedBox(width: 12),

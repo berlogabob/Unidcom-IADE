@@ -157,4 +157,122 @@ void main() {
 
     expect(find.text('Please add the missing DOI.'), findsOneWidget);
   });
+
+  testWidgets('person output detail includes subtype and DOI', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PersonOutputRow(
+            author: {
+              'role': 'Author',
+              'outputs': {
+                'id': 'out-1',
+                'title': 'Output',
+                'subtype': 'Q1 journal',
+                'doi': '10.1234/example',
+              },
+            },
+            isFeatured: false,
+            onTap: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('2025'), findsNothing);
+    expect(
+      find.text('Author · Q1 journal · DOI 10.1234/example'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('showStates renders ORCID and website pills', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PersonOutputRow(
+            author: {
+              'role': 'Author',
+              'outputs': {
+                'id': 'out-1',
+                'title': 'Output',
+                'source': 'orcid',
+                'website_status': 'published',
+              },
+            },
+            isFeatured: false,
+            onTap: (_) {},
+            showStates: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('ORCID ✓'), findsOneWidget);
+    expect(find.text('Website · Published'), findsOneWidget);
+  });
+
+  testWidgets('showStates labels a missing website as not published', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PersonOutputRow(
+            author: {
+              'role': 'Author',
+              'outputs': {'id': 'out-1', 'title': 'Output'},
+            },
+            isFeatured: false,
+            onTap: (_) {},
+            showStates: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Website · Not published'), findsOneWidget);
+  });
+
+  testWidgets('edit action fires with output id', (tester) async {
+    String? edited;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PersonOutputRow(
+            author: {
+              'role': 'Author',
+              'outputs': {'id': 'out-1', 'title': 'Output'},
+            },
+            isFeatured: false,
+            onTap: (_) {},
+            onEdit: (id) => edited = id,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byTooltip('Edit output'), findsOneWidget);
+    await tester.tap(find.byTooltip('Edit output'));
+    expect(edited, 'out-1');
+  });
+
+  testWidgets('no edit action renders without onEdit', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PersonOutputRow(
+            author: {
+              'role': 'Author',
+              'outputs': {'id': 'out-1', 'title': 'Output'},
+            },
+            isFeatured: false,
+            onTap: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byTooltip('Edit output'), findsNothing);
+  });
 }
