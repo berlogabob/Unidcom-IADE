@@ -664,15 +664,19 @@ Run notes: two rounds. Round 1, three `luna` agents by file (pure filters 58k; d
 
 | # | Task | Owner | Acceptance check | PR |
 |---|---|---|---|---|
-| D7.1 | `lib/data/orcid_buckets.dart`: `bucketCandidates(candidates, similar)` → New / Matched (`matched_output_id`) / Possible duplicate (`find_similar_outputs` hit) / Not mine (`rejected`) | luna | unit test, one case per bucket | [ ] |
-| D7.2 | `OrcidCandidatesPanel` grouped by bucket; "Add all unambiguous (N)" only over New, with confirm dialog | luna | widget test: duplicates excluded from Add all; confirm required | [ ] |
+| D7.1 | `lib/data/orcid_buckets.dart`: `bucketCandidates(candidates, similar)` → New / Matched (`matched_output_id`) / Possible duplicate (`find_similar_outputs` hit) / Not mine (`rejected`) | luna | unit test, one case per bucket | [x] #63 — ✅ `orcid_buckets.dart`: fresh / possibleDuplicate (matched_output_id) / notMine (rejected); `unambiguous()` = fresh ∧ affiliation unidcom; `reviewReason()`; pure, tested |
+| D7.2 | `OrcidCandidatesPanel` grouped by bucket; "Add all unambiguous (N)" only over New, with confirm dialog | luna | widget test: duplicates excluded from Add all; confirm required | [x] #63 — ✅ panel bucketed with the matched title on duplicates (Same work / Different — add), Not mine collapsed; "Add all unambiguous (n)" behind a confirm dialog; shown under the outputs page's "ORCID reconciliation" view and still on /app/outputs/import |
+
+**D7 KPI:** ✅ candidates in three buckets; bulk add limited to unambiguous rows with confirmation. One `gpt-5.6-sol` agent, 84k tokens, green first time.
 
 #### Wave D8 — admin side (luna)
 
 | # | Task | Owner | Acceptance check | PR |
 |---|---|---|---|---|
-| D8.1 | Review queue: "Publish to website" / "Unpublish" per approved output → `website_status` | luna | `review_queue_test`: button visible only when approved; SQL check | [ ] |
-| D8.2 | Queue shows staged output suggestions (D5.7) with Accept / Decline | mini | existing `fetchPendingSuggestions` path; widget test 1 output row | [ ] |
+| D8.1 | Review queue: "Publish to website" / "Unpublish" per approved output → `website_status` | luna | `review_queue_test`: button visible only when approved; SQL check | [x] #62 — ✅ `WebsitePanel` on the admin output page: Publish to website / Unpublish via `setWebsiteStatus` (audited by the D1 trigger), hint when not approved; Website pill on the admin outputs list |
+| D8.2 | Queue shows staged output suggestions (D5.7) with Accept / Decline | mini | existing `fetchPendingSuggestions` path; widget test 1 output row | [x] #62 — ✅ Suggestions tab already listed output rows (`fetchPendingSuggestions`); now labelled "Proposed by researcher" and "Output · <title>" |
+
+**D8 KPI:** ✅ approval and publication are two admin actions. One `gpt-5.6-luna` agent, 70k tokens, green first time. Measured on `main` after D7 + D8: `flutter analyze` 0, `flutter test` 259.
 
 #### Wave D9 — Overview, last (luna, after D2–D8)
 
@@ -705,10 +709,10 @@ Run notes: two rounds. Round 1, three `luna` agents by file (pure filters 58k; d
 | Distinct status dimensions shown to a researcher | 1 | 3 (D4: ORCID · UNIDCOM · Website) |
 | Researcher direct writes to `people` from the portal | Edit dialog | 0 — staged as suggestions (D4) |
 | Researcher can edit own output | no | yes, as a proposal (D5) |
-| Website state independent of approval | no | |
+| Website state independent of approval | no | yes — column, trigger, admin panel, site filter (D1 + D8) |
 | Doc 2 §V acceptance lines passing | not measured | |
-| `flutter test` | 199 | 249 (D6) |
-| Pure-function files with tests added | 0 | 2 (`status_labels.dart`, `output_filters.dart`) |
+| `flutter test` | 199 | 259 (D8) |
+| Pure-function files with tests added | 0 | 3 (`status_labels.dart`, `output_filters.dart`, `orcid_buckets.dart`) |
 
 Estimated size: 42 tasks; D1 sequential (orch), D2–D3 one wave each in parallel, D4–D8 two
 waves in parallel with D5.1 / D7.1 / D9.1 first because their widgets depend on them, D9 last.
