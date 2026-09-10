@@ -1024,13 +1024,16 @@ Future<List<Map<String, dynamic>>> fetchOutputCandidates() async {
   }
 }
 
-Future<List<Map<String, dynamic>>> fetchMyCandidates(String personId) async {
+Future<List<Map<String, dynamic>>> fetchMyCandidates(
+  String personId, {
+  List<String> statuses = const ['pending'],
+}) async {
   try {
     final rows = await db
         .from('output_candidates')
-        .select()
+        .select('*, matched:outputs!matched_output_id(id, title)')
         .eq('person_id', personId)
-        .eq('status', 'pending')
+        .inFilter('status', statuses)
         .order('affiliation_score', ascending: false);
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {

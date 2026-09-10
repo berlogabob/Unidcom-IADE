@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../data/enrich_client.dart';
 import '../data/features.dart';
+import '../data/orcid_buckets.dart';
 import '../data/supabase.dart';
 import '../public/person/orcid_sync_dialog.dart';
 import '../public/person_page.dart';
@@ -53,7 +54,7 @@ enum MySection {
     confirm: false,
     orcidCandidates: false,
   ),
-  // Outputs keeps "+ Add output"; the candidates panel moved to Import & Sync.
+  // Outputs keeps "+ Add output"; reconciliation is selected in its own view.
   MySection.outputs => (
     addOutput: true,
     confirm: false,
@@ -118,7 +119,10 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       final person = await fetchMyPerson();
       final candidates = person == null
           ? <Map<String, dynamic>>[]
-          : await fetchMyCandidates(person['id'] as String);
+          : await fetchMyCandidates(
+              person['id'] as String,
+              statuses: const ['pending', 'rejected'],
+            );
       if (!mounted) return;
       setState(() {
         _person = person;
@@ -165,6 +169,11 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   }
 
   Future<void> _reviewCandidate(String id, {required bool promote}) async {
+    final sameWork =
+        !promote &&
+        _candidates.any(
+          (row) => row['id'] == id && row['matched_output_id'] != null,
+        );
     try {
       if (promote) {
         await promoteCandidate(id);
@@ -172,10 +181,22 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         await rejectCandidate(id);
       }
       if (!mounted) return;
-      setState(() => _candidates.removeWhere((row) => row['id'] == id));
+      setState(() {
+        if (promote) {
+          _candidates.removeWhere((row) => row['id'] == id);
+        } else {
+          for (final candidate in _candidates.where((row) => row['id'] == id)) {
+            candidate['status'] = 'rejected';
+          }
+        }
+      });
       showSnack(
         context,
-        promote ? 'Publication added' : 'Publication marked as not mine',
+        promote
+            ? 'Publication added'
+            : sameWork
+            ? 'Marked as the same work'
+            : 'Publication marked as not mine',
       );
     } catch (error) {
       if (mounted) showSnack(context, error.toString());
@@ -197,10 +218,10 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   /// ponytail: sequential, not Future.wait — promoteCandidate writes an output
   /// plus an author link per call, and a researcher has single digits of these.
   /// Parallelise if anyone ever arrives with hundreds.
-  Future<void> _addAllCandidates() async {
-    if (_addingAll || _candidates.isEmpty) return;
+  Future<void> _addAllCandidates(List<Map<String, dynamic>> rows) async {
+    if (_addingAll || rows.isEmpty) return;
     setState(() => _addingAll = true);
-    final ids = [for (final row in _candidates) row['id'] as String];
+    final ids = [for (final row in rows) row['id'] as String];
     var added = 0;
     try {
       for (final id in ids) {
@@ -298,6 +319,11 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         id: person['id'] as String,
         sections: personSectionsFor(widget.section),
         outputsOnly: widget.section == MySection.outputs,
+        orcidPanel:
+            widget.section == MySection.outputs &&
+                (person['orcid'] as String? ?? '').isNotEmpty
+            ? _orcidCandidates(context)
+            : null,
         leading: [
           // Row, not a Wrap with a Spacer in it: Spacer is an Expanded, which
           // asserts outside a Flex, and inside a Wrap it silently takes the
@@ -352,8 +378,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             const SizedBox(height: 16),
           ],
         ],
-        // orcidCandidates never reaches here — importSync (the only section
-        // with it) returns before PersonPageScreen above.
       );
     }
 
@@ -493,18 +517,56 @@ class OrcidCandidatesPanel extends StatelessWidget {
   final String? orcid;
   final List<Map<String, dynamic>> candidates;
   final bool addingAll;
-  final Future<void> Function() onAddAll;
+  final Future<void> Function(List<Map<String, dynamic>> rows) onAddAll;
   final void Function(String id, bool promote) onReviewCandidate;
+
+  Future<void> _confirmAddAll(
+    BuildContext context,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    final count = rows.length;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Add $count publications from ORCID?'),
+        content: const Text(
+          'Only records that are new, unmatched and affiliated to IADE/UNIDCOM '
+          'are added. Possible duplicates and uncertain records stay here for '
+          'you to review. Everything added is Submitted for UNIDCOM approval.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text('Add $count'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) await onAddAll(rows);
+  }
 
   @override
   Widget build(BuildContext context) {
     final hasOrcid = orcid?.isNotEmpty ?? false;
+    final buckets = bucketCandidates(candidates);
+    final fresh = buckets[CandidateBucket.fresh]!;
+    final duplicates = buckets[CandidateBucket.possibleDuplicate]!;
+    final notMine = buckets[CandidateBucket.notMine]!;
+    final addable = unambiguous(candidates);
+    final hasCandidates =
+        fresh.isNotEmpty || duplicates.isNotEmpty || notMine.isNotEmpty;
     return Panel(
-      title: 'My ORCID publications · ${candidates.length}',
-      trailing: !hasOrcid || candidates.isEmpty
+      title: 'My ORCID publications',
+      trailing: !hasOrcid || addable.isEmpty
           ? null
           : FilledButton.icon(
-              onPressed: addingAll ? null : onAddAll,
+              onPressed: addingAll
+                  ? null
+                  : () => _confirmAddAll(context, addable),
               icon: addingAll
                   ? const SizedBox(
                       width: 16,
@@ -512,7 +574,11 @@ class OrcidCandidatesPanel extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.library_add_outlined, size: 18),
-              label: Text(addingAll ? 'Adding...' : 'Add all'),
+              label: Text(
+                addingAll
+                    ? 'Adding...'
+                    : 'Add all unambiguous (${addable.length})',
+              ),
             ),
       padding: EdgeInsets.zero,
       child: !hasOrcid
@@ -533,7 +599,7 @@ class OrcidCandidatesPanel extends StatelessWidget {
                 ],
               ),
             )
-          : candidates.isEmpty
+          : !hasCandidates
           ? const Padding(
               padding: EdgeInsets.all(16),
               child: Column(
@@ -554,14 +620,43 @@ class OrcidCandidatesPanel extends StatelessWidget {
               ),
             )
           : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final candidate in candidates)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Text(
+                    'ORCID reconciliation',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  child: Text(
+                    '${fresh.length} new · ${duplicates.length} possible '
+                    'duplicates · ${notMine.length} not mine',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: sectionHeader(
+                    context,
+                    'New in ORCID · ${fresh.length}',
+                  ),
+                ),
+                for (final candidate in fresh)
                   ListTile(
                     title: Text(candidate['title'] as String? ?? 'Untitled'),
                     subtitle: Text(candidateSubtitle(candidate)),
                     trailing: Wrap(
                       spacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
+                        if (reviewReason(candidate) case final reason?)
+                          StatusPill(reason, tone: PillTone.amber),
                         TextButton(
                           onPressed: addingAll
                               ? null
@@ -583,8 +678,77 @@ class OrcidCandidatesPanel extends StatelessWidget {
                       ],
                     ),
                   ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: sectionHeader(
+                    context,
+                    'Possible duplicates · ${duplicates.length}',
+                  ),
+                ),
+                for (final candidate in duplicates)
+                  ListTile(
+                    title: Text(candidate['title'] as String? ?? 'Untitled'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(candidateSubtitle(candidate)),
+                        Text(
+                          'Already recorded as: ${_matchedTitle(candidate)}',
+                          style: const TextStyle(color: AppColors.textMuted),
+                        ),
+                      ],
+                    ),
+                    trailing: Wrap(
+                      spacing: 8,
+                      children: [
+                        TextButton(
+                          onPressed: addingAll
+                              ? null
+                              : () => onReviewCandidate(
+                                  candidate['id'] as String,
+                                  false,
+                                ),
+                          child: const Text('Same work'),
+                        ),
+                        FilledButton(
+                          onPressed: addingAll
+                              ? null
+                              : () => onReviewCandidate(
+                                  candidate['id'] as String,
+                                  true,
+                                ),
+                          child: const Text('Different — add'),
+                        ),
+                      ],
+                    ),
+                  ),
+                Material(
+                  type: MaterialType.transparency,
+                  child: ExpansionTile(
+                    title: Text('Not mine · ${notMine.length}'),
+                    children: [
+                      for (final candidate in notMine)
+                        ListTile(
+                          title: Text(
+                            [
+                              candidate['title'] as String? ?? 'Untitled',
+                              candidate['reporting_year'],
+                            ].where((value) => value != null).join(' · '),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               ],
             ),
     );
+  }
+
+  String _matchedTitle(Map<String, dynamic> candidate) {
+    final matched = candidate['matched'];
+    return matched is Map
+        ? matched['title']?.toString() ?? 'Untitled'
+        : 'Untitled';
   }
 }
