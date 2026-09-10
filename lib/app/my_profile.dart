@@ -15,7 +15,7 @@ import '../widgets/panels.dart';
 import 'portal_pages.dart';
 
 String profileStatusLabel(String? status) => switch (status) {
-  'pending_review' => 'Awaiting UNIDCOM approval',
+  'pending_review' => 'Submitted',
   'approved' => 'Approved',
   _ => 'Profile not confirmed',
 };

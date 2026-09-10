@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/status_labels.dart';
 import '../theme/tokens.dart';
 import 'panels.dart';
 
@@ -179,7 +180,7 @@ class OutputRow extends StatelessWidget {
               ],
               if (statusTone != null) ...[
                 const SizedBox(width: 12),
-                StatusPill(status ?? detail!, tone: statusTone),
+                StatusPill(reviewLabel(status ?? detail), tone: statusTone),
               ],
               if (trailingWidget != null) ...[
                 const SizedBox(width: 12),
