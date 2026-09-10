@@ -39,4 +39,23 @@ void main() {
     expect(find.textContaining('FCT Information'), findsWidgets);
     expect(find.textContaining('Mandatory affiliation'), findsNothing);
   });
+  testWidgets('resources section links to its five guidance pages', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: WelcomePackPage(section: 'resources')),
+      ),
+    );
+    for (final label in [
+      'Affiliation Guidelines',
+      'FCT Information',
+      'Email Signature',
+      'Social Media',
+      'Logos & Brand',
+    ]) {
+      expect(find.text(label), findsOneWidget);
+    }
+    expect(find.textContaining('Research Activity Reporting'), findsNothing);
+  });
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../data/features.dart';
@@ -27,11 +28,44 @@ Widget welcomeSectionBody(BuildContext context, String slug) => switch (slug) {
   'missions' => _missionsSection(),
   'affiliation' => _affiliationSection(context),
   'fct' => _fctSection(context),
+  'resources' => _resourcesSection(context),
   'report' => _reportSection(),
   'logos' => _logosSection(),
   'contacts' => _contactsSection(),
   _ => const Panel(child: Text('Section not found')),
 };
+
+Widget _resourcesSection(BuildContext context) => _section(
+  title: 'Resources & Guidance',
+  lead:
+      'Institutional guidance and communication material for UNIDCOM researchers.',
+  children: [
+    const SizedBox(height: 18),
+    _cardGrid([
+      _resourceCard(context, 'Affiliation Guidelines', 'affiliation'),
+      _resourceCard(context, 'FCT Information', 'fct'),
+      _resourceCard(context, 'Email Signature', 'signature'),
+      _resourceCard(context, 'Social Media', 'social'),
+      _resourceCard(context, 'Logos & Brand', 'logos'),
+    ]),
+  ],
+);
+
+Widget _resourceCard(BuildContext context, String label, String slug) =>
+    InkWell(
+      onTap: () => context.go('/app/welcome/$slug'),
+      borderRadius: BorderRadius.circular(AppDims.radius),
+      child: Panel(
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
 
 Widget _startSection() => _section(
   title: 'Getting started',
