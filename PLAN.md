@@ -682,9 +682,11 @@ Run notes: two rounds. Round 1, three `luna` agents by file (pure filters 58k; d
 
 | # | Task | Owner | Acceptance check | PR |
 |---|---|---|---|---|
-| D9.1 | `lib/data/attention.dart`: `attentionItems(person, outputs, candidates, suggestions)` → list of (text, route); sources: pending candidates, rejected outputs + reason, quality errors, profile not confirmed, declined suggestions | luna | unit test, one case per source + empty | [ ] |
-| D9.2 | Overview = identity header (`personHeader` band + D4.4 strip), Needs Your Attention (D9.1), type summary tiles → `/app/outputs?type=`, "Featured N / 5", Recent Outputs (3, More), sync line (`orcid_synced_at`, `updated_at`) | luna | widget test with fixture: all six blocks | [ ] |
-| D9.3 | Header bell in `AppShell`: badge = `attentionItems.length`, tap → `/app/home` | luna | `side_nav_test`: badge count | [ ] |
+| D9.1 | `lib/data/attention.dart`: `attentionItems(person, outputs, candidates, suggestions)` → list of (text, route); sources: pending candidates, rejected outputs + reason, quality errors, profile not confirmed, declined suggestions | luna | unit test, one case per source + empty | [x] #64 — ✅ `attention.dart`: unconfirmed profile, new ORCID works, possible duplicates, outputs needing changes, missing data, declined proposals → actionable rows with routes; `pending_review` yields nothing; `pendingProposals()`; pure, tested |
+| D9.2 | Overview = identity header (`personHeader` band + D4.4 strip), Needs Your Attention (D9.1), type summary tiles → `/app/outputs?type=`, "Featured N / 5", Recent Outputs (3, More), sync line (`orcid_synced_at`, `updated_at`) | luna | widget test with fixture: all six blocks | [x] #64 — ✅ identity header + `StatusStrip`, "Needs Your Attention" (or "No action required · Last checked <date>"), `OutputSummary` by type, "FEATURED OUTPUTS n / 5", Recent Outputs, sync line (ORCID last checked · profile updated · proposals awaiting review); Quick links behind `v2` |
+| D9.3 | Header bell in `AppShell`: badge = `attentionItems.length`, tap → `/app/home` | luna | `side_nav_test`: badge count | [x] #64 — ✅ sidebar Overview badge + phone app-bar bell = `attentionCount()` (0 on any error, never breaks the shell) |
+
+**D9 KPI:** ✅ Overview built from the states of D1–D8, no static cards. One `gpt-5.6-sol` agent, 89k tokens, green first time; branch predated D7/D8 and merged clean (supabase.dart additions pinned to disjoint regions). Measured on `main` 5f0503d: `flutter analyze` 0, `flutter test` 267. Open: login landing still `/app/welcome/start` (Maestro anchors) — one-line switch to `/app/home` when Rui confirms.
 
 #### Wave D10 — verification (orch)
 
@@ -711,8 +713,8 @@ Run notes: two rounds. Round 1, three `luna` agents by file (pure filters 58k; d
 | Researcher can edit own output | no | yes, as a proposal (D5) |
 | Website state independent of approval | no | yes — column, trigger, admin panel, site filter (D1 + D8) |
 | Doc 2 §V acceptance lines passing | not measured | |
-| `flutter test` | 199 | 259 (D8) |
-| Pure-function files with tests added | 0 | 3 (`status_labels.dart`, `output_filters.dart`, `orcid_buckets.dart`) |
+| `flutter test` | 199 | 267 (D9) |
+| Pure-function files with tests added | 0 | 4 (`status_labels.dart`, `output_filters.dart`, `orcid_buckets.dart`, `attention.dart`) |
 
 Estimated size: 42 tasks; D1 sequential (orch), D2–D3 one wave each in parallel, D4–D8 two
 waves in parallel with D5.1 / D7.1 / D9.1 first because their widgets depend on them, D9 last.
