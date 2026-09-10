@@ -20,6 +20,13 @@ Map<String, dynamic> sanityMemberToPerson(
         : 'https://cdn.sanity.io/images/$project/production/${match.group(1)}-${match.group(2)}.${match.group(3)}',
     'status': doc['unlistedFromPeopleList'] == true ? 'inactive' : 'active',
     'membership_type': null,
-    'sanity_member_type_ref': (doc['type'] as Map?)?['_ref'],
+    'sanity_member_type_ref': _ref(doc['type']),
   };
+}
+
+/// Sanity references arrive as `{_ref}`; one real member carries a one-element
+/// list instead. Anything else is treated as no reference.
+String? _ref(Object? value) {
+  if (value is List) value = value.isEmpty ? null : value.first;
+  return value is Map ? value['_ref'] as String? : null;
 }

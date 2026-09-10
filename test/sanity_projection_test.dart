@@ -39,4 +39,14 @@ void main() {
       'inactive',
     );
   });
+
+  test('tolerates a list-valued type reference', () {
+    // One real member document carries `type` as a one-element list.
+    final person = sanityMemberToPerson({
+      '_id': 'member-4',
+      'name': 'Cy',
+      'type': [{'_ref': 'memberType-9', '_type': 'reference'}],
+    });
+    expect(person['sanity_member_type_ref'], 'memberType-9');
+  });
 }
