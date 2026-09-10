@@ -83,8 +83,8 @@ void main() {
       await tester.pumpAndSettle();
 
       for (final label in [
-        'Research Activity Summary',
-        'OVERVIEW',
+        'My Profile',
+        'Scientific Outputs',
         'Switch to admin',
         'Public site',
         'Sign out',

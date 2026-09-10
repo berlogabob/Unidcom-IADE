@@ -9,6 +9,21 @@ void main() {
     home: Scaffold(body: SizedBox(width: 240, child: child)),
   );
 
+  List<NavGroup> legacyGroups() => [
+    NavGroup('Overview', [
+      NavItem('Research Activity Summary', '/app/home/summary'),
+    ], route: '/app/home'),
+    NavGroup('My Profile', [
+      NavItem('Personal Information', '/app/profile'),
+      NavItem('Biography', '/app/profile/bio'),
+      NavItem('Research Areas', '/app/profile/areas', wip: true),
+      NavItem('Research Interests', '/app/profile/interests', wip: true),
+    ], route: '/app/profile'),
+    NavGroup('Help & Contacts', [
+      NavItem('FAQs', '/app/help/faq'),
+    ], route: '/app/help/faq'),
+  ];
+
   tearDown(() {
     expandedGroup.value = null;
   });
@@ -117,7 +132,7 @@ void main() {
     await tester.pumpWidget(
       host(
         SideNav(
-          groups: researcherNav(signedIn: true),
+          groups: legacyGroups(),
           path: '/app/profile',
           header: const SizedBox(),
           footer: const SizedBox(),
@@ -132,7 +147,7 @@ void main() {
   testWidgets('only one section is open: opening My Profile closes Overview', (
     tester,
   ) async {
-    final groups = researcherNav(signedIn: true);
+    final groups = legacyGroups();
     await tester.pumpWidget(
       host(
         SideNav(
@@ -161,7 +176,7 @@ void main() {
     await tester.pumpWidget(
       host(
         SideNav(
-          groups: researcherNav(signedIn: true),
+          groups: legacyGroups(),
           path: '/app/home',
           header: const SizedBox(),
           footer: const SizedBox(),
@@ -177,7 +192,7 @@ void main() {
     await tester.pumpWidget(
       host(
         SideNav(
-          groups: researcherNav(signedIn: true),
+          groups: legacyGroups(),
           path: '/app/home',
           header: const SizedBox(),
           footer: const SizedBox(),
@@ -197,28 +212,55 @@ void main() {
     expect(find.byTooltip('Hide section'), findsOneWidget);
   });
 
-  testWidgets('toggling the open section closes it; a new path reopens by route', (
+  testWidgets(
+    'toggling the open section closes it; a new path reopens by route',
+    (tester) async {
+      final groups = legacyGroups();
+      await tester.pumpWidget(
+        host(
+          SideNav(
+            groups: groups,
+            path: '/app/home',
+            header: const SizedBox(),
+            footer: const SizedBox(),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byKey(const Key('nav-toggle-Overview')));
+      await tester.pump();
+      expect(find.text('Research Activity Summary'), findsNothing);
+      expect(openGroup(groups, '/app/home'), isNull);
+
+      // The stored choice is bound to /app/home; another path follows its owner.
+      expect(openGroup(groups, '/app/profile/bio'), 'My Profile');
+    },
+  );
+
+  testWidgets('signed-in v1 researcher nav shows five flat labels', (
     tester,
   ) async {
-    final groups = researcherNav(signedIn: true);
     await tester.pumpWidget(
       host(
         SideNav(
-          groups: groups,
+          groups: researcherNav(signedIn: true),
           path: '/app/home',
           header: const SizedBox(),
           footer: const SizedBox(),
         ),
       ),
     );
-
-    await tester.tap(find.byKey(const Key('nav-toggle-Overview')));
-    await tester.pump();
-    expect(find.text('Research Activity Summary'), findsNothing);
-    expect(openGroup(groups, '/app/home'), isNull);
-
-    // The stored choice is bound to /app/home; another path follows its owner.
-    expect(openGroup(groups, '/app/profile/bio'), 'My Profile');
+    for (final label in [
+      'Overview',
+      'My Profile',
+      'Scientific Outputs',
+      'Resources & Guidance',
+      'Help & Contacts',
+    ]) {
+      expect(find.text(label), findsOneWidget);
+    }
+    expect(find.byKey(const Key('nav-group-Overview')), findsNothing);
+    expect(find.text('soon'), findsNothing);
   });
 
   testWidgets('footer separates from and does not cover the last nav row', (
@@ -235,8 +277,9 @@ void main() {
       await tester.pumpWidget(
         host(
           SideNav(
-            groups: researcherNav(signedIn: true),
-            path: '/app/help/faq', // accordion: FAQs is only rendered while its section is open
+            groups: legacyGroups(),
+            path:
+                '/app/help/faq', // accordion: FAQs is only rendered while its section is open
             header: const SizedBox(),
             footer: const SizedBox(height: 160),
           ),
@@ -254,9 +297,9 @@ void main() {
         AppColors.textOnDarkMuted.withValues(alpha: 0.25),
       );
       expect(
-        tester.getRect(find.text('FAQs')).overlaps(
-          tester.getRect(find.byKey(const Key('nav-footer'))),
-        ),
+        tester
+            .getRect(find.text('FAQs'))
+            .overlaps(tester.getRect(find.byKey(const Key('nav-footer')))),
         isFalse,
       );
       expect(tester.takeException(), isNull);

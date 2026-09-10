@@ -48,10 +48,16 @@ String? openGroup(List<NavGroup> groups, String path) {
     }
   }
   return navGroupOf(groups, path)?.label ??
-      groups.firstWhere((g) => g.label.isNotEmpty, orElse: () => groups.first).label;
+      groups
+          .firstWhere((g) => g.label.isNotEmpty, orElse: () => groups.first)
+          .label;
 }
 
-void toggleGroup(String label, {required List<NavGroup> groups, required String path}) {
+void toggleGroup(
+  String label, {
+  required List<NavGroup> groups,
+  required String path,
+}) {
   final next = openGroup(groups, path) == label ? '' : label;
   expandedGroup.value = '$next|$path';
   store('nav_expanded', expandedGroup.value!);
@@ -60,38 +66,77 @@ void toggleGroup(String label, {required List<NavGroup> groups, required String 
 /// M2 (milestone 2) welcome sections — hidden in v1, not deleted.
 const welcomeSlugsM2 = {'docs', 'conf', 'oa', 'missions'};
 
-/// Researcher portal. `signedIn == false` is the anonymous visitor from the
-/// public site: only the Welcome-pack material and a way to sign in.
-///
-/// One-to-one with the IA tree: every header below is a real section landing
-/// page and every leaf a real route — no more "extra" children folded under
-/// a top-level item the way the admin nav still does.
+/// Researcher portal: five flat v1 items; the original tree remains in v2.
+/// Anonymous visitors keep the public Welcome-pack navigation.
 List<NavGroup> researcherNav({required bool signedIn}) => signedIn
-    ? [
-        NavGroup('Overview', [
-          NavItem('Research Activity Summary', '/app/home/summary'),
-          NavItem('Recent Scientific Outputs', '/app/home/recent'),
-          NavItem('Alerts & Notifications', '/app/home/alerts'),
-          NavItem('Profile Status', '/app/home/status'),
-          NavItem('Getting Started', '/app/welcome/start'),
-        ], route: '/app/home'),
-        NavGroup('My Profile', [
-          NavItem('Personal Information', '/app/profile'),
-          NavItem('Researcher Identifiers', '/app/profile/identifiers'),
-          NavItem('Biography', '/app/profile/bio'),
-          NavItem('Research Areas', '/app/profile/areas', wip: true),
-          NavItem('Research Interests', '/app/profile/interests', wip: true),
-          NavItem('Profile Status', '/app/profile/status'),
-        ], route: '/app/profile'),
-        NavGroup('Scientific Outputs', [
-          NavItem('My Outputs', '/app/outputs'),
-          NavItem('Add Scientific Output', '/app/outputs/add'),
-          NavItem('Edit Scientific Outputs', '/app/outputs/edit', wip: true),
-          NavItem('Import & Synchronisation', '/app/outputs/import'),
-          NavItem('Validation & Duplicates', '/app/outputs/validation', wip: true),
-        ], route: '/app/outputs'),
-        ..._welcomeGroups(signedIn: true),
-      ]
+    ? v2
+          ? [
+              NavGroup('Overview', [
+                NavItem('Research Activity Summary', '/app/home/summary'),
+                NavItem('Recent Scientific Outputs', '/app/home/recent'),
+                NavItem('Alerts & Notifications', '/app/home/alerts'),
+                NavItem('Profile Status', '/app/home/status'),
+                NavItem('Getting Started', '/app/welcome/start'),
+              ], route: '/app/home'),
+              NavGroup('My Profile', [
+                NavItem('Personal Information', '/app/profile'),
+                NavItem('Researcher Identifiers', '/app/profile/identifiers'),
+                NavItem('Biography', '/app/profile/bio'),
+                NavItem('Research Areas', '/app/profile/areas', wip: true),
+                NavItem(
+                  'Research Interests',
+                  '/app/profile/interests',
+                  wip: true,
+                ),
+                NavItem('Profile Status', '/app/profile/status'),
+              ], route: '/app/profile'),
+              NavGroup('Scientific Outputs', [
+                NavItem('My Outputs', '/app/outputs'),
+                NavItem('Add Scientific Output', '/app/outputs/add'),
+                NavItem(
+                  'Edit Scientific Outputs',
+                  '/app/outputs/edit',
+                  wip: true,
+                ),
+                NavItem('Import & Synchronisation', '/app/outputs/import'),
+                NavItem(
+                  'Validation & Duplicates',
+                  '/app/outputs/validation',
+                  wip: true,
+                ),
+              ], route: '/app/outputs'),
+              ..._welcomeGroups(signedIn: true),
+            ]
+          : [
+              NavGroup('', [
+                NavItem(
+                  'Overview',
+                  '/app/home',
+                  icon: Icons.dashboard_outlined,
+                ),
+                NavItem(
+                  'My Profile',
+                  '/app/profile',
+                  icon: Icons.person_outline,
+                ),
+                NavItem(
+                  'Scientific Outputs',
+                  '/app/outputs',
+                  icon: Icons.article_outlined,
+                ),
+                NavItem(
+                  'Resources & Guidance',
+                  '/app/welcome/resources',
+                  icon: Icons.menu_book_outlined,
+                  prefixes: ['/app/welcome/'],
+                ),
+                NavItem(
+                  'Help & Contacts',
+                  '/app/welcome/contacts',
+                  icon: Icons.help_outline,
+                ),
+              ]),
+            ]
     : [
         NavGroup('', [NavItem('Getting Started', '/app/welcome/start')]),
         ..._welcomeGroups(signedIn: false),
@@ -105,7 +150,7 @@ List<NavGroup> _welcomeGroups({required bool signedIn}) => [
   NavGroup('Research Administration', [
     NavItem('Affiliation Guidelines', '/app/welcome/affiliation'),
     NavItem('FCT Information', '/app/welcome/fct'),
-    NavItem('Research Activity Reporting', '/app/welcome/report'),
+    if (v2) NavItem('Research Activity Reporting', '/app/welcome/report'),
     if (v2 && signedIn) NavItem('Support Requests', '/app/requests'),
   ], route: '/app/welcome/affiliation'),
   NavGroup('Communication', [
