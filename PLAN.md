@@ -559,6 +559,155 @@ Open: Overview › Profile Status and My Profile › Profile Status are the same
 widget on two routes (the tree lists the leaf twice). Local Maestro harness
 still unusable (Phase C gap). Carried Q1–Q3.
 
+### Phase D — Rui's v1.0 spec (10 Sep 2026): UI over the existing schema
+
+Source: `RAW_DATA/From_Rui/DOCUMENT 1…Researcher Portal.docx` + `DOCUMENT 2…AI Agent
+Implementation Specification.docx`. Gap report: `docs/reports/2026-09-rui-spec-gap/`.
+Rui's framing: the data is fine, this is UI. Four additive DB changes, nothing renamed,
+nothing behind `v2` deleted.
+
+**Swarm rules.** Tasks run in *waves*; every task in a wave touches disjoint files, so a
+wave is dispatched in parallel. One task = one file (two at most) = one PR = one
+acceptance command. Owners: `mini` = Codex gpt-5.4-mini (mechanical, grep-verifiable);
+`luna` = Codex gpt-5.6-luna, or Claude haiku when Codex quota is out (Dart widget + test);
+`orch` = Claude (migrations, RLS, `sync.py`, review of every PR). A subagent never ticks its
+own box; the orchestrator runs the check. A task that fails its check twice is escalated one
+tier up, not retried a third time. Pure functions (`filter…`, `attention…`, `buckets…`) live
+Flutter-free in `lib/data/` with a unit test, like `taxonomy.dart` — that is what makes them
+safe to hand to a small model.
+
+**Assumed Rui answers** (open until confirmed): "Outputs" wording wins over 14 Aug "papers";
+no Profile Status page; Sanity bridge stays unmerged.
+
+#### Wave D1 — schema (orch, sequential, one migration `20260912…_rui_v1_states.sql`)
+
+| # | Task | Owner | Acceptance check | PR |
+|---|---|---|---|---|
+| D1.1 | `outputs.website_status text not null default 'not_published' check in (not_published, pending, published, error)`; backfill `published` where `approval_status='approved'` (the site already shows them); audit trigger `trg_log_output_website` | orch | `select website_status, count(*) from outputs group by 1` = 365 published, 0 other; invalid value raises; change writes `change_log` | [x] 765045d — ✅ 2026-09-10 live: published=365; check_violation raised; 1 audit row in rollback test |
+| D1.2 | `output_taxonomy.kind text not null check in (publication, activity)`; publication = Livros, Artigos em revistas, Conferência em congressos, Patentes (the first two are `sync.py`'s `PUBLICATION_MACRO_TYPES`); the other 7 roots = activity | orch | `select kind, count(*) from output_taxonomy group by 1` has no null | [x] 765045d — ✅ publication=38, activity=36, 0 null |
+| D1.3 | Extend `es_owner_insert` / `es_owner_select` to `subject_type='output'` where `subject_id in (select output_id from output_authors where person_id = my person)` | orch | RLS test as researcher account: own output insert ok, other author's output 42501, `source<>'researcher'` 42501 | [x] 765045d — ✅ rollback test as `authenticated` with the researcher test uid linked to Sofia Ponte: own ok, other 42501, source 42501, own row readable |
+| D1.4 | `people.orcid_synced_at timestamptz`; `scripts/orcid_works.py` stamps it per person it processed | orch | run script once; `select count(*) from people where orcid_synced_at is not null` = 26 | [x] 765045d — ✅ run 2026-09-10 14:17 UTC: 26 / 26 stamped |
+| D1.5 | `create_my_output(p_fields, p_project_ids uuid[] default '{}')` inserts `project_outputs` rows for projects the caller is a member of; one-argument form dropped (ambiguous overload) | orch | rollback test: member project linked, non-member project skipped, `change_log` row written, one-argument call still works | [x] 765045d — ✅ all four assertions; new row `pending` + `not_published` |
+| D1.6 | `unidcom-site/scripts/sync.py`: publish on `approval_status='approved' and website_status='published'`; counts guard unchanged | orch | regenerate to a temp dir, diff against `data/generated/` = 0 publication rows changed | [x] site PR #3 (`feat/website-status`) — ✅ 76 publications before and after; the one `people.json` diff is a bio edited since the 8 Aug sync, not the filter |
+| D1.7 | `lib/data/supabase.dart`: `website_status` in `fetchPerson` / `fetchOutputs`, `orcid_synced_at` in `fetchMyPerson`, `createMyOutput(projectIds:)`. `kind` waits for D5.3, its first consumer | mini → orch | `flutter analyze` 0; `grep -c website_status lib/data/supabase.dart` ≥ 2 | [x] 765045d — ✅ analyze 0, 199 tests, grep = 2 |
+
+**D1 KPI:** ✅ migration applied live and rollback-tested; site rebuild identical; `flutter test` 199 green.
+Advisors after D1: no new finding — `create_my_output` is listed as an authenticated-callable
+security definer like every RPC here (gated in body, accepted in §4). Pre-existing: six
+`sanity_*` RPCs from the unmerged bridge are callable by `anon`; fix on that branch.
+
+#### Wave D2 — wording and labels (mini, parallel, each ≤ 20 lines)
+
+| # | Task | Owner | Acceptance check | PR |
+|---|---|---|---|---|
+| D2.1 | "Recent papers" → "Recent Outputs"; "My papers" → "Scientific Outputs" in `lib/`, `test/`, `.maestro/` | mini | `grep -rin "papers" lib test .maestro` = 0 | [ ] |
+| D2.2 | `lib/data/request_status.dart`-style map `reviewLabel()`: `pending` → "Submitted", `rejected` → "Changes requested", `approved` → "Approved"; `profileStatusLabel`: `pending_review` → "Submitted" | mini | unit test 4 cases; `grep -rn '"Awaiting UNIDCOM approval"' lib` = 0 | [ ] |
+| D2.3 | `researcher_home.dart`: empty alerts → "No action required · Last checked <today>" | mini | `grep -rn "All good" lib` = 0; `recent_outputs_test` green | [ ] |
+| D2.4 | `person_page.dart`: "Highlights · N" → "Featured outputs · N / 5" | mini | `featured_outputs_test` asserts the "/ 5" string | [ ] |
+| D2.5 | `websiteLabel()` + `orcidLabel()` maps (Not published / Pending / Published / Error; Not connected / Connected / Changes available / Synced) in `lib/data/status_labels.dart` | mini | unit test, one case per value | [ ] |
+
+**D2 KPI:** zero "papers", zero "All good", zero raw status codes in the researcher view.
+
+#### Wave D3 — navigation (luna)
+
+| # | Task | Owner | Acceptance check | PR |
+|---|---|---|---|---|
+| D3.1 | `nav_model.dart`: `researcherNav` → five items, no children: Overview `/app/home`, My Profile `/app/profile`, Scientific Outputs `/app/outputs`, Resources & Guidance `/app/welcome/affiliation`, Help & Contacts `/app/welcome/contacts`. Removed leaves stay as `if (v2)` | luna | `nav_model_test`: 5 items in v1; `v1_surface_test`: 0 `wip` items | [ ] |
+| D3.2 | `main.dart`: old leaf routes (`/app/home/*`, `/app/profile/*`, `/app/outputs/{add,edit,import,validation}`, `/app/help/*`) redirect to their parent page, `?view=` carried | luna | `route_guard_test` lists each redirect | [ ] |
+| D3.3 | Welcome pack: one `PortalPage` "Resources & Guidance" with five headed sections (Affiliation, FCT, Email Signature, Social Media, Logos); Research Activity Reporting behind `v2` | luna | `v1_surface_test`: 5 headings, 0 "Research Activity Reporting" | [ ] |
+| D3.4 | `.maestro/*.yaml` labels follow D3.1 | mini | `grep -c "Scientific Outputs" .maestro/researcher_mode.yaml` ≥ 1 | [ ] |
+
+**D3 KPI:** researcher sidebar leaves 25 → 5; WIP pages reachable from v1 nav 8 → 0.
+
+#### Wave D4 — My Profile, one page (luna; D4.2 after D1)
+
+| # | Task | Owner | Acceptance check | PR |
+|---|---|---|---|---|
+| D4.1 | `MyProfileScreen` renders personal + identifiers + biography on `/app/profile` (sections = all three) | luna | `my_profile_sections_test`: 3 section headers on one route | [ ] |
+| D4.2 | `lib/data/profile_staging.dart`: `stageProfileChanges(personId, before, after)` → one `enrichment_suggestions` row per changed field (`source='researcher'`), reusing `signatureSuggestions` | luna | unit test: 3 changed fields → 3 rows, unchanged → 0 | [ ] |
+| D4.3 | Owner Edit dialog: "Save draft" keeps local, "Submit for review" calls D4.2 instead of `updatePerson`; admins unchanged | luna | widget test: owner submit → `stageProfileChanges` called, `updatePerson` not | [ ] |
+| D4.4 | `lib/widgets/status_strip.dart`: three pills ORCID / UNIDCOM review / Website from D2.2, D2.5, text + icon | luna | widget test: 3 pills, no colour-only state | [ ] |
+| D4.5 | Biography panel: "UNIDCOM biography" + "ORCID biography" (from `fetchOrcidSyncStatus`), Compare = side by side, "Import ORCID version" → one `bio` suggestion via D4.2 | luna | widget test with fake status: two columns, import stages 1 row | [ ] |
+| D4.6 | Identifiers: "Last synchronised <orcid_synced_at>" under ORCID | mini | `grep -n orcid_synced_at lib/public/person/profile_sections.dart` ≥ 1 | [ ] |
+
+**D4 KPI:** profile routes 6 → 1; owner writes to `people` from the portal = 0 (only via suggestions).
+
+#### Wave D5 — Scientific Outputs, one page (luna; pure functions first)
+
+| # | Task | Owner | Acceptance check | PR |
+|---|---|---|---|---|
+| D5.1 | `lib/data/output_filters.dart`: `filterOutputs(rows, {query, year, category, projectId, review, website, featured, view})` and `countByType(rows)` — Flutter-free | luna | `output_filters_test`: one case per filter + view + counts | [ ] |
+| D5.2 | `PersonTimelineSection(outputsOnly: true)` on `/app/outputs`: roles, tags, mentorships, labs not rendered (directory page unchanged) | luna | widget test: 0 role rows on outputs page, unchanged on person page | [ ] |
+| D5.3 | Filter bar widget (search field, Year, Type cascade (exists), Project from `project_members`, Activity from `taxonomy.kind`, Review, Website, Featured) driving D5.1 | luna | widget test: each control narrows the list | [ ] |
+| D5.4 | View chips All · Recent · Featured · Needs attention · ORCID; Group by Year / Type / Project | luna | widget test: chip changes the row set | [ ] |
+| D5.5 | Type counts header from `countByType`, click → filter | mini | widget test: tap sets type filter | [ ] |
+| D5.6 | `PersonOutputRow`: subtype, DOI, ORCID-matched chip (`matched_output_id`), quality chip (`v_output_quality`), website pill, Edit button (owner) | luna | `output_row_test`: all chips present | [ ] |
+| D5.7 | Owner Edit → `OutputEditDialog(asResearcher, staged: true)` saving via `enrichment_suggestions(subject_type='output')`; admin queue already accepts them (`acceptSuggestion`) | luna | widget test: save → rows staged, `updateOutput` not called | [ ] |
+
+**D5 KPI:** outputs routes 5 → 1; role rows on the outputs page → 0; filters 2 → 8.
+
+#### Wave D6 — Add wizard (luna, after D1.5)
+
+| # | Task | Owner | Acceptance check | PR |
+|---|---|---|---|---|
+| D6.1 | `lib/app/output_wizard.dart`: `Stepper` DOI (existing lookup + duplicate guard) → Type → Subtype → Metadata → Project → Review; fields reused from `OutputEditDialog` | luna | widget test: 6 steps, Next disabled until the step is valid | [ ] |
+| D6.2 | Subtype step shows only children of the chosen type (`childrenAt`) | mini | unit test on `childrenAt` cases | [ ] |
+| D6.3 | Project step lists the person's projects; Review calls `create_my_output(p_project_ids)` | luna | widget test: selected project ids passed to RPC | [ ] |
+
+#### Wave D7 — ORCID reconciliation as a view (luna)
+
+| # | Task | Owner | Acceptance check | PR |
+|---|---|---|---|---|
+| D7.1 | `lib/data/orcid_buckets.dart`: `bucketCandidates(candidates, similar)` → New / Matched (`matched_output_id`) / Possible duplicate (`find_similar_outputs` hit) / Not mine (`rejected`) | luna | unit test, one case per bucket | [ ] |
+| D7.2 | `OrcidCandidatesPanel` grouped by bucket; "Add all unambiguous (N)" only over New, with confirm dialog | luna | widget test: duplicates excluded from Add all; confirm required | [ ] |
+
+#### Wave D8 — admin side (luna)
+
+| # | Task | Owner | Acceptance check | PR |
+|---|---|---|---|---|
+| D8.1 | Review queue: "Publish to website" / "Unpublish" per approved output → `website_status` | luna | `review_queue_test`: button visible only when approved; SQL check | [ ] |
+| D8.2 | Queue shows staged output suggestions (D5.7) with Accept / Decline | mini | existing `fetchPendingSuggestions` path; widget test 1 output row | [ ] |
+
+#### Wave D9 — Overview, last (luna, after D2–D8)
+
+| # | Task | Owner | Acceptance check | PR |
+|---|---|---|---|---|
+| D9.1 | `lib/data/attention.dart`: `attentionItems(person, outputs, candidates, suggestions)` → list of (text, route); sources: pending candidates, rejected outputs + reason, quality errors, profile not confirmed, declined suggestions | luna | unit test, one case per source + empty | [ ] |
+| D9.2 | Overview = identity header (`personHeader` band + D4.4 strip), Needs Your Attention (D9.1), type summary tiles → `/app/outputs?type=`, "Featured N / 5", Recent Outputs (3, More), sync line (`orcid_synced_at`, `updated_at`) | luna | widget test with fixture: all six blocks | [ ] |
+| D9.3 | Header bell in `AppShell`: badge = `attentionItems.length`, tap → `/app/home` | luna | `side_nav_test`: badge count | [ ] |
+
+#### Wave D10 — verification (orch)
+
+| # | Task | Acceptance check | |
+|---|---|---|---|
+| D10.1 | Doc 2 §V acceptance list (41 lines) walked on the deployed portal with `andre.berloga+researcher@` | checklist committed to `audit/2026-09-rui-acceptance.md`, 41 / 41 | [ ] |
+| D10.2 | Playwright audit re-run (`audit/tools/`) | 0 sev-3/4; nav leaves 5 | [ ] |
+| D10.3 | Anonymous site check: an output `approved` + `not_published` absent from the Hugo build | sync dry run shows the row filtered | [ ] |
+| D10.4 | `PLAN.md` metrics table below filled; report `docs/reports/2026-09-rui-spec-gap/` gets a "done" column | — | [ ] |
+
+**Measured on `main` before Phase D (10 Sep 2026)** — fill "After" at D10.4:
+
+| Metric | Before | After |
+|---|---|---|
+| Researcher sidebar leaves (v1) | 25 | |
+| WIP pages reachable from v1 nav | 8 | |
+| Researcher pages for profile / outputs | 6 / 5 | |
+| Filters on own outputs | 2 | |
+| Role/membership rows on the outputs page | all | |
+| "papers" strings in `lib test .maestro` | ≥ 4 | |
+| "All good" strings | 1 | |
+| Distinct status dimensions shown to a researcher | 1 | |
+| Researcher direct writes to `people` from the portal | Edit dialog | |
+| Researcher can edit own output | no | |
+| Website state independent of approval | no | |
+| Doc 2 §V acceptance lines passing | not measured | |
+| `flutter test` | 199 | |
+| Pure-function files with tests added | 0 | |
+
+Estimated size: 42 tasks; D1 sequential (orch), D2–D3 one wave each in parallel, D4–D8 two
+waves in parallel with D5.1 / D7.1 / D9.1 first because their widgets depend on them, D9 last.
+Decision rule if Codex quota runs out mid-wave: haiku takes `luna` tasks, `mini` tasks wait.
+
 ## 9. Out of scope / Phase 2+
 
 - Sanity CMS as website layer — **slot filled by Hugo** (`unidcom-site`), which

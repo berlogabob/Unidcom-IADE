@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -305,6 +306,13 @@ def run(db, client: httpx.Client, person: str | None, limit: int | None, dry_run
                     candidate, on_conflict="person_id,source,source_put_code"
                 ).execute()
             staged += 1
+
+        # D1.4: "Last synchronised" on the profile. Stamped whether or not
+        # anything new was staged — the check itself happened.
+        if not dry_run:
+            db.table("people").update(
+                {"orcid_synced_at": datetime.now(timezone.utc).isoformat()}
+            ).eq("id", entry["id"]).execute()
 
         print(f"{name}: {staged} candidate(s) from {len(rows)} ORCID work(s)")
 
