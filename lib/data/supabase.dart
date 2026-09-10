@@ -714,6 +714,25 @@ Future<Map<String, dynamic>?> fetchMyPerson() async {
   }
 }
 
+Future<List<({String id, String title})>> fetchMyProjects(
+  String personId,
+) async {
+  try {
+    final rows = await db
+        .from('project_members')
+        .select('projects(id, title)')
+        .eq('person_id', personId);
+    final projects = [
+      for (final row in rows)
+        if (row['projects'] case final Map project)
+          (id: project['id'] as String, title: project['title'] as String),
+    ]..sort((a, b) => a.title.compareTo(b.title));
+    return projects;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<void> submitMyProfileForReview(String personId) async {
   try {
     final userId = db.auth.currentUser?.id;

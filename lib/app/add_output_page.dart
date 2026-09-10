@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../public/output_page.dart';
 import '../widgets/detail_scaffold.dart';
+import 'output_wizard.dart';
 
 /// Add Scientific Output IA leaf — its own URL for the same dialog My
 /// Outputs opens with its "+ Add output" button, so the leaf doesn't need
@@ -11,10 +11,7 @@ class AddOutputPage extends StatelessWidget {
   const AddOutputPage({super.key});
 
   Future<void> _add(BuildContext context) async {
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (context) => const OutputEditDialog(asResearcher: true),
-    );
+    final saved = await showOutputWizard(context);
     if (saved ?? false) {
       if (context.mounted) context.go('/app/outputs');
     }

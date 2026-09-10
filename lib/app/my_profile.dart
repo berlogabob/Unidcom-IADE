@@ -7,13 +7,13 @@ import '../data/enrich_client.dart';
 import '../data/features.dart';
 import '../data/supabase.dart';
 import '../public/person/orcid_sync_dialog.dart';
-import '../public/output_page.dart';
 import '../public/person_page.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
 import '../widgets/status_strip.dart';
 import 'portal_pages.dart';
+import 'output_wizard.dart';
 
 String profileStatusLabel(String? status) => switch (status) {
   'pending_review' => 'Submitted',
@@ -186,10 +186,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   /// `create_my_output`, which stamps it pending and links them as an author —
   /// they have no write grant on `outputs` and are not getting one.
   Future<void> _addOutput() async {
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (context) => const OutputEditDialog(asResearcher: true),
-    );
+    final saved = await showOutputWizard(context);
     if (saved ?? false) _refresh();
   }
 

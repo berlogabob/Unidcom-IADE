@@ -55,6 +55,19 @@ void main() {
       expect(childrenAt(roots, ['Nope']), isEmpty);
       expect(childrenAt(roots, ['Livros', 'Nope']), isEmpty);
     });
+
+    test('a two-level root returns only its direct children', () {
+      expect(
+        childrenAt(roots, [
+          'Organização de Seminários e Conferências',
+        ]).map((node) => node.label),
+        ['Chair de conferências'],
+      );
+    });
+
+    test('an unknown path returns an empty list', () {
+      expect(childrenAt(roots, ['Unknown', 'Path']), isEmpty);
+    });
   });
 
   group('categorySegments: the padding Rui photographed', () {
