@@ -12,6 +12,7 @@ import '../public/person_page.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
+import '../widgets/status_strip.dart';
 import 'portal_pages.dart';
 
 String profileStatusLabel(String? status) => switch (status) {
@@ -74,12 +75,16 @@ enum MySection {
 /// PersonSection each MySection borrows from PersonPageScreen. importSync has
 /// no PersonSection of its own — `build` renders it as a standalone page
 /// before this is ever consulted.
-PersonSection _personSectionFor(MySection section) => switch (section) {
-  MySection.personal => PersonSection.personal,
-  MySection.identifiers => PersonSection.identifiers,
-  MySection.biography => PersonSection.biography,
-  MySection.outputs || MySection.addOutput => PersonSection.outputs,
-  MySection.importSync => PersonSection.outputs,
+Set<PersonSection> personSectionsFor(MySection section) => switch (section) {
+  MySection.personal => {
+    PersonSection.personal,
+    PersonSection.identifiers,
+    PersonSection.biography,
+  },
+  MySection.identifiers => {PersonSection.identifiers},
+  MySection.biography => {PersonSection.biography},
+  MySection.outputs || MySection.addOutput => {PersonSection.outputs},
+  MySection.importSync => {PersonSection.outputs},
 };
 
 class MyProfileScreen extends StatefulWidget {
@@ -294,7 +299,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         // Re-key on claims too, so a promoted publication shows up below.
         key: ValueKey('$status-${_candidates.length}'),
         id: person['id'] as String,
-        sections: {_personSectionFor(widget.section)},
+        sections: personSectionsFor(widget.section),
         leading: [
           // Row, not a Wrap with a Spacer in it: Spacer is an Expanded, which
           // asserts outside a Flex, and inside a Wrap it silently takes the
@@ -308,11 +313,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     runSpacing: 8,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      StatusPill(
-                        profileStatusLabel(status),
-                        tone: status == 'approved'
-                            ? PillTone.teal
-                            : PillTone.amber,
+                      StatusStrip(
+                        person: person,
+                        pendingCandidates: _candidates.length,
                       ),
                       if (status == 'draft') ...[
                         const Text('Check your data below, then confirm'),

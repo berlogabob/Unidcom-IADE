@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:unidcom_iade/app/my_profile.dart';
 import 'package:unidcom_iade/public/person/profile_sections.dart';
+import 'package:unidcom_iade/public/person_page.dart';
 
 void main() {
   group('mySlots', () {
@@ -39,6 +40,15 @@ void main() {
       expect(slots.confirm, false);
       expect(slots.orcidCandidates, true);
     });
+  });
+
+  test('personal section renders all profile sections', () {
+    expect(personSectionsFor(MySection.personal), {
+      PersonSection.personal,
+      PersonSection.identifiers,
+      PersonSection.biography,
+    });
+    expect(personSectionsFor(MySection.outputs), {PersonSection.outputs});
   });
 
   testWidgets('ORCID panel explains when no ORCID iD is on file', (tester) async {

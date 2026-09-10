@@ -417,12 +417,14 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/app/profile/identifiers',
+          redirect: (_, _) => v2 ? null : '/app/profile',
           builder: (_, _) => const PortalShell(
             child: MyProfileScreen(section: MySection.identifiers),
           ),
         ),
         GoRoute(
           path: '/app/profile/bio',
+          redirect: (_, _) => v2 ? null : '/app/profile',
           builder: (_, _) => const PortalShell(
             child: MyProfileScreen(section: MySection.biography),
           ),
