@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../app/own_outputs.dart';
 import '../app/orcid_update.dart';
 import '../data/enrich_client.dart';
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/suggestion_tile.dart';
+import 'output_page.dart';
 import 'person/featured_outputs.dart';
 import 'person/orcid_sync_dialog.dart';
 import 'person/output_row.dart';
@@ -48,10 +50,12 @@ class PersonPageScreen extends StatefulWidget {
     this.sections = allPersonSections,
     this.leading = const <Widget>[],
     this.trailing = const <Widget>[],
+    this.outputsOnly = false,
   });
 
   final String id;
   final Set<PersonSection> sections;
+  final bool outputsOnly;
 
   /// Sections the caller wants above and below this page's own, inside the
   /// same scroll view.
@@ -275,47 +279,59 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
               _bioSection(person, isOwner),
             ],
             if (widget.sections.contains(PersonSection.outputs)) ...[
-              () {
-                final highlights = ordered
-                    .where((author) => featured.contains(outputIdOf(author)))
-                    .toList();
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    sectionHeader(context, featuredHeader(highlights.length)),
-                    const SizedBox(height: 8),
-                    if (highlights.isEmpty)
-                      mutedText(
-                        context,
-                        'No featured outputs yet — star outputs below',
-                      )
-                    else
-                      for (final author in highlights)
-                        PersonOutputRow(
-                          author: author,
-                          isFeatured: true,
-                          onToggle: admin || isOwner
-                              ? (id) => _toggleFeatured(person, featured, id)
-                              : null,
-                          onTap: (id) => context.go('/outputs/$id'),
-                        ),
-                  ],
-                );
-              }(),
-              const SizedBox(height: 24),
-              PersonTimelineSection(
-                roles: _roles,
-                authors: ordered,
-                labMemberships: labMemberships,
-                featured: featured,
-                admin: admin,
-                isOwner: isOwner,
-                onToggleFeatured: (id) => _toggleFeatured(person, featured, id),
-                onRefresh: _refresh,
-                onAddRole: _addRole,
-                onOpenOutput: (id) => context.go('/outputs/$id'),
-                onOpenLab: (id) => context.go('/labs/$id'),
-              ),
+              if (widget.outputsOnly)
+                OwnOutputsSection(
+                  authors: ordered,
+                  featured: featured,
+                  onToggleFeatured: (id) =>
+                      _toggleFeatured(person, featured, id),
+                  onOpenOutput: (id) => context.go('/outputs/$id'),
+                  onEditOutput: isOwner ? _proposeOutputEdit : null,
+                )
+              else ...[
+                () {
+                  final highlights = ordered
+                      .where((author) => featured.contains(outputIdOf(author)))
+                      .toList();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      sectionHeader(context, featuredHeader(highlights.length)),
+                      const SizedBox(height: 8),
+                      if (highlights.isEmpty)
+                        mutedText(
+                          context,
+                          'No featured outputs yet — star outputs below',
+                        )
+                      else
+                        for (final author in highlights)
+                          PersonOutputRow(
+                            author: author,
+                            isFeatured: true,
+                            onToggle: admin || isOwner
+                                ? (id) => _toggleFeatured(person, featured, id)
+                                : null,
+                            onTap: (id) => context.go('/outputs/$id'),
+                          ),
+                    ],
+                  );
+                }(),
+                const SizedBox(height: 24),
+                PersonTimelineSection(
+                  roles: _roles,
+                  authors: ordered,
+                  labMemberships: labMemberships,
+                  featured: featured,
+                  admin: admin,
+                  isOwner: isOwner,
+                  onToggleFeatured: (id) =>
+                      _toggleFeatured(person, featured, id),
+                  onRefresh: _refresh,
+                  onAddRole: _addRole,
+                  onOpenOutput: (id) => context.go('/outputs/$id'),
+                  onOpenLab: (id) => context.go('/labs/$id'),
+                ),
+              ],
               if (external.isNotEmpty) ...[
                 const SizedBox(height: 24),
                 sectionHeader(
@@ -405,6 +421,18 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
     } catch (error) {
       _snack(error.toString());
     }
+  }
+
+  Future<void> _proposeOutputEdit(Map<String, dynamic> output) async {
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => OutputEditDialog(
+        output: output,
+        asResearcher: true,
+        stage: proposeOutputChanges,
+      ),
+    );
+    if (saved == true && mounted) _refresh();
   }
 
   void _snack(String message) {
