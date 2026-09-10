@@ -583,15 +583,18 @@ no Profile Status page; Sanity bridge stays unmerged.
 
 | # | Task | Owner | Acceptance check | PR |
 |---|---|---|---|---|
-| D1.1 | `outputs.website_status text not null default 'not_published' check in (not_published, pending, published, error)`; backfill `published` where `approval_status='approved'` (the site already shows them) | orch | `select website_status, count(*) from outputs group by 1` = 365 published, 0 other; invalid value raises | [ ] |
-| D1.2 | `output_taxonomy.kind text check in (publication, activity)`; one `update` per root (Rui: books, articles, chapters, conference = publication; training, management, organisation, project participation = activity) | orch | `select kind, count(*) from output_taxonomy group by 1` has no null | [ ] |
-| D1.3 | Extend `es_owner_insert` / `es_owner_select` to `subject_type='output'` where `subject_id in (select output_id from output_authors where person_id = my person)` | orch | RLS test as researcher account: own output insert ok, other author's output 42501, `source<>'researcher'` 42501 | [ ] |
-| D1.4 | `people.orcid_synced_at timestamptz`; `scripts/orcid_works.py` stamps it per person it processed | orch | run script once; `select count(*) from people where orcid_synced_at is not null` = 26 | [ ] |
-| D1.5 | `create_my_output(p_fields, p_project_ids uuid[] default '{}')` inserts `project_outputs` rows for projects the caller is a member of | orch | rollback test: member project linked, non-member project skipped, `change_log` row written | [ ] |
-| D1.6 | `unidcom-site/scripts/sync.py`: publish on `website_status='published'` instead of `approval_status='approved'`; counts guard unchanged | orch | dry run diff against current `data/generated/` = 0 rows changed | [ ] |
-| D1.7 | `lib/data/supabase.dart`: add `website_status`, `kind`, `orcid_synced_at` to the selects in `fetchPerson`, `fetchMyPerson`, `fetchOutputTaxonomy` | mini | `flutter analyze` 0; `grep -c website_status lib/data/supabase.dart` ≥ 2 | [ ] |
+| D1.1 | `outputs.website_status text not null default 'not_published' check in (not_published, pending, published, error)`; backfill `published` where `approval_status='approved'` (the site already shows them); audit trigger `trg_log_output_website` | orch | `select website_status, count(*) from outputs group by 1` = 365 published, 0 other; invalid value raises; change writes `change_log` | [x] 765045d — ✅ 2026-09-10 live: published=365; check_violation raised; 1 audit row in rollback test |
+| D1.2 | `output_taxonomy.kind text not null check in (publication, activity)`; publication = Livros, Artigos em revistas, Conferência em congressos, Patentes (the first two are `sync.py`'s `PUBLICATION_MACRO_TYPES`); the other 7 roots = activity | orch | `select kind, count(*) from output_taxonomy group by 1` has no null | [x] 765045d — ✅ publication=38, activity=36, 0 null |
+| D1.3 | Extend `es_owner_insert` / `es_owner_select` to `subject_type='output'` where `subject_id in (select output_id from output_authors where person_id = my person)` | orch | RLS test as researcher account: own output insert ok, other author's output 42501, `source<>'researcher'` 42501 | [x] 765045d — ✅ rollback test as `authenticated` with the researcher test uid linked to Sofia Ponte: own ok, other 42501, source 42501, own row readable |
+| D1.4 | `people.orcid_synced_at timestamptz`; `scripts/orcid_works.py` stamps it per person it processed | orch | run script once; `select count(*) from people where orcid_synced_at is not null` = 26 | [x] 765045d — ✅ run 2026-09-10 14:17 UTC: 26 / 26 stamped |
+| D1.5 | `create_my_output(p_fields, p_project_ids uuid[] default '{}')` inserts `project_outputs` rows for projects the caller is a member of; one-argument form dropped (ambiguous overload) | orch | rollback test: member project linked, non-member project skipped, `change_log` row written, one-argument call still works | [x] 765045d — ✅ all four assertions; new row `pending` + `not_published` |
+| D1.6 | `unidcom-site/scripts/sync.py`: publish on `approval_status='approved' and website_status='published'`; counts guard unchanged | orch | regenerate to a temp dir, diff against `data/generated/` = 0 publication rows changed | [x] site PR #3 (`feat/website-status`) — ✅ 76 publications before and after; the one `people.json` diff is a bio edited since the 8 Aug sync, not the filter |
+| D1.7 | `lib/data/supabase.dart`: `website_status` in `fetchPerson` / `fetchOutputs`, `orcid_synced_at` in `fetchMyPerson`, `createMyOutput(projectIds:)`. `kind` waits for D5.3, its first consumer | mini → orch | `flutter analyze` 0; `grep -c website_status lib/data/supabase.dart` ≥ 2 | [x] 765045d — ✅ analyze 0, 199 tests, grep = 2 |
 
-**D1 KPI:** migration applied live and rollback-tested; site rebuild identical; `flutter test` green.
+**D1 KPI:** ✅ migration applied live and rollback-tested; site rebuild identical; `flutter test` 199 green.
+Advisors after D1: no new finding — `create_my_output` is listed as an authenticated-callable
+security definer like every RPC here (gated in body, accepted in §4). Pre-existing: six
+`sanity_*` RPCs from the unmerged bridge are callable by `anon`; fix on that branch.
 
 #### Wave D2 — wording and labels (mini, parallel, each ≤ 20 lines)
 
