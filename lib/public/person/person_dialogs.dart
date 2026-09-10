@@ -1,18 +1,30 @@
 import 'package:flutter/material.dart';
 
 import '../../data/supabase.dart';
+import '../../theme/tokens.dart';
 import '../../widgets/detail_scaffold.dart';
 
 Future<bool> showPersonEditor(
   BuildContext context, {
   Map<String, dynamic>? person,
   bool canEditGovernance = true,
+  Future<int> Function(
+        String personId,
+        Map<String, String?> current,
+        Map<String, String> proposed,
+      )
+      stage =
+      proposeMyChanges,
+  Future<void> Function(String id, Map<String, dynamic> fields) update =
+      updatePerson,
 }) async {
   return await showDialog<bool>(
         context: context,
         builder: (context) => _PersonEditDialog(
           person: person,
           canEditGovernance: canEditGovernance,
+          stage: stage,
+          update: update,
         ),
       ) ??
       false;
@@ -25,13 +37,26 @@ Future<bool?> showPersonRoleDialog(BuildContext context, String personId) =>
     );
 
 class _PersonEditDialog extends StatefulWidget {
-  const _PersonEditDialog({this.person, this.canEditGovernance = true});
+  const _PersonEditDialog({
+    this.person,
+    this.canEditGovernance = true,
+    this.stage = proposeMyChanges,
+    this.update = updatePerson,
+  });
 
   final Map<String, dynamic>? person;
 
   // Owners (non-admins) edit their own profile but not governance/visibility;
   // those columns are also protected by a DB trigger for non-admins.
   final bool canEditGovernance;
+
+  final Future<int> Function(
+    String personId,
+    Map<String, String?> current,
+    Map<String, String> proposed,
+  )
+  stage;
+  final Future<void> Function(String id, Map<String, dynamic> fields) update;
 
   @override
   State<_PersonEditDialog> createState() => _PersonEditDialogState();
@@ -44,6 +69,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   static const _profileStatuses = ['draft', 'pending_review', 'approved'];
 
   bool get _creating => widget.person?['id'] == null;
+  bool get _ownerMode => !_creating && !widget.canEditGovernance;
 
   late final _preferredName = _controller('preferred_name');
   late final _legalName = _controller('legal_name');
@@ -101,6 +127,47 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
+      if (_ownerMode) {
+        final keys = [
+          'preferred_name',
+          'legal_name',
+          'bio',
+          'photo_url',
+          'email',
+          'job_title',
+          'phone',
+          'orcid',
+          'ciencia_id',
+        ];
+        final current = <String, String?>{
+          for (final key in keys) key: widget.person![key]?.toString(),
+        };
+        final proposed = <String, String>{
+          'preferred_name': _preferredName.text.trim(),
+          'legal_name': _legalName.text.trim(),
+          'bio': _bio.text.trim(),
+          'photo_url': _photoUrl.text.trim(),
+          'email': _email.text.trim(),
+          'job_title': _jobTitle.text.trim(),
+          'phone': _phone.text.trim(),
+          'orcid': _orcid.text.trim(),
+          'ciencia_id': _cienciaId.text.trim(),
+        };
+        final count = await widget.stage(
+          widget.person!['id'] as String,
+          current,
+          proposed,
+        );
+        if (!mounted) return;
+        if (count == 0) {
+          showSnack(context, 'No changes');
+          setState(() => _saving = false);
+        } else {
+          showSnack(context, '$count change(s) sent for UNIDCOM review');
+          Navigator.of(context).pop(true);
+        }
+        return;
+      }
       final year = _integrationYear.text.trim();
       final fields = <String, dynamic>{
         'preferred_name': _preferredName.text.trim(),
@@ -130,7 +197,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
         if (_linkToMe) await linkPersonToMe(id);
       } else {
         final id = widget.person!['id'] as String;
-        await updatePerson(id, fields);
+        await widget.update(id, fields);
         await logChanges('person', id, widget.person!, fields);
         if (widget.canEditGovernance) {
           await upsertCurrentMembership(id, _membershipType);
@@ -147,27 +214,51 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_creating ? 'Add researcher' : 'Edit researcher'),
+      title: Text(
+        _ownerMode
+            ? 'Propose changes to my profile'
+            : _creating
+            ? 'Add researcher'
+            : 'Edit researcher',
+      ),
       content: SizedBox(
         width: 520,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (_ownerMode)
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: Text(
+                      'Changes are reviewed by UNIDCOM before they appear.',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
+                  ),
+                ),
               editField(_preferredName, 'Preferred name'),
               editField(_legalName, 'Legal name'),
               editField(_bio, 'Bio', maxLines: 4),
               editField(_photoUrl, 'Photo URL'),
               editField(_email, 'Email'),
-              editField(_jobTitle, 'Job title (for the email signature)'),
+              editField(
+                _jobTitle,
+                _ownerMode
+                    ? 'Job title'
+                    : 'Job title (for the email signature)',
+              ),
               editField(_phone, 'Phone'),
               editField(_orcid, 'ORCID'),
               editField(_cienciaId, 'Ciencia ID'),
-              editField(_phd, 'PhD'),
-              // ponytail: ISO text fields; swap to showDatePicker if typos bite.
-              editField(_joinDate, 'Join date (YYYY-MM-DD)'),
-              editField(_exitDate, 'Exit date (YYYY-MM-DD)'),
-              editField(_integrationYear, 'Integration year'),
+              if (!_ownerMode) ...[
+                editField(_phd, 'PhD'),
+                // ponytail: ISO text fields; swap to showDatePicker if typos bite.
+                editField(_joinDate, 'Join date (YYYY-MM-DD)'),
+                editField(_exitDate, 'Exit date (YYYY-MM-DD)'),
+                editField(_integrationYear, 'Integration year'),
+              ],
               if (widget.canEditGovernance) ...[
                 editDropdown(
                   'Membership type',
@@ -207,7 +298,22 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
           ),
         ),
       ),
-      actions: editorActions(context, saving: _saving, onSave: _save),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _save,
+          child: Text(
+            _saving
+                ? 'Saving...'
+                : _ownerMode
+                ? 'Submit for review'
+                : 'Save',
+          ),
+        ),
+      ],
     );
   }
 }
