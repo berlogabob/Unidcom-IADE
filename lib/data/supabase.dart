@@ -596,6 +596,17 @@ Future<void> updateOutput(String id, Map<String, dynamic> fields) async {
   }
 }
 
+Future<void> setWebsiteStatus(String outputId, String status) async {
+  try {
+    await db
+        .from('outputs')
+        .update({'website_status': status})
+        .eq('id', outputId);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<void> approvePerson(String id) async {
   await updatePerson(id, {
     'profile_status': 'approved',
