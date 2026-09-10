@@ -229,7 +229,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, job_title, phone, '
           'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
           'join_date, exit_date, phd, notes, integration_year, auth_user_id, '
-          'featured_outputs, '
+          'orcid_synced_at, featured_outputs, '
           // category_path feeds the timeline's cascade filter — without it
           // every output reads as unclassified and any picked category
           // filters the list to zero. Caught on the deployed build.
@@ -703,7 +703,7 @@ Future<Map<String, dynamic>?> fetchMyPerson() async {
     final rows = await db
         .from('people')
         .select(
-          'id, preferred_name, bio, photo_url, email, job_title, phone, orcid, ciencia_id, profile_status, orcid_synced_at',
+          'id, preferred_name, bio, photo_url, email, job_title, phone, orcid, ciencia_id, profile_status, orcid_synced_at, public_visibility',
         )
         .eq('auth_user_id', userId)
         .limit(1);
