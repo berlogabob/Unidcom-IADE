@@ -18,6 +18,7 @@ import 'person/timeline.dart';
 export 'person/featured_outputs.dart'
     show
         featuredOf,
+        featuredHeader,
         maxFeaturedOutputs,
         nextFeatured,
         orderByFeatured,
@@ -278,12 +279,12 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    sectionHeader(context, 'Highlights · ${highlights.length}'),
+                    sectionHeader(context, featuredHeader(highlights.length)),
                     const SizedBox(height: 8),
                     if (highlights.isEmpty)
                       mutedText(
                         context,
-                        'No highlights yet — star outputs in the timeline below',
+                        'No featured outputs yet — star outputs below',
                       )
                     else
                       for (final author in highlights)

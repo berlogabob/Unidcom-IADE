@@ -2,6 +2,10 @@
 /// `people_featured_outputs_max` check constraint.
 const maxFeaturedOutputs = 5;
 
+/// Builds the featured outputs section header.
+String featuredHeader(int count) =>
+    'Featured outputs · $count / $maxFeaturedOutputs';
+
 /// Ids of the outputs a person pinned, in the order they starred them.
 List<String> featuredOf(Map<String, dynamic> person) =>
     (person['featured_outputs'] as List<dynamic>? ?? const [])
