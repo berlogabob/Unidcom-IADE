@@ -639,15 +639,16 @@ Run notes: three tasks by file, Codex `gpt-5.6-luna`, 72k / 88k / 76k tokens; al
 
 | # | Task | Owner | Acceptance check | PR |
 |---|---|---|---|---|
-| D5.1 | `lib/data/output_filters.dart`: `filterOutputs(rows, {query, year, category, projectId, review, website, featured, view})` and `countByType(rows)` — Flutter-free | luna | `output_filters_test`: one case per filter + view + counts | [ ] |
-| D5.2 | `PersonTimelineSection(outputsOnly: true)` on `/app/outputs`: roles, tags, mentorships, labs not rendered (directory page unchanged) | luna | widget test: 0 role rows on outputs page, unchanged on person page | [ ] |
-| D5.3 | Filter bar widget (search field, Year, Type cascade (exists), Project from `project_members`, Activity from `taxonomy.kind`, Review, Website, Featured) driving D5.1 | luna | widget test: each control narrows the list | [ ] |
-| D5.4 | View chips All · Recent · Featured · Needs attention · ORCID; Group by Year / Type / Project | luna | widget test: chip changes the row set | [ ] |
-| D5.5 | Type counts header from `countByType`, click → filter | mini | widget test: tap sets type filter | [ ] |
-| D5.6 | `PersonOutputRow`: subtype, DOI, ORCID-matched chip (`matched_output_id`), quality chip (`v_output_quality`), website pill, Edit button (owner) | luna | `output_row_test`: all chips present | [ ] |
-| D5.7 | Owner Edit → `OutputEditDialog(asResearcher, staged: true)` saving via `enrichment_suggestions(subject_type='output')`; admin queue already accepts them (`acceptSuggestion`) | luna | widget test: save → rows staged, `updateOutput` not called | [ ] |
+| D5.1 | `lib/data/output_filters.dart`: `filterOutputs(rows, {query, year, category, projectId, review, website, featured, view})` and `countByType(rows)` — Flutter-free | luna | `output_filters_test`: one case per filter + view + counts | [x] #58 — ✅ `output_filters.dart`: OutputFilter (8 dimensions), 5 views, countByType, groupOutputs, yearsOf/projectsOf; 0 Flutter/Supabase imports; 8 unit tests |
+| D5.2 | `PersonTimelineSection(outputsOnly: true)` on `/app/outputs`: roles, tags, mentorships, labs not rendered (directory page unchanged) | luna | widget test: 0 role rows on outputs page, unchanged on person page | [x] #60 — ✅ `PersonPageScreen(outputsOnly: true)` renders `OwnOutputsSection` on `/app/outputs`; roles/tags/mentorships/labs gone from the researcher's page; directory page unchanged |
+| D5.3 | Filter bar widget (search field, Year, Type cascade (exists), Project from `project_members`, Activity from `taxonomy.kind`, Review, Website, Featured) driving D5.1 | luna | widget test: each control narrows the list | [x] #57 + #60 — ✅ search (title/DOI), Year, Type cascade, Project (`project_outputs` embed), Activity (`fetchTaxonomyKinds`), Review, Website, Featured; all through `filterOutputs` |
+| D5.4 | View chips All · Recent · Featured · Needs attention · ORCID; Group by Year / Type / Project | luna | widget test: chip changes the row set | [x] #60 — ✅ ChoiceChips All · Recent · Featured · Needs attention · ORCID; SegmentedButton Year · Type · Project |
+| D5.5 | Type counts header from `countByType`, click → filter | mini | widget test: tap sets type filter | [x] #60 — ✅ "Scientific Outputs · N" + one chip per taxonomy root from `countByType`, tap = filter |
+| D5.6 | `PersonOutputRow`: subtype, DOI, ORCID-matched chip (`matched_output_id`), quality chip (`v_output_quality`), website pill, Edit button (owner) | luna | `output_row_test`: all chips present | [x] #57 — ✅ `PersonOutputRow(onEdit:, showStates:)`: subtype + DOI in the detail line, quality badge, "ORCID ✓", "Website · …" pills, Edit action; `OutputRow.extraPills` |
+| D5.7 | Owner Edit → `OutputEditDialog(asResearcher, staged: true)` saving via `enrichment_suggestions(subject_type='output')`; admin queue already accepts them (`acceptSuggestion`) | luna | widget test: save → rows staged, `updateOutput` not called | [x] #59 + #60 — ✅ `OutputEditDialog(stage:)` "Propose changes to this output" → `proposeOutputChanges` → `enrichment_suggestions(subject_type='output')`; admin queue already accepts them (`acceptSuggestion`); never `updateOutput` |
 
-**D5 KPI:** outputs routes 5 → 1; role rows on the outputs page → 0; filters 2 → 8.
+**D5 KPI:** ✅ outputs routes 5 → 1 in the nav (add/import routes kept for D6/D7); role rows on the outputs page → 0; filters 2 → 8. Measured on `main` 938385a: `flutter analyze` 0, `flutter test` 242.
+Run notes: two rounds. Round 1, three `luna` agents by file (pure filters 58k; data layer + row 72k; staged dialog 109k) — all green first time, the dialog compiled without the staging function by taking it as an injected parameter. Round 2, one `gpt-5.6-sol` agent for the page assembly (99k), green first time, 6 widget tests with injected loaders. Zero orch code touches this wave. Open: the "ORCID" view filters outputs with `source = orcid`; the reconciliation buckets (candidates) arrive in D7. Live click-through of Edit → Accept pending (user).
 
 #### Wave D6 — Add wizard (luna, after D1.5)
 
@@ -694,18 +695,18 @@ Run notes: three tasks by file, Codex `gpt-5.6-luna`, 72k / 88k / 76k tokens; al
 |---|---|---|
 | Researcher sidebar leaves (v1) | 25 | 5 (D3) |
 | WIP pages reachable from v1 nav | 8 | 0 (D3) |
-| Researcher pages for profile / outputs | 6 / 5 | 1 / 5 (D4) |
-| Filters on own outputs | 2 | |
-| Role/membership rows on the outputs page | all | |
+| Researcher pages for profile / outputs | 6 / 5 | 1 / 1 (D5) |
+| Filters on own outputs | 2 | 8 + 5 views + 3 groupings (D5) |
+| Role/membership rows on the outputs page | all | 0 (D5) |
 | "papers" strings in `lib test .maestro` | ≥ 4 | 0 (D2) |
 | "All good" strings | 1 | 0 (D2) |
 | Distinct status dimensions shown to a researcher | 1 | 3 (D4: ORCID · UNIDCOM · Website) |
 | Researcher direct writes to `people` from the portal | Edit dialog | 0 — staged as suggestions (D4) |
-| Researcher can edit own output | no | |
+| Researcher can edit own output | no | yes, as a proposal (D5) |
 | Website state independent of approval | no | |
 | Doc 2 §V acceptance lines passing | not measured | |
-| `flutter test` | 199 | 217 (D4) |
-| Pure-function files with tests added | 0 | 1 (D2: `status_labels.dart`) |
+| `flutter test` | 199 | 242 (D5) |
+| Pure-function files with tests added | 0 | 2 (`status_labels.dart`, `output_filters.dart`) |
 
 Estimated size: 42 tasks; D1 sequential (orch), D2–D3 one wave each in parallel, D4–D8 two
 waves in parallel with D5.1 / D7.1 / D9.1 first because their widgets depend on them, D9 last.
