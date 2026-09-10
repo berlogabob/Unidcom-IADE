@@ -11,6 +11,11 @@ List<String> ids(List<Map<String, dynamic>> rows) =>
 void main() {
   final rows = [author('a'), author('b'), author('c'), author('d')];
 
+  test('header always shows the cap', () {
+    expect(featuredHeader(4), 'Featured outputs · 4 / 5');
+    expect(featuredHeader(0), 'Featured outputs · 0 / 5');
+  });
+
   test('no favourites leaves order untouched', () {
     expect(ids(orderByFeatured(rows, [])), ['a', 'b', 'c', 'd']);
   });
