@@ -233,7 +233,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           // category_path feeds the timeline's cascade filter — without it
           // every output reads as unclassified and any picked category
           // filters the list to zero. Caught on the deployed build.
-          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path,approval_status,rejection_reason)), '
+          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path,approval_status,rejection_reason,website_status)), '
           'lab_members(is_coordinator, year, labs(id, code, name)), '
           'person_tags(tags(name))',
         )
@@ -612,14 +612,20 @@ Future<void> approvePerson(String id) async {
 /// function is the one audited doorway, and it forces `pending` / `manual` /
 /// `unidcom` whatever this map says. Admins have `createOutput` and do not need
 /// it.
-Future<String> createMyOutput(Map<String, dynamic> fields) async {
+///
+/// [projectIds] links the output to projects; the RPC keeps only those the
+/// caller is a member of, so a stale picker cannot block the save.
+Future<String> createMyOutput(
+  Map<String, dynamic> fields, {
+  List<String> projectIds = const [],
+}) async {
   try {
     // Same reason as updateOutput: a pasted https://doi.org/10.x/y would be
     // born with an invalid_doi quality flag.
     final payload = {...fields, 'doi': cleanDoi(fields['doi'] as String?)};
     final result = await db.rpc(
       'create_my_output',
-      params: {'p_fields': payload},
+      params: {'p_fields': payload, 'p_project_ids': projectIds},
     );
     return result as String;
   } catch (error) {
@@ -697,7 +703,7 @@ Future<Map<String, dynamic>?> fetchMyPerson() async {
     final rows = await db
         .from('people')
         .select(
-          'id, preferred_name, bio, photo_url, email, job_title, phone, orcid, ciencia_id, profile_status',
+          'id, preferred_name, bio, photo_url, email, job_title, phone, orcid, ciencia_id, profile_status, orcid_synced_at',
         )
         .eq('auth_user_id', userId)
         .limit(1);
@@ -1148,7 +1154,7 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
     var request = db
         .from('outputs')
         .select(
-          'id, title, reporting_year, type, subtype, category_path, doi, url, approval_status, affiliation, output_authors(people(id,preferred_name))',
+          'id, title, reporting_year, type, subtype, category_path, doi, url, approval_status, website_status, affiliation, output_authors(people(id,preferred_name))',
         )
         .filter('merged_into', 'is', null);
     if (affiliation != null) {
