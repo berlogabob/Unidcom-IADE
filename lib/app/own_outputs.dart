@@ -19,6 +19,7 @@ class OwnOutputsSection extends StatefulWidget {
     required this.onToggleFeatured,
     required this.onOpenOutput,
     this.onEditOutput,
+    this.orcidPanel,
     this.loadTaxonomy = fetchOutputTaxonomy,
     this.loadKinds = fetchTaxonomyKinds,
     this.loadQuality = mergeOutputQuality,
@@ -29,6 +30,7 @@ class OwnOutputsSection extends StatefulWidget {
   final ValueChanged<String> onToggleFeatured;
   final ValueChanged<String> onOpenOutput;
   final ValueChanged<Map<String, dynamic>>? onEditOutput;
+  final Widget? orcidPanel;
   final Future<List<TaxonomyNode>> Function() loadTaxonomy;
   final Future<Map<String, String>> Function() loadKinds;
   final Future<void> Function(List<Map<String, dynamic>>) loadQuality;
@@ -256,7 +258,7 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                   (OutputView.recent, 'Recent'),
                   (OutputView.featured, 'Featured'),
                   (OutputView.attention, 'Needs attention'),
-                  (OutputView.orcid, 'ORCID'),
+                  (OutputView.orcid, 'ORCID reconciliation'),
                 ])
                   ChoiceChip(
                     label: Text(label),
@@ -280,6 +282,16 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
               ],
             ),
             const SizedBox(height: 16),
+            if (_filter.view == OutputView.orcid &&
+                widget.orcidPanel != null) ...[
+              widget.orcidPanel!,
+              const SizedBox(height: 24),
+              sectionHeader(
+                context,
+                'Already imported from ORCID · ${filtered.length}',
+              ),
+              const SizedBox(height: 8),
+            ],
             if (groups.isEmpty)
               mutedText(
                 context,

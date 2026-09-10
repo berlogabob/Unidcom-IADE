@@ -33,6 +33,7 @@ void main() {
   Future<void> pumpOutputs(
     WidgetTester tester, {
     ValueChanged<Map<String, dynamic>>? onEdit,
+    Widget? orcidPanel,
   }) async {
     tester.view.physicalSize = const Size(1400, 2000);
     tester.view.devicePixelRatio = 1;
@@ -48,6 +49,7 @@ void main() {
               onToggleFeatured: (_) {},
               onOpenOutput: (_) {},
               onEditOutput: onEdit,
+              orcidPanel: orcidPanel,
               loadTaxonomy: () async => const [
                 TaxonomyNode('Livros', [TaxonomyNode('Autor', [])]),
                 TaxonomyNode('Formação avançada', []),
@@ -106,10 +108,25 @@ void main() {
     expect(find.text('Rejected Training'), findsOneWidget);
     expect(find.text('Flagged Book'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'ORCID'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'ORCID reconciliation'));
     await tester.pump();
     expect(find.text('ORCID Book'), findsOneWidget);
     expect(find.text('Rejected Training'), findsNothing);
+  });
+
+  testWidgets('ORCID reconciliation view renders its injected panel', (
+    tester,
+  ) async {
+    await pumpOutputs(
+      tester,
+      orcidPanel: const Text('Injected ORCID candidates'),
+    );
+
+    await tester.tap(find.widgetWithText(ChoiceChip, 'ORCID reconciliation'));
+    await tester.pump();
+
+    expect(find.text('Injected ORCID candidates'), findsOneWidget);
+    expect(find.text('Already imported from ORCID · 1'), findsOneWidget);
   });
 
   testWidgets('groups by year by default and by type on request', (

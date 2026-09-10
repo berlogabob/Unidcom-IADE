@@ -51,11 +51,13 @@ class PersonPageScreen extends StatefulWidget {
     this.leading = const <Widget>[],
     this.trailing = const <Widget>[],
     this.outputsOnly = false,
+    this.orcidPanel,
   });
 
   final String id;
   final Set<PersonSection> sections;
   final bool outputsOnly;
+  final Widget? orcidPanel;
 
   /// Sections the caller wants above and below this page's own, inside the
   /// same scroll view.
@@ -287,6 +289,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                       _toggleFeatured(person, featured, id),
                   onOpenOutput: (id) => context.go('/outputs/$id'),
                   onEditOutput: isOwner ? _proposeOutputEdit : null,
+                  orcidPanel: widget.orcidPanel,
                 )
               else ...[
                 () {
