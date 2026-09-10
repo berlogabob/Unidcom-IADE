@@ -215,6 +215,23 @@ class OverviewStats extends StatelessWidget {
   }
 }
 
+const _months = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+String _shortDate(DateTime d) => '${d.day} ${_months[d.month - 1]} ${d.year}';
+
 /// Profile/support-request alerts. Public: also the body of the
 /// `/app/home/alerts` leaf (see portal_pages.dart).
 class OverviewAlerts extends StatelessWidget {
@@ -222,10 +239,12 @@ class OverviewAlerts extends StatelessWidget {
     super.key,
     required this.person,
     required this.requests,
+    this.now,
   });
 
   final Map<String, dynamic> person;
   final List<Map<String, dynamic>> requests;
+  final DateTime? now;
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +283,8 @@ class OverviewAlerts extends StatelessWidget {
         background: AppColors.tealTint,
         foreground: AppColors.tealDark,
         icon: Icons.check_circle_outline,
-        text: 'All good',
+        text:
+            'No action required · Last checked ${_shortDate(now ?? DateTime.now())}',
         route: null,
       ));
     }
@@ -276,23 +296,28 @@ class OverviewAlerts extends StatelessWidget {
         children: [
           for (var i = 0; i < alerts.length; i++) ...[
             if (i > 0) const Divider(height: 1),
-            ListTile(
-              tileColor: alerts[i].background,
-              leading: Icon(
-                alerts[i].icon,
-                color: alerts[i].foreground,
-                size: 20,
+            // Material of its own: ListTile paints its tint on the nearest
+            // Material, which sits under the Panel's decorated box, so the
+            // alert colours never showed. Found by the D2 widget test.
+            Material(
+              color: alerts[i].background,
+              child: ListTile(
+                leading: Icon(
+                  alerts[i].icon,
+                  color: alerts[i].foreground,
+                  size: 20,
+                ),
+                title: Text(
+                  alerts[i].text,
+                  style: TextStyle(color: alerts[i].foreground),
+                ),
+                trailing: alerts[i].route == null
+                    ? null
+                    : Text('→', style: TextStyle(color: alerts[i].foreground)),
+                onTap: alerts[i].route == null
+                    ? null
+                    : () => context.go(alerts[i].route!),
               ),
-              title: Text(
-                alerts[i].text,
-                style: TextStyle(color: alerts[i].foreground),
-              ),
-              trailing: alerts[i].route == null
-                  ? null
-                  : Text('→', style: TextStyle(color: alerts[i].foreground)),
-              onTap: alerts[i].route == null
-                  ? null
-                  : () => context.go(alerts[i].route!),
             ),
           ],
         ],
@@ -316,7 +341,7 @@ class _RecentOutputsState extends State<RecentOutputs> {
     final outputs = widget.outputs;
     final shown = _expanded ? outputs : outputs.take(3).toList();
     return Panel(
-      title: 'Recent papers',
+      title: 'Recent Outputs',
       trailing: outputs.length <= 3 || _expanded
           ? null
           : TextButton(

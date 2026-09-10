@@ -202,7 +202,7 @@ class _OverviewSummaryPageState extends State<OverviewSummaryPage> {
   }
 }
 
-/// `/app/home/recent` — the Recent papers panel, standalone.
+/// `/app/home/recent` — the Recent Outputs panel, standalone.
 class OverviewRecentPage extends StatefulWidget {
   const OverviewRecentPage({super.key});
 

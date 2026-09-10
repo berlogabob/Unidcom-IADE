@@ -19,7 +19,7 @@ void main() {
     expect(find.textContaining('Paper '), findsNWidgets(5));
     expect(find.text('More'), findsNothing);
   });
-  testWidgets('three or fewer papers show no More button', (tester) async {
+  testWidgets('three or fewer outputs show no More button', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -32,6 +32,26 @@ void main() {
       ),
     );
     expect(find.text('More'), findsNothing);
+  });
+
+  testWidgets('empty alerts show the last checked date', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: OverviewAlerts(
+            person: {'profile_status': 'approved'},
+            requests: const [],
+            now: DateTime(2026, 9, 10),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.text('No action required · Last checked 10 Sep 2026'),
+      findsOneWidget,
+    );
+    expect(find.text('All good'), findsNothing);
   });
 
   testWidgets('Overview shows a human-readable pending profile status', (
