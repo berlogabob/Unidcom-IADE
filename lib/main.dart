@@ -185,8 +185,11 @@ bool needsAuth(String location) =>
 String? anonymousRedirect(String location) {
   if (!v2 &&
       location.startsWith('/app/welcome/') &&
-      welcomeSlugsM2.contains(location.substring('/app/welcome/'.length))) {
-    return '/app/welcome/start';
+      (welcomeSlugsM2.contains(location.substring('/app/welcome/'.length)) ||
+          location.substring('/app/welcome/'.length) == 'report')) {
+    return location.substring('/app/welcome/'.length) == 'report'
+        ? '/app/welcome/resources'
+        : '/app/welcome/start';
   }
   return needsAuth(location) ? '/login' : null;
 }
@@ -270,8 +273,10 @@ String? modeRedirect(
   final slug = location.startsWith('/app/welcome/')
       ? location.substring('/app/welcome/'.length)
       : null;
-  if (!v2 && slug != null && welcomeSlugsM2.contains(slug)) {
-    return '/app/welcome/start';
+  if (!v2 &&
+      slug != null &&
+      (welcomeSlugsM2.contains(slug) || slug == 'report')) {
+    return slug == 'report' ? '/app/welcome/resources' : '/app/welcome/start';
   }
   return null;
 }
@@ -424,16 +429,19 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/app/profile/areas',
+          redirect: (_, _) => v2 ? null : '/app/profile',
           builder: (_, _) =>
               const PortalShell(child: WipPage(title: 'Research Areas')),
         ),
         GoRoute(
           path: '/app/profile/interests',
+          redirect: (_, _) => v2 ? null : '/app/profile',
           builder: (_, _) =>
               const PortalShell(child: WipPage(title: 'Research Interests')),
         ),
         GoRoute(
           path: '/app/profile/status',
+          redirect: (_, _) => v2 ? null : '/app/profile',
           builder: (_, _) => const PortalShell(child: ProfileStatusPage()),
         ),
         GoRoute(
@@ -448,6 +456,7 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/app/outputs/edit',
+          redirect: (_, _) => v2 ? null : '/app/outputs',
           builder: (_, _) => const PortalShell(
             child: WipPage(
               title: 'Edit Scientific Outputs',
@@ -463,6 +472,7 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/app/outputs/validation',
+          redirect: (_, _) => v2 ? null : '/app/outputs',
           builder: (_, _) => const PortalShell(
             child: WipPage(title: 'Validation & Duplicates'),
           ),
@@ -491,18 +501,22 @@ final _router = GoRouter(
         // dashboard's already-loaded data.
         GoRoute(
           path: '/app/home/summary',
+          redirect: (_, _) => v2 ? null : '/app/home',
           builder: (_, _) => const PortalShell(child: OverviewSummaryPage()),
         ),
         GoRoute(
           path: '/app/home/recent',
+          redirect: (_, _) => v2 ? null : '/app/home',
           builder: (_, _) => const PortalShell(child: OverviewRecentPage()),
         ),
         GoRoute(
           path: '/app/home/alerts',
+          redirect: (_, _) => v2 ? null : '/app/home',
           builder: (_, _) => const PortalShell(child: OverviewAlertsPage()),
         ),
         GoRoute(
           path: '/app/home/status',
+          redirect: (_, _) => v2 ? null : '/app/home',
           builder: (_, _) => const PortalShell(child: ProfileStatusPage()),
         ),
         GoRoute(
@@ -511,11 +525,13 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/app/help/docs',
+          redirect: (_, _) => v2 ? null : '/app/welcome/contacts',
           builder: (_, _) =>
               const PortalShell(child: WipPage(title: 'Documentation')),
         ),
         GoRoute(
           path: '/app/help/faq',
+          redirect: (_, _) => v2 ? null : '/app/welcome/contacts',
           builder: (_, _) => const PortalShell(child: WipPage(title: 'FAQs')),
         ),
         // needsAuth treats bare /app/welcome as public, and the Hugo footer
@@ -627,7 +643,8 @@ class LoginScreen extends StatefulWidget {
   final Future<AuthResponse> Function({
     required String email,
     required String password,
-  })? signIn;
+  })?
+  signIn;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();

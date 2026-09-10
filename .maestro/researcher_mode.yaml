@@ -68,19 +68,18 @@ env:
     text: "^Support requests$"
     label: "Support requests are out of the v1 pilot"
 
-# The sidebar items that ARE offered. "Outputs" once appeared twice meaning
-# two different things; the researcher's own are "Scientific outputs" now
+# The sidebar items that ARE offered. "Outputs" once appeared twice, so the
+# researcher's own item is now "Scientific Outputs".
 # (the 8 Sep IA), on their own page.
 - assertVisible:
     text: "Overview"
     label: "The researcher's own sidebar items are present"
 - assertVisible:
-    text: "My Outputs"
+    text: "Scientific Outputs"
     label: "The researcher's own outputs item is unambiguous"
-# F-001 guard (UX audit 2026-09-09): at desktop width the sidebar rows must exist in
-# the semantics tree, otherwise keyboard and screen-reader users have no navigation.
+# F-001 guard: at desktop width the sidebar rows must remain in the semantics tree.
 - assertVisible:
-    text: "Research Activity Summary"
+    text: "My Profile"
     label: "Sidebar rows are exposed to assistive technology at desktop width"
 
 # 3. Typing a directory URL is not a way around the mode.
@@ -117,7 +116,7 @@ env:
 - extendedWaitUntil:
     visible: "Add output"
     timeout: 20000
-    label: "My Outputs is the researcher's own outputs page"
+    label: "Scientific Outputs is the researcher's own outputs page"
 # …and the ORCID publications on Import & Synchronisation (F3). Always shown,
 # one button for the lot.
 - openLink: "${BASE_URL}/#/app/outputs/import"
