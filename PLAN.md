@@ -692,12 +692,12 @@ Run notes: two rounds. Round 1, three `luna` agents by file (pure filters 58k; d
 
 | # | Task | Acceptance check | |
 |---|---|---|---|
-| D10.1 | Doc 2 §V acceptance list (41 lines) walked on the deployed portal with `andre.berloga+researcher@` | checklist committed to `audit/2026-09-rui-acceptance.md`, 41 / 41 | [ ] |
-| D10.2 | Playwright audit re-run (`audit/tools/`) | 0 sev-3/4; nav leaves 5 | [ ] |
-| D10.3 | Anonymous site check: an output `approved` + `not_published` absent from the Hugo build | sync dry run shows the row filtered | [ ] |
-| D10.4 | `PLAN.md` metrics table below filled; report `docs/reports/2026-09-rui-spec-gap/` gets a "done" column | — | [ ] |
+| D10.1 | Doc 2 §V acceptance list (41 lines) walked on the deployed portal with `andre.berloga+researcher@` | checklist committed to `audit/2026-09-rui-acceptance.md`, 41 / 41 | [x] 9e0f0fb — ✅ `audit/2026-09-rui-acceptance.md`: 36 lines (the docx has 36, not 41): 22 auto (tests), 13 code-verified, 1 partial (#2 Save draft — deliberate). Live column left for the user |
+| D10.2 | Playwright audit re-run (`audit/tools/`) | 0 sev-3/4; nav leaves 5 | [x] — ✅ `audit/2026-09-10-rui-phase-d/`: Playwright crawl of every route in anon / researcher / admin mode, 81 screens; flows auth_gate, researcher_mode, admin_mode, orcid_error PASS (review_queue fails only because it expects the output the skipped `add_output` write-flow creates; featured_star / support_request NOT RUN as before). Researcher sidebar = 5 rows + attention badge; 0 WIP pages; no "papers" / "All good" / "Highlights" in any captured hierarchy. Screenshots and hierarchies stay out of git (emails) |
+| D10.3 | Anonymous site check: an output `approved` + `not_published` absent from the Hugo build | sync dry run shows the row filtered | [x] — ✅ `sync.publication_passes`: approved+published → True, approved+not_published → False, pending → False; live: 76 site publications = 76 approved∧published rows, 0 approved∧unpublished yet |
+| D10.4 | `PLAN.md` metrics table below filled; report `docs/reports/2026-09-rui-spec-gap/` gets a "done" column | — | [x] — ✅ metrics table filled; report `docs/reports/2026-09-rui-spec-gap/` has a Done column (9f7ed37) |
 
-**Measured on `main` before Phase D (10 Sep 2026)** — fill "After" at D10.4:
+**Measured on `main` before Phase D (10 Sep 2026) and after (D10.4, `main` 9f7ed37):**
 
 | Metric | Before | After |
 |---|---|---|
@@ -712,11 +712,11 @@ Run notes: two rounds. Round 1, three `luna` agents by file (pure filters 58k; d
 | Researcher direct writes to `people` from the portal | Edit dialog | 0 — staged as suggestions (D4) |
 | Researcher can edit own output | no | yes, as a proposal (D5) |
 | Website state independent of approval | no | yes — column, trigger, admin panel, site filter (D1 + D8) |
-| Doc 2 §V acceptance lines passing | not measured | |
+| Doc 2 §V acceptance lines passing | not measured | 36 mapped: 22 auto · 13 code · 1 partial; live walk pending (user) |
 | `flutter test` | 199 | 267 (D9) |
 | Pure-function files with tests added | 0 | 4 (`status_labels.dart`, `output_filters.dart`, `orcid_buckets.dart`, `attention.dart`) |
 
-Estimated size: 42 tasks; D1 sequential (orch), D2–D3 one wave each in parallel, D4–D8 two
+Outcome: Phase D closed 10 Sep 2026 — 17 PRs (#48–#64), 199 → 267 tests, 4 additive DB changes, ~1.5M Codex tokens, 3 orch code touches. Estimated size was 42 tasks; D1 sequential (orch), D2–D3 one wave each in parallel, D4–D8 two
 waves in parallel with D5.1 / D7.1 / D9.1 first because their widgets depend on them, D9 last.
 Decision rule if Codex quota runs out mid-wave: haiku takes `luna` tasks, `mini` tasks wait.
 

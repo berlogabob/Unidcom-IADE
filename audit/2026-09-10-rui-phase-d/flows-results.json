@@ -1,0 +1,78 @@
+[
+  {
+    "name": "auth_gate",
+    "passed": true,
+    "duration_s": 6.5,
+    "steps": 6,
+    "errors": [],
+    "warnings": [],
+    "yaml": ".maestro/auth_gate.yaml",
+    "note": ""
+  },
+  {
+    "name": "researcher_mode",
+    "passed": true,
+    "duration_s": 17.4,
+    "steps": 9,
+    "errors": [],
+    "warnings": [],
+    "yaml": ".maestro/researcher_mode.yaml",
+    "note": ""
+  },
+  {
+    "name": "admin_mode",
+    "passed": true,
+    "duration_s": 9.0,
+    "steps": 8,
+    "errors": [],
+    "warnings": [],
+    "yaml": ".maestro/admin_mode.yaml",
+    "note": ""
+  },
+  {
+    "name": "orcid_error",
+    "passed": true,
+    "duration_s": 3.6,
+    "steps": 3,
+    "errors": [],
+    "warnings": [],
+    "yaml": ".maestro/orcid_error.yaml",
+    "note": ""
+  },
+  {
+    "name": "review_queue",
+    "passed": false,
+    "duration_s": 63.8,
+    "steps": 9,
+    "errors": [
+      "expected visible: E2E UX audit output",
+      "expected visible: Approve all .* pending outputs\\?",
+      "exception: not found: ^Cancel$"
+    ],
+    "warnings": [],
+    "yaml": "(new) review_queue \u2014 admin sees, confirms-all, rejects",
+    "note": "Reject has no confirmation dialog in code (review_queue.dart _rejectOutput)"
+  },
+  {
+    "name": "featured_star",
+    "passed": null,
+    "duration_s": 0,
+    "steps": 0,
+    "errors": [
+      "NOT RUN: the E2E account has 0 outputs to star"
+    ],
+    "yaml": ".maestro/featured_star.yaml",
+    "note": "not run"
+  },
+  {
+    "name": "support_request",
+    "passed": null,
+    "duration_s": 0,
+    "steps": 0,
+    "errors": [
+      "NOT RUN: v2-only route, compiled out of the pilot build"
+    ],
+    "yaml": ".maestro/support_request.yaml",
+    "note": "not run"
+  }
+]
