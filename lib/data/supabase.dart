@@ -233,7 +233,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           // category_path feeds the timeline's cascade filter — without it
           // every output reads as unclassified and any picked category
           // filters the list to zero. Caught on the deployed build.
-          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path,approval_status,rejection_reason,website_status)), '
+          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path,approval_status,rejection_reason,website_status,source,project_outputs(projects(id,title)))), '
           'lab_members(is_coordinator, year, labs(id, code, name)), '
           'person_tags(tags(name))',
         )
@@ -916,16 +916,17 @@ Future<void> rejectSuggestion(String id) async {
 }
 
 /// Pure, testable: one suggestion row per field whose trimmed value differs.
-List<Map<String, dynamic>> signatureSuggestions(
-  String personId,
+List<Map<String, dynamic>> suggestionRows(
+  String subjectType,
+  String subjectId,
   Map<String, String?> current,
   Map<String, String> proposed,
 ) => [
   for (final entry in proposed.entries)
     if (entry.value.trim() != (current[entry.key] ?? '').trim())
       {
-        'subject_type': 'person',
-        'subject_id': personId,
+        'subject_type': subjectType,
+        'subject_id': subjectId,
         'field': entry.key,
         'current_value': current[entry.key],
         'suggested_value': entry.value.trim(),
@@ -933,6 +934,12 @@ List<Map<String, dynamic>> signatureSuggestions(
         'confidence': 1,
       },
 ];
+
+List<Map<String, dynamic>> signatureSuggestions(
+  String personId,
+  Map<String, String?> current,
+  Map<String, String> proposed,
+) => suggestionRows('person', personId, current, proposed);
 
 /// Researcher-proposed corrections to their own row. Staged, not applied:
 /// an admin accepts or rejects each one in the Review queue (acceptSuggestion).
@@ -942,6 +949,21 @@ Future<int> proposeMyChanges(
   Map<String, String> proposed,
 ) async {
   final rows = signatureSuggestions(personId, current, proposed);
+  if (rows.isEmpty) return 0;
+  try {
+    await db.from('enrichment_suggestions').insert(rows);
+    return rows.length;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<int> proposeOutputChanges(
+  String outputId,
+  Map<String, String?> current,
+  Map<String, String> proposed,
+) async {
+  final rows = suggestionRows('output', outputId, current, proposed);
   if (rows.isEmpty) return 0;
   try {
     await db.from('enrichment_suggestions').insert(rows);
@@ -1134,6 +1156,18 @@ Future<List<TaxonomyNode>> fetchOutputTaxonomy() async {
   }
 }
 
+Future<Map<String, String>> fetchTaxonomyKinds() async {
+  try {
+    final rows = await db.from('output_taxonomy').select('segments, kind');
+    return {
+      for (final row in rows)
+        (row['segments'] as List).first as String: row['kind'] as String,
+    };
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<List<Map<String, dynamic>>> fetchOutputs({
   String? query,
   int? year,
@@ -1182,7 +1216,7 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
         .order('reporting_year', ascending: false)
         .order('title');
     final outputs = rows.map((row) => Map<String, dynamic>.from(row)).toList();
-    await _mergeQuality(outputs);
+    await mergeOutputQuality(outputs);
     return outputs;
   } catch (error) {
     throw Exception(_error(error));
@@ -1194,7 +1228,7 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
 /// PostgREST FK relationship to `outputs`, so it can't be embedded in a
 /// `select()` — it's fetched separately and merged here by `output_id`.
 /// Best-effort: a quality-fetch failure never blocks the outputs list.
-Future<void> _mergeQuality(List<Map<String, dynamic>> outputs) async {
+Future<void> mergeOutputQuality(List<Map<String, dynamic>> outputs) async {
   final ids = outputs.map((o) => o['id'] as String).toList();
   if (ids.isEmpty) return;
   try {
