@@ -571,6 +571,7 @@ class OutputEditDialog extends StatefulWidget {
     this.lookup = lookupDoi,
     this.findSimilar = findSimilarOutputs,
     this.create,
+    this.stage,
   });
 
   final Map<String, dynamic>? output;
@@ -590,6 +591,11 @@ class OutputEditDialog extends StatefulWidget {
   final Future<List<Map<String, dynamic>>> Function({String? doi, String? title})
       findSimilar;
   final Future<String> Function(Map<String, dynamic> fields)? create;
+  final Future<int> Function(
+    String outputId,
+    Map<String, String?> current,
+    Map<String, String> proposed,
+  )? stage;
 
   @override
   State<OutputEditDialog> createState() => _OutputEditDialogState();
@@ -598,6 +604,7 @@ class OutputEditDialog extends StatefulWidget {
 class _OutputEditDialogState extends State<OutputEditDialog> {
   late final _title = _controller('title');
   late final _doi = _controller('doi');
+  late final _url = _controller('url');
   late final _fullReference = _controller('full_reference');
   late final _reportingYear = _controller('reporting_year');
   late final _outputStatus = _controller('output_status');
@@ -618,6 +625,7 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
   String? _checkedTitle;
 
   bool get _creating => widget.output?['id'] == null;
+  bool get _staged => !_creating && widget.asResearcher && widget.stage != null;
 
   TextEditingController _controller(String key) =>
       TextEditingController(text: widget.output?[key]?.toString() ?? '');
@@ -628,6 +636,7 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
     for (final c in [
       _title,
       _doi,
+      _url,
       _fullReference,
       _reportingYear,
       _outputStatus,
@@ -709,6 +718,50 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
       _saving = true;
     });
     try {
+      if (_staged) {
+        final current = {
+          for (final key in [
+            'title',
+            'doi',
+            'url',
+            'full_reference',
+            'reporting_year',
+            'output_status',
+            'category_path',
+            'macro_type',
+            'type',
+            'subtype',
+          ])
+            key: widget.output?[key]?.toString(),
+        };
+        final fields = categoryFields(_category);
+        final proposed = {
+          'title': _title.text.trim(),
+          'doi': _doi.text.trim(),
+          'url': _url.text.trim(),
+          'full_reference': _fullReference.text.trim(),
+          'reporting_year': _reportingYear.text.trim(),
+          'output_status': _outputStatus.text.trim(),
+          'category_path': _category.join(categorySeparator).trim(),
+          'macro_type': fields['macro_type']?.toString() ?? '',
+          'type': fields['type']?.toString() ?? '',
+          'subtype': fields['subtype']?.toString() ?? '',
+        };
+        final count = await widget.stage!(
+          widget.output!['id'] as String,
+          current,
+          proposed,
+        );
+        if (!mounted) return;
+        if (count == 0) {
+          showSnack(context, 'No changes');
+          setState(() => _saving = false);
+        } else {
+          showSnack(context, '$count change(s) sent for UNIDCOM review');
+          Navigator.of(context).pop(true);
+        }
+        return;
+      }
       if (_creating) {
         final doi = cleanDoi(_doi.text);
         final title = _text(_title);
@@ -770,7 +823,18 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_creating ? 'Add output' : 'Edit output'),
+      title: _staged
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Propose changes to this output'),
+                mutedText(
+                  context,
+                  'Changes are reviewed by UNIDCOM before they appear.',
+                ),
+              ],
+            )
+          : Text(_creating ? 'Add output' : 'Edit output'),
       content: SizedBox(
         width: 520,
         child: SingleChildScrollView(
@@ -837,6 +901,7 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
               ),
               const SizedBox(height: 12),
               if (!_creating) editField(_doi, 'DOI'),
+              if (_staged) editField(_url, 'URL'),
               editField(_fullReference, 'Full reference', maxLines: 4),
               const SizedBox(height: 4),
               FutureBuilder<List<TaxonomyNode>>(
@@ -932,7 +997,20 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
           ),
         ),
       ),
-      actions: editorActions(context, saving: _saving || _lookingUp, onSave: _save),
+      actions: _staged
+          ? [
+              TextButton(
+                onPressed: _saving
+                    ? null
+                    : () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: _saving ? null : _save,
+                child: Text(_saving ? 'Sending...' : 'Submit for review'),
+              ),
+            ]
+          : editorActions(context, saving: _saving || _lookingUp, onSave: _save),
     );
   }
 }
