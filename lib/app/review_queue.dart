@@ -316,7 +316,8 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                                     TextButton(
                                       onPressed: () => _rejectOutput(
                                         output['id'] as String,
-                                        output['title'] as String? ?? 'Untitled',
+                                        output['title'] as String? ??
+                                            'Untitled',
                                       ),
                                       child: const Text('Reject'),
                                     ),
@@ -381,13 +382,43 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                         keyOf: (s) => s['field'] as String? ?? '—',
                       ),
                     ],
-                    itemBuilder: (suggestion) => SuggestionTile(
-                      suggestion: suggestion,
-                      onAccept: () =>
-                          _acceptSuggestion(suggestion['id'] as String),
-                      onReject: () =>
-                          _rejectSuggestion(suggestion['id'] as String),
-                    ),
+                    itemBuilder: (suggestion) {
+                      final isOutput = suggestion['subject_type'] == 'output';
+                      final displaySuggestion = isOutput
+                          ? {
+                              ...suggestion,
+                              'subject_name':
+                                  'Output · ${suggestion['subject_name']}',
+                            }
+                          : suggestion;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                            child: Row(
+                              children: [
+                                Text(suggestion['field'] as String? ?? '—'),
+                                if (suggestion['source'] == 'researcher') ...[
+                                  const SizedBox(width: 8),
+                                  const StatusPill(
+                                    'Proposed by researcher',
+                                    tone: PillTone.blue,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          SuggestionTile(
+                            suggestion: displaySuggestion,
+                            onAccept: () =>
+                                _acceptSuggestion(suggestion['id'] as String),
+                            onReject: () =>
+                                _rejectSuggestion(suggestion['id'] as String),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   QueueList(
                     future: _changeLog,

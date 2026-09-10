@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
+import '../data/status_labels.dart';
 import '../data/taxonomy.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
@@ -191,14 +192,15 @@ class _OutputsScreenState extends State<OutputsScreen> {
         // researcher this is a control whose every setting but one returns an
         // empty list. It earns its place on the review side, not here.
         if (isAdmin)
-          filterDropdown('Approval', _approvalStatus, const [
-            'pending',
-            'approved',
-            'rejected',
-          ], (value) {
-            _approvalStatus = value;
-            _load();
-          }),
+          filterDropdown(
+            'Approval',
+            _approvalStatus,
+            const ['pending', 'approved', 'rejected'],
+            (value) {
+              _approvalStatus = value;
+              _load();
+            },
+          ),
         if (isAdmin)
           filterDropdown('Issues', _severity, const [
             'Any issue',
@@ -239,6 +241,16 @@ class _OutputsScreenState extends State<OutputsScreen> {
           : null,
       errorCount: output['error_count'] as int? ?? 0,
       warningCount: output['warning_count'] as int? ?? 0,
+      extraPills: isAdmin
+          ? [
+              (
+                'Website · ${websiteLabel(output['website_status'] as String?)}',
+                output['website_status'] == 'published'
+                    ? PillTone.teal
+                    : PillTone.grey,
+              ),
+            ]
+          : const [],
       onTap: () => context.go('/outputs/${output['id']}'),
     );
   }

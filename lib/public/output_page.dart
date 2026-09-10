@@ -13,6 +13,7 @@ import '../widgets/output_row.dart';
 import '../widgets/person_card.dart';
 import '../widgets/suggestion_tile.dart';
 import '../widgets/taxonomy_picker.dart';
+import '../widgets/website_panel.dart';
 
 String _outputMergeName(Map<String, dynamic> output) =>
     output['title'] as String? ?? 'Untitled';
@@ -111,13 +112,9 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
       );
       if (confirmed != true) return;
       await updateOutput(widget.id, {'doi': match['doi']});
-      await logChanges(
-        'output',
-        widget.id,
-        output,
-        {'doi': match['doi']},
-        source: 'crossref',
-      );
+      await logChanges('output', widget.id, output, {
+        'doi': match['doi'],
+      }, source: 'crossref');
       _refresh();
     } catch (error) {
       _snack(error.toString());
@@ -241,6 +238,10 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
           children: [
             _header(context, output, admin),
             const SizedBox(height: 24),
+            if (admin) ...[
+              WebsitePanel(output: output, onChange: setWebsiteStatus),
+              const SizedBox(height: 24),
+            ],
             if (admin) _issuesSection(context, admin),
             if (admin) _suggestionsSection(context),
             sectionHeader(context, 'Authors · ${authors.length}'),
@@ -505,7 +506,6 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
       onTap: () => context.go('/people/$personId'),
     );
   }
-
 }
 
 class _WaiveDialog extends StatefulWidget {
@@ -588,14 +588,18 @@ class OutputEditDialog extends StatefulWidget {
   /// the record pending for review.
   final bool asResearcher;
   final Future<DoiWork?> Function(String doi) lookup;
-  final Future<List<Map<String, dynamic>>> Function({String? doi, String? title})
-      findSimilar;
+  final Future<List<Map<String, dynamic>>> Function({
+    String? doi,
+    String? title,
+  })
+  findSimilar;
   final Future<String> Function(Map<String, dynamic> fields)? create;
   final Future<int> Function(
     String outputId,
     Map<String, String?> current,
     Map<String, String> proposed,
-  )? stage;
+  )?
+  stage;
 
   @override
   State<OutputEditDialog> createState() => _OutputEditDialogState();
@@ -669,8 +673,10 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
       final work = await widget.lookup(_doi.text);
       if (!mounted) return;
       if (work == null) {
-        setState(() => _lookupMessage =
-            'No record found for that DOI — fill in the details below.');
+        setState(
+          () => _lookupMessage =
+              'No record found for that DOI — fill in the details below.',
+        );
         return;
       }
       setState(() {
@@ -765,15 +771,25 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
       if (_creating) {
         final doi = cleanDoi(_doi.text);
         final title = _text(_title);
-        final confirmed = saveAnyway && _titleMatches.isNotEmpty &&
-            doi == _checkedDoi && title == _checkedTitle;
+        final confirmed =
+            saveAnyway &&
+            _titleMatches.isNotEmpty &&
+            doi == _checkedDoi &&
+            title == _checkedTitle;
         if (!confirmed) {
           final matches = await widget.findSimilar(doi: doi, title: title);
           if (!mounted) return;
-          final doiMatch = matches.where((row) => row['match'] == 'doi').firstOrNull;
-          final titleMatches = matches.where((row) =>
-              row['match'] == 'title' && (row['score'] as num? ?? 0) >= 0.8)
-              .take(3).toList();
+          final doiMatch = matches
+              .where((row) => row['match'] == 'doi')
+              .firstOrNull;
+          final titleMatches = matches
+              .where(
+                (row) =>
+                    row['match'] == 'title' &&
+                    (row['score'] as num? ?? 0) >= 0.8,
+              )
+              .take(3)
+              .toList();
           setState(() {
             _checkedDoi = doi;
             _checkedTitle = title;
@@ -869,8 +885,10 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
                 ),
                 if (_lookupMessage != null) Text(_lookupMessage!),
                 if (_doiMatch != null) ...[
-                  Text('Already in the directory: ${_doiMatch!['title']} '
-                      '(${_doiMatch!['approval_status']})'),
+                  Text(
+                    'Already in the directory: ${_doiMatch!['title']} '
+                    '(${_doiMatch!['approval_status']})',
+                  ),
                   TextButton(
                     onPressed: () => _openMatch(_doiMatch!),
                     child: const Text('Open'),
@@ -941,9 +959,9 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
                 Text(
                   'UNIDCOM reviews what you add before it appears on the '
                   'public site.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textMuted,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
                 ),
               ],
               if (_titleMatches.isNotEmpty)
@@ -954,15 +972,19 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         for (final match in _titleMatches) ...[
-                          Text('Looks like ${match['title']} '
-                              '(${match['reporting_year'] ?? 'Unknown year'})'),
+                          Text(
+                            'Looks like ${match['title']} '
+                            '(${match['reporting_year'] ?? 'Unknown year'})',
+                          ),
                           TextButton(
                             onPressed: _saving ? null : () => _openMatch(match),
                             child: const Text("It's the same — open it"),
                           ),
                         ],
                         TextButton(
-                          onPressed: _saving ? null : () => _save(saveAnyway: true),
+                          onPressed: _saving
+                              ? null
+                              : () => _save(saveAnyway: true),
                           child: const Text("It's different — save anyway"),
                         ),
                       ],
@@ -1010,7 +1032,11 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
                 child: Text(_saving ? 'Sending...' : 'Submit for review'),
               ),
             ]
-          : editorActions(context, saving: _saving || _lookingUp, onSave: _save),
+          : editorActions(
+              context,
+              saving: _saving || _lookingUp,
+              onSave: _save,
+            ),
     );
   }
 }
