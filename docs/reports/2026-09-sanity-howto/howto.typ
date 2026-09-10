@@ -25,13 +25,12 @@
 
 = 1. Run the app as admin
 
-The branch is not deployed. Run it locally against the live database and sign in with an admin account.
+The branch `feat/sanity-bridge` is not merged yet, so run it locally; it talks to the live database. Sign in with an admin account.
 
 #data-table(
   ("Step", "Command or action"),
   (
-    ([Check out the branch], [`cd ~/Documents/GitHub/Unidcom-IADE && git checkout feat/sanity-bridge`]),
-    ([Start the app], [`flutter run -d chrome --dart-define=SUPABASE_URL=https://nmghxkhstlnxypmfmfhk.supabase.co --dart-define=SUPABASE_ANON_KEY=<anon key>`]),
+    ([Start the app], [`cd ~/Documents/GitHub/Unidcom-IADE && flutter run -d chrome` — the Supabase URL and key are built-in defaults; no arguments needed. Once the branch is merged to `main` the tool is on the deployed site and this step disappears.]),
     ([Sign in], [Admin account (role `admin` in app metadata). Researcher accounts see "Admin access required".]),
     ([Open the tool], [Sidebar → People → *Sanity merge*, or `/app/admin/sanity`.]),
   ),
