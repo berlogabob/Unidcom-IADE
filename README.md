@@ -165,3 +165,4 @@ deno test supabase/functions/orcid-auth/
 | `docs/reports/2026-09-ux-audit/` | stakeholder UX audit report (Typst + PDF); `ux-audit-summary.pdf` is the 2-page version |
 | `docs/reports/2026-09-briefing-kit/` | decision record: quick layout edits in briefings (hot reload for menus, design canvas for layout) and the transfer loop |
 | `docs/reports/2026-09-rui-spec-gap/` | Rui's 10 Sep portal spec (Doc 1 + 2) against the portal and schema: gap table, the four Supabase changes worth doing now, build order (Typst + PDF) |
+| `docs/reports/2026-09-phase-d-delivery/` | Phase D delivery: what was built against Rui's spec on 10 Sep, before/after per measure, the four DB changes, method, open items (Typst + PDF) |
