@@ -89,9 +89,17 @@ Set<PersonSection> personSectionsFor(MySection section) => switch (section) {
 };
 
 class MyProfileScreen extends StatefulWidget {
-  const MyProfileScreen({super.key, this.section = MySection.personal});
+  const MyProfileScreen({
+    super.key,
+    this.section = MySection.personal,
+    this.personId,
+  });
 
   final MySection section;
+
+  /// Null = the signed-in researcher. Set = an admin viewing that researcher's
+  /// portal (`/people/:id`): same page, minus the writes only the owner may do.
+  final String? personId;
 
   @override
   State<MyProfileScreen> createState() => _MyProfileScreenState();
@@ -114,9 +122,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
   Future<void> _resolve() async {
     try {
-      // Self-heals when an admin fills people.orcid after first ORCID login.
-      await claimPersonByOrcid();
-      final person = await fetchMyPerson();
+      final Map<String, dynamic>? person;
+      if (widget.personId case final id?) {
+        person = await fetchPerson(id);
+      } else {
+        // Self-heals when an admin fills people.orcid after first ORCID login.
+        await claimPersonByOrcid();
+        person = await fetchMyPerson();
+      }
       final candidates = person == null
           ? <Map<String, dynamic>>[]
           : await fetchMyCandidates(
@@ -311,6 +324,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       }
       final status = person['profile_status'] as String? ?? 'draft';
       final slots = mySlots(widget.section);
+      // Confirm and Add output write as the caller (owner-only RPCs), so an
+      // admin viewing someone else's portal gets neither.
+      final viewing = widget.personId != null;
       // ponytail: still the detail page, now with more slots. Split only if
       // the own-profile UI genuinely diverges from the directory one.
       return PersonPageScreen(
@@ -318,6 +334,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         key: ValueKey('$status-${_candidates.length}'),
         id: person['id'] as String,
         sections: personSectionsFor(widget.section),
+        admin: viewing ? false : null,
         outputsOnly: widget.section == MySection.outputs,
         orcidPanel:
             widget.section == MySection.outputs &&
@@ -341,7 +358,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         person: person,
                         pendingCandidates: _candidates.length,
                       ),
-                      if (status == 'draft') ...[
+                      if (status == 'draft' && !viewing) ...[
                         const Text('Check your data below, then confirm'),
                         FilledButton(
                           onPressed: _submitting ? null : _submitProfile,
@@ -353,7 +370,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 ),
               ],
             ),
-          if (slots.addOutput) ...[
+          if (slots.addOutput && !viewing) ...[
             Row(
               children: [
                 const Spacer(),
@@ -367,7 +384,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               ],
             ),
           ],
-          if (slots.confirm || slots.addOutput) const SizedBox(height: 16),
+          if (slots.confirm || (slots.addOutput && !viewing))
+            const SizedBox(height: 16),
           // v2: the old banner's "Sync now" opens a diff dialog and imports
           // nothing — one of the three things Rui named as noise. What he
           // asked for instead is the single Add all button at the bottom.

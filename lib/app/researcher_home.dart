@@ -24,8 +24,10 @@ typedef HomeData = ({
   List<Map<String, dynamic>> suggestions,
 });
 
-Future<HomeData> loadHomeData() async {
-  final mine = await fetchMyPerson();
+/// [personId] null = the signed-in researcher; set = an admin viewing that
+/// researcher's portal (`/people/:id`).
+Future<HomeData> loadHomeData({String? personId}) async {
+  final mine = personId == null ? await fetchMyPerson() : {'id': personId};
   if (mine == null) {
     return (
       person: null,
@@ -38,7 +40,7 @@ Future<HomeData> loadHomeData() async {
 
   final results = await Future.wait<Object>([
     fetchPerson(mine['id'] as String),
-    fetchMyRequests(),
+    fetchMyRequests(personId: personId),
     fetchMyCandidates(mine['id'] as String),
     fetchMySuggestions(mine['id'] as String),
   ]);
@@ -55,24 +57,43 @@ Future<HomeData> loadHomeData() async {
         ),
       );
   await mergeOutputQuality(outputs);
+  // RLS scopes a researcher's suggestions already; an admin reads every row,
+  // so keep only this person's and their outputs'.
+  final subjects = {person['id'], for (final output in outputs) output['id']};
   return (
     person: person,
     outputs: outputs,
     requests: results[1] as List<Map<String, dynamic>>,
     candidates: results[2] as List<Map<String, dynamic>>,
-    suggestions: results[3] as List<Map<String, dynamic>>,
+    suggestions: [
+      for (final suggestion in results[3] as List<Map<String, dynamic>>)
+        if (subjects.contains(suggestion['subject_id'])) suggestion,
+    ],
   );
 }
 
+/// A researcher-portal route, rewritten to stay inside the admin's view of
+/// [personId] when there is one — otherwise the admin lands in their own portal.
+String portalRoute(String route, String? personId) {
+  if (personId == null) return route;
+  final base = '/people/$personId';
+  if (route.startsWith('/app/outputs/import')) return '$base/import';
+  if (route.startsWith('/app/outputs')) return '$base/outputs';
+  if (route.startsWith('/app/profile')) return '$base/profile';
+  return base;
+}
+
 class ResearcherHomePage extends StatefulWidget {
-  const ResearcherHomePage({super.key});
+  const ResearcherHomePage({super.key, this.personId});
+
+  final String? personId;
 
   @override
   State<ResearcherHomePage> createState() => _ResearcherHomePageState();
 }
 
 class _ResearcherHomePageState extends State<ResearcherHomePage> {
-  late final Future<HomeData> _data = loadHomeData();
+  late final Future<HomeData> _data = loadHomeData(personId: widget.personId);
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +101,7 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
     // anonymous visitor never reaches this widget.
     return AsyncView<HomeData>(
       future: _data,
-      retry: loadHomeData,
+      retry: () => loadHomeData(personId: widget.personId),
       builder: (context, data) {
         final person = data.person;
         if (person == null) return const _NoProfileView();
@@ -115,6 +136,7 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
                             outputs: data.outputs,
                             candidates: data.candidates,
                             suggestions: data.suggestions,
+                            personId: widget.personId,
                           ),
                           const SizedBox(height: 16),
                           RecentOutputs(outputs: data.outputs),
@@ -125,6 +147,7 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
                           OutputSummary(
                             outputs: data.outputs,
                             featured: featuredOf(person).length,
+                            personId: widget.personId,
                           ),
                           const SizedBox(height: 16),
                           _SyncLine(
@@ -237,10 +260,12 @@ class OutputSummary extends StatelessWidget {
     super.key,
     required this.outputs,
     required this.featured,
+    this.personId,
   });
 
   final List<Map<String, dynamic>> outputs;
   final int featured;
+  final String? personId;
 
   @override
   Widget build(BuildContext context) {
@@ -266,7 +291,7 @@ class OutputSummary extends StatelessWidget {
           children: [
             for (final entry in entries)
               InkWell(
-                onTap: () => context.go('/app/outputs'),
+                onTap: () => context.go(portalRoute('/app/outputs', personId)),
                 child: SizedBox(
                   width: 150,
                   child: AccentStatCard(
@@ -279,7 +304,7 @@ class OutputSummary extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         InkWell(
-          onTap: () => context.go('/app/outputs'),
+          onTap: () => context.go(portalRoute('/app/outputs', personId)),
           child: AccentStatCard(
             label: 'FEATURED OUTPUTS',
             value: '$featured / $maxFeaturedOutputs',
@@ -429,6 +454,7 @@ class OverviewAlerts extends StatelessWidget {
     this.candidates = const [],
     this.suggestions = const [],
     this.now,
+    this.personId,
   });
 
   final Map<String, dynamic> person;
@@ -437,6 +463,7 @@ class OverviewAlerts extends StatelessWidget {
   final List<Map<String, dynamic>> candidates;
   final List<Map<String, dynamic>> suggestions;
   final DateTime? now;
+  final String? personId;
 
   @override
   Widget build(BuildContext context) {
@@ -486,7 +513,8 @@ class OverviewAlerts extends StatelessWidget {
                     '→',
                     style: TextStyle(color: AppColors.amberDark),
                   ),
-                  onTap: () => context.go(alerts[i].route),
+                  onTap: () =>
+                      context.go(portalRoute(alerts[i].route, personId)),
                 ),
               ),
             ],

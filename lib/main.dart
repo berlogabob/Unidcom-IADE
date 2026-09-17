@@ -16,6 +16,7 @@ import 'app/my_profile.dart';
 import 'app/portal_pages.dart';
 import 'app/request_form.dart';
 import 'app/researcher_home.dart';
+import 'app/researcher_view.dart';
 import 'app/requests_page.dart';
 import 'app/settings_page.dart';
 import 'app/welcome_pack.dart';
@@ -31,7 +32,6 @@ import 'public/objective_page.dart';
 import 'public/outputs.dart';
 import 'public/output_page.dart';
 import 'public/people_list.dart';
-import 'public/person_page.dart';
 import 'public/projects.dart';
 import 'public/project_page.dart';
 import 'public/structure.dart';
@@ -195,7 +195,7 @@ String? anonymousRedirect(String location) {
 }
 
 Widget parameterizedRouteWidget(String path, String value) => switch (path) {
-  '/people/:id' => PersonPageScreen(key: ValueKey(value), id: value),
+  '/people/:id' => ResearcherView(key: ValueKey(value), id: value),
   '/outputs/:id' => OutputPageScreen(key: ValueKey(value), id: value),
   '/projects/:id' => ProjectPageScreen(key: ValueKey(value), id: value),
   '/labs/:id' => LabPageScreen(key: ValueKey(value), id: value),
@@ -336,6 +336,22 @@ final _router = GoRouter(
             '/people/:id',
             state.pathParameters['id']!,
           ),
+          routes: [
+            GoRoute(
+              path: ':tab',
+              redirect: (_, state) =>
+                  researcherTabs.containsKey(state.pathParameters['tab'])
+                  ? null
+                  : '/people/${state.pathParameters['id']}',
+              builder: (_, state) => ResearcherView(
+                key: ValueKey(
+                  '${state.pathParameters['id']}/${state.pathParameters['tab']}',
+                ),
+                id: state.pathParameters['id']!,
+                tab: state.pathParameters['tab']!,
+              ),
+            ),
+          ],
         ),
         GoRoute(path: '/projects', builder: (_, _) => const ProjectsScreen()),
         GoRoute(

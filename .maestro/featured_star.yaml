@@ -55,7 +55,7 @@ env:
     visible: "Your first steps"
     timeout: 20000
 
-- openLink: "${BASE_URL}/#/people/${TEST_PERSON_ID}"
+- openLink: "${BASE_URL}/#/people/${TEST_PERSON_ID}/edit"
 # About proves the person data loaded. scrollUntilVisible doesn't move the
 # Flutter-web canvas, so we swipe-until-visible instead (star rows live in the
 # timeline, below the fold).
@@ -96,7 +96,7 @@ env:
 - extendedWaitUntil:
     visible: "1\\d\\d people"
     timeout: 20000
-- openLink: "${BASE_URL}/#/people/${TEST_PERSON_ID}"
+- openLink: "${BASE_URL}/#/people/${TEST_PERSON_ID}/edit"
 - extendedWaitUntil:
     visible: "About"
     timeout: 20000

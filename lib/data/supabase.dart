@@ -2186,9 +2186,9 @@ Future<String?> _myPersonId() async {
 
 /// Support requests (funding/DPD/open-access/mission asks) for the
 /// signed-in researcher's own person record, newest first.
-Future<List<Map<String, dynamic>>> fetchMyRequests() async {
+Future<List<Map<String, dynamic>>> fetchMyRequests({String? personId}) async {
   try {
-    final personId = await _myPersonId();
+    personId ??= await _myPersonId();
     if (personId == null) return [];
     final rows = await db
         .from('support_requests')

@@ -52,9 +52,14 @@ class PersonPageScreen extends StatefulWidget {
     this.trailing = const <Widget>[],
     this.outputsOnly = false,
     this.orcidPanel,
+    this.admin,
   });
 
   final String id;
+
+  /// Overrides [isAdmin]: false renders the page as the researcher sees it,
+  /// even for an admin (the `/people/:id` researcher view).
+  final bool? admin;
   final Set<PersonSection> sections;
   final bool outputsOnly;
   final Widget? orcidPanel;
@@ -222,7 +227,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
       future: _person,
       retry: () => fetchPerson(widget.id),
       builder: (context, person) {
-        final admin = isAdmin;
+        final admin = widget.admin ?? isAdmin;
         final isOwner =
             person['auth_user_id'] != null &&
             person['auth_user_id'] == db.auth.currentUser?.id;

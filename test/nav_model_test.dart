@@ -117,6 +117,7 @@ void main() {
 
     final admin = adminNav();
     expect(navSelected(admin, '/people/abc')?.label, 'People');
+    expect(navSelected(admin, '/people/abc/edit')?.label, 'People');
     expect(navSelected(admin, '/app/admin/merge')?.label, 'Merge duplicates');
     expect(navSelected(admin, '/app/admin/review')?.label, 'Pending approval');
   });

@@ -5,9 +5,12 @@ import '../data/supabase.dart';
 import '../theme/tokens.dart';
 
 class PortalShell extends StatefulWidget {
-  const PortalShell({super.key, required this.child});
+  const PortalShell({super.key, required this.child, this.personId});
 
   final Widget child;
+
+  /// Whose band to show; null = the signed-in researcher.
+  final String? personId;
 
   @override
   State<PortalShell> createState() => _PortalShellState();
@@ -17,8 +20,8 @@ class _PortalShellState extends State<PortalShell> {
   late final Future<Map<String, dynamic>?> _person = _loadPerson();
 
   Future<Map<String, dynamic>?> _loadPerson() async {
-    final mine = await fetchMyPerson();
-    return mine == null ? null : fetchPerson(mine['id'] as String);
+    final id = widget.personId ?? (await fetchMyPerson())?['id'] as String?;
+    return id == null ? null : fetchPerson(id);
   }
 
   @override
