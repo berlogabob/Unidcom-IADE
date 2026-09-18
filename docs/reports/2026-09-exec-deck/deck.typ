@@ -98,7 +98,7 @@
   config-info(
     title: [UNIDCOM RIMS — Researcher Portal],
     subtitle: [What was built, how it works, what it changes],
-    author: [André Berloga · backend and business logic],
+    author: [Rui Ramos · idea manager \ Andrey Dyakov · backend and business logic],
     date: [18 September 2026],
     institution: [UNIDCOM / IADE],
   ),
@@ -134,17 +134,18 @@
 // ---------------------------------------------------------------- 1
 #slide(title: [What was built], align: top)[
   #v(0.3em)
-  The database stopped being a staging area and became the institutional record.
-  Every write now goes through one reviewed path, and every one of them is audited.
+  UNIDCOM's record used to live in Notion exports and a publications spreadsheet.
+  It is now one database that the public website is generated from — and the only
+  way anything reaches it is a reviewed, attributable edit.
 
   #v(0.5em)
   #plain-table(
     ("When", "What shipped"),
     (
-      ([*W1–W4* \ August], [ORCID sign-in, profile validation and output approval as two audited state machines; admin review queue; institutional PDF generated from live data; CI gating every deploy.]),
-      ([*P0–P14* \ early Sep], [Carmela's design system, five navigation surfaces reduced to one — and a security pass: `anon` revoked from the whole schema, where 153 researcher emails had been readable without signing in.]),
-      ([*Phase C* \ 8 Sep], [Rui's 14 August notes applied. Nothing deleted: everything retired hides behind one `v2` flag and still compiles in CI.]),
-      ([*Phase D* \ 10–11 Sep], [Rui's v1.0 specification — 48 requirements, 19 gaps — specified, built and deployed inside two days. 17 PRs, all CI-green; 4 additive database changes, nothing renamed.]),
+      ([*W1–W4* \ August], [Researchers sign in with the ORCID iD they already have, confirm their profile and claim their work. Staff approve it in one queue. The institutional publication report generates itself from live data.]),
+      ([*P0–P14* \ early Sep], [Carmela's design system applied throughout, five navigation surfaces reduced to one — and a security pass that closed a hole where 153 researcher emails were readable without signing in.]),
+      ([*Phase C* \ 8 Sep], [Rui's 14 August notes applied to the live portal. Nothing was deleted — everything retired is one flag away from coming back.]),
+      ([*Phase D* \ 10–11 Sep], [Rui's v1.0 specification — 48 requirements — written, built and live in two days, without renaming a single thing in the database.]),
     ),
     (auto, 1fr),
   )
@@ -175,27 +176,26 @@
 ]
 
 // ---------------------------------------------------------------- 3
-#slide(title: [Where it stands, in numbers], align: top)[
+#slide(title: [What it delivers today], align: top)[
   #v(0.3em)
   #kpi-row((
-    ("269", "Automated tests", "all green today; 0 analyzer issues"),
-    ("365", "Outputs on the site", "every one approved and published"),
-    ("185", "Researcher profiles", "26 hold an ORCID iD"),
-    ("609", "Audited changes", "who changed what, and when"),
+    ("185", "Researchers", "one profile each, theirs to keep current"),
+    ("365", "Publications public", "every one approved before it appeared"),
+    ("609", "Tracked changes", "each one attributable to a person"),
+    ("2 days", "Spec to live", "48 requirements, written and shipped"),
   ))
 
   #v(0.7em)
-  #text(size: 0.62em, fill: muted)[Phase D, 10 → 11 September — the specification's own measures:]
+  #text(size: 0.62em, fill: muted)[And what a researcher actually meets, before and after September:]
   #v(0.2em)
   #plain-table(
     ("Measure", "Before", "After"),
     (
-      ([Researcher sidebar], [25 leaves, 8 of them placeholders], [5 items, 0 placeholders]),
-      ([Pages for profile / outputs], [6 and 5], [1 and 1]),
-      ([Filters on own outputs], [2], [8, with 5 views and 3 groupings]),
-      ([Researcher writes to `people`], [direct, from an Edit dialog], [0 — every edit is a proposal]),
-      ([Website state], [approval meant publication], [a separate, auditable column]),
-      ([`flutter test`], [199], [267 on the day, 269 today]),
+      ([Menu items to learn], [25, 8 of them dead ends], [5, all of them real]),
+      ([Pages for a profile / for outputs], [6 and 5], [one each]),
+      ([Ways to find your own work], [2 filters], [8 filters, 5 views, 3 groupings]),
+      ([Correcting your own record], [not possible, or unreviewed], [proposed in place, reviewed, audited]),
+      ([Taking something off the site], [only by unapproving it], [one click, approval untouched]),
     ),
     (auto, 1fr, 1fr),
   )
@@ -222,24 +222,24 @@
 ]
 
 // ---------------------------------------------------------------- 5
-#slide(title: [Open, and honestly so], align: top)[
+#slide(title: [What it needs to go wide], align: top)[
   #v(0.4em)
   #grid(
-    columns: (4.2em, 1fr),
+    columns: (4.6em, 1fr),
     row-gutter: 0.85em,
     column-gutter: 0.8em,
     align: (left + horizon, left + horizon),
 
-    pill("live", tone: ok), text(size: 0.72em)[The portal and the public website are deployed and in use. Phase D's v1.0 scope is on the deployed portal in full.],
+    pill("live", tone: ok), text(size: 0.72em)[The portal and the public website are deployed and in use, with Rui's v1.0 scope on them in full. Nothing below is engineering work in progress.],
 
-    pill("blocked", tone: warn), text(size: 0.72em)[*The pilot cohort has not been named.* Everything downstream of that list is built and verified — this is the only blocker that is not engineering.],
+    pill("your call", tone: warn), text(size: 0.72em)[*Name the pilot cohort.* Everything downstream of that list is built and verified — it is the one thing not in our hands.],
 
-    pill("data", tone: warn), text(size: 0.72em)[*26 of 185 profiles hold an ORCID iD.* A researcher whose iD is not on file cannot sign in at all. The fix is an administrator pass over the list, not code.],
+    pill("your call", tone: warn), text(size: 0.72em)[*26 of 185 profiles carry an ORCID iD.* The other 159 researchers cannot sign in until someone adds theirs. An afternoon of administration, not code.],
 
-    pill("risk", tone: bad), text(size: 0.72em)[*Backups cover 9 of 27 tables*, and the restore script cascades into 18 it cannot put back. A restore has never been rehearsed. Highest remaining technical risk.],
+    pill("next", tone: info), text(size: 0.72em)[Live click-throughs of the proposal flows (≈30 min) and three wording decisions from Rui.],
 
-    pill("risk", tone: bad), text(size: 0.72em)[*Bus factor of one* — a single person holds Supabase, GitHub, the ORCID developer app and DNS.],
+    pill("to fix", tone: bad), text(size: 0.72em)[Backups cover 9 of 27 tables and a restore has never been rehearsed — the first thing to close once the pilot is running.],
 
-    pill("to do", tone: info), text(size: 0.72em)[Live click-throughs of the proposal flows (≈30 min) and three wording decisions from Rui.],
+    pill("to fix", tone: bad), text(size: 0.72em)[One person holds every critical account. A second holder costs nothing and removes the largest single risk.],
   )
 ]
