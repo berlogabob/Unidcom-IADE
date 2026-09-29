@@ -8,6 +8,7 @@ import '../app/orcid_update.dart';
 import '../data/enrich_client.dart';
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/featured_readonly.dart';
 import '../widgets/suggestion_tile.dart';
 import 'output_page.dart';
 import 'person/featured_outputs.dart';
@@ -285,6 +286,22 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
               const SizedBox(height: 24),
               _bioSection(person, isOwner),
             ],
+            // Rui B3·8: My Profile shows the featured outputs read only;
+            // they are chosen in Scientific Outputs.
+            if (isOwner &&
+                widget.sections.contains(PersonSection.biography) &&
+                !widget.sections.contains(PersonSection.outputs)) ...[
+              const SizedBox(height: 24),
+              FeaturedReadOnly(
+                featured: [
+                  for (final author in ordered)
+                    if (featured.contains(outputIdOf(author)) &&
+                        author['outputs'] is Map)
+                      Map<String, dynamic>.from(author['outputs'] as Map),
+                ],
+              ),
+            ],
+
             if (widget.sections.contains(PersonSection.outputs)) ...[
               if (widget.outputsOnly)
                 OwnOutputsSection(
