@@ -498,7 +498,7 @@ class OverviewAlerts extends StatelessWidget {
               if (i > 0) const Divider(height: 1),
               // One Material per row so ListTile's tint is visible.
               Material(
-                color: AppColors.amberTintSoft,
+                color: AppColors.warnTint,
                 child: ListTile(
                   leading: const Icon(
                     Icons.warning_amber_rounded,
