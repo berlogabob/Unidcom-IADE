@@ -62,6 +62,7 @@ class OutputRow extends StatelessWidget {
     this.errorCount = 0,
     this.warningCount = 0,
     this.extraPills = const [],
+    this.showNoIssues = false,
   });
 
   final String title;
@@ -79,6 +80,7 @@ class OutputRow extends StatelessWidget {
   final int errorCount;
   final int warningCount;
   final List<(String, PillTone)> extraPills;
+  final bool showNoIssues;
 
   @override
   Widget build(BuildContext context) {
@@ -95,29 +97,39 @@ class OutputRow extends StatelessWidget {
 
     final codes = issueCodes ?? const [];
     Widget? trailingWidget = trailing;
+    Widget? badge;
     if (codes.isNotEmpty) {
-      final badge = Tooltip(
-        message: codes.map((c) => c.replaceAll('_', ' ')).join(', '),
+      badge = Tooltip(
+        message: codes.map(issueLabel).join(', '),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: errorCount > 0 ? AppColors.red : AppColors.warn,
-              size: 20,
-            ),
+            Icon(Icons.warning_amber_rounded, color: AppColors.warn, size: 20),
             const SizedBox(width: 2),
-            Text(
-              '${errorCount + warningCount}',
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            // Capped: the full list is in the tooltip.
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 140),
+              child: Text(
+                '${issueLabel(codes.first)}'
+                '${codes.length > 1 ? ' +${codes.length - 1}' : ''}',
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
         ),
       );
+    } else if (showNoIssues) {
+      badge = const Text(
+        'No issues',
+        style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+      );
+    }
+    if (badge != null) {
       trailingWidget = trailing == null
           ? badge
           : Row(
@@ -182,18 +194,21 @@ class OutputRow extends StatelessWidget {
               ],
               if (statusTone != null || extraPills.isNotEmpty) ...[
                 const SizedBox(width: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    if (statusTone != null)
-                      StatusPill(
-                        reviewLabel(status ?? detail),
-                        tone: statusTone,
-                      ),
-                    for (final (label, tone) in extraPills)
-                      StatusPill(label, tone: tone),
-                  ],
+                // Flexible so the pills wrap instead of overflowing the row.
+                Flexible(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      if (statusTone != null)
+                        StatusPill(
+                          reviewLabel(status ?? detail),
+                          tone: statusTone,
+                        ),
+                      for (final (label, tone) in extraPills)
+                        StatusPill(label, tone: tone),
+                    ],
+                  ),
                 ),
               ],
               if (trailingWidget != null) ...[
