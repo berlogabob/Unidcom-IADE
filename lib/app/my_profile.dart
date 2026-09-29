@@ -12,7 +12,6 @@ import '../public/person_page.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
-import '../widgets/status_strip.dart';
 import 'portal_pages.dart';
 import 'output_wizard.dart';
 
@@ -355,9 +354,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     runSpacing: 8,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      StatusStrip(
-                        person: person,
-                        pendingCandidates: _candidates.length,
+                      const Text(
+                        'Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before publishing.',
                       ),
                       if (const {'draft', 'to_validate'}.contains(status) && !viewing) ...[
                         const Text('Check your data below, then confirm'),

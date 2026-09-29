@@ -768,9 +768,9 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 #### Phase 2A — Rules for every page
 | id | task | P | owner | check | status |
 |---|---|---|---|---|---|
-| E2.1 | ORCID wording: "Sync now", "ORCID Sync", "Import ORCID version", "Sync error" (`my_profile.dart:410,454`, `profile_sections.dart:165,280`, `status_labels.dart:26`) → "Import from ORCID" / "Import bio from ORCID" / "Import error" | P1 | M | `grep -rn "Sync" lib` in v1 paths = 0 user-facing | [ ] |
+| E2.1 | ORCID wording: "Sync now", "ORCID Sync", "Import ORCID version", "Sync error" (`my_profile.dart:410,454`, `profile_sections.dart:165,280`, `status_labels.dart:26`) → "Import from ORCID" / "Import bio from ORCID" / "Import error" | P1 | M | `grep -rn "Sync" lib` in v1 paths = 0 user-facing | [x] ✅ b7dcb4f (M ornith): 7 strings; `bio_compare_test` updated by orch |
 | E2.2 | Compact status line in `lib/widgets/portal_shell.dart`: "UNIDCOM: <review> · Website: <state>" on all 5 researcher pages; StatusStrip pills removed from Overview/My Profile | P1 | S30 | widget test on 5 routes | [ ] |
-| E2.3 | `lib/widgets/info_tip.dart`: `InfoTip(text)` = info icon + Tooltip + Semantics | P1 | S30 | widget test: hover shows text, semantics label | [ ] |
+| E2.3 | `lib/widgets/info_tip.dart`: `InfoTip(text)` = info icon + Tooltip + Semantics | P1 | S30 | widget test: hover shows text, semantics label | [x] ✅ 058f751 (S30 widget right; 2 test lints fixed by orch); 3 tests |
 | E2.4 | Apply InfoTip to every My Profile field + action and outputs page actions; orch writes the one-sentence copy table | P1/P2 | S30 | `grep -c InfoTip` ≥ field+action count | [ ] |
 | E2.5 | `tokens.dart`: `warnTint #FEF9C3`; attention banner (`researcher_home.dart:500-515`) uses it. Keep secondary #6A6862 (WCAG) — tell Rui | P1 | M | golden-free: grep token use | [x] ✅ 249f860 (M ornith): `warnTint #FEF9C3` on the attention rows |
 | E2.6 | `v1_surface_test` guard: no "Auto-published", "Welcome back", "My Dashboard", "Support Requests", "Sync" in v1 | P1 | S30 | test green | [ ] |
@@ -782,7 +782,7 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 | E3.2 | Pure `lib/data/timeline.dart` + dated timeline widget on Overview | P1 | S30 | unit test per state; widget test 4 steps | [ ] |
 | E3.3 | Bio first lines + "Edit bio →" `/app/profile` | P1 | S30 | widget test | [ ] |
 | E3.4 | Summary tiles link filtered: `/app/outputs?type=`, `?featured=1`, `?issues=1` (`:294,:307`); outputs page reads query | P1 | S30 | widget test: tap → route with query | [ ] |
-| E3.5 | `issueLabel(code)` ("Missing DOI", "Affiliation mismatch", "Not on ORCID") in `status_labels.dart`; `output_row.dart:96-119` shows text not icon+count | P1 | M + S30 | unit test; row test finds "Missing DOI" | [ ] |
+| E3.5 | `issueLabel(code)` ("Missing DOI", "Affiliation mismatch", "Not on ORCID") in `status_labels.dart`; `output_row.dart:96-119` shows text not icon+count | P1 | M + S30 | unit test; row test finds "Missing DOI" | [~] ⏳ `issueLabel()` done 90b64df (M ornith); row rendering pending |
 
 #### Phase 2C — My Profile (`lib/app/my_profile.dart`, `lib/public/person/*`)
 | id | task | P | owner | check | status |
@@ -790,7 +790,7 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 | E4.1 | Subtitle "Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before publishing." | P1 | M | grep | [ ] |
 | E4.2 | ORCID block: connected · Last imported <orcid_synced_at> · [Import from ORCID] · "Editing here does not change your ORCID record"; button calls existing ORCID fetch path (orch names it) | P1 | S30 | widget test | [ ] |
 | E4.3 | Fields Ciência ID, Lab/cluster, Email visible with InfoTip | P1 | S30 | widget test finds 3 labels | [ ] |
-| E4.4 | Bio `maxLength: 300` (native counter), `person_dialogs.dart:243` | P1 | M | widget test "/300" | [ ] |
+| E4.4 | Bio `maxLength: 300` (native counter), `person_dialogs.dart:243` | P1 | M | widget test "/300" | [x] ✅ soft counter (decision 29 Sep): "N / 300", amber over 300, never blocks — 109/112 live bios exceed 300; 2 tests. S30/M wrote a hard limit, reworked by orch |
 | E4.5 | Featured outputs read-only (≤5) + "Manage in Scientific Outputs →" | P1 | S30 | widget test: no checkbox/star | [ ] |
 | E4.6 | "Save draft" + "Submit for UNIDCOM review (i)" replace "Confirm my profile" (`:361-366`). Draft = `enrichment_suggestions.status='draft'` (orch migration adds value; queue ignores drafts), Submit flips to pending | P1 | orch + S30 | rollback test; widget test both buttons | [ ] |
 | E4.7 | Photo upload: Storage bucket `avatars`, owner-path RLS, ≤2 MB jpg/png, staged as `photo_url` suggestion (nothing auto-published) | P2 | orch + S30 | RLS test other-path 403; widget test upload stages 1 row | [ ] |
@@ -808,11 +808,13 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 | id | task | P | owner | check | status |
 |---|---|---|---|---|---|
 | E6.1 | Admin nav (`nav_model.dart:176-226`): Dashboard · People · Pending approval · Outputs · Reports; rest behind `v2` | P1 | M | `nav_model_test` 5 items | [ ] |
-| E6.2 | Pure `lib/data/admin_stats.dart`: integrated/collaborators, profiles/outputs to approve, ORCID linked/not, website published/approved-not-published/not, issues (no "Not approved yet"), outputs by type × year × S1/S2, critical alerts | P1 | S30 | unit tests | [ ] |
+| E6.2 | Pure `lib/data/admin_stats.dart`: integrated/collaborators, profiles/outputs to approve, ORCID linked/not, website published/approved-not-published/not, issues (no "Not approved yet"), outputs by type × year × S1/S2, critical alerts | P1 | S30 | unit tests | [~] ⏳ dee11c5 on branch: lib correct (S30), tests fixed by orch; 9 tests. Semester split deferred (no publication date) |
 | E6.3 | Last-login RPC over `auth.users.last_sign_in_at`, admin-only | P2 | orch | non-admin 42501 | [ ] |
 | E6.4 | `dashboard.dart` → B1 layout, numbers only, year + semester tabs, alerts open researcher | P1 | S30 | widget test with fixture | [ ] |
 | E6.5 | People (`people_list.dart`): Website column + filter | P1 | S30 | widget test | [ ] |
 | E6.6 | Pending approval top-level: pipeline Draft · Submitted · Under review · Approved not published · Published; "Publish to website" in its own column, separate from Approve (reuse `setWebsiteStatus`, `website_panel.dart`) | P0 | S30 | widget test; SQL after click | [ ] |
+
+**Executor log (29 Sep):** S30 (Studio Qwen3-Coder-30B) — 7 runs, lib code right every time, 3 of 3 new test files broken (imports, typing, fixture maths) → next prompts ship a test skeleton. M (Mac ornith-1.5:9b) — 6 runs, all passed with grep-based verify. Codex luna — 1 escalation (E1.4-ui, 79k tokens; its sandbox cannot run Flutter). omlx/NousCoder-14B server down, unused.
 
 **Stage 2 KPI:** PDF items done / total (≈75 numbered items + 6 rules); target 100 % P0/P1.
 
@@ -827,6 +829,15 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 | E7.6 | Rui review Thu 1 Oct; each changed decision becomes an E8.x row | you + orch | rows closed | [ ] |
 | E7.7 | `DEMO.md` script for the new flow; timed dry run | orch | ≤ 15 min | [ ] |
 | E7.8 | `graphify update .` | orch | runs clean | [ ] |
+
+#### Open for Rui (review Thu 1 Oct)
+
+- **Bio 300 limit is soft.** 109 of 112 live bios are over 300 characters (longest 20,627). The counter reads "N / 300" and turns amber over the limit ("the website shows the first 300"); nothing is blocked or cut (E4.4).
+- **No semester tabs on the admin dashboard.** Outputs carry only `reporting_year`; `created_at` is the import date. S1/S2 needs a publication-date field; year tabs only for the demo (E6.2/E6.4).
+- **Admin menu.** Kept Projects, Structure, Data browser, Settings, Merge duplicates; "Pending approval" is top level and "Scientific outputs" is "Outputs", per B1·1 ("remove Requests; add Pending approval") rather than the 5-item mock (E6.1).
+- **Approve ≠ publish for profiles too.** Approving a profile no longer sets it public; "Publish to website" is its own action (E1.8, E6.6). Existing 183 public profiles unchanged.
+- **Secondary text colour** stays #6A6862, not Carmela's #888680 (#888680 fails WCAG AA contrast on #F5F4F0).
+- **Imported = to_validate for profiles as well as outputs** (184 profiles, 365 outputs); the site still shows what it showed.
 
 #### Stage 4 — Stretch: Sanity (gate: E7.1–E7.5 green by Thu 12:00)
 E9.1 rebase `feat/sanity-bridge`, fix `anon`-callable `sanity_*` RPCs · E9.2 push approved ∧ published profile to dataset `vj0axykv` · E9.3 show it on the Sanity site. Otherwise: one slide saying Hugo is live, Sanity bridge built and next.
