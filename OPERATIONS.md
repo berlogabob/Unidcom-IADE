@@ -1,6 +1,7 @@
 # Operations
 
-What a successor needs that isn't in the code. Written 2026-08-07 because
+What a successor needs that isn't in the code. Updated 30 Sep 2026 (Phase E);
+the original runbook was written 2026-08-07 because
 grepping both repositories for `backup|rotate|incident|recovery|escalate`
 returned essentially nothing: the build and architecture documentation was
 good, and none of this existed.
@@ -145,11 +146,15 @@ list has a "Missing ORCID" filter — then the researcher signs in again.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| "This profile is already linked to an account" | someone claimed the profile with a password account and never linked ORCID | sign in with the password, then **Connect ORCID** on the profile |
+| "This profile is already linked to an account" | someone claimed the profile with a password account and never linked ORCID | ask an admin to verify or correct the ORCID/profile link; researcher My Profile is import-only |
 | "That sign-in link did not come from this browser" | the anti-CSRF nonce did not match — usually a stale tab or a link that came from somewhere else | start again from the Sign in page. If it repeats, treat it as suspicious and say so |
-| "My profile isn't on the website" | not approved, or approved after the last sync | check `profile_status` + `public_visibility`; the site rebuilds nightly at 04:00 UTC |
-| "My role is wrong on the website" | roles publish only once approved | approve it in the portal; appears next sync |
+| "My profile isn't on the website" | `public_visibility` is false, or it changed after the last sync | check `profile_status` + `public_visibility`; use **Publish to website** after approval, then run the site sync or wait for 04:00 UTC |
+| "My output isn't on the website" | `website_status` is not `published`, it is rejected, or it changed after the last sync | publish it in the portal, then run the site sync or wait for 04:00 UTC |
+| "My role is wrong on the website" | the profile has not been explicitly published, or the last sync has not run | check `public_visibility`, publish if needed, then sync |
 | Report generation fails first time | the Typst function cold-starts (~28 MB wasm) and can hit a resource limit | retry; warm it before any demonstration |
+
+For the Phase E permission check, run `audit/tools/perm_check.py` with
+`PERM_BASE=...`; it checks every portal URL for `permission denied` responses.
 
 ### Support requests have no notification
 
@@ -164,7 +169,7 @@ researchers which it is.
 
 | When | What |
 |---|---|
-| Nightly 04:00 UTC | site sync (`unidcom-site`), auto-commits and deploys |
+| Nightly 04:00 UTC | site sync (`unidcom-site`), auto-commits and deploys; also available through **Sync content from Supabase** |
 | Mondays 05:00 UTC | ORCID works staged into `output_candidates` |
 | Mondays 06:00 UTC | DOI liveness check |
 | Weekly, manual | database export — **see §3, it is partial** |
