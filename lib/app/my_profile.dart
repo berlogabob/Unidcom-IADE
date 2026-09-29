@@ -339,6 +339,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         sections: personSectionsFor(widget.section),
         admin: viewing ? false : null,
         outputsOnly: widget.section == MySection.outputs,
+        newOrcidPublications: _candidates
+            .where((c) => c['status'] == 'pending')
+            .length,
         orcidPanel:
             widget.section == MySection.outputs &&
                 (person['orcid'] as String? ?? '').isNotEmpty
