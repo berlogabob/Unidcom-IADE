@@ -20,6 +20,7 @@ import 'output_wizard.dart';
 
 String profileStatusLabel(String? status) => switch (status) {
   'pending_review' => 'Submitted',
+  'under_review' => 'Under review',
   'approved' => 'Approved',
   'to_validate' => 'To be validated by you',
   _ => 'Profile not confirmed',

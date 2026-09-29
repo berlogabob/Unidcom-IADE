@@ -11,6 +11,7 @@ final people = <Map<String, dynamic>>[
   {'id': 'd', 'preferred_name': 'Duarte', 'profile_status': 'approved', 'public_visibility': true},
   {'id': 'e', 'preferred_name': 'Eva', 'profile_status': 'to_validate', 'public_visibility': true},
   {'id': 'f', 'preferred_name': 'Filipa', 'profile_status': 'draft', 'public_visibility': false},
+  {'id': 'g', 'preferred_name': 'Gil', 'profile_status': 'under_review', 'public_visibility': false},
 ];
 
 void main() {
@@ -19,17 +20,19 @@ void main() {
     expect(cols.keys, [
       'To validate',
       'Submitted',
+      'Under review',
       'Approved, not published',
       'Published',
     ]);
     List<String> ids(String k) => cols[k]!.map((p) => p['id'] as String).toList();
     expect(ids('To validate'), ['a', 'e', 'f']);
     expect(ids('Submitted'), ['b']);
+    expect(ids('Under review'), ['g']);
     expect(ids('Approved, not published'), ['c']);
     expect(ids('Published'), ['d']);
   });
 
-  testWidgets('Approve and Publish are separate actions in their own columns', (
+  testWidgets('Start review, Approve and Publish are separate actions in their own columns', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1600, 1200);
@@ -37,6 +40,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final approved = <String>[];
+    final started = <String>[];
     final published = <String>[];
     final unpublished = <String>[];
     await tester.pumpWidget(
@@ -44,6 +48,7 @@ void main() {
         home: Scaffold(
           body: PipelineBoard(
             people: people,
+            onStartReview: started.add,
             onApprove: approved.add,
             onPublish: published.add,
             onUnpublish: unpublished.add,
@@ -53,13 +58,17 @@ void main() {
       ),
     );
     expect(find.text('Submitted · 1'), findsOneWidget);
+    expect(find.text('Under review · 1'), findsOneWidget);
+    expect(find.text('Start review'), findsOneWidget);
     expect(find.text('Approved, not published · 1'), findsOneWidget);
     expect(find.text('Approve'), findsOneWidget);
     expect(find.text('Publish to website'), findsOneWidget);
     expect(find.text('Unpublish'), findsOneWidget);
+    await tester.tap(find.text('Start review'));
     await tester.tap(find.text('Approve'));
     await tester.tap(find.text('Publish to website'));
-    expect(approved, ['b']);
+    expect(started, ['b']);
+    expect(approved, ['g']);
     expect(published, ['c']);
   });
 }

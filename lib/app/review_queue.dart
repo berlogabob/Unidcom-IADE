@@ -250,6 +250,10 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                             padding: const EdgeInsets.all(16),
                             child: PipelineBoard(
                               people: snap.data!,
+                              onStartReview: (id) async {
+                                await startReview(id);
+                                _refresh();
+                              },
                               onApprove: (id) async {
                                 await approvePerson(id);
                                 _refresh();

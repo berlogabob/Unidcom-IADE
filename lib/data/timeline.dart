@@ -21,19 +21,25 @@ List<TimelineStep> profileTimeline(Map<String, dynamic> t) {
     ),
     TimelineStep(
       'Submitted',
-      status == 'pending_review' || status == 'approved'
+      status == 'pending_review'
+          ? StepState.current
+          : status == 'under_review' || status == 'approved'
           ? StepState.done
           : StepState.todo,
       DateTime.tryParse(t['submitted_at'] as String? ?? ''),
     ),
     TimelineStep(
       'Under review',
-      status == 'pending_review'
+      status == 'under_review'
           ? StepState.current
           : status == 'approved'
           ? StepState.done
           : StepState.todo,
-      DateTime.tryParse(t['approved_at'] as String? ?? ''),
+      DateTime.tryParse(
+        t[status == 'approved' ? 'approved_at' : 'review_started_at']
+                as String? ??
+            '',
+      ),
     ),
     TimelineStep(
       'Published',
