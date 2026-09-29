@@ -772,6 +772,16 @@ Future<int> submitMyOutputs(List<String> ids) async {
   }
 }
 
+/// Dates for the Overview timeline (RPC my_profile_timeline, own row only).
+Future<Map<String, dynamic>?> fetchMyTimeline() async {
+  try {
+    final row = await db.rpc('my_profile_timeline');
+    return row == null ? null : Map<String, dynamic>.from(row as Map);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 /// Links people.orcid -> auth user via the ORCID iD verified at sign-in.
 /// Server-side no-op when already linked / no match / not an ORCID login.
 Future<void> claimPersonByOrcid() async {

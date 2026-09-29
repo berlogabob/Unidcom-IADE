@@ -19,6 +19,7 @@ class OutputFilter {
     this.review,
     this.website,
     this.featuredOnly = false,
+    this.issuesOnly = false,
     this.kind,
     this.view = OutputView.all,
   });
@@ -30,6 +31,7 @@ class OutputFilter {
   final String? review;
   final String? website;
   final bool featuredOnly;
+  final bool issuesOnly;
   final String? kind;
   final OutputView view;
 
@@ -41,6 +43,7 @@ class OutputFilter {
     Object? review = _unset,
     Object? website = _unset,
     bool? featuredOnly,
+    Object? issuesOnly = _unset,
     Object? kind = _unset,
     OutputView? view,
   }) => OutputFilter(
@@ -55,6 +58,9 @@ class OutputFilter {
     review: identical(review, _unset) ? this.review : review as String?,
     website: identical(website, _unset) ? this.website : website as String?,
     featuredOnly: featuredOnly ?? this.featuredOnly,
+    issuesOnly: identical(issuesOnly, _unset)
+        ? this.issuesOnly
+        : issuesOnly as bool,
     kind: identical(kind, _unset) ? this.kind : kind as String?,
     view: view ?? this.view,
   );
@@ -100,6 +106,7 @@ List<Map<String, dynamic>> filterOutputs(
         (filter.review == null || output['approval_status'] == filter.review) &&
         (filter.website == null || website == filter.website) &&
         (!filter.featuredOnly || featuredIds.contains(id)) &&
+        (!filter.issuesOnly || hasIssues(output)) &&
         (filter.kind == null || kindByRoot[root] == filter.kind) &&
         matchesView;
   }).toList();
@@ -212,6 +219,25 @@ List<int> yearsOf(List<Map<String, dynamic>> outputs) => {
   for (final output in outputs)
     if (output['reporting_year'] is int) output['reporting_year'] as int,
 }.toList()..sort((a, b) => b.compareTo(a));
+
+bool hasIssues(Map<String, dynamic> output) =>
+    ((output['error_count'] as int?) ?? 0) > 0 ||
+    ((output['warning_count'] as int?) ?? 0) > 0;
+
+/// '12 outputs · 3 Livros · 9 Artigos em revistas · 2 with issues' — for whatever rows it is given.
+String countsLine(List<Map<String, dynamic>> rows) {
+  final parts = ['${rows.length} ${rows.length == 1 ? 'output' : 'outputs'}'];
+  for (final entry in countByType(rows).entries) {
+    final count = entry.value;
+    final label = entry.key;
+    parts.add('$count $label');
+  }
+  final n = rows.where(hasIssues).length;
+  if (n > 0) {
+    parts.add('$n with issues');
+  }
+  return parts.join(' · ');
+}
 
 List<({String id, String title})> projectsOf(
   List<Map<String, dynamic>> outputs,

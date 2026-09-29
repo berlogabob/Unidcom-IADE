@@ -271,4 +271,35 @@ void main() {
       isNull,
     );
   });
+
+  group('E5.1', () {
+    test('issuesOnly keeps rows with errors or warnings', () {
+      final rows = <Map<String, dynamic>>[
+        {'id': 'a', 'error_count': 1, 'warning_count': 0},
+        {'id': 'b', 'error_count': 0, 'warning_count': 2},
+        {'id': 'c', 'error_count': 0, 'warning_count': 0},
+      ];
+      final kept = filterOutputs(rows, const OutputFilter(issuesOnly: true));
+      expect(kept.map((r) => r['id']), ['a', 'b']);
+    });
+    test('countsLine counts total, per type and issues', () {
+      final rows = <Map<String, dynamic>>[
+        {'category_path': 'Livros › Autor', 'error_count': 1},
+        {'category_path': 'Livros › Autor'},
+        {'category_path': 'Artigos em revistas'},
+      ];
+      expect(
+        countsLine(rows),
+        '3 outputs · 2 Livros · 1 Artigos em revistas · 1 with issues',
+      );
+    });
+    test('countsLine without issues omits the issues part', () {
+      expect(
+        countsLine(<Map<String, dynamic>>[
+          {'category_path': 'Livros'},
+        ]),
+        '1 output · 1 Livros',
+      );
+    });
+  });
 }
