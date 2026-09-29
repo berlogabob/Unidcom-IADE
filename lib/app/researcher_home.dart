@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/timeline.dart';
 import '../data/attention.dart';
 import '../data/features.dart';
 import '../data/output_filters.dart';
 import '../data/supabase.dart';
 import '../public/person/featured_outputs.dart';
 import '../theme/tokens.dart';
+import '../widgets/timeline_bar.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/output_row.dart';
 import '../widgets/panels.dart';
@@ -93,6 +95,10 @@ class ResearcherHomePage extends StatefulWidget {
 
 class _ResearcherHomePageState extends State<ResearcherHomePage> {
   late final Future<HomeData> _data = loadHomeData(personId: widget.personId);
+  // Own Overview only: the RPC returns the caller's dates.
+  late final Future<Map<String, dynamic>?> _timeline = widget.personId == null
+      ? fetchMyTimeline()
+      : Future.value(null);
 
   @override
   Widget build(BuildContext context) {
@@ -138,6 +144,17 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
                             personId: widget.personId,
                           ),
                           const SizedBox(height: 16),
+                          FutureBuilder<Map<String, dynamic>?>(
+                            future: _timeline,
+                            builder: (context, snap) => snap.data == null
+                                ? const SizedBox.shrink()
+                                : Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: TimelineBar(
+                                      steps: profileTimeline(snap.data!),
+                                    ),
+                                  ),
+                          ),
                           RecentOutputs(outputs: data.outputs),
                         ],
                       );
@@ -330,9 +347,8 @@ class OutputSummary extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         InkWell(
-          onTap: () => context.go(
-            portalRoute('/app/outputs?view=featured', personId),
-          ),
+          onTap: () =>
+              context.go(portalRoute('/app/outputs?view=featured', personId)),
           child: AccentStatCard(
             label: 'FEATURED OUTPUTS',
             value: '$featured / $maxFeaturedOutputs',
