@@ -11,6 +11,7 @@ import '../public/person/orcid_sync_dialog.dart';
 import '../public/person_page.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/orcid_block.dart';
 import '../widgets/panels.dart';
 import 'portal_pages.dart';
 import 'output_wizard.dart';
@@ -357,7 +358,19 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                       const Text(
                         'Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before publishing.',
                       ),
-                      if (const {'draft', 'to_validate'}.contains(status) && !viewing) ...[
+                      if (!viewing &&
+                          (person['orcid'] as String? ?? '').isNotEmpty)
+                        OrcidBlock(
+                          connected: true,
+                          lastImported: DateTime.tryParse(
+                            person['orcid_synced_at'] as String? ?? '',
+                          ),
+                          onImport: () =>
+                              _checkOrcidSync(person['id'] as String),
+                          onConnect: _connectOrcid,
+                        ),
+                      if (const {'draft', 'to_validate'}.contains(status) &&
+                          !viewing) ...[
                         const Text('Check your data below, then confirm'),
                         FilledButton(
                           onPressed: _submitting ? null : _submitProfile,
