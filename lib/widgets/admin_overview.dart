@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:unidcom_iade/data/admin_stats.dart';
 import 'package:unidcom_iade/theme/tokens.dart';
+import 'package:unidcom_iade/widgets/info_tip.dart';
 
 /// Rui 25 Sep (Admin B1): the admin dashboard, numbers only.
 class AdminOverview extends StatelessWidget {
@@ -16,6 +17,8 @@ class AdminOverview extends StatelessWidget {
     required this.onOpenPerson,
     required this.onOpenProfilesToApprove,
     required this.onOpenOutputsToApprove,
+    this.proposalsToReview = 0,
+    this.onOpenProposals,
   });
 
   final AdminStats stats;
@@ -27,6 +30,8 @@ class AdminOverview extends StatelessWidget {
   final ValueChanged<String> onOpenPerson;
   final VoidCallback onOpenProfilesToApprove;
   final VoidCallback onOpenOutputsToApprove;
+  final int proposalsToReview;
+  final VoidCallback? onOpenProposals;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +55,16 @@ class AdminOverview extends StatelessWidget {
               'Outputs to approve',
               stats.outputsToApprove,
               onTap: onOpenOutputsToApprove,
+            ),
+            _tile(
+              context,
+              'Proposals to review',
+              proposalsToReview,
+              onTap: onOpenProposals,
+              info:
+                  'Changes researchers proposed to their profile or outputs '
+                  '(for example a new bio from ORCID). Review them in '
+                  'Pending approval → Suggestions.',
             ),
           ],
         ),
@@ -183,6 +198,7 @@ class AdminOverview extends StatelessWidget {
     String label,
     int value, {
     VoidCallback? onTap,
+    String? info,
   }) {
     final child = Card(
       color: AppColors.cardBg,
@@ -201,7 +217,18 @@ class AdminOverview extends StatelessWidget {
                 context,
               ).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary),
             ),
-            Text(label, style: const TextStyle(color: AppColors.textSecondary)),
+            info == null
+                ? Text(
+                    label,
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  )
+                : WithInfo(
+                    info: info,
+                    child: Text(
+                      label,
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ),
           ],
         ),
       ),

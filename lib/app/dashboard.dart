@@ -41,7 +41,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   });
 
   Future<_AdminOverviewData> _loadAdminOverview() async {
-    final data = await loadAdminOverview();
+    final dataFuture = loadAdminOverview();
+    final suggestionsFuture = fetchPendingSuggestions();
+    final data = await dataFuture;
+    final proposalsToReview = (await suggestionsFuture).length;
     final members = data.people.where(
       (person) =>
           person['membership_type'] == 'integrated' ||
@@ -52,6 +55,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final lastMonth = now.subtract(const Duration(days: 30));
     return _AdminOverviewData(
       data: data,
+      proposalsToReview: proposalsToReview,
       years: data.outputs
           .map((output) => output['reporting_year'])
           .whereType<int>()
@@ -184,6 +188,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               onOpenProfilesToApprove: () =>
                   context.go('/app/admin/review'),
               onOpenOutputsToApprove: () => context.go('/app/admin/review'),
+              proposalsToReview: data.proposalsToReview,
+              onOpenProposals: () => context.go('/app/admin/review'),
             ),
           );
         },
@@ -687,6 +693,7 @@ class _MembershipChart extends StatelessWidget {
 class _AdminOverviewData {
   const _AdminOverviewData({
     required this.data,
+    required this.proposalsToReview,
     required this.years,
     required this.activity,
     required this.alerts,
@@ -698,6 +705,7 @@ class _AdminOverviewData {
     Set<String> orcidOutputIds,
     Map<String, DateTime?> lastSignIn,
   }) data;
+  final int proposalsToReview;
   final List<int> years;
   final ({int lastMonth, int lastWeek, int never}) activity;
   final List<({String text, String personId})> alerts;

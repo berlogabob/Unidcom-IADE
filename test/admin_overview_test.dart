@@ -47,6 +47,8 @@ Future<List<String>> pump(
             onOpenPerson: opened.add,
             onOpenProfilesToApprove: () {},
             onOpenOutputsToApprove: () {},
+            proposalsToReview: 2,
+            onOpenProposals: () => opened.add('proposals'),
           ),
         ),
       ),
@@ -108,5 +110,13 @@ void main() {
     );
     await tester.tap(find.text('Ana Nolasco — 3 outputs missing DOI'));
     expect(opened, ['p1']);
+  });
+
+  testWidgets('proposals from researchers are counted and open the queue', (tester) async {
+    final opened = await pump(tester);
+    expect(find.text('Proposals to review'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    await tester.tap(find.text('Proposals to review'));
+    expect(opened, ['proposals']);
   });
 }
