@@ -720,6 +720,116 @@ Outcome: Phase D closed 10 Sep 2026 — 17 PRs (#48–#64), 199 → 267 tests, 4
 waves in parallel with D5.1 / D7.1 / D9.1 first because their widgets depend on them, D9 last.
 Decision rule if Codex quota runs out mid-wave: haiku takes `luna` tasks, `mini` tasks wait.
 
+### Phase E — Rui's UI decisions for the pilot (25 Sep 2026) → demo Fri 2 Oct
+
+Source: `RAW_DATA/RIMS v1.0 UI Decisions.pdf` (+ `_images/`). Decisions: website demo on Hugo, Sanity stretch; imported outputs reset to `to_validate`, site content unchanged.
+
+#### Execution model (token budget)
+Ledger: new `### Phase E` section in `PLAN.md`, same row format as Phase D (`id | task | owner | acceptance check | PR`). A box is ticked only when orch runs the check.
+
+| Owner | Where | Use for |
+|---|---|---|
+| `S30` | Studio PC `desktop-vdsrh2e:8888`, `unsloth/Qwen3-Coder-30B-A3B-Instruct-GGUF` via `pi-run.sh` (`PI_PROVIDER=studio PI_MODEL=… PI_MAX_ITERS=2 PI_VERIFY="flutter analyze && flutter test <file>"`) | one widget/file + its test |
+| `M` | Mac: `omlx/NousCoder-14B` (fallback `ornith:9b`) via `pi-run.sh` | strings, labels, one-liners, grep-verifiable |
+| `orch` | Claude (this session) | migrations, RLS, RPCs, `sync.py`, specs, diff review, running checks |
+| escalation | Codex luna → Claude haiku | a task that fails its check twice on local |
+
+Token rules: orch hands each task the exact `file:line` from the gap map (no re-exploration); reviews `git diff` only; checks are commands. One git worktree per task; a wave = tasks on disjoint files (≤2 on Studio, 1 on Mac in parallel). Log executor + attempts per row; target ≥ 70 % of rows closed by `S30`/`M`.
+
+Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** cut first if Thursday noon is at risk.
+
+#### Stage 1 — Foundations and blockers (Tue 29 eve → Wed 30 AM)
+
+#### Phase 1A — Harness
+| id | task | owner | check | status |
+|---|---|---|---|---|
+| E0.1 | Phase E section in `PLAN.md` from this plan | orch | `grep -c "^| E" PLAN.md` = row count | [ ] |
+| E0.2 | Studio smoke: trivial task in a worktree; two concurrent pi sessions | orch | both runs verify green; log wall time per run | [x] ✅ Studio Qwen3-Coder-30B: E1.6 diff correct first try (~2 min); verify tripped on a new Flutter 3.47.5 lint in an untouched file — fixed on main 4395b63 |
+| E0.3 | Mac smoke on NousCoder-14B | orch | verify green | [x] ✅ omlx NousCoder-14B server down (0 tokens) → Mac executor = ollama `ornith-1.5:9b`: E2.5 in 59 s. Rule: every verify greps for the change, since `flutter analyze` alone passes on an untouched tree |
+
+#### Phase 1B — Platform checks (PDF p.8)
+| id | task | P | owner | check | status |
+|---|---|---|---|---|---|
+| E1.1 | Migration: `approval_status` check adds `to_validate` (`20260804120000_status_workflow.sql:11,17` pattern); imported approved outputs → `to_validate`; `website_status` untouched. Rollback-tested first | P0 | orch | `select approval_status,count(*) from outputs group by 1` → approved 0 for imported, to_validate = 365 | [~] ⏳ `20260929100000_to_validate.sql` rollback-tested live: outputs to_validate=365, people to_validate=184; own submit ok, mixed/foreign 42501, no-uid 42501; researcher self-submit profile ok, visibility kept, cannot touch another profile. **Not applied** — goes live after portal deploy + site push |
+| E1.2 | `unidcom-site/scripts/sync.py:136-142`: publish on `website_status='published'` and approval in (approved, to_validate) so the site does not empty | P0 | orch | dry run: 76 publications before = after | [~] ⏳ unidcom-site `feat/to-validate` ea0caa7: outputs publish on website_status=published ∧ ¬rejected, people on public_visibility; self-check extended; SQL: 76/76 publications, 183/183 people under both rules. **Not pushed** |
+| E1.3 | RPC `submit_my_outputs(ids uuid[])` (owner-checked, to_validate/rejected → pending, change_log) | P0 | orch | rollback test: own ok, other's 42501 | [x] ✅ in the E1.1 migration (`submit_my_outputs`), same rollback test |
+| E1.4 | `status_labels.dart`: `to_validate` → "To be validated by you"; outputs page "Submit for UNIDCOM review" per row + "Submit all to validate (N)" | P0 | M + S30 | label unit test; widget test calls RPC with ids | [ ] |
+| E1.5 | Diagnose `permission denied for table people`: live `role_table_grants`, API logs, reproduce on login (likely a query before session restore, `main.dart:143`); fix | P0 | orch | Playwright login capture: 0 console "permission denied" | [x] ✅ root cause `app_shell.dart` badge futures ran as anon; fix + `audit/tools/perm_check.py`: 0 failed REST, 0 console errors (anon + signed in, 5 pages + reload) |
+| E1.6 | Landing `/app/home`: `main.dart:259,290`; Maestro anchors follow | P0 | M | route test; `researcher_mode.yaml` passes | [x] ✅ faee502 (S30): both landings → /app/home; view_mode + route_guard 20/20 |
+| E1.8 | `approvePerson` set `public_visibility: true` — approving published the profile. Drop it; `fetchPendingPeople` → `pending_review` only; `submitMyProfileForReview` from draft or to_validate; `submitMyOutputs()` wrapper | P0 | S30 | greps + analyze | [x] ✅ e15d45d (S30, first try) |
+| E1.7 | One "Connect ORCID" on My Profile: drop header-band one `profile_sections.dart:130` for owner | P0 | M | widget test: finds 1 | [ ] |
+
+**Stage 1 KPI:** 4/4 platform checks green; admin "Outputs approved" no longer 365/365; site count unchanged.
+
+#### Stage 2 — UI build (Wed 30 → Thu 1 noon)
+
+#### Phase 2A — Rules for every page
+| id | task | P | owner | check | status |
+|---|---|---|---|---|---|
+| E2.1 | ORCID wording: "Sync now", "ORCID Sync", "Import ORCID version", "Sync error" (`my_profile.dart:410,454`, `profile_sections.dart:165,280`, `status_labels.dart:26`) → "Import from ORCID" / "Import bio from ORCID" / "Import error" | P1 | M | `grep -rn "Sync" lib` in v1 paths = 0 user-facing | [ ] |
+| E2.2 | Compact status line in `lib/widgets/portal_shell.dart`: "UNIDCOM: <review> · Website: <state>" on all 5 researcher pages; StatusStrip pills removed from Overview/My Profile | P1 | S30 | widget test on 5 routes | [ ] |
+| E2.3 | `lib/widgets/info_tip.dart`: `InfoTip(text)` = info icon + Tooltip + Semantics | P1 | S30 | widget test: hover shows text, semantics label | [ ] |
+| E2.4 | Apply InfoTip to every My Profile field + action and outputs page actions; orch writes the one-sentence copy table | P1/P2 | S30 | `grep -c InfoTip` ≥ field+action count | [ ] |
+| E2.5 | `tokens.dart`: `warnTint #FEF9C3`; attention banner (`researcher_home.dart:500-515`) uses it. Keep secondary #6A6862 (WCAG) — tell Rui | P1 | M | golden-free: grep token use | [x] ✅ 249f860 (M ornith): `warnTint #FEF9C3` on the attention rows |
+| E2.6 | `v1_surface_test` guard: no "Auto-published", "Welcome back", "My Dashboard", "Support Requests", "Sync" in v1 | P1 | S30 | test green | [ ] |
+
+#### Phase 2B — Overview (`lib/app/researcher_home.dart`)
+| id | task | P | owner | check | status |
+|---|---|---|---|---|---|
+| E3.1 | Data: dates for Draft / Submitted / Under review / Published from `change_log` + `people` states, fetch in `supabase.dart` | P1 | orch | query returns 4 dates for test researcher | [ ] |
+| E3.2 | Pure `lib/data/timeline.dart` + dated timeline widget on Overview | P1 | S30 | unit test per state; widget test 4 steps | [ ] |
+| E3.3 | Bio first lines + "Edit bio →" `/app/profile` | P1 | S30 | widget test | [ ] |
+| E3.4 | Summary tiles link filtered: `/app/outputs?type=`, `?featured=1`, `?issues=1` (`:294,:307`); outputs page reads query | P1 | S30 | widget test: tap → route with query | [ ] |
+| E3.5 | `issueLabel(code)` ("Missing DOI", "Affiliation mismatch", "Not on ORCID") in `status_labels.dart`; `output_row.dart:96-119` shows text not icon+count | P1 | M + S30 | unit test; row test finds "Missing DOI" | [ ] |
+
+#### Phase 2C — My Profile (`lib/app/my_profile.dart`, `lib/public/person/*`)
+| id | task | P | owner | check | status |
+|---|---|---|---|---|---|
+| E4.1 | Subtitle "Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before publishing." | P1 | M | grep | [ ] |
+| E4.2 | ORCID block: connected · Last imported <orcid_synced_at> · [Import from ORCID] · "Editing here does not change your ORCID record"; button calls existing ORCID fetch path (orch names it) | P1 | S30 | widget test | [ ] |
+| E4.3 | Fields Ciência ID, Lab/cluster, Email visible with InfoTip | P1 | S30 | widget test finds 3 labels | [ ] |
+| E4.4 | Bio `maxLength: 300` (native counter), `person_dialogs.dart:243` | P1 | M | widget test "/300" | [ ] |
+| E4.5 | Featured outputs read-only (≤5) + "Manage in Scientific Outputs →" | P1 | S30 | widget test: no checkbox/star | [ ] |
+| E4.6 | "Save draft" + "Submit for UNIDCOM review (i)" replace "Confirm my profile" (`:361-366`). Draft = `enrichment_suggestions.status='draft'` (orch migration adds value; queue ignores drafts), Submit flips to pending | P1 | orch + S30 | rollback test; widget test both buttons | [ ] |
+| E4.7 | Photo upload: Storage bucket `avatars`, owner-path RLS, ≤2 MB jpg/png, staged as `photo_url` suggestion (nothing auto-published) | P2 | orch + S30 | RLS test other-path 403; widget test upload stages 1 row | [ ] |
+
+#### Phase 2D — Scientific Outputs (`lib/app/own_outputs.dart`, sequential: same file)
+| id | task | P | owner | check | status |
+|---|---|---|---|---|---|
+| E5.1 | `output_filters.dart`: `kind` tab, `issuesOnly`, `countsLine(rows)` → "12 outputs · 3 journals · 9 conferences · 2 with issues" | P1 | S30 | unit tests | [ ] |
+| E5.2 | Filter area → tabs Publications \| Other activities, type chips + subtype row, year chips, "Issues only", counters line, "Featured X/5". Dropdowns, view chips, group-by go behind `v2` (`:163-281`) | P1 | S30 (escalate early if stuck) | widget test: 0 `DropdownButton` in v1; counts change with chip | [ ] |
+| E5.3 | Row (`lib/public/person/output_row.dart`): "Type · Subtype" tag, title, venue · year, issue text or "No issues", "Not on ORCID" text, star only when kind = publication | P1 | S30 | row test per case; activity row has no star | [ ] |
+| E5.4 | Banner "N new publications in ORCID → Review" → reconciliation view | P1 | S30 | widget test N from candidates | [ ] |
+| E5.5 | "+ Add output" label, top right | P1 | M | grep | [ ] |
+
+#### Phase 2E — Admin
+| id | task | P | owner | check | status |
+|---|---|---|---|---|---|
+| E6.1 | Admin nav (`nav_model.dart:176-226`): Dashboard · People · Pending approval · Outputs · Reports; rest behind `v2` | P1 | M | `nav_model_test` 5 items | [ ] |
+| E6.2 | Pure `lib/data/admin_stats.dart`: integrated/collaborators, profiles/outputs to approve, ORCID linked/not, website published/approved-not-published/not, issues (no "Not approved yet"), outputs by type × year × S1/S2, critical alerts | P1 | S30 | unit tests | [ ] |
+| E6.3 | Last-login RPC over `auth.users.last_sign_in_at`, admin-only | P2 | orch | non-admin 42501 | [ ] |
+| E6.4 | `dashboard.dart` → B1 layout, numbers only, year + semester tabs, alerts open researcher | P1 | S30 | widget test with fixture | [ ] |
+| E6.5 | People (`people_list.dart`): Website column + filter | P1 | S30 | widget test | [ ] |
+| E6.6 | Pending approval top-level: pipeline Draft · Submitted · Under review · Approved not published · Published; "Publish to website" in its own column, separate from Approve (reuse `setWebsiteStatus`, `website_panel.dart`) | P0 | S30 | widget test; SQL after click | [ ] |
+
+**Stage 2 KPI:** PDF items done / total (≈75 numbered items + 6 rules); target 100 % P0/P1.
+
+#### Stage 3 — Verify and demo (Thu 1 → Fri 2 AM)
+| id | task | owner | check | status |
+|---|---|---|---|---|
+| E7.1 | `flutter analyze` 0, `flutter test` all green (≥ 267 + new) | orch | output | [ ] |
+| E7.2 | Playwright crawl re-run (`audit/tools/`), researcher + admin; forbidden-string scan; console clean | orch | 0 sev-3/4, 0 forbidden strings, 0 permission errors | [ ] |
+| E7.3 | `audit/2026-10-rui-ui-decisions.md`: every PDF item → task id → evidence (test / screenshot / SQL) | orch (+M to fill rows) | done/total printed | [ ] |
+| E7.4 | Deploy portal (OPERATIONS.md path) | orch | deployed hash = main | [ ] |
+| E7.5 | E2E rehearsal on live: test researcher submits → admin approves → Publish to website → `sync.py` → visible on Hugo | orch + you | screenshots + public URL | [ ] |
+| E7.6 | Rui review Thu 1 Oct; each changed decision becomes an E8.x row | you + orch | rows closed | [ ] |
+| E7.7 | `DEMO.md` script for the new flow; timed dry run | orch | ≤ 15 min | [ ] |
+| E7.8 | `graphify update .` | orch | runs clean | [ ] |
+
+#### Stage 4 — Stretch: Sanity (gate: E7.1–E7.5 green by Thu 12:00)
+E9.1 rebase `feat/sanity-bridge`, fix `anon`-callable `sanity_*` RPCs · E9.2 push approved ∧ published profile to dataset `vj0axykv` · E9.3 show it on the Sanity site. Otherwise: one slide saying Hugo is live, Sanity bridge built and next.
+
+
 ## 9. Out of scope / Phase 2+
 
 - Sanity CMS as website layer — **slot filled by Hugo** (`unidcom-site`), which
