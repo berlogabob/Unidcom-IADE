@@ -162,7 +162,7 @@ Widget personHeader(
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.sync),
-                label: Text(syncing ? 'Checking...' : 'ORCID sync'),
+                label: Text(syncing ? 'Checking...' : 'Import from ORCID'),
               ),
             if (v2 && admin)
               FilledButton.icon(
@@ -277,7 +277,7 @@ List<Widget> personBioSection(
       OutlinedButton.icon(
         onPressed: onImportOrcid,
         icon: const Icon(Icons.download_outlined),
-        label: const Text('Import ORCID version'),
+        label: const Text('Import bio from ORCID'),
       ),
       mutedText(
         context,

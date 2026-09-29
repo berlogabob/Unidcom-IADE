@@ -11,7 +11,7 @@ const researcherTabs = {
   'overview': 'Overview',
   'profile': 'My Profile',
   'outputs': 'Scientific Outputs',
-  'import': 'Import & Sync',
+  'import': 'Import from ORCID',
   'edit': 'Edit (admin)',
 };
 

@@ -32,7 +32,7 @@ void main() {
 
     expect(find.text('UNIDCOM biography'), findsOneWidget);
     expect(find.text('ORCID biography'), findsOneWidget);
-    await tester.tap(find.text('Import ORCID version'));
+    await tester.tap(find.text('Import bio from ORCID'));
     expect(imports, 1);
   });
 
@@ -40,7 +40,7 @@ void main() {
     await tester.pumpWidget(host(person, orcidBio: '  UNIDCOM bio  '));
 
     expect(find.text('Matches ORCID'), findsOneWidget);
-    expect(find.text('Import ORCID version'), findsNothing);
+    expect(find.text('Import bio from ORCID'), findsNothing);
   });
 
   testWidgets('missing ORCID bio keeps the current rendering', (tester) async {
