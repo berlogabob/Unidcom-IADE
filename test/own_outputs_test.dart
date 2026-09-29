@@ -34,6 +34,7 @@ void main() {
     WidgetTester tester, {
     ValueChanged<Map<String, dynamic>>? onEdit,
     Widget? orcidPanel,
+    List<Map<String, dynamic>>? rows,
   }) async {
     tester.view.physicalSize = const Size(1400, 2000);
     tester.view.devicePixelRatio = 1;
@@ -44,7 +45,7 @@ void main() {
         home: Scaffold(
           body: SingleChildScrollView(
             child: OwnOutputsSection(
-              authors: authors,
+              authors: rows ?? authors,
               featured: const ['1'],
               onToggleFeatured: (_) {},
               onOpenOutput: (_) {},
@@ -167,6 +168,72 @@ void main() {
     expect(find.textContaining('Membership'), findsNothing);
     expect(find.textContaining('Lab ·'), findsNothing);
     expect(find.textContaining('Role ·'), findsNothing);
+  });
+
+  testWidgets('submits outputs needing validation', (tester) async {
+    final authorsWithToValidate = <Map<String, dynamic>>[
+      _author('1', 'Featured Book', 2026, 'Livros › Autor'),
+      _author(
+        '2',
+        'To Validate Paper',
+        2026,
+        'Livros › Autor',
+        approval: 'to_validate',
+      ),
+      _author('3', 'Approved Paper', 2025, 'Livros › Autor'),
+    ];
+    List<String>? submittedIds;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: OwnOutputsSection(
+              authors: authorsWithToValidate,
+              featured: const ['1'],
+              onToggleFeatured: (_) {},
+              onOpenOutput: (_) {},
+              onEditOutput: null,
+              orcidPanel: null,
+              loadTaxonomy: () async => const [
+                TaxonomyNode('Livros', [TaxonomyNode('Autor', [])]),
+                TaxonomyNode('Formação avançada', []),
+              ],
+              loadKinds: () async => const {'Livros': 'publication'},
+              loadQuality: (_) async {},
+              submitOutputs: (ids) async {
+                submittedIds = ids;
+                return 1;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('1 outputs to be validated by you. Check them, then submit.'),
+      findsOneWidget,
+    );
+    expect(find.text('Submit for UNIDCOM review (1)'), findsOneWidget);
+
+    await tester.tap(find.text('Submit for UNIDCOM review (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Submit 1 outputs for UNIDCOM review?'), findsOneWidget);
+    await tester.tap(find.text('Submit'));
+    await tester.pumpAndSettle();
+
+    expect(submittedIds, ['2']);
+    expect(find.text('Submit for UNIDCOM review (1)'), findsNothing);
+  });
+
+  testWidgets('does not show submit button when no outputs need validation', (
+    tester,
+  ) async {
+    await pumpOutputs(tester, rows: [_author('9', 'Checked', 2024, 'Livros')]);
+
+    expect(find.textContaining('Submit for UNIDCOM review'), findsNothing);
   });
 }
 

@@ -6,6 +6,7 @@ import '../data/supabase.dart';
 import '../data/taxonomy.dart';
 import '../public/person/featured_outputs.dart';
 import '../public/person/output_row.dart';
+import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
 import '../widgets/search_bar.dart';
@@ -23,6 +24,7 @@ class OwnOutputsSection extends StatefulWidget {
     this.loadTaxonomy = fetchOutputTaxonomy,
     this.loadKinds = fetchTaxonomyKinds,
     this.loadQuality = mergeOutputQuality,
+    this.submitOutputs = submitMyOutputs,
   });
 
   final List<Map<String, dynamic>> authors;
@@ -34,6 +36,7 @@ class OwnOutputsSection extends StatefulWidget {
   final Future<List<TaxonomyNode>> Function() loadTaxonomy;
   final Future<Map<String, String>> Function() loadKinds;
   final Future<void> Function(List<Map<String, dynamic>>) loadQuality;
+  final Future<int> Function(List<String>) submitOutputs;
 
   @override
   State<OwnOutputsSection> createState() => _OwnOutputsSectionState();
@@ -48,6 +51,7 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
   late final Future<List<TaxonomyNode>> _taxonomy;
   late final Future<Map<String, String>> _kinds;
   late final Future<(List<TaxonomyNode>, Map<String, String>)> _metadata;
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -69,6 +73,63 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
   Future<void> _loadQuality() async {
     await widget.loadQuality(_outputs);
     if (mounted) setState(() {});
+  }
+
+  Future<void> _submitOutputs() async {
+    final outputsToValidate = _outputs
+        .where(
+          (output) =>
+              output['approval_status'] == 'to_validate' ||
+              output['approval_status'] == 'rejected',
+        )
+        .toList();
+    if (outputsToValidate.isEmpty || _submitting) return;
+
+    final ids = outputsToValidate
+        .map((output) => output['id'].toString())
+        .toList();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Submit ${ids.length} outputs for UNIDCOM review?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || confirm != true) return;
+    setState(() => _submitting = true);
+
+    try {
+      await widget.submitOutputs(ids);
+
+      if (!mounted) return;
+      for (final output in _outputs) {
+        if (ids.contains(output['id'].toString())) {
+          output['approval_status'] = 'pending';
+        }
+      }
+
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Submitted ${ids.length} outputs for review')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error submitting outputs: ${e.toString()}')),
+      );
+    }
   }
 
   @override
@@ -113,6 +174,13 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
           kindByRoot: kinds,
         );
         final groups = groupOutputs(filtered, _group);
+        final outputsToValidate = _outputs
+            .where(
+              (output) =>
+                  output['approval_status'] == 'to_validate' ||
+                  output['approval_status'] == 'rejected',
+            )
+            .toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,6 +200,31 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
             const SizedBox(height: 24),
             sectionHeader(context, 'Scientific Outputs · ${_outputs.length}'),
             const SizedBox(height: 8),
+            if (outputsToValidate.isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(top: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.warnTint,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${outputsToValidate.length} outputs to be validated by you. Check them, then submit.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    FilledButton(
+                      onPressed: _submitting ? null : _submitOutputs,
+                      child: Text(
+                        'Submit for UNIDCOM review (${outputsToValidate.length})',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Wrap(
               spacing: 8,
               runSpacing: 8,
