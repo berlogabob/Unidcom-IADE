@@ -5,6 +5,8 @@ import sys, json, base64
 sys.argv = [sys.argv[0], "/tmp/claude-501/perm-run"]
 src = open("audit/tools/crawl.py").read().split("# --- crawl")[0]
 exec(src)
+import os
+BASE = os.environ.get("PERM_BASE", BASE)
 hits = []
 def role(req):
     a = req.headers.get("authorization", "")
@@ -19,7 +21,12 @@ with sync_playwright() as p:
     b = p.chromium.launch(); page = b.new_page(viewport=DESKTOP)
     page.on("console", lambda m: m.type == "error" and hits.append("CONSOLE " + m.text[:200]))
     page.on("response", on_resp)
-    page.goto(f"{BASE}/#/login"); visible(page, "^Email$", 60)
+    page.goto(f"{BASE}/#/login")
+    for r in ["/app/welcome/start", "/app/welcome/resources", "/app/welcome/contacts"]:
+        page.goto(f"{BASE}/#{r}"); page.wait_for_timeout(3000); hits.append(f"-- anon {r}")
+    page.goto(f"{BASE}/#/login")
+    if not visible(page, "^Email$", 20):
+        hits.append("-- no email login in this build: anonymous pass only"); b.close(); print("\n".join(hits)); sys.exit(0)
     typein(page, "Email", EMAIL); page.keyboard.press("Tab"); page.keyboard.type(PASSWORD, delay=15); click(page, "^Sign in$")
     page.wait_for_timeout(12000); hits.append("-- after sign-in: " + page.url.split("#")[-1]); page.screenshot(path="/tmp/claude-501/after_signin.png")
     if visible(page, "How do you want to continue", 3): choose(page, "researcher")
