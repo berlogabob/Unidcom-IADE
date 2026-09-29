@@ -314,7 +314,9 @@ final _router = GoRouter(
     if (onLogin) {
       return data.isAdminAccount && !data.modeChosen
           ? '/app/mode'
-          : '/app/welcome/start';
+          : data.isAdmin
+          ? '/app/dashboard'
+          : '/app/home';
     }
     return modeRedirect(
       state.matchedLocation,

@@ -27,7 +27,7 @@ with sync_playwright() as p:
     page.goto(f"{BASE}/#/login")
     if not visible(page, "^Email$", 20):
         hits.append("-- no email login in this build: anonymous pass only"); b.close(); print("\n".join(hits)); sys.exit(0)
-    typein(page, "Email", EMAIL); page.keyboard.press("Tab"); page.keyboard.type(PASSWORD, delay=15); click(page, "^Sign in$")
+    typein(page, "Email", EMAIL); page.keyboard.press("Tab"); page.wait_for_timeout(300); page.locator("input:focus").fill(PASSWORD); click(page, "^Sign in$")
     page.wait_for_timeout(12000); hits.append("-- after sign-in: " + page.url.split("#")[-1]); page.screenshot(path="/tmp/claude-501/after_signin.png")
     if visible(page, "How do you want to continue", 3): choose(page, "researcher")
     for r in ["/app/home", "/app/profile", "/app/outputs", "/app/welcome/resources", "/app/welcome/contacts"]:

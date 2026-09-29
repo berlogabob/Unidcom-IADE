@@ -139,10 +139,16 @@ def goto(page, route, name, mode, note="", wait=None):
 
 # --- session helpers ---------------------------------------------------------
 def login(page):
-    page.goto(f"{BASE}/#/login"); visible(page, "^Email$", 60)
-    typein(page, "Email", EMAIL); typein(page, "Password", PASSWORD)
+    # reload: a hash-only goto keeps the previous (wrong) password in the field
+    page.goto(f"{BASE}/#/login"); page.reload(); visible(page, "^Email$", 60); page.wait_for_timeout(500)
+    # Flutter text fields: fill() is unreliable after a reload; click and type keys.
+    click(page, "^Email$"); page.wait_for_timeout(300); page.locator("input:focus").fill(EMAIL); page.keyboard.press("Tab"); page.wait_for_timeout(300); page.locator("input:focus").fill(PASSWORD)
     click(page, "^Sign in$")
-    assert visible(page, "How do you want to continue", 40), "login failed"
+    if not visible(page, "How do you want to continue", 6):
+        dom_click(page, "^Sign in$")  # the app-bar title also reads "Sign in"
+    ok = visible(page, "How do you want to continue", 40)
+    if not ok: page.screenshot(path="/tmp/claude-501/crawl_login_fail.png")
+    assert ok, "login failed"
 
 def choose(page, mode):
     page.evaluate("() => sessionStorage.removeItem('view_mode')")
@@ -169,7 +175,7 @@ with sync_playwright() as p:
     goto(page, "/app/welcome/docs", "anon_welcome_docs_m2", "anon", "M2 slug: expected redirect to start")
     # login error state: wrong password
     page.goto(f"{BASE}/#/login"); visible(page, "^Email$", 30)
-    typein(page, "Email", EMAIL); typein(page, "Password", "wrong-password-123!"); click(page, "^Sign in$"); page.wait_for_timeout(2500)
+    typein(page, "Email", EMAIL); page.keyboard.press("Tab"); page.wait_for_timeout(300); page.locator("input:focus").fill("wrong-password-123!"); click(page, "^Sign in$"); page.wait_for_timeout(2500)
     capture(page, "state_login_error", "anon", "login with wrong password", "ST-ERROR evidence")
 
     # --- researcher mode

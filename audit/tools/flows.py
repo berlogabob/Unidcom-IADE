@@ -49,7 +49,7 @@ def pick(f, pg, label):
 
 def do_login(f, pg):
     f.step("open #/login"); pg.goto(f"{BASE}/#/login"); f.expect("^Email$", 60)
-    f.step("type email"); typein(pg, "Email", EMAIL); f.step("type password"); typein(pg, "Password", PASSWORD)
+    f.step("type email"); typein(pg, "Email", EMAIL); f.step("type password"); pg.keyboard.press("Tab"); pg.wait_for_timeout(300); pg.locator("input:focus").fill(PASSWORD)
     f.step("tap Sign in"); click(pg, "^Sign in$"); f.expect("How do you want to continue", 40)
 
 def auth_gate(f, pg):
