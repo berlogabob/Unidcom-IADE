@@ -236,7 +236,7 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
         filterDropdown(
           'Profile',
           _profileStatus,
-          const ['draft', 'pending_review', 'approved'],
+          const ['to_validate', 'draft', 'pending_review', 'under_review', 'approved'],
           (value) {
             _profileStatus = value;
             _load();

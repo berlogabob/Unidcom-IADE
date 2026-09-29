@@ -66,7 +66,7 @@ AdminStats computeAdminStats({
 
   // Profiles to approve = members with profile_status 'pending_review'
   final profilesToApprove = members
-      .where((person) => person['profile_status'] == 'pending_review')
+      .where((person) => const {'pending_review', 'under_review'}.contains(person['profile_status']))
       .length;
 
   // Outputs to approve = outputs with approval_status 'pending'

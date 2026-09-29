@@ -80,7 +80,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   static const _membershipTypes =
       membershipTypes; // canonical list (supabase.dart)
   static const _statuses = ['a_confirmar', 'active', 'inactive'];
-  static const _profileStatuses = ['draft', 'pending_review', 'approved'];
+  static const _profileStatuses = ['to_validate', 'draft', 'pending_review', 'under_review', 'approved'];
 
   bool get _creating => widget.person?['id'] == null;
   bool get _ownerMode => !_creating && !widget.canEditGovernance;

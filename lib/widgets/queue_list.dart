@@ -6,6 +6,7 @@ import 'search_bar.dart';
 String queueStatusLabel(String value) => const {
   'a_confirmar': 'To confirm',
   'pending_review': 'Submitted',
+  'under_review': 'Under review',
   'pending': 'Submitted',
   'approved': 'Approved',
   'rejected': 'Changes requested',
