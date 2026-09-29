@@ -1,0 +1,445 @@
+UNIDCOM · RIMS · PILOT V1.0
+
+
+UI decisions for the pilot
+What stays, what changes and what goes on each page, decided by Rui Ramos from Carmela's final
+screens of 23 September. Andrey: build on the current platform; do not rebuild from the designs.
+Carmela: no new screens are needed.
+ Draft · 25 Sep 2026       Demo · Fri 2 Oct 2026         Refs: DOC 1 + DOC 2 v1.0
+
+
+   Keep as is     Keep with a change, or bring into the base screen      Remove
+   Already decided on another screen
+
+
+ Rules    Overview     My Profile   Scientific Outputs    Admin    Checks    Who does what   Agent brief   Out of scop
+
+
+
+Rules that apply to every page
+  Navigation (researcher): Overview · My Profile · Scientific Outputs · Resources & Guidance · Help &
+  Contacts. No "Support Requests", no "Welcome Pack" as a menu item.
+
+  Status line on every page: one compact line at the top, always visible, e.g. "UNIDCOM: Under review ·
+  Website: Not published". The full timeline lives only on the Overview.
+
+  Nothing is published automatically. Publishing to the website is always a separate UNIDCOM decision.
+  Never show "Auto-published".
+
+  ORCID in v1.0 is import only (ORCID → RIMS). Label actions "Import from ORCID", not "Sync". Two-way sync
+  is v2.0; do not show a button for it now.
+
+  Info icon (i) on every field and action, with one short sentence explaining it on hover.
+
+  Visual style: the dark sidebar from version A (as the platform already has) with the lighter content area of
+  version B. Calm yellow for alerts, not red.
+
+
+Overview
+Answers: "What state is my record in, and what do I need to do?" Base screen: B2 (light). Bring two
+details from A2 and the timeline from A3.
+
+TARGET LAYOUT (DRAFT)
+
+
+  Overview                 Name · Integrated researcher      UNIDCOM: Under review   Website: Not published
+  My Profile
+                             ⚠ Needs your attention · "3 outputs have issues" · "8 new ORCID publications
+  Scientific                 to review →"                                                       B2·3 (yellow)
+
+  Outputs
+
+                             Timeline: Draft → Submitted → Under review → Published, with dates                                   A3·8
+  Resources &
+  Guidance
+
+  Help & Contacts            Bio (first lines) · Edit bio →           B2·5        Summary: 34 outputs · 18 journals ·
+                                                                                  10 conferences · 3 issues · 1
+                                                                                  pending · Featured 2/5      B2·6 + A2·6
+
+
+
+                             Recent output · Journal           Recent output ·                       Recent output · Book
+                             · 2025                            Conference · 2024                     chapter · 2024
+                             Missing DOI                       No issues                             No issues
+
+
+
+Black-and-white draft. Structure only; the visual style comes from Carmela's screens. Numbers in all
+drafts are examples.
+
+                                                                              1     CHANGEMenu: use the 5 items above;
+                                                                                    remove "Support Requests".
+
+                                                                              2     KEEP     Name and researcher type.
+
+                                                                              3     KEEP "Needs your attention" banner,
+                                                                                    calm yellow. Each line links to the action.
+
+                                                                              4     CHANGE Replace the 1-2-3 progress with
+                                                                                    the dated timeline from A3·8.
+
+                                                                              5     KEEP     Bio (first lines) with "Edit bio".
+
+  B2 · base screen                                                            6     CHANGE  Summary: add counts per type
+                                                                                    (A2·6) and "Featured X/5". Each number
+                                                                                    opens Scientific Outputs filtered.
+
+                                                                              7     CHANGE  Recent outputs: name the issue
+                                                                                    ("Missing DOI"), not just "Issue" (A2·9).
+
+                                                                              1     DECIDED     Menu, see B2.
+
+                                                                              2     DECIDED     User name, see B2.
+
+                                                                              3     REMOVE     "My Dashboard / Welcome back"
+                                                                                    title.
+
+                                                                              4     REMOVE  Red banner; the yellow one from
+                                                                                    B2 stays.
+
+                                                                              5     REMOVE     Workflow with "Auto-published".
+                                                                       6     BRING Only the counts per type ("3
+ A2 · take details only                                                      journals · 9 conferences") into B2·6.
+
+                                                                       7     REMOVE  "Where I'm at" list; it repeats the
+                                                                             timeline.
+
+                                                                       8     DECIDED   Bio, see B2.
+
+                                                                       9     BRING  Issue named in full ("Missing
+                                                                             DOI") into B2·7.
+
+
+
+My Profile
+Answers: "Is my public UNIDCOM profile correct?" This page is a summary of what goes to the website.
+Things are shown here, not selected here. Base screen: B3 (light), with fields and texts from A3.
+
+TARGET LAYOUT (DRAFT)
+
+
+  Overview                My Profile
+  My Profile              Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before
+                          publishing.                                                                A3·2
+
+  Scientific
+  Outputs                 ORCID connected · Last imported 21 Sep 2026 · [Import from ORCID] · Editing
+                          here does not change your ORCID record                               B3·3 + A3·3
+  Resources &
+  Guidance
+                          [Photo · upload] Name · Role (i)                 Featured outputs (2/5) · read only
+  Help & Contacts         Name · Ciência ID · Lab / cluster ·              Output title · type · year (×2)
+                          Email (each with i)                              Manage in Scientific Outputs →
+                                                        B3·4 + A3·5                                                  B3·8
+
+
+
+                          Bio · text box · 280 / 300 characters · Import bio from ORCID →                  B3·5 + B3·7
+
+
+
+
+                          ORCID iD (i)                          B3·6       [Save draft] [Submit for UNIDCOM
+                                                                           review (i)]                      B3·2
+
+
+
+
+                                                                       1     CHANGE   Menu, as on the Overview.
+
+                                                                       2     CHANGETwo buttons: "Save draft" and
+                                                                             "Submit for UNIDCOM review".
+
+                                                                       3     KEEP"Editing here does not change your
+                                                                             ORCID record" notice. No "sync to
+                                                                             ORCID" button in v1.0.
+
+                                                                       4     CHANGE The researcher can upload and
+                                                                             change their own photo (optional; it
+                                                                             appears on the website).
+ B3 · base screen                                                 5   KEEP   Bio with character counter.
+
+                                                                  6   KEEP   ORCID field.
+
+                                                                  7   KEEP "Import bio from ORCID": creates a
+                                                                      proposed change that goes to
+                                                                      UNIDCOM review.
+
+                                                                  8   CHANGE Show only the selected featured
+                                                                      outputs (max 5, read only) and a link
+                                                                      "Manage in Scientific Outputs". No
+                                                                      checkboxes here.
+
+                                                                  1   DECIDED   Menu.
+
+                                                                  2   BRING  Sentence under the title: "Your
+                                                                      public researcher profile on the
+                                                                      UNIDCOM website…"
+
+                                                                  3   BRING Date of last import. Rename "Sync
+                                                                      now" to "Import from ORCID".
+
+                                                                  4   DECIDED   Bio, see B3.
+
+                                                                  5   BRING  Fields missing in B3: Ciência ID,
+                                                                      Lab / cluster, email.
+
+ A3 · take details only                                           6   BRING  "Saved changes will be re-
+                                                                      submitted for UNIDCOM review" goes
+                                                                      into the (i) of the Submit button.
+
+                                                                  7   REMOVE  Featured list with stars and "Max
+                                                                      3" (selection happens in Scientific
+                                                                      Outputs; the maximum is 5).
+
+                                                                  8   MOVE  Timeline moves to the Overview
+                                                                      (replaces the B2 1-2-3).
+
+
+
+Scientific Outputs
+Answers: "Are my outputs complete and correct?" This is where featured outputs are chosen. Base
+screen: A4 (dark).
+
+  Important for Andrey: publications and activities are mixed in the data
+  The outputs imported from Notion contain both scientific outputs and other UNIDCOM activities (training,
+  events, committees, management, projects). Split them with two tabs inside this page, using the existing
+  RIMS taxonomy:
+  RIMS taxonomy:
+    Publications
+    : journal articles, conference papers, books, book chapters. Only these can be featured.
+    Other activities
+    : everything else. Never featurable.
+
+
+TARGET LAYOUT (DRAFT)
+
+
+ Overview                Scientific Outputs                                                       [+ Add output]
+
+ My Profile
+                         8 new publications in ORCID → Review (existing reconciliation view)
+ Scientific
+ Outputs                                                                                              Featured 2/5
+                        Publications     Other activities
+
+ Resources &
+                        All types      Journal     Conference    Book   Book chapter
+ Guidance
+                        ↳ subtypes of the selected type
+ Help & Contacts
+                        All years      2025      2024   2023    ⚠ Issues only
+
+                       12 outputs · 3 journals · 9 conferences · 2 with issues (updates with filters)
+
+
+                         ☆ Journal · Article — Title · Venue · 2025                                       No issues
+
+
+
+                         ★ Conference · Full paper — Title · Venue · 2024                Missing DOI · Not on ORCID
+
+
+
+
+                                                                    1   CHANGE    Menu, as on the Overview.
+
+                                                                    2   KEEP    Title and one-line explanation.
+
+                                                                    3   KEEP "+ Add output" opens the step-by-
+                                                                        step wizard: type → subtype → details →
+                                                                        project → review.
+
+                                                                    4   CHANGE   Add the "Publications | Other
+                                                                        activities" tabs above the type chips.
+                                                                        Types come from the RIMS taxonomy.
+                                                                        Clicking a type shows a second row with
+                                                                        its subtypes.
+
+ A4 · base screen                                                   5   KEEP    Year chips and "Issues only".
+
+                                                                    6   KEEP Counters; they update with the
+                                                                        selected filters.
+
+                                                                    7   CHANGE  Show "Type · Subtype" on each
+                                                                        row. Add the featured star (Publications
+                                                                        only) and the "Featured X/5" counter. A
+                                                                        sixth star is not possible.
+                                                                                                  p
+
+                                                                        8     KEEP   Issue written in full ("Missing DOI",
+                                                                              "Affiliation mismatch").
+
+                                                                        1     DECIDED     Menu.
+
+                                                                        2     REMOVE   "34 total"; the A4 counters cover
+                                                                              it.
+
+                                                                        3     DECIDED     Add output, see A4.
+
+                                                                        4     REMOVE   Dropdown filters; the A4 chips
+                                                                              stay.
+
+                                                                        5     REMOVE   Table layout; the A4 rows stay.
+
+                                                                        6     BRINGORCID state, written as text ("Not
+ B4 · take one detail only                                                    on ORCID"), not only ✓ / ✗.
+
+                                                                        7     DECIDED     Issue text, see A4.
+
+                                                                        8     REMOVE  "View" buttons; the whole row is
+                                                                              clickable.
+
+
+
+UNIDCOM Admin
+Answers: "How many researchers are up to date, what is waiting for me, and what is already on the
+website?" Base screen: B1 (light).
+
+TARGET LAYOUT (DRAFT)
+
+
+  Dashboard                  28                     14                      4 →                       3 →
+                             Integrated             Collaborators           Profiles to               Outputs to
+  People                     researchers                                    approve                   approve
+
+  Pending approval
+                             Sync status                                    Researcher activity (low priority)
+  Outputs                    ORCID: 30 linked · 12 not linked               Logged in last month · active last week
+                             Website: 24 published · 5 approved, not        · never logged in
+  Reports                    published · 23 not published
+
+
+
+                             Issues                        Outputs by type                    Critical alerts
+                             Missing DOI · Not on          Total · [All] [2025]               Each alert opens the
+                             ORCID                         [2024] · [S1] [S2]                 researcher
+                                                           Journals · Conferences ·
+                                                           Books · Other (numbers)
+
+
+
+
+                                                                        1     CHANGE   Menu: remove "Requests"; add
+                                                 "Pending approval".
+
+                                             2   CHANGE "Researchers to approve" is
+                                                 ambiguous: split into "Profiles to
+                                                 approve" and "Outputs to approve".
+
+                                             3   CHANGE  Show website status too, not only
+                                                 ORCID: one "Sync status" block with two
+                                                 lines (ORCID, Website).
+
+                                             4   KEEP Researcher activity, low priority.
+                                                 Useful to follow the pilot testers.
+B1 · base screen
+                                             5   CHANGE  Remove "Not approved yet": it is
+                                                 a review state, not an issue.
+
+                                             6   CHANGE  Outputs by type as numbers,
+                                                 with the total and tabs by year and by
+                                                 semester.
+
+                                             7   KEEP Critical alerts; each one opens the
+                                                 researcher.
+
+                                             1   DECIDED    Menu, see B1.
+
+                                             2   REMOVE Researcher counts and "new
+                                                 researcher applications" (out of scope).
+
+                                             3   REMOVE    Sync and issues row; covered by
+                                                 B1.
+
+                                             4   REMOVE    Engagement row; covered by
+                                                 B1·4.
+
+                                             5   REMOVE    Bars. Use numbers only (B1·6).
+
+                                             6   REMOVE    FCT deadline and applications
+                                                 alerts.
+
+                                             7   MOVE Per-researcher table goes to the
+A1 · move two modules to other admin pages       People page (too many researchers for
+                                                 the dashboard), with search, filters and a
+                                                 "Website" column.
+
+                                             8   MOVE Stage pipeline goes to the Pending
+                                                 approval page. Add a column
+                                                 "Approved, not published" between
+                                                 "Under review" and "Published". The
+                                                                        "Publish to website" button lives there,
+                                                                        separate from "Approve".
+
+
+
+Platform checks before the demo
+These are about the business layer and behaviour, not the data. Data content (missing DOIs, records not
+on ORCID, outdated entries imported from Notion) is expected: each researcher reviews and corrects
+their own record during the pilot, and submits the version they consider final for the website.
+                                                                    RULE
+
+  Imported records start as "To be validated by the researcher". Records imported from Notion/Sanity must
+                                                                 not appear as "Approved" (the admin
+                                                                 currently shows "Outputs approved
+                                                                 365/365"). Approval only happens after the
+                                                                 researcher submits and UNIDCOM reviews.
+                                                                 This is what makes the pilot meaningful.
+
+                                      FLOW
+
+  Website publishing end to end. Show one profile going Submitted → Approved → Publish to website → visible
+                                 on the site (Sanity).
+
+                              TECH
+
+  Permission error on load. The browser console shows "permission denied for table people" (401). Check
+                            Supabase row-level security for the researcher role.
+
+                                     UI
+
+  Landing page and duplicates. After login the app opens "Resources & Guidance"; it should open the Overview.
+                               "Connect ORCID" appears twice on My Profile.
+
+
+
+Who does what
+  Andrey builds these changes on the current platform. The black-and-white drafts give the structure;
+  Carmela's screens give the look. No need to wait for new designs.
+
+  Carmela: no new screens needed for the demo. Her HTML files of 18 Sep already define the style (below).
+  After the demo, one review of the built screens to adjust details.
+
+  Rui reviews the build before the demo and records any change of decision here.
+
+VISUAL STYLE REFERENCE (FROM CARMELA'S HTML, 18 SEP)
+
+Font: Inter (fallback: Segoe UI, sans-serif). Main colours: sidebar and header navy #16213A; accent teal
+#00B49B; page background #F5F4F0; borders #E2E1DC; secondary text #888680; warning amber #F5A622 on
+#FEF9C3; error red #CC2B2B. Source files: 02_UI_Design/2026-09-
+23 Carmela versao final/A escura/HTML 2026 09 18/
+23_Carmela_versao_final/A_escura/HTML_2026-09-18/       .
+
+
+Brief for AI coding agents
+Plain-text version of this page, written to be pasted into an AI coding assistant. It is self-contained: every
+component is described in words, so the agent does not need the images. IDs are only labels for tracking.
+  Copy brief
+
+  SO-5 MUST: A line of counters under the filters ("12 outputs · 3 journals · 9 conferences · 2
+  with issues") that updates with the selected filters.
+  SO-6 MUST: Each output is one clickable row (no "View" button): type · subtype tag on the left;
+  title; venue · year underneath; on the right, the issue written in full ("Missing DOI",
+  "Affiliation mismatch", "Not on ORCID") or "No issues"; and the star.
+  SO-7 MUST: A banner at the top "N new publications in ORCID -> Review" that opens the existing
+  ORCID reconciliation view (keep that view as it is).
+  SO-8 MUST: Button "+ Add output" at the top right opens a step-by-step wizard: type -> subtype ->
+  details -> project -> review.
+  SO-9 MUST NOT: dropdown filters, a table layout, or ORCID shown only as ✓/✗ icons.
+
+
+  ## ADMIN DASHBOARD (UNIDCOM admin)
+  P            "H               h             t   d t       h t i   iti    f          d   h t i    l    d        th
+
