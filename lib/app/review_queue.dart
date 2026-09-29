@@ -5,6 +5,7 @@ import '../data/supabase.dart';
 import '../theme/tokens.dart';
 import '../widgets/candidate_tile.dart';
 import '../widgets/output_row.dart';
+import '../widgets/pipeline_board.dart';
 import '../widgets/panels.dart';
 import '../widgets/queue_list.dart';
 import '../widgets/suggestion_tile.dart';
@@ -76,6 +77,7 @@ class ReviewQueueTabs extends StatelessWidget {
         indicatorColor: AppColors.teal,
         dividerColor: AppColors.cardBorder,
         tabs: [
+          Tab(text: 'Pipeline'),
           Tab(text: 'Profiles to approve'),
           Tab(text: 'Outputs to approve'),
           Tab(text: 'Needs re-verification'),
@@ -100,6 +102,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
   late Future<List<Map<String, dynamic>>> _flaggedOutputs =
       fetchFlaggedOutputs();
   late Future<List<Map<String, dynamic>>> _candidates = fetchOutputCandidates();
+  late Future<List<Map<String, dynamic>>> _pipeline = fetchPipelinePeople();
 
   void _refresh() {
     setState(() {
@@ -110,6 +113,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
       _changeLog = fetchChangeLog();
       _flaggedOutputs = fetchFlaggedOutputs();
       _candidates = fetchOutputCandidates();
+      _pipeline = fetchPipelinePeople();
     });
   }
 
@@ -217,7 +221,7 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
     if (!isAdmin) return const Center(child: Text('Admin access required'));
 
     return DefaultTabController(
-      length: 7,
+      length: 8,
       child: Column(
         children: [
           const ReviewQueueTabs(),
@@ -238,6 +242,31 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
               ),
               child: TabBarView(
                 children: [
+                  // Rui A1·8: stage pipeline; Publish is separate from Approve.
+                  FutureBuilder<List<Map<String, dynamic>>>(
+                    future: _pipeline,
+                    builder: (context, snap) => snap.hasData
+                        ? SingleChildScrollView(
+                            padding: const EdgeInsets.all(16),
+                            child: PipelineBoard(
+                              people: snap.data!,
+                              onApprove: (id) async {
+                                await approvePerson(id);
+                                _refresh();
+                              },
+                              onPublish: (id) async {
+                                await setPersonPublished(id, true);
+                                _refresh();
+                              },
+                              onUnpublish: (id) async {
+                                await setPersonPublished(id, false);
+                                _refresh();
+                              },
+                              onOpen: (id) => context.go('/people/$id'),
+                            ),
+                          )
+                        : const Center(child: CircularProgressIndicator()),
+                  ),
                   QueueList(
                     future: _pendingPeople,
                     emptyText: 'No profiles waiting for approval',
