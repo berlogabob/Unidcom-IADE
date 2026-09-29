@@ -23,7 +23,7 @@
 #title-block(
   "Rui's UI decisions — ready to check",
   subtitle: "What Rui asked on 25 Sep, what is live today, and how to confirm it in about an hour.",
-  meta-line: [Portal on `main` ff17ac5, deployed 30 Sep · CI and deploy green · 333 automated tests pass · 6 of 7 browser flows pass · every number below read from the live system on 29–30 Sep.],
+  meta-line: [Portal on `main` 0b2c26c, deployed 30 Sep · CI and deploy green · 333 automated tests pass · 6 of 7 browser flows pass · every number below read from the live system on 29–30 Sep.],
   standfirst: [#pill("READY", tone: "ok") All 73 decisions in Rui's document were built. 70 are done exactly as asked. 3 are done differently or partly, each for a stated reason, and need Rui's yes or no. Nothing was deferred. The one step we did not do alone is putting a real profile on the public website: that needs a real person's record, and it is step C below.],
 )
 
@@ -137,7 +137,7 @@ The whole path of one real change: Andrey edits his biography where Portuguese r
   ([*My Profile* → Biography.], [Two columns: *UNIDCOM* (old text) and *ORCID* (new text), and *Import bio from ORCID*. ORCID can take a few minutes to show a change to others.]),
   ([Click *Import bio from ORCID*.], [The ORCID text becomes a proposal for UNIDCOM review. The UNIDCOM text does not change yet.]),
   ([Switch to admin. Look at the dashboard.], [Tile *Proposals to review · 1*.]),
-  ([Click the tile, then the tab *Suggestions*.], [A row "Proposed by researcher", field Bio, with the new text.]),
+  ([Click the tile, then the tab *Suggestions*.], [At the top: a row "Proposed by researcher", field Bio, with the new text. The older rows below are machine suggestions from ORCID and Crossref.]),
   ([Click *Accept*.], [The row leaves the queue. Andrey's portal bio shows the new text.]),
   ([Open the public website, Andrey's page.], [Still the old bio — the site changes on sync.]),
   ([GitHub → unidcom-site → Actions → *Sync content from Supabase* → Run workflow (preview off).], [Green in about 2 minutes, then the site redeploys.]),
@@ -196,6 +196,7 @@ This is the only way to show a real publication going from the researcher to the
 
 = Known limits
 
+- *Andrey's 5 ORCID outputs were classified on 30 Sep* (they had no category, so they were missing from the website); they appear on the site after the next sync.
 - *Rui's own account has no outputs linked*, so his researcher view is almost empty. Use Andrey's for parts A and C.
 - *The website updates only on sync* (04:00 UTC nightly, or step C10).
 - *Ciência Vitae is not connected to RIMS.* It was left out of the pilot on 4 Aug: ORCID is the one source. Researchers keep Ciência Vitae, but RIMS reads ORCID.
