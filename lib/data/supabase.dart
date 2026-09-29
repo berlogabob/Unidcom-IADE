@@ -186,8 +186,8 @@ Future<List<Map<String, dynamic>>> fetchPeople({
   try {
     final q = query?.trim();
     final select = hasOutputs
-        ? 'id, preferred_name, membership_type, status, email, photo_url, profile_status, output_authors!inner(output_id)'
-        : 'id, preferred_name, membership_type, status, email, photo_url, profile_status';
+        ? 'id, preferred_name, membership_type, status, email, photo_url, profile_status, public_visibility, output_authors!inner(output_id)'
+        : 'id, preferred_name, membership_type, status, email, photo_url, profile_status, public_visibility';
     var request = db
         .from('people')
         .select(select)
