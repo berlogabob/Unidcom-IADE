@@ -47,3 +47,26 @@ Future<String?> pickTextFile() {
   input.click();
   return completer.future;
 }
+
+/// Opens the browser picker for a JPEG/PNG/WebP photo; null on no selection.
+Future<({Uint8List bytes, String name, String mime})?> pickImageFile() {
+  final completer = Completer<({Uint8List bytes, String name, String mime})?>();
+  final input = html.FileUploadInputElement()
+    ..accept = 'image/jpeg,image/png,image/webp';
+  input.onChange.listen((_) {
+    final file = (input.files?.isNotEmpty ?? false) ? input.files!.first : null;
+    if (file == null) {
+      completer.complete(null);
+      return;
+    }
+    final reader = html.FileReader()..readAsArrayBuffer(file);
+    reader.onLoadEnd.listen((_) => completer.complete((
+      bytes: reader.result as Uint8List,
+      name: file.name,
+      mime: file.type
+    )));
+    reader.onError.listen((_) => completer.completeError('Could not read file'));
+  });
+  input.click();
+  return completer.future;
+}

@@ -53,6 +53,7 @@ class PersonPageScreen extends StatefulWidget {
     this.trailing = const <Widget>[],
     this.outputsOnly = false,
     this.orcidPanel,
+    this.newOrcidPublications = 0,
     this.admin,
   });
 
@@ -64,6 +65,7 @@ class PersonPageScreen extends StatefulWidget {
   final Set<PersonSection> sections;
   final bool outputsOnly;
   final Widget? orcidPanel;
+  final int newOrcidPublications;
 
   /// Sections the caller wants above and below this page's own, inside the
   /// same scroll view.
@@ -313,6 +315,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                   onOpenOutput: (id) => context.go('/outputs/$id'),
                   onEditOutput: isOwner ? _proposeOutputEdit : null,
                   orcidPanel: widget.orcidPanel,
+                  newOrcidPublications: widget.newOrcidPublications,
                 )
               else ...[
                 () {
