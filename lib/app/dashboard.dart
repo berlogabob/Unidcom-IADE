@@ -1,11 +1,14 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 
+import '../data/admin_stats.dart';
 import '../data/features.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
 import '../widgets/chart_palette.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/admin_overview.dart';
 import '../widgets/panels.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -17,13 +20,71 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int? _year; // null = all-time
-  final Future<List<int>> _years = fetchDistinctYears();
-  late Future<_DashboardData> _data = _loadDashboard();
+  late Future<_DashboardData> _data;
+  late Future<_AdminOverviewData> _adminData;
+  late Future<List<int>> _years;
+
+  @override
+  void initState() {
+    super.initState();
+    if (v2) {
+      _data = _loadDashboard();
+      _years = fetchDistinctYears();
+    } else {
+      _adminData = _loadAdminOverview();
+    }
+  }
 
   void _setYear(int? year) => setState(() {
     _year = year;
-    _data = _loadDashboard();
+    if (v2) _data = _loadDashboard();
   });
+
+  Future<_AdminOverviewData> _loadAdminOverview() async {
+    final data = await loadAdminOverview();
+    final members = data.people.where(
+      (person) =>
+          person['membership_type'] == 'integrated' ||
+          person['membership_type'] == 'collaborator',
+    );
+    final now = DateTime.now();
+    final lastWeek = now.subtract(const Duration(days: 7));
+    final lastMonth = now.subtract(const Duration(days: 30));
+    return _AdminOverviewData(
+      data: data,
+      years: data.outputs
+          .map((output) => output['reporting_year'])
+          .whereType<int>()
+          .toSet()
+          .toList()
+        ..sort((a, b) => b.compareTo(a)),
+      activity: (
+        lastMonth: members
+            .where((person) => data.lastSignIn[person['id']]?.isAfter(lastMonth) ?? false)
+            .length,
+        lastWeek: members
+            .where((person) => data.lastSignIn[person['id']]?.isAfter(lastWeek) ?? false)
+            .length,
+        never: members
+            .where((person) => data.lastSignIn[person['id']] == null)
+            .length,
+      ),
+      alerts: data.people
+          .where(
+            (person) =>
+                person['membership_type'] == 'integrated' &&
+                ((person['orcid'] as String?)?.trim().isEmpty ?? true),
+          )
+          .take(8)
+          .map(
+            (person) => (
+              text: '${person['preferred_name']} — no ORCID linked',
+              personId: person['id'] as String,
+            ),
+          )
+          .toList(),
+    );
+  }
 
   Future<_DashboardData> _loadDashboard() async {
     final stats = await Future.wait<Object>([
@@ -94,6 +155,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Rui 25 Sep (B1): numbers only; the old dashboard stays behind v2.
+    if (!v2) {
+      return FutureBuilder<_AdminOverviewData>(
+        future: _adminData,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) return Text('${snapshot.error}');
+          final data = snapshot.data!;
+          final stats = computeAdminStats(
+            people: data.data.people,
+            outputs: data.data.outputs,
+            orcidOutputIds: data.data.orcidOutputIds,
+            year: _year,
+          );
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: AdminOverview(
+              stats: stats,
+              years: data.years,
+              year: _year,
+              onYear: _setYear,
+              activity: data.activity,
+              alerts: data.alerts,
+              onOpenPerson: (id) => context.go('/people/$id'),
+              onOpenProfilesToApprove: () =>
+                  context.go('/app/admin/review'),
+              onOpenOutputsToApprove: () => context.go('/app/admin/review'),
+            ),
+          );
+        },
+      );
+    }
     return AsyncView<_DashboardData>(
       future: _data,
       builder: (context, data) {
@@ -587,6 +682,25 @@ class _MembershipChart extends StatelessWidget {
       ],
     );
   }
+}
+
+class _AdminOverviewData {
+  const _AdminOverviewData({
+    required this.data,
+    required this.years,
+    required this.activity,
+    required this.alerts,
+  });
+
+  final ({
+    List<Map<String, dynamic>> people,
+    List<Map<String, dynamic>> outputs,
+    Set<String> orcidOutputIds,
+    Map<String, DateTime?> lastSignIn,
+  }) data;
+  final List<int> years;
+  final ({int lastMonth, int lastWeek, int never}) activity;
+  final List<({String text, String personId})> alerts;
 }
 
 class _DashboardData {
