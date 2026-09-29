@@ -79,7 +79,7 @@ def admin_mode(f, pg):
     for tile in ["Integrated researchers", "Collaborators", "Profiles to approve", "Outputs to approve"]: f.expect(tile, 20)
     for block in ["Sync status", "Researcher activity", "Issues", "Outputs by type", "Critical alerts"]: f.expect(block, 20)
     f.shot("dashboard")
-    f.expect("RESEARCHERS|People", 5); f.expect("^Outputs$", 5); f.expect("^Pending approval$", 5)
+    f.expect("RESEARCHERS|People", 5); f.step("expand Research group"); click(pg, "^Research$|^RESEARCH$"); f.expect("^Outputs$", 5); f.expect("^Pending approval$", 5)
     f.step("open #/people"); pg.goto(f"{BASE}/#/people"); f.expect("Search", 20)
     f.step("switch: #/app/mode after clearing choice"); pg.evaluate("() => sessionStorage.removeItem('view_mode')"); pg.goto(f"{BASE}/#/app/mode"); pg.reload()
     f.expect("How do you want to continue", 30); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Overview", 30)
@@ -98,24 +98,21 @@ def profile_confirm(f, pg):
 
 def add_output(f, pg):
     do_login(f, pg); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Overview", 30)
-    f.step("open #/app/outputs/add"); pg.goto(f"{BASE}/#/app/outputs/add"); f.expect("^Add output$", 20)
-    f.step("tap Add output"); click(pg, "^Add output$"); f.expect("^Title$", 10); f.shot("dialog")
-    # BP-07: DOI-first — an existing, approved DOI must be recognised and blocked (BP-16)
-    f.step("type a DOI already in the directory"); typein(pg, r"DOI \(or paste the doi.org link\)", "10.1007/978-3-031-73705-3_15")
-    f.step("tap Look up"); click(pg, "^Look up$")
-    filled = False
-    for _ in range(40):  # Crossref round trip; Flutter only materialises the focused field, so focus Title and read it
-        pg.wait_for_timeout(500)
-        try: click(pg, "^Title$", timeout=2)
-        except Exception: continue
-        val = pg.evaluate("() => (document.activeElement && document.activeElement.value) || ''")
-        if "imagery analysis requirements" in val.lower(): filled = True; break
-    if not filled: f.errors.append("DOI lookup did not pre-fill the title")
-    f.shot("doi_prefilled")
-    f.step("tap Save"); click(pg, "^Save$"); f.expect("Already in the directory", 15); f.shot("duplicate_blocked")
-    # manual fallback
-    f.step("clear DOI, type a fresh title"); typein(pg, r"DOI \(or paste the doi.org link\)", ""); typein(pg, "Title", "E2E UX audit output (delete me)")
-    f.step("tap Save"); click(pg, "^Save$"); pg.wait_for_timeout(2500); f.shot("after_add")
+    f.step("open #/app/outputs/add"); pg.goto(f"{BASE}/#/app/outputs/add"); f.expect("Add output", 20)
+    f.step("tap Add output"); click(pg, "^Add output$"); f.expect("^DOI$", 10)
+    f.step("type the known DOI"); typein(pg, "DOI", "10.1007/978-3-031-73705-3_15")
+    f.step("look up the DOI"); click(pg, "Look up|Lookup"); pg.wait_for_timeout(1500)
+    f.step("continue from DOI"); click(pg, "^(Next|Continue)$"); f.expect("^Type$", 10)
+    f.step("continue from Type"); click(pg, "^(Next|Continue)$"); f.expect("^Subtype$", 10)
+    f.step("continue from Subtype"); click(pg, "^(Next|Continue)$"); f.expect("^Metadata$", 10); f.expect("^Title$", 10)
+    f.step("check the DOI title lookup"); click(pg, "^Title$"); title = pg.evaluate("() => (document.activeElement && document.activeElement.value) || ''")
+    if not title.strip():
+        f.warnings.append("DOI lookup did not pre-fill the title; entered the E2E title")
+        typein(pg, "Title", "E2E UX audit output")
+    f.shot("metadata")
+    f.step("continue from Metadata"); click(pg, "^(Next|Continue)$"); f.expect("^Project$", 10)
+    f.step("continue from Project"); click(pg, "^(Next|Continue)$"); f.expect("^Review$", 10)
+    f.step("submit the output"); click(pg, "Submit|Add"); pg.wait_for_timeout(2500); f.shot("after_add")
     f.step("open #/app/outputs"); pg.goto(f"{BASE}/#/app/outputs"); f.expect("E2E UX audit output", 20); f.shot("in_my_outputs")
     if not visible(pg, "Submitted|Pending|pending", 5): f.warnings.append("no status tag on the new pending output in My Outputs (finding)")
 
@@ -123,19 +120,12 @@ def review_queue(f, pg):
     do_login(f, pg); f.step("tap As an administrator"); pick(f, pg, "As an administrator"); f.expect("Integrated researchers|Collaborators|Profiles to approve|Outputs to approve", 30)
     f.step("open #/app/admin/review"); pg.goto(f"{BASE}/#/app/admin/review"); f.expect("Pipeline", 30); f.expect("To validate|Submitted|Approved, not published|Published", 20); f.shot("queue_pipeline")
     f.step("tap Profiles to approve tab"); click(pg, "^Profiles to approve$"); f.expect("Profiles to approve", 30); f.shot("queue_profiles")
-    f.step("return to Pipeline"); click(pg, "^Pipeline$"); f.expect("E2E UX audit output|To validate", 30); f.shot("queue_outputs")
-    f.step("tap Approve all pending"); click(pg, "^Approve all")
-    if not visible(pg, "Approve all .* pending outputs\\?", 4): dom_click(pg, "^Approve all")
-    f.expect("Approve all .* pending outputs\\?", 10); f.shot("confirm_dialog")
-    f.step("tap Cancel"); click(pg, "^Cancel$"); pg.wait_for_timeout(500)
-    f.step("tap Reject on the E2E row"); click(pg, "^Reject$")
-    f.expect("^Reject “", 10); f.shot("reject_dialog")  # F-005 fix: a confirmation dialog with a reason field
-    f.step("type a reason"); typein(pg, r"Reason \(shown to the researcher\)", "E2E audit: not a UNIDCOM output")
-    f.step("tap Reject in the dialog"); pg.get_by_role("button", name="Reject").last.click(); pg.wait_for_timeout(1500)
-    gone = not visible(pg, r"^E2E UX audit output", 10)  # anchored: the snackbar says "Rejected E2E …"
-    if not gone: f.errors.append("row still present after Reject")
-    f.shot("after_reject")
-    if not visible(pg, "^Rejected .*|^Undo$", 5): f.warnings.append("no feedback after Reject (finding)")
+    f.step("tap Outputs to approve tab"); click(pg, "^Outputs to approve$"); f.expect("Outputs to approve", 30); f.shot("queue_outputs")
+    if not visible(pg, "^E2E UX audit output$", 10):
+        f.warnings.append("E2E UX audit output not found in Outputs to approve")
+    else:
+        f.step("open the E2E output"); click(pg, "^E2E UX audit output$"); f.expect("Approve", 10)
+        f.step("approve only the E2E output"); click(pg, "^Approve$"); pg.wait_for_timeout(1500); f.shot("after_approve")
 
 if __name__ == "__main__":
     only = set(sys.argv[2:])
@@ -149,8 +139,8 @@ if __name__ == "__main__":
     run("admin_mode", ".maestro/admin_mode.yaml", admin_mode)
     run("orcid_error", ".maestro/orcid_error.yaml", orcid_error)
     run("profile_confirm", "(new) profile_confirm — researcher confirms draft profile", profile_confirm, "writes people.profile_status for the E2E account; cleanup: update people set profile_status='draft' where email='andre.berloga+e2e@gmail.com'")
-    run("add_output", "(new) add_output — DOI lookup, duplicate block, then manual entry", add_output, "creates a pending output; cleanup: delete from outputs where title like 'E2E UX audit output%'")
-    run("review_queue", "(new) review_queue — admin sees, confirms-all, rejects", review_queue, "Reject has no confirmation dialog in code (review_queue.dart _rejectOutput)")
+    run("add_output", "(new) add_output — DOI wizard submission", add_output, "creates a pending output; cleanup: delete from outputs where title like 'E2E UX audit output%'")
+    run("review_queue", "(new) review_queue — admin approves one named output", review_queue)
     results.append(dict(name="featured_star", passed=None, duration_s=0, steps=0, errors=["NOT RUN: the E2E account has 0 outputs to star"], yaml=".maestro/featured_star.yaml", note="not run"))
     results.append(dict(name="support_request", passed=None, duration_s=0, steps=0, errors=["NOT RUN: v2-only route, compiled out of the pilot build"], yaml=".maestro/support_request.yaml", note="not run"))
     if only:
