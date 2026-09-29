@@ -29,10 +29,22 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   // Fetched once per shell mount (not on every rebuild/navigation) — see M2.
-  late final Future<int> _pendingPeople = data.fetchPendingPeople().then(
-    (people) => people.length,
+  // Admin badge counts only for a signed-in admin account. Fired for everyone,
+  // they ran as `anon` on the welcome pages and before session restore:
+  // "permission denied for table people" (Rui, 25 Sep).
+  // ponytail: evaluated once per mount; an admin whose flag resolves after the
+  // mount sees 0 until the next mount.
+  static Future<int> _adminOnly(Future<int> Function() count) =>
+      data.isAdminAccount &&
+          Supabase.instance.client.auth.currentSession != null
+      ? count()
+      : Future.value(0);
+  late final Future<int> _pendingPeople = _adminOnly(
+    () => data.fetchPendingPeople().then((people) => people.length),
   );
-  late final Future<int> _pendingRequests = data.countPendingRequests();
+  late final Future<int> _pendingRequests = _adminOnly(
+    data.countPendingRequests,
+  );
   late final Future<int> _attention = data.attentionCount();
   late final Future<Map<String, dynamic>?> _person = data.fetchMyPerson();
 
