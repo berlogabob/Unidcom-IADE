@@ -176,14 +176,18 @@ List<NavGroup> adminNav() => [
       icon: Icons.people_outline,
       children: [NavItem('Merge duplicates', '/app/admin/merge')],
     ),
+    NavItem(
+      'Pending approval',
+      '/app/admin/review',
+      icon: Icons.fact_check_outlined,
+    ),
   ]),
   NavGroup('Research', [
     NavItem(
-      'Scientific outputs',
+      'Outputs',
       '/outputs',
       icon: Icons.article_outlined,
       prefixes: ['/conferences'],
-      children: [NavItem('Pending approval', '/app/admin/review')],
     ),
     NavItem('Projects', '/projects', icon: Icons.work_outline),
     NavItem(
