@@ -455,7 +455,7 @@ Future<int> enrichPerson(String personId) async {
       }
     }
 
-    return _insertNewSuggestions(suggestions);
+    return await _insertNewSuggestions(suggestions);
   } catch (error) {
     throw Exception(error);
   }
