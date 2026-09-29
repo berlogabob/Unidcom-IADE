@@ -611,7 +611,6 @@ Future<void> setWebsiteStatus(String outputId, String status) async {
 Future<void> approvePerson(String id) async {
   await updatePerson(id, {
     'profile_status': 'approved',
-    'public_visibility': true,
     'last_verified_at': DateTime.now().toIso8601String(),
   });
 }
@@ -754,9 +753,20 @@ Future<void> submitMyProfileForReview(String personId) async {
         .update({'profile_status': 'pending_review'})
         .eq('id', personId)
         .eq('auth_user_id', userId)
-        .eq('profile_status', 'draft')
+        .inFilter('profile_status', ['draft', 'to_validate'])
         .select('id')
         .single();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Researcher submits own outputs for UNIDCOM review (to_validate/rejected -> pending).
+/// Returns how many rows moved. RPC is owner-checked server side.
+Future<int> submitMyOutputs(List<String> ids) async {
+  try {
+    final moved = await db.rpc('submit_my_outputs', params: {'p_ids': ids});
+    return (moved as num).toInt();
   } catch (error) {
     throw Exception(_error(error));
   }
@@ -787,7 +797,7 @@ Future<List<Map<String, dynamic>>> fetchPendingPeople() async {
     final rows = await db
         .from('people')
         .select('id, preferred_name, email, profile_status, created_at')
-        .neq('profile_status', 'approved')
+        .eq('profile_status', 'pending_review')
         .order('preferred_name');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {
