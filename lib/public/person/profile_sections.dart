@@ -123,12 +123,6 @@ Widget personHeader(
                 icon: const Icon(Icons.edit),
                 label: const Text('Edit'),
               ),
-            if (isOwner && !hasLinkedOrcid)
-              OutlinedButton.icon(
-                onPressed: onConnectOrcid,
-                icon: const Icon(Icons.badge_outlined),
-                label: const Text('Connect ORCID'),
-              ),
             // v2, all three. Rui, seeing them on his own profile band:
             // "you have three things that i think make noise - connect ORCID,
             // auto-fill, ORCID sync ... the approve button should not be
