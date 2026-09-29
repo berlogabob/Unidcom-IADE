@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/app/own_outputs.dart';
-import 'package:unidcom_iade/data/output_filters.dart';
 import 'package:unidcom_iade/data/taxonomy.dart';
 
 void main() {
@@ -73,88 +72,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('renders total and type counts', (tester) async {
-    await pumpOutputs(tester);
-
-    expect(find.text('Scientific Outputs · 6'), findsOneWidget);
-    expect(find.text('Livros 4'), findsOneWidget);
-    expect(find.text('Formação avançada 2'), findsOneWidget);
-  });
-
-  testWidgets('search narrows output rows', (tester) async {
-    await pumpOutputs(tester);
-
-    await tester.enterText(
-      find.widgetWithText(TextField, 'Search title or DOI'),
-      'Searchable',
-    );
-    await tester.pump(const Duration(milliseconds: 301));
-
-    expect(find.text('Searchable Paper'), findsOneWidget);
-    expect(find.text('Project Activity'), findsNothing);
-  });
-
-  testWidgets('featured, attention and ORCID views filter outputs', (
-    tester,
-  ) async {
-    await pumpOutputs(tester);
-
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Featured'));
-    await tester.pump();
-    expect(find.text('Featured Book'), findsNWidgets(2));
-    expect(find.text('Searchable Paper'), findsNothing);
-
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Needs attention'));
-    await tester.pump();
-    expect(find.text('Rejected Training'), findsOneWidget);
-    expect(find.text('Flagged Book'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(ChoiceChip, 'ORCID reconciliation'));
-    await tester.pump();
-    expect(find.text('ORCID Book'), findsOneWidget);
-    expect(find.text('Rejected Training'), findsNothing);
-  });
-
-  testWidgets('ORCID reconciliation view renders its injected panel', (
-    tester,
-  ) async {
-    await pumpOutputs(
-      tester,
-      orcidPanel: const Text('Injected ORCID candidates'),
-    );
-
-    await tester.tap(find.widgetWithText(ChoiceChip, 'ORCID reconciliation'));
-    await tester.pump();
-
-    expect(find.text('Injected ORCID candidates'), findsOneWidget);
-    expect(find.text('Already imported from ORCID · 1'), findsOneWidget);
-  });
-
-  testWidgets('groups by year by default and by type on request', (
-    tester,
-  ) async {
-    await pumpOutputs(tester);
-
-    expect(find.text('2026 · 2'), findsOneWidget);
-    expect(find.text('2025 · 2'), findsOneWidget);
-    expect(find.text('2024 · 2'), findsOneWidget);
-
-    await tester.tap(
-      find.descendant(
-        of: find.byType(SegmentedButton<OutputGroup>),
-        matching: find.text('Type'),
-      ),
-    );
-    await tester.pump();
-    expect(find.text('Livros · 4'), findsOneWidget);
-    expect(find.text('Formação avançada · 2'), findsOneWidget);
-  });
-
+  // Removed 29 Sep: search, view chips, group-by and count pills are v2-only (Rui 25 Sep, SO-9); v1 is covered by outputs_page_e52_test.dart.
   testWidgets('Edit is optional and returns the output map', (tester) async {
     Map<String, dynamic>? edited;
     await pumpOutputs(tester, onEdit: (output) => edited = output);
 
-    expect(find.byTooltip('Edit output'), findsNWidgets(6));
+    // v1 opens on the Publications tab (Rui 25 Sep): 4 of the 6 fixtures.
+    expect(find.byTooltip('Edit output'), findsNWidgets(4));
     await tester.tap(find.byTooltip('Edit output').first);
     expect(edited?['id'], '1');
 

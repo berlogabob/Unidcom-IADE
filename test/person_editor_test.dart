@@ -37,7 +37,7 @@ void main() {
     expect(find.text('Profile status'), findsNothing);
     expect(find.text('Public visibility'), findsNothing);
     expect(find.text('PhD'), findsNothing);
-    expect(find.text('Submit for review'), findsOneWidget);
+    expect(find.text('Submit for UNIDCOM review'), findsOneWidget);
   });
 
   testWidgets('owner stages changes and never updates directly', (
@@ -71,7 +71,7 @@ void main() {
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
     await tester.enterText(find.bySemanticsLabel('Phone'), 'new phone');
-    await tester.tap(find.text('Submit for review'));
+    await tester.tap(find.text('Submit for UNIDCOM review'));
     await tester.pumpAndSettle();
 
     expect(proposed?['phone'], 'new phone');
@@ -99,7 +99,7 @@ void main() {
     );
     await tester.tap(find.text('Edit'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Submit for review'));
+    await tester.tap(find.text('Submit for UNIDCOM review'));
     await tester.pump();
 
     expect(find.text('No changes'), findsOneWidget);
