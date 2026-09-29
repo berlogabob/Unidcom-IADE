@@ -99,8 +99,8 @@ def profile_confirm(f, pg):
 def add_output(f, pg):
     do_login(f, pg); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Overview", 30)
     f.step("open #/app/outputs/add"); pg.goto(f"{BASE}/#/app/outputs/add"); f.expect("Add output", 20)
-    f.step("tap Add output"); click(pg, "^Add output$"); f.expect("^DOI$", 10)
-    f.step("type the known DOI"); typein(pg, "DOI", "10.1007/978-3-031-73705-3_15")
+    f.step("tap Add output"); click(pg, "^Add output$"); f.expect("^DOI \\(or paste", 10)
+    f.step("type the known DOI"); click(pg, r"^DOI \(or paste"); pg.wait_for_timeout(300); pg.locator("input:focus").fill("10.1007/978-3-031-73705-3_15")
     f.step("look up the DOI"); click(pg, "Look up|Lookup"); pg.wait_for_timeout(1500)
     f.step("continue from DOI"); click(pg, "^(Next|Continue)$"); f.expect("^Type$", 10)
     f.step("continue from Type"); click(pg, "^(Next|Continue)$"); f.expect("^Subtype$", 10)
