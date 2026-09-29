@@ -4,7 +4,7 @@
 # /login and the Welcome pack. Two things this proves, both of which broke
 # silently in the old arrangement:
 #   1. An anonymous deep link into the directory lands on /login.
-#   2. A successful login lands on the Welcome pack, not the directory.
+#   2. A successful login lands on Overview, not the directory.
 #
 # The app must be served from a build made WITH semantics, or Maestro sees only
 # a bare canvas (Flutter web draws to a <canvas>):
@@ -12,7 +12,7 @@
 #   python3 -m http.server 8123 --directory build/web
 #   maestro test .maestro/auth_gate.yaml --env-file .maestro/.env
 url: http://localhost:8123
-name: "Auth gate: anonymous is bounced, login lands on the Welcome pack"
+name: "Auth gate: anonymous is bounced, login lands on Overview"
 env:
   BASE_URL: http://localhost:8123
 ---
@@ -52,7 +52,7 @@ env:
     text: "^Structure$"
     label: "No directory nav offered to an anonymous visitor"
 
-# 3. Sign in → land on the Welcome pack.
+# 3. Sign in → land on Overview.
 - openLink: "${BASE_URL}/#/login"
 - extendedWaitUntil:
     visible: "Email"
@@ -90,14 +90,17 @@ env:
     commands:
       - tapOn: "Continue as researcher"
 - extendedWaitUntil:
-    visible: "Your first steps"
+    visible: "Overview"
     timeout: 20000
-    label: "Login landed on the Welcome pack"
+    label: "Login landed on Overview"
+- assertVisible:
+    text: "UNIDCOM:.*Website:.*"
+    label: "Researcher pages show the UNIDCOM and website line"
 
 # 4. With a session, the researcher's own portal opens. The unit-wide directory
 #    is admin mode's, and admin_mode.yaml is what proves it opens there.
 - openLink: "${BASE_URL}/#/app/home"
 - extendedWaitUntil:
-    visible: "OUTPUTS"
+    visible: "Overview"
     timeout: 20000
     label: "Signed in, the researcher's own overview is reachable"
