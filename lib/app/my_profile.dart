@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../csv_download.dart';
 import '../data/enrich_client.dart';
 import '../data/features.dart';
 import '../data/orcid_buckets.dart';
@@ -264,6 +265,22 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     }
   }
 
+  // Rui B3·4: the researcher uploads their own photo; UNIDCOM reviews it.
+  Future<void> _uploadPhoto(Map<String, dynamic> person) async {
+    final file = await pickImageFile();
+    if (file == null || !mounted) return;
+    try {
+      await proposeMyPhoto(
+        person['id'] as String,
+        person['photo_url'] as String?,
+        file,
+      );
+      if (mounted) showSnack(context, 'Photo sent for UNIDCOM review');
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
+    }
+  }
+
   /// Adds ORCID as a login method for the signed-in account; if the person
   /// registry lists this iD, the profile is claimed server-side too.
   Future<void> _connectOrcid() async {
@@ -363,6 +380,15 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                       const Text(
                         'Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before publishing.',
                       ),
+                      if (!viewing)
+                        OutlinedButton.icon(
+                          onPressed: () => _uploadPhoto(person),
+                          icon: const Icon(
+                            Icons.photo_camera_outlined,
+                            size: 18,
+                          ),
+                          label: const Text('Upload photo'),
+                        ),
                       if (!viewing &&
                           (person['orcid'] as String? ?? '').isNotEmpty)
                         OrcidBlock(

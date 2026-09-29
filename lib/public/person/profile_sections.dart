@@ -292,7 +292,16 @@ List<Widget> personLabsSection(
     ? const []
     : [
         const SizedBox(height: 24),
-        sectionHeader(context, 'Labs'),
+        Row(
+          children: [
+            sectionHeader(context, 'Lab / cluster'),
+            const SizedBox(width: 4),
+            const InfoTip(
+              text:
+                  'Your UNIDCOM research lab and cluster, shown on your website profile.',
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
