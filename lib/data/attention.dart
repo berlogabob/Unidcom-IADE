@@ -46,7 +46,7 @@ List<AttentionItem> attentionItems({
   return [
     if (const {'draft', 'to_validate'}.contains(person['profile_status']))
       const AttentionItem(
-        'Your profile is not confirmed yet → Confirm it',
+        'Your profile is to be validated → Submit it for UNIDCOM review',
         '/app/profile',
       ),
     if (fresh > 0)

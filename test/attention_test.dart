@@ -22,7 +22,7 @@ void main() {
     );
 
     expect(items.map((item) => (item.text, item.route)), [
-      ('Your profile is not confirmed yet → Confirm it', '/app/profile'),
+      ('Your profile is to be validated → Submit it for UNIDCOM review', '/app/profile'),
       ('1 ORCID publication needs your review', '/app/outputs/import'),
       ('2 possible duplicates detected', '/app/outputs/import'),
       ('1 output needs changes (UNIDCOM feedback)', '/app/outputs'),
@@ -120,7 +120,7 @@ void main() {
     );
 
     expect(items.map((item) => item.text), [
-      'Your profile is not confirmed yet → Confirm it',
+      'Your profile is to be validated → Submit it for UNIDCOM review',
     ]);
     expect(items.map((item) => item.route), [
       '/app/profile',

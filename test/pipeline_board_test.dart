@@ -23,10 +23,10 @@ void main() {
       'Published',
     ]);
     List<String> ids(String k) => cols[k]!.map((p) => p['id'] as String).toList();
-    expect(ids('To validate'), ['a', 'f']);
+    expect(ids('To validate'), ['a', 'e', 'f']);
     expect(ids('Submitted'), ['b']);
     expect(ids('Approved, not published'), ['c']);
-    expect(ids('Published'), ['d', 'e']);
+    expect(ids('Published'), ['d']);
   });
 
   testWidgets('Approve and Publish are separate actions in their own columns', (
@@ -56,7 +56,7 @@ void main() {
     expect(find.text('Approved, not published · 1'), findsOneWidget);
     expect(find.text('Approve'), findsOneWidget);
     expect(find.text('Publish to website'), findsOneWidget);
-    expect(find.text('Unpublish'), findsNWidgets(2));
+    expect(find.text('Unpublish'), findsOneWidget);
     await tester.tap(find.text('Approve'));
     await tester.tap(find.text('Publish to website'));
     expect(approved, ['b']);

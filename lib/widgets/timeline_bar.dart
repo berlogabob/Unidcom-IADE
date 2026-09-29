@@ -45,7 +45,8 @@ class TimelineBar extends StatelessWidget {
             ? 'in progress'
             : 'not yet';
 
-        final dateText = step.date != null
+        final dateText =
+            step.date != null && step.state != timeline.StepState.todo
             ? '${step.date!.day} ${months[step.date!.month - 1]} ${step.date!.year}'
             : (step.state == timeline.StepState.current ? 'In progress' : '—');
 

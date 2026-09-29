@@ -25,7 +25,7 @@ void main() {
 
     expect(find.byType(ListTile), findsNWidgets(3));
     expect(
-      find.text('Your profile is not confirmed yet → Confirm it'),
+      find.text('Your profile is to be validated → Submit it for UNIDCOM review'),
       findsOneWidget,
     );
     expect(find.text('1 ORCID publication needs your review'), findsOneWidget);
