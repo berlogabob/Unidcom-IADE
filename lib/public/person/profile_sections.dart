@@ -4,6 +4,7 @@ import '../../app/my_profile.dart' show profileStatusLabel;
 import '../../data/features.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/detail_scaffold.dart';
+import '../../widgets/info_tip.dart';
 import '../../widgets/queue_list.dart' show queueStatusLabel;
 
 Widget personHeader(
@@ -340,7 +341,7 @@ Widget _orcidSection(
       if (synced != null)
         _InfoRow(
           icon: Icons.sync,
-          label: 'Last synchronised',
+          label: 'Last imported',
           child: mutedText(
             context,
             '${synced.day} ${months[synced.month - 1]} ${synced.year}',
@@ -493,6 +494,19 @@ String _initials(String name) {
       .toUpperCase();
 }
 
+// Rui 25 Sep: one short sentence per field, shown on the (i) icon.
+const _fieldInfo = {
+  'ORCID':
+      'Your ORCID iD. RIMS imports from ORCID; editing here never changes your ORCID record.',
+  'Last imported': 'When RIMS last imported your works from ORCID.',
+  'Ciência ID': 'Your Ciência Vitae identifier, shown on your UNIDCOM profile.',
+  'Email': 'The contact email shown on the UNIDCOM website.',
+  'PhD': 'Where and when you completed your doctorate.',
+  'Member since': 'When you joined UNIDCOM.',
+  'Left': 'When you left UNIDCOM.',
+  'Last verified': 'When you last confirmed this profile.',
+};
+
 class _InfoRow extends StatelessWidget {
   const _InfoRow({
     required this.icon,
@@ -516,11 +530,21 @@ class _InfoRow extends StatelessWidget {
           const SizedBox(width: 12),
           SizedBox(
             width: 96,
-            child: Text(
-              label,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    label,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                if (_fieldInfo[label] != null) ...[
+                  const SizedBox(width: 4),
+                  InfoTip(text: _fieldInfo[label]!, size: 14),
+                ],
+              ],
             ),
           ),
           Expanded(child: child),

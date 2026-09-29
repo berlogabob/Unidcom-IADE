@@ -73,7 +73,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Last synchronised'), findsOneWidget);
+    expect(find.text('Last imported'), findsOneWidget);
     expect(find.text('10 Sep 2026'), findsOneWidget);
   });
 }
