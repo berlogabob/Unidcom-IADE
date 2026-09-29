@@ -1030,6 +1030,40 @@ Future<int> proposeMyChanges(
   }
 }
 
+/// Save draft (Rui B3·2): same rows as proposeMyChanges, status 'draft' —
+/// invisible to the UNIDCOM queue until submitMyDrafts.
+Future<int> saveMyDraft(
+  String personId,
+  Map<String, String?> current,
+  Map<String, String> proposed,
+) async {
+  final rows = [
+    for (final row in signatureSuggestions(personId, current, proposed))
+      {...row, 'status': 'draft'},
+  ];
+  if (rows.isEmpty) return 0;
+  try {
+    await db.from('enrichment_suggestions').insert(rows);
+    return rows.length;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Submit for UNIDCOM review: the researcher's drafts become pending.
+Future<void> submitMyDrafts(String personId) async {
+  try {
+    await db
+        .from('enrichment_suggestions')
+        .update({'status': 'pending'})
+        .eq('subject_type', 'person')
+        .eq('subject_id', personId)
+        .eq('status', 'draft');
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<int> proposeOutputChanges(
   String outputId,
   Map<String, String?> current,
