@@ -32,4 +32,15 @@ void main() {
     expect(orcidLabel(connected: true, error: true), 'Import error');
     expect(orcidLabel(connected: true), 'Connected');
   });
+
+  test('issueLabel names each issue in full', () {
+    expect(issueLabel('missing_doi'), 'Missing DOI');
+    expect(issueLabel('missing_year'), 'Missing year');
+    expect(issueLabel('missing_type'), 'Missing type');
+    expect(issueLabel('missing_reference'), 'Missing reference');
+    expect(issueLabel('missing_authors'), 'Missing authors');
+    expect(issueLabel('affiliation_mismatch'), 'Affiliation mismatch');
+    expect(issueLabel('not_on_orcid'), 'Not on ORCID');
+    expect(issueLabel('odd_thing'), 'odd thing');
+  });
 }

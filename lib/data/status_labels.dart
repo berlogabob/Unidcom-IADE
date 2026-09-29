@@ -28,3 +28,15 @@ String orcidLabel({
   (_, true, _) => 'Changes available',
   _ => 'Connected',
 };
+
+/// Output issue code -> the words a researcher sees (Rui: 'Missing DOI', not 'Issue').
+String issueLabel(String code) => switch (code) {
+  'missing_doi' => 'Missing DOI',
+  'missing_year' => 'Missing year',
+  'missing_type' => 'Missing type',
+  'missing_reference' => 'Missing reference',
+  'missing_authors' => 'Missing authors',
+  'affiliation_mismatch' => 'Affiliation mismatch',
+  'not_on_orcid' => 'Not on ORCID',
+  _ => code.replaceAll('_', ' '),
+};

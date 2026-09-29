@@ -408,11 +408,11 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   Widget _importSyncPage(BuildContext context) {
     return DetailBody(
       children: [
-        sectionHeader(context, 'ORCID Sync'),
+        sectionHeader(context, 'Import from ORCID'),
         const SizedBox(height: 8),
         _orcidCandidates(context),
         const SizedBox(height: 24),
-        const WipCallout('Ciência Vitae Sync'),
+        const WipCallout('Ciência Vitae import'),
         const SizedBox(height: 12),
         const WipCallout('Other Data Sources'),
       ],
@@ -446,13 +446,13 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
-              'ORCID connected — outputs sync automatically',
+              'ORCID connected — import new works from ORCID when you are ready',
               style: TextStyle(color: AppColors.tealDark, fontSize: 13),
             ),
           ),
           TextButton(
             onPressed: () => _checkOrcidSync(person['id'] as String),
-            child: const Text('Sync now'),
+            child: const Text('Import from ORCID'),
           ),
         ],
       ),
