@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../data/output_filters.dart';
 import '../data/status_labels.dart';
@@ -57,6 +58,8 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
   late final Future<Map<String, String>> _kinds;
   late final Future<(List<TaxonomyNode>, Map<String, String>)> _metadata;
   bool _submitting = false;
+  bool _showOrcid = false;
+  bool _queryApplied = false;
 
   @override
   void initState() {
@@ -74,6 +77,31 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
     _kinds = widget.loadKinds();
     _metadata = (() async => (await _taxonomy, await _kinds))();
     _loadQuality();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_queryApplied) return;
+    Map<String, String> query;
+    try {
+      query = GoRouterState.of(context).uri.queryParameters;
+    } catch (_) {
+      return; // no router above us (widget tests)
+    }
+    _queryApplied = true;
+    final type = query['type'];
+    if (type != null) {
+      _filter = _filter.copyWith(category: [type]);
+      _kinds.then<void>((kinds) {
+        if (mounted && kinds[type] == 'activity') {
+          setState(() => _filter = _filter.copyWith(kind: 'activity'));
+        }
+      });
+    }
+    if (query['view'] == 'featured') {
+      _filter = _filter.copyWith(featuredOnly: true);
+    }
   }
 
   Future<void> _loadQuality() async {
@@ -270,11 +298,18 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
               ),
             if (!v2 && widget.newOrcidPublications > 0)
               TextButton(
-                onPressed: widget.onReviewOrcid,
+                onPressed: () {
+                  setState(() => _showOrcid = true);
+                  widget.onReviewOrcid?.call();
+                },
                 child: Text(
                   '${widget.newOrcidPublications} new publications in ORCID → Review',
                 ),
               ),
+            if (!v2 && _showOrcid && widget.orcidPanel != null) ...[
+              const SizedBox(height: 24),
+              widget.orcidPanel!,
+            ],
             if (v2)
               Wrap(
                 spacing: 8,
@@ -603,7 +638,8 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
             // Simpler v1 behavior: keep the injected panel visible when there is no new banner.
             if (!v2 &&
                 widget.orcidPanel != null &&
-                widget.newOrcidPublications == 0) ...[
+                widget.newOrcidPublications == 0 &&
+                !_showOrcid) ...[
               const SizedBox(height: 24),
               widget.orcidPanel!,
             ],
