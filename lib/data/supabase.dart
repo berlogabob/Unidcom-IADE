@@ -615,6 +615,27 @@ Future<void> approvePerson(String id) async {
   });
 }
 
+/// Admin: put a profile on the website or take it off — separate from approval.
+Future<void> setPersonPublished(String id, bool published) =>
+    updatePerson(id, {'public_visibility': published});
+
+/// Members for the Pending approval pipeline.
+Future<List<Map<String, dynamic>>> fetchPipelinePeople() async {
+  try {
+    final rows = await db
+        .from('people')
+        .select(
+          'id, preferred_name, profile_status, public_visibility, membership_type',
+        )
+        .filter('merged_into', 'is', null)
+        .inFilter('membership_type', const ['integrated', 'collaborator'])
+        .order('preferred_name');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 /// Files an output the signed-in researcher typed in themselves, returning its
 /// id.
 ///
@@ -1092,6 +1113,55 @@ Future<List<Map<String, dynamic>>> fetchPeopleForStats() async {
         .filter('merged_into', 'is', null)
         .order('preferred_name');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<({
+  List<Map<String, dynamic>> people,
+  List<Map<String, dynamic>> outputs,
+  Set<String> orcidOutputIds,
+  Map<String, DateTime?> lastSignIn,
+})> loadAdminOverview() async {
+  try {
+    final rows = await Future.wait([
+      db
+          .from('people')
+          .select(
+            'id, preferred_name, membership_type, orcid, profile_status, public_visibility, merged_into',
+          )
+          .filter('merged_into', 'is', null),
+      db
+          .from('outputs')
+          .select(
+            'id, macro_type, reporting_year, doi, source, approval_status, merged_into',
+          )
+          .filter('merged_into', 'is', null),
+      db
+          .from('output_candidates')
+          .select('matched_output_id')
+          .not('matched_output_id', 'is', null),
+      db.rpc('admin_last_sign_ins'),
+    ]);
+    return (
+      people: (rows[0] as List)
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList(),
+      outputs: (rows[1] as List)
+          .map((row) => Map<String, dynamic>.from(row))
+          .toList(),
+      orcidOutputIds: (rows[2] as List)
+          .map((row) => row['matched_output_id'])
+          .whereType<String>()
+          .toSet(),
+      lastSignIn: {
+        for (final row in rows[3] as List)
+          '${row['person_id']}': DateTime.tryParse(
+            row['last_sign_in_at'] as String? ?? '',
+          ),
+      },
+    );
   } catch (error) {
     throw Exception(_error(error));
   }

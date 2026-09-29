@@ -56,7 +56,7 @@ void main() {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: DefaultTabController(length: 7, child: ReviewQueueTabs()),
+          body: DefaultTabController(length: 8, child: ReviewQueueTabs()),
         ),
       ),
     );
