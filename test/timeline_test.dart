@@ -42,17 +42,31 @@ void main() {
     expect(steps.first.date, DateTime.utc(2026, 8, 4, 10));
   });
 
-  test('submitted: Submitted done with its date, Under review current', () {
+  test('submitted: Submitted is current, dated', () {
     final steps = profileTimeline(
       t(status: 'pending_review', submitted: '2026-09-29T12:00:00Z'),
     );
+    expect(states(steps), [
+      'Draft:done',
+      'Submitted:current',
+      'Under review:todo',
+      'Published:todo',
+    ]);
+    expect(steps[1].date, DateTime.utc(2026, 9, 29, 12));
+  });
+
+  test('under review: Submitted done, Under review current since review started', () {
+    final steps = profileTimeline({
+      ...t(status: 'under_review', submitted: '2026-09-29T12:00:00Z'),
+      'review_started_at': '2026-09-30T08:00:00Z',
+    });
     expect(states(steps), [
       'Draft:done',
       'Submitted:done',
       'Under review:current',
       'Published:todo',
     ]);
-    expect(steps[1].date, DateTime.utc(2026, 9, 29, 12));
+    expect(steps[2].date, DateTime.utc(2026, 9, 30, 8));
   });
 
   test('approved, not published: review done on approval date', () {

@@ -6,6 +6,7 @@ Map<String, List<Map<String, dynamic>>> pipelineColumns(
   final columns = <String, List<Map<String, dynamic>>>{
     'To validate': [],
     'Submitted': [],
+    'Under review': [],
     'Approved, not published': [],
     'Published': [],
   };
@@ -18,6 +19,7 @@ Map<String, List<Map<String, dynamic>>> pipelineColumns(
     final column = switch (status) {
       'to_validate' || 'draft' => 'To validate',
       'pending_review' => 'Submitted',
+      'under_review' => 'Under review',
       'approved' => published ? 'Published' : 'Approved, not published',
       _ => null,
     };
@@ -31,6 +33,7 @@ class PipelineBoard extends StatelessWidget {
   const PipelineBoard({
     super.key,
     required this.people,
+    required this.onStartReview,
     required this.onApprove,
     required this.onPublish,
     required this.onUnpublish,
@@ -38,6 +41,7 @@ class PipelineBoard extends StatelessWidget {
   });
 
   final List<Map<String, dynamic>> people;
+  final ValueChanged<String> onStartReview;
   final ValueChanged<String> onApprove;
   final ValueChanged<String> onPublish;
   final ValueChanged<String> onUnpublish;
@@ -89,6 +93,10 @@ class PipelineBoard extends StatelessWidget {
     final id = person['id'] as String;
     final action = switch (column) {
       'Submitted' => TextButton(
+        onPressed: () => onStartReview(id),
+        child: const Text('Start review'),
+      ),
+      'Under review' => TextButton(
         onPressed: () => onApprove(id),
         child: const Text('Approve'),
       ),

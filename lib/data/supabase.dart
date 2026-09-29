@@ -615,6 +615,10 @@ Future<void> approvePerson(String id) async {
   });
 }
 
+/// Admin: take a submitted profile into review (Rui A1·8).
+Future<void> startReview(String id) =>
+    updatePerson(id, {'profile_status': 'under_review'});
+
 /// Admin: put a profile on the website or take it off — separate from approval.
 Future<void> setPersonPublished(String id, bool published) =>
     updatePerson(id, {'public_visibility': published});
@@ -828,7 +832,7 @@ Future<List<Map<String, dynamic>>> fetchPendingPeople() async {
     final rows = await db
         .from('people')
         .select('id, preferred_name, email, profile_status, created_at')
-        .eq('profile_status', 'pending_review')
+        .inFilter('profile_status', const ['pending_review', 'under_review'])
         .order('preferred_name');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {
