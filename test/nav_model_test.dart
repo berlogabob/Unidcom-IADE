@@ -87,7 +87,7 @@ void main() {
     expect(navSelected(adminNav(), '/labs/abc')!.label, 'Structure');
     expect(
       navSelected(adminNav(), '/outputs/123')!.label,
-      'Scientific outputs',
+      'Outputs',
     );
   });
   test('nav selection prefers exact and longest matching routes', () {
@@ -128,7 +128,7 @@ void main() {
 
     final admin = adminNav();
     expect(navGroupOf(admin, '/app/admin/merge')?.label, '');
-    expect(navGroupOf(admin, '/app/admin/review')?.label, 'Research');
+    expect(navGroupOf(admin, '/app/admin/review')?.label, '');
   });
   test('researcher nav is the five v1 items', () {
     final groups = researcherNav(signedIn: true);
@@ -212,7 +212,7 @@ void main() {
   test('navGroupOf finds the owning group', () {
     final groups = adminNav();
     expect(navGroupOf(groups, '/outputs/123')?.label, 'Research');
-    expect(navGroupOf(groups, '/app/admin/review')?.label, 'Research');
+    expect(navGroupOf(groups, '/app/admin/review')?.label, '');
     expect(navGroupOf(groups, '/nope'), isNull);
   });
   test('NavGroup route defaults to null when not given', () {
