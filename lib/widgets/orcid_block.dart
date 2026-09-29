@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../theme/tokens.dart';
+import 'info_tip.dart';
 
 /// Rui 25 Sep (B3·3, A3·3): ORCID on My Profile — import only in v1.0.
 class OrcidBlock extends StatelessWidget {
@@ -39,9 +41,18 @@ class OrcidBlock extends StatelessWidget {
           else
             Text('ORCID not connected'),
           if (connected)
-            OutlinedButton(
-              onPressed: busy ? null : onImport,
-              child: const Text('Import from ORCID'),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                OutlinedButton(
+                  onPressed: busy ? null : onImport,
+                  child: const Text('Import from ORCID'),
+                ),
+                const SizedBox(width: 4),
+                const InfoTip(
+                  text: 'Copies your ORCID data into a proposal for UNIDCOM review. Nothing changes on ORCID.',
+                ),
+              ],
             ),
           if (connected)
             Text(

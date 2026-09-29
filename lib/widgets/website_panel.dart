@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/status_labels.dart';
 import 'detail_scaffold.dart';
+import 'info_tip.dart';
 import 'panels.dart';
 
 class WebsitePanel extends StatefulWidget {
@@ -59,14 +60,20 @@ class _WebsitePanelState extends State<WebsitePanel> {
               'Approve the output first; publication is a separate decision.',
             )
           else if (published)
-            OutlinedButton(
-              onPressed: _busy ? null : () => _change('not_published'),
-              child: const Text('Unpublish'),
+            WithInfo(
+              info: 'Removes this from the website at the next sync.',
+              child: OutlinedButton(
+                onPressed: _busy ? null : () => _change('not_published'),
+                child: const Text('Unpublish'),
+              ),
             )
           else
-            FilledButton(
-              onPressed: _busy ? null : () => _change('published'),
-              child: const Text('Publish to website'),
+            WithInfo(
+              info: 'Puts this on the UNIDCOM website at the next sync.',
+              child: FilledButton(
+                onPressed: _busy ? null : () => _change('published'),
+                child: const Text('Publish to website'),
+              ),
             ),
           if (published) ...[
             const SizedBox(height: 8),

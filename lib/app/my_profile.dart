@@ -325,9 +325,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     await linkPersonToMe(person['id'] as String);
     if (!mounted) return;
     _refresh();
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Profile linked')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Profile linked')));
   }
 
   @override
@@ -382,13 +381,22 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         'Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before publishing.',
                       ),
                       if (!viewing)
-                        OutlinedButton.icon(
-                          onPressed: () => _uploadPhoto(person),
-                          icon: const Icon(
-                            Icons.photo_camera_outlined,
-                            size: 18,
-                          ),
-                          label: const Text('Upload photo'),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () => _uploadPhoto(person),
+                              icon: const Icon(
+                                Icons.photo_camera_outlined,
+                                size: 18,
+                              ),
+                              label: const Text('Upload photo'),
+                            ),
+                            const SizedBox(width: 4),
+                            const InfoTip(
+                              text: 'Your photo appears on the website after UNIDCOM reviews it. JPG, PNG or WebP, up to 5 MB.',
+                            ),
+                          ],
                         ),
                       if (!viewing &&
                           (person['orcid'] as String? ?? '').isNotEmpty)
@@ -409,8 +417,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                           child: const Text('Submit for UNIDCOM review'),
                         ),
                         const InfoTip(
-                          text:
-                              'Saved changes will be re-submitted for UNIDCOM review.',
+                          text: 'Saved changes will be re-submitted for UNIDCOM review.',
                         ),
                       ],
                     ],
@@ -424,10 +431,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 const Spacer(),
                 // The "+add" half of "this works for both filtering my outputs
                 // as well as when i click +add" — same cascade, same dialog.
-                FilledButton.icon(
-                  onPressed: _addOutput,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add output'),
+                WithInfo(
+                  info:
+                      'Add an output step by step; it goes to UNIDCOM review.',
+                  child: FilledButton.icon(
+                    onPressed: _addOutput,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add output'),
+                  ),
                 ),
               ],
             ),

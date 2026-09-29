@@ -10,6 +10,7 @@ import '../public/person/featured_outputs.dart';
 import '../public/person/output_row.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/info_tip.dart';
 import '../widgets/panels.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/taxonomy_picker.dart';
@@ -287,23 +288,29 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 8),
-                    FilledButton(
-                      onPressed: _submitting ? null : _submitOutputs,
-                      child: Text(
-                        'Submit for UNIDCOM review (${outputsToValidate.length})',
+                    WithInfo(
+                      info: 'Sends these outputs to UNIDCOM. Nothing is published until UNIDCOM approves and publishes it.',
+                      child: FilledButton(
+                        onPressed: _submitting ? null : _submitOutputs,
+                        child: Text(
+                          'Submit for UNIDCOM review (${outputsToValidate.length})',
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             if (!v2 && widget.newOrcidPublications > 0)
-              TextButton(
-                onPressed: () {
-                  setState(() => _showOrcid = true);
-                  widget.onReviewOrcid?.call();
-                },
-                child: Text(
-                  '${widget.newOrcidPublications} new publications in ORCID → Review',
+              WithInfo(
+                info: 'Works on your ORCID record that are not in RIMS yet.',
+                child: TextButton(
+                  onPressed: () {
+                    setState(() => _showOrcid = true);
+                    widget.onReviewOrcid?.call();
+                  },
+                  child: Text(
+                    '${widget.newOrcidPublications} new publications in ORCID → Review',
+                  ),
                 ),
               ),
             if (!v2 && _showOrcid && widget.orcidPanel != null) ...[
@@ -562,12 +569,22 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                         () => _filter = _filter.copyWith(year: year),
                       ),
                     ),
-                  FilterChip(
-                    label: const Text('Issues only'),
-                    selected: _filter.issuesOnly,
-                    onSelected: (selected) => setState(
-                      () => _filter = _filter.copyWith(issuesOnly: selected),
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FilterChip(
+                        label: const Text('Issues only'),
+                        selected: _filter.issuesOnly,
+                        onSelected: (selected) => setState(
+                          () =>
+                              _filter = _filter.copyWith(issuesOnly: selected),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const InfoTip(
+                        text: 'Shows only outputs with missing or inconsistent data.',
+                      ),
+                    ],
                   ),
                 ],
               ),

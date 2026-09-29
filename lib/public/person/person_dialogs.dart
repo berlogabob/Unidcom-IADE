@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../data/supabase.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/detail_scaffold.dart';
+import '../../widgets/info_tip.dart';
 
 Future<bool> showPersonEditor(
   BuildContext context, {
@@ -80,7 +81,13 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   static const _membershipTypes =
       membershipTypes; // canonical list (supabase.dart)
   static const _statuses = ['a_confirmar', 'active', 'inactive'];
-  static const _profileStatuses = ['to_validate', 'draft', 'pending_review', 'under_review', 'approved'];
+  static const _profileStatuses = [
+    'to_validate',
+    'draft',
+    'pending_review',
+    'under_review',
+    'approved',
+  ];
 
   bool get _creating => widget.person?['id'] == null;
   bool get _ownerMode => !_creating && !widget.canEditGovernance;
@@ -367,9 +374,12 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
           child: const Text('Cancel'),
         ),
         if (widget.stageDraft != null)
-          TextButton(
-            onPressed: _saving ? null : _saveDraft,
-            child: const Text('Save draft'),
+          WithInfo(
+            info: 'Keeps your changes private; UNIDCOM does not see them until you submit.',
+            child: TextButton(
+              onPressed: _saving ? null : _saveDraft,
+              child: const Text('Save draft'),
+            ),
           ),
         FilledButton(
           onPressed: _saving ? null : _save,

@@ -10,6 +10,7 @@ import '../public/person/featured_outputs.dart';
 import '../theme/tokens.dart';
 import '../widgets/timeline_bar.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/info_tip.dart';
 import '../widgets/output_row.dart';
 import '../widgets/panels.dart';
 import 'my_profile.dart' show profileStatusLabel;
@@ -217,9 +218,12 @@ class OverviewBio extends StatelessWidget {
           Text(bio!, maxLines: 3, overflow: TextOverflow.ellipsis)
         else
           const Text('No biography yet'),
-        TextButton(
-          onPressed: () => context.go(portalRoute('/app/profile', personId)),
-          child: Text(hasBio ? 'Edit bio →' : 'Add bio →'),
+        WithInfo(
+          info: 'Your biography is edited on My Profile.',
+          child: TextButton(
+            onPressed: () => context.go(portalRoute('/app/profile', personId)),
+            child: Text(hasBio ? 'Edit bio →' : 'Add bio →'),
+          ),
         ),
       ],
     );

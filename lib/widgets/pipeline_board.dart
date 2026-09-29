@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'info_tip.dart';
+
 Map<String, List<Map<String, dynamic>>> pipelineColumns(
   List<Map<String, dynamic>> people,
 ) {
@@ -92,21 +94,33 @@ class PipelineBoard extends StatelessWidget {
   Widget _personCard(String column, Map<String, dynamic> person) {
     final id = person['id'] as String;
     final action = switch (column) {
-      'Submitted' => TextButton(
-        onPressed: () => onStartReview(id),
-        child: const Text('Start review'),
+      'Submitted' => WithInfo(
+        info: 'Moves the profile to Under review, so the researcher sees UNIDCOM is on it.',
+        child: TextButton(
+          onPressed: () => onStartReview(id),
+          child: const Text('Start review'),
+        ),
       ),
-      'Under review' => TextButton(
-        onPressed: () => onApprove(id),
-        child: const Text('Approve'),
+      'Under review' => WithInfo(
+        info: 'Confirms the profile. It does not publish it.',
+        child: TextButton(
+          onPressed: () => onApprove(id),
+          child: const Text('Approve'),
+        ),
       ),
-      'Approved, not published' => FilledButton(
-        onPressed: () => onPublish(id),
-        child: const Text('Publish to website'),
+      'Approved, not published' => WithInfo(
+        info: 'Puts this on the UNIDCOM website at the next sync.',
+        child: FilledButton(
+          onPressed: () => onPublish(id),
+          child: const Text('Publish to website'),
+        ),
       ),
-      'Published' => TextButton(
-        onPressed: () => onUnpublish(id),
-        child: const Text('Unpublish'),
+      'Published' => WithInfo(
+        info: 'Removes this from the website at the next sync.',
+        child: TextButton(
+          onPressed: () => onUnpublish(id),
+          child: const Text('Unpublish'),
+        ),
       ),
       _ => null,
     };
