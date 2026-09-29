@@ -49,6 +49,12 @@ env:
 - assertVisible:
     text: "Structure"
     label: "The admin sidebar is present"
+- assertVisible:
+    text: "Outputs"
+    label: "The admin sidebar uses Outputs"
+- assertVisible:
+    text: "Pending approval"
+    label: "Pending approval is a top-level admin item"
 
 # 2. The directory that researcher mode hides opens here.
 - openLink: "${BASE_URL}/#/people"
@@ -57,22 +63,29 @@ env:
     timeout: 20000
     label: "Admin mode reaches the unit-wide directory"
 
-# 3. The cascading filter replaced the flat pill row. The level-1 dropdown is
-#    always present; picking a branch reveals the next level.
+# 3. Scientific Outputs uses the new chips and year controls.
 - openLink: "${BASE_URL}/#/outputs"
 - extendedWaitUntil:
-    visible: "Category"
+    visible: "Publications"
     timeout: 20000
-    label: "Outputs filter is the cascade, not a wrap of Type pills"
+- assertVisible:
+    text: "Other activities"
+    label: "Outputs has the activity chips"
+- assertVisible:
+    text: "All years"
+    label: "Outputs has the year control"
+- assertVisible:
+    text: "Issues only"
+    label: "Outputs has the issues-only control"
 
 # 4. Switch back without signing out — the whole point of the avatar menu item.
 - tapOn:
     id: "My profile"
 - tapOn: "Switch to researcher"
 - extendedWaitUntil:
-    visible: "Your first steps"
+    visible: "Overview"
     timeout: 20000
-    label: "Switching back lands in researcher mode"
+    label: "Switching back lands on the researcher overview"
 - assertNotVisible:
     text: "^Structure$"
     label: "The directory is gone again after switching back"

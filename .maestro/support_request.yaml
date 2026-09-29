@@ -49,10 +49,13 @@ env:
     below:
       id: "Password"
 
-# Landing on the Welcome pack is the only proof the credentials were accepted.
+# Landing on Overview is the proof the credentials were accepted.
 - extendedWaitUntil:
-    visible: "Your first steps"
+    visible: "Overview"
     timeout: 20000
+- assertVisible:
+    text: "UNIDCOM:.*Website:.*"
+    label: "Researcher pages show the UNIDCOM and website line"
 
 - openLink: "${BASE_URL}/#/app/requests"
 - extendedWaitUntil:

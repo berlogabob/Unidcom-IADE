@@ -132,6 +132,8 @@ def capture(page, name, mode, how, note=""):
 
 def goto(page, route, name, mode, note="", wait=None):
     page.goto(f"{BASE}/#{route}"); page.wait_for_timeout(400)
+    if mode.startswith("researcher") and route.startswith("/app/") and not route.startswith("/app/welcome/"):
+        visible(page, "UNIDCOM:.*Website:", 20)
     if wait: visible(page, wait)
     capture(page, name, mode, f"openLink #{route}", note)
 
@@ -173,6 +175,7 @@ with sync_playwright() as p:
     # --- researcher mode
     login(page); capture(page, "mode_chooser", "signed-in", "after Sign in")
     click(page, "As a researcher|Continue as researcher"); page.wait_for_timeout(800)
+    assert visible(page, "Overview", 20), "researcher login did not land on Overview"
     capture(page, "r_landing_after_choose", "researcher", "chooser → As a researcher")
     R = [("/app/home", "r_home"), ("/app/home/summary", "r_home_summary"), ("/app/home/recent", "r_home_recent"),
          ("/app/home/alerts", "r_home_alerts"), ("/app/home/status", "r_home_status"),
@@ -235,6 +238,7 @@ with sync_playwright() as p:
     # destructive confirm: Approve all pending (needs a pending output) – try
     page.goto(f"{BASE}/#/app/admin/review"); settle(page)
     try:
+        click(page, "^Pipeline$", timeout=5); page.wait_for_timeout(600)
         click(page, "^Approve all", timeout=5); page.wait_for_timeout(600)
         capture(page, "a_confirm_approve_all", "admin", "review → Approve all pending", "destructive confirm"); click(page, "^Cancel$")
     except Exception as e:
@@ -258,5 +262,5 @@ with open(RUN / "screens.md", "w") as f:
     f.write("# Screen inventory\n\nCrawler: Playwright/Chromium 1280×900 (phone rows 390×844). Build: `flutter build web --dart-define=E2E=true` (v1), commit 5c4cb7c, served from build/web on :8123.\n\n| Screen | Mode | How reached | Files | Note |\n|---|---|---|---|---|\n")
     for n, m, h, note in inventory:
         f.write(f"| {n} | {m} | {h} | screens/{n}.png · hierarchy/{n}.json | {note} |\n")
-    f.write("\n## NOT COVERED\n\n- ORCID OAuth sign-in (third-party login; not automatable safely).\n- v2-only surfaces (Support requests, Approve/Auto-fill/ORCID sync buttons) — compiled out of the pilot build.\n- Research Areas / Interests / Edit outputs / Validation / Documentation / FAQs render the shared WipPage.\n")
+    f.write("\n## NOT COVERED\n\n- ORCID OAuth sign-in (third-party login; not automatable safely).\n- v2-only surfaces (Support requests) — compiled out of the pilot build.\n- Research Areas / Interests / Edit outputs / Validation / Documentation / FAQs render the shared WipPage.\n")
 print("screens:", len(inventory))

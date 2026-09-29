@@ -52,9 +52,12 @@ env:
 
 # 2. Researcher mode: own things only.
 - extendedWaitUntil:
-    visible: "Your first steps"
+    visible: "Overview"
     timeout: 20000
-    label: "Continuing as a researcher lands on the Welcome pack"
+    label: "Continuing as a researcher lands on Overview"
+- assertVisible:
+    text: "UNIDCOM:.*Website:.*"
+    label: "Researcher pages show the UNIDCOM and website line"
 # Anchored: the Welcome pack prose contains "Projects, researchers and
 # opportunities." and a sentence beginning "Support requests for activities...",
 # so a bare substring match would fail on text that is not navigation at all.
@@ -68,15 +71,13 @@ env:
     text: "^Support requests$"
     label: "Support requests are out of the v1 pilot"
 
-# The sidebar items that ARE offered. "Outputs" once appeared twice, so the
-# researcher's own item is now "Scientific Outputs".
-# (the 8 Sep IA), on their own page.
+# The sidebar items that ARE offered, including the researcher's own outputs.
 - assertVisible:
     text: "Overview"
     label: "The researcher's own sidebar items are present"
 - assertVisible:
     text: "Scientific Outputs"
-    label: "The researcher's own outputs item is unambiguous"
+    label: "The researcher's own Scientific Outputs item is present"
 # F-001 guard: at desktop width the sidebar rows must remain in the semantics tree.
 - assertVisible:
     text: "My Profile"
@@ -85,23 +86,22 @@ env:
 # 3. Typing a directory URL is not a way around the mode.
 - openLink: "${BASE_URL}/#/people"
 - extendedWaitUntil:
-    visible: "OUTPUTS"
+    visible: "Overview"
     timeout: 20000
     label: "A directory deep link in researcher mode lands on the own overview"
 - assertNotVisible:
     text: "LAST VERIFIED"
-    label: "Last verified is M2 — Rui, 14 Aug"
+    label: "The deep link lands on the researcher overview"
 
-# 4. The profile band carries one button, not five. Auto-fill, ORCID sync and
-#    Approve were the "three things that make noise" on Rui's own profile.
+# 4. The profile band uses the current review and ORCID wording.
 - openLink: "${BASE_URL}/#/app/profile"
 - extendedWaitUntil:
     visible: "Edit"
     timeout: 20000
     label: "The researcher can still edit their own profile"
 - assertNotVisible:
-    text: "^Last verified$"
-    label: "Last verified row is M2 on the researcher's own profile"
+    text: "^Last synchronised$"
+    label: "Old synchronisation wording is gone"
 - assertNotVisible:
     text: "Approve"
     label: "No Approve button on a researcher's own profile"
@@ -109,18 +109,30 @@ env:
     text: "Auto-fill"
     label: "No Auto-fill on a researcher's own profile"
 - assertNotVisible:
-    text: "ORCID sync"
-    label: "No ORCID sync on a researcher's own profile"
+    text: "ORCID sync|ORCID Sync|Sync now|Import ORCID version|Last synchronised|ORCID ✓"
+    label: "Old ORCID wording is gone"
 # 5. The outputs live on their own page now (E4)…
 - openLink: "${BASE_URL}/#/app/outputs"
 - extendedWaitUntil:
     visible: "Add output"
     timeout: 20000
     label: "Scientific Outputs is the researcher's own outputs page"
+- assertVisible:
+    text: "Publications"
+    label: "Scientific Outputs has the Publications chip"
+- assertVisible:
+    text: "Other activities"
+    label: "Scientific Outputs has the Other activities chip"
+- assertVisible:
+    text: "All years"
+    label: "Scientific Outputs has the year control"
+- assertVisible:
+    text: "Issues only"
+    label: "Scientific Outputs has the issues-only control"
 # …and the ORCID publications on Import & Synchronisation (F3). Always shown,
 # one button for the lot.
 - openLink: "${BASE_URL}/#/app/outputs/import"
 - extendedWaitUntil:
-    visible: "My ORCID publications.*"
+    visible: "Import from ORCID"
     timeout: 20000
-    label: "ORCID publications are always shown, not behind a toggle"
+    label: "ORCID import uses the current wording"

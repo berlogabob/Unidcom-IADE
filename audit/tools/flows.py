@@ -56,40 +56,43 @@ def auth_gate(f, pg):
     f.step("anon deep link #/people"); pg.goto(f"{BASE}/#/people"); f.expect("^Password$", 60); f.shot("bounced_to_login")
     f.expect("^Structure$", 3, negate=True)
     do_login(f, pg); f.shot("chooser")
-    f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Your first steps", 30); f.shot("welcome")
+    f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Overview", 30); f.shot("home")
 
 def researcher_mode(f, pg):
-    do_login(f, pg); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Your first steps", 30)
+    do_login(f, pg); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Overview", 30)
     f.expect("^Structure$", 2, negate=True); f.expect("^Projects$", 2, negate=True); f.expect("^Support requests$", 2, negate=True)
-    f.expect("OUTPUTS|PROFILE STATUS|Getting started", 5); f.shot("sidebar")  # sidebar rows are not in the desktop semantics tree (finding); assert content instead
-    f.step("deep link #/people in researcher mode"); pg.goto(f"{BASE}/#/people"); f.expect("OUTPUTS|Research Activity Summary|Overview", 20); f.shot("deeplink_home")
-    f.expect("LAST VERIFIED", 2, negate=True)
+    f.expect("Overview|Scientific Outputs|My Profile", 5); f.expect("UNIDCOM:.*Website:", 10); f.shot("sidebar")
+    f.step("deep link #/people in researcher mode"); pg.goto(f"{BASE}/#/people"); f.expect("Overview", 20); f.expect("UNIDCOM:.*Website:", 10); f.shot("deeplink_home")
     f.step("open #/app/profile"); pg.goto(f"{BASE}/#/app/profile"); f.expect("^Edit$", 20)
-    for t in ["Approve", "Auto-fill", "ORCID sync", "^Last verified$"]: f.expect(t, 1, negate=True)
-    f.step("open #/app/outputs"); pg.goto(f"{BASE}/#/app/outputs"); f.expect("Add output", 20)
-    f.step("open #/app/outputs/import"); pg.goto(f"{BASE}/#/app/outputs/import"); f.expect("My ORCID publications", 20); f.shot("import")
+    f.expect("UNIDCOM:.*Website:", 10)
+    for t in ["Approve", "Auto-fill", "ORCID sync|ORCID Sync|Sync now|Import ORCID version|Last synchronised|ORCID ✓", "^Last verified$"]: f.expect(t, 1, negate=True)
+    f.step("open #/app/outputs"); pg.goto(f"{BASE}/#/app/outputs"); f.expect("Add output", 20); f.expect("Publications", 10); f.expect("Other activities", 10); f.expect("All years", 10); f.expect("Issues only", 10); f.expect("UNIDCOM:.*Website:", 10)
+    f.step("open #/app/outputs/import"); pg.goto(f"{BASE}/#/app/outputs/import"); f.expect("Import from ORCID", 20); f.expect("UNIDCOM:.*Website:", 10); f.shot("import")
 
 def admin_mode(f, pg):
-    do_login(f, pg); f.step("tap As an administrator"); pick(f, pg, "As an administrator"); f.expect("ORCID LINKED|OUTPUTS APPROVED", 30); f.shot("dashboard")
-    f.expect("RESEARCHERS|People", 5)
+    do_login(f, pg); f.step("tap As an administrator"); pick(f, pg, "As an administrator");
+    for tile in ["Integrated researchers", "Collaborators", "Profiles to approve", "Outputs to approve"]: f.expect(tile, 20)
+    for block in ["Sync status", "Researcher activity", "Issues", "Outputs by type", "Critical alerts"]: f.expect(block, 20)
+    f.shot("dashboard")
+    f.expect("RESEARCHERS|People", 5); f.expect("^Outputs$", 5); f.expect("^Pending approval$", 5)
     f.step("open #/people"); pg.goto(f"{BASE}/#/people"); f.expect("Search", 20)
     f.step("switch: #/app/mode after clearing choice"); pg.evaluate("() => sessionStorage.removeItem('view_mode')"); pg.goto(f"{BASE}/#/app/mode"); pg.reload()
-    f.expect("How do you want to continue", 30); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Your first steps", 30)
-    f.expect("^Structure$", 2, negate=True); f.shot("back_to_researcher")
+    f.expect("How do you want to continue", 30); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Overview", 30)
+    f.expect("^Structure$", 2, negate=True); f.expect("UNIDCOM:.*Website:", 10); f.shot("back_to_researcher")
 
 def orcid_error(f, pg):
     f.step("open /?orcid_error=…"); pg.goto(f"{BASE}/?orcid_error={ORCID_ERR}"); f.expect("^Password$", 60); f.expect("No UNIDCOM profile", 10); f.shot("error_shown")
-    f.step("open /?v=stale#/app/welcome/start"); pg.goto(f"{BASE}/?v=stale#/app/welcome/start"); f.expect("Your first steps", 30)
+    f.step("open /?v=stale#/app/welcome/start"); pg.goto(f"{BASE}/?v=stale#/app/welcome/start"); f.expect("Your first steps", 30)  # direct welcome deep link remains valid
     f.step("open /?v=stale#/login"); pg.goto(f"{BASE}/?v=stale#/login"); f.expect("^Password$", 20); f.expect("No UNIDCOM profile", 2, negate=True)
 
 def profile_confirm(f, pg):
-    do_login(f, pg); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Your first steps", 30)
-    f.step("open #/app/profile"); pg.goto(f"{BASE}/#/app/profile"); f.expect("Confirm my profile", 20); f.shot("draft")
-    f.step("tap Confirm my profile"); click(pg, "^Confirm my profile$"); ok = f.expect("Awaiting UNIDCOM approval", 20); f.shot("after_confirm")
+    do_login(f, pg); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Overview", 30)
+    f.step("open #/app/profile"); pg.goto(f"{BASE}/#/app/profile"); f.expect("Submit for UNIDCOM review", 20); f.expect("Check your data below, then submit it", 10); f.shot("draft")
+    f.step("tap Submit for UNIDCOM review"); click(pg, "^Submit for UNIDCOM review$"); ok = f.expect("Awaiting UNIDCOM approval", 20); f.shot("after_confirm")
     f.step("open #/app/home/status"); pg.goto(f"{BASE}/#/app/home/status"); f.expect("Awaiting UNIDCOM approval|pending", 20); f.shot("status_page")
 
 def add_output(f, pg):
-    do_login(f, pg); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Your first steps", 30)
+    do_login(f, pg); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Overview", 30)
     f.step("open #/app/outputs/add"); pg.goto(f"{BASE}/#/app/outputs/add"); f.expect("^Add output$", 20)
     f.step("tap Add output"); click(pg, "^Add output$"); f.expect("^Title$", 10); f.shot("dialog")
     # BP-07: DOI-first — an existing, approved DOI must be recognised and blocked (BP-16)
@@ -112,9 +115,10 @@ def add_output(f, pg):
     if not visible(pg, "Pending|pending|Awaiting", 5): f.warnings.append("no status tag on the new pending output in My Outputs (finding)")
 
 def review_queue(f, pg):
-    do_login(f, pg); f.step("tap As an administrator"); pick(f, pg, "As an administrator"); f.expect("ORCID LINKED|OUTPUTS APPROVED", 30)
-    f.step("open #/app/admin/review"); pg.goto(f"{BASE}/#/app/admin/review"); f.expect("Profiles to approve", 30); f.shot("queue_default_tab")
-    f.step("tap Outputs to approve tab"); click(pg, "^Outputs to approve$"); f.expect("E2E UX audit output", 30); f.shot("queue_outputs")
+    do_login(f, pg); f.step("tap As an administrator"); pick(f, pg, "As an administrator"); f.expect("Integrated researchers|Collaborators|Profiles to approve|Outputs to approve", 30)
+    f.step("open #/app/admin/review"); pg.goto(f"{BASE}/#/app/admin/review"); f.expect("Pipeline", 30); f.expect("To validate|Submitted|Approved, not published|Published", 20); f.shot("queue_pipeline")
+    f.step("tap Profiles to approve tab"); click(pg, "^Profiles to approve$"); f.expect("Profiles to approve", 30); f.shot("queue_profiles")
+    f.step("return to Pipeline"); click(pg, "^Pipeline$"); f.expect("E2E UX audit output|To validate", 30); f.shot("queue_outputs")
     f.step("tap Approve all pending"); click(pg, "^Approve all")
     if not visible(pg, "Approve all .* pending outputs\\?", 4): dom_click(pg, "^Approve all")
     f.expect("Approve all .* pending outputs\\?", 10); f.shot("confirm_dialog")
