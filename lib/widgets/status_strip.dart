@@ -20,7 +20,7 @@ class StatusStrip extends StatelessWidget {
     final changesAvailable = pendingCandidates > 0;
     final status = person['profile_status'] as String?;
     final published =
-        status == 'approved' && person['public_visibility'] == true;
+        person['public_visibility'] == true;
     return Wrap(
       spacing: 8,
       runSpacing: 8,

@@ -7,6 +7,7 @@ void main() {
     expect(reviewLabel('pending'), 'Submitted');
     expect(reviewLabel('pending_review'), 'Submitted');
     expect(reviewLabel('under_review'), 'Under review');
+    expect(reviewLabel('to_validate'), 'To be validated by you');
     expect(reviewLabel('approved'), 'Approved');
     expect(reviewLabel('rejected'), 'Changes requested');
     expect(reviewLabel(null), '—');
@@ -28,7 +29,7 @@ void main() {
       orcidLabel(connected: true, changesAvailable: true),
       'Changes available',
     );
-    expect(orcidLabel(connected: true, error: true), 'Sync error');
+    expect(orcidLabel(connected: true, error: true), 'Import error');
     expect(orcidLabel(connected: true), 'Connected');
   });
 }

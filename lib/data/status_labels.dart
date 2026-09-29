@@ -1,5 +1,6 @@
 /// Labels from the UNIDCOM RIMS status vocabulary specification.
 String reviewLabel(String? status) => switch (status) {
+  'to_validate' => 'To be validated by you',
   'draft' => 'Draft',
   'pending' || 'pending_review' => 'Submitted',
   'under_review' => 'Under review',
@@ -23,7 +24,7 @@ String orcidLabel({
   bool error = false,
 }) => switch ((connected, changesAvailable, error)) {
   (false, _, _) => 'Not connected',
-  (_, _, true) => 'Sync error',
+  (_, _, true) => 'Import error',
   (_, true, _) => 'Changes available',
   _ => 'Connected',
 };

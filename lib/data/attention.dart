@@ -44,7 +44,7 @@ List<AttentionItem> attentionItems({
       count == 1 ? singular : plural;
 
   return [
-    if (person['profile_status'] == 'draft')
+    if (const {'draft', 'to_validate'}.contains(person['profile_status']))
       const AttentionItem(
         'Your profile is not confirmed yet → Confirm it',
         '/app/profile',

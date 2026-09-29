@@ -110,4 +110,20 @@ void main() {
       2,
     );
   });
+
+  test('to_validate profile shows unconfirmed item', () {
+    final items = attentionItems(
+      person: {'profile_status': 'to_validate'},
+      outputs: const [],
+      candidates: const [],
+      suggestions: const [],
+    );
+
+    expect(items.map((item) => item.text), [
+      'Your profile is not confirmed yet → Confirm it',
+    ]);
+    expect(items.map((item) => item.route), [
+      '/app/profile',
+    ]);
+  });
 }

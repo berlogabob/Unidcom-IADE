@@ -37,4 +37,17 @@ void main() {
     );
     expect(find.text('ORCID · Connected'), findsOneWidget);
   });
+
+  testWidgets('shows to_validate profile with published website', (tester) async {
+    await tester.pumpWidget(
+      app({
+        'orcid': '0000-0001-2345-6789',
+        'profile_status': 'to_validate',
+        'public_visibility': true,
+      }, 0),
+    );
+    expect(find.text('ORCID · Connected'), findsOneWidget);
+    expect(find.text('UNIDCOM · To be validated by you'), findsOneWidget);
+    expect(find.text('Website · Published'), findsOneWidget);
+  });
 }
