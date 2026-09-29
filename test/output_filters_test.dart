@@ -302,4 +302,25 @@ void main() {
       );
     });
   });
+
+  test('unclassified outputs take their tab from the ORCID work type', () {
+    const kinds = {'Livros': 'publication', 'Formação avançada': 'activity'};
+    final rows = <Map<String, dynamic>>[
+      {'id': 'a', 'type': 'journal-article'},
+      {'id': 'b', 'type': 'conference-paper'},
+      {'id': 'c', 'type': 'other'},
+      {
+        'id': 'd',
+        'category_path': 'Formação avançada',
+        'type': 'journal-article',
+      },
+    ];
+    List<Object?> ids(String kind) => filterOutputs(
+      rows,
+      OutputFilter(kind: kind),
+      kindByRoot: kinds,
+    ).map((r) => r['id']).toList();
+    expect(ids('publication'), ['a', 'b']);
+    expect(ids('activity'), ['c', 'd']);
+  });
 }

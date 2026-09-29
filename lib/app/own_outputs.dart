@@ -255,15 +255,12 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                 for (final author in highlights)
                   PersonOutputRow(
                     author: author,
-                    isFeatured:
-                        kinds[rootOf(
-                          author['outputs'] as Map<String, dynamic>,
-                        )] ==
-                        'publication',
+                    isFeatured: true, // this list is the featured highlights
                     featurable:
-                        kinds[rootOf(
+                        kindOf(
                           author['outputs'] as Map<String, dynamic>,
-                        )] ==
+                          kinds,
+                        ) ==
                         'publication',
                     onToggle: widget.onToggleFeatured,
                     onTap: widget.onOpenOutput,
@@ -289,7 +286,8 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                     ),
                     const SizedBox(height: 8),
                     WithInfo(
-                      info: 'Sends these outputs to UNIDCOM. Nothing is published until UNIDCOM approves and publishes it.',
+                      info:
+                          'Sends these outputs to UNIDCOM. Nothing is published until UNIDCOM approves and publishes it.',
                       child: FilledButton(
                         onPressed: _submitting ? null : _submitOutputs,
                         child: Text(
@@ -582,7 +580,8 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                       ),
                       const SizedBox(width: 4),
                       const InfoTip(
-                        text: 'Shows only outputs with missing or inconsistent data.',
+                        text:
+                            'Shows only outputs with missing or inconsistent data.',
                       ),
                     ],
                   ),
@@ -614,7 +613,7 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
               for (final output in visibleRows)
                 PersonOutputRow(
                   author: _authorByOutputId[output['id'].toString()]!,
-                  featurable: kinds[rootOf(output)] == 'publication',
+                  featurable: kindOf(output, kinds) == 'publication',
                   isFeatured:
                       kinds[rootOf(output)] == 'publication' &&
                       widget.featured.contains(output['id'].toString()),
@@ -639,7 +638,7 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                 for (final output in entry.value)
                   PersonOutputRow(
                     author: _authorByOutputId[output['id'].toString()]!,
-                    featurable: kinds[rootOf(output)] == 'publication',
+                    featurable: kindOf(output, kinds) == 'publication',
                     isFeatured:
                         kinds[rootOf(output)] == 'publication' &&
                         widget.featured.contains(output['id'].toString()),

@@ -71,6 +71,24 @@ String? rootOf(Map<String, dynamic> output) {
   return categorySegments(path is String ? path : null).firstOrNull;
 }
 
+/// ORCID work types that are publications in Rui's sense (journal articles,
+/// conference papers, books, book chapters).
+const orcidPublicationTypes = {
+  'journal-article',
+  'conference-paper',
+  'book',
+  'book-chapter',
+};
+
+/// 'publication' or 'activity'. From the taxonomy root when the output is
+/// classified; otherwise from its ORCID work type, so unclassified ORCID
+/// imports still land in a tab (30 Sep: 5 outputs had no category).
+String kindOf(Map<String, dynamic> output, Map<String, String> kindByRoot) =>
+    kindByRoot[rootOf(output)] ??
+    (orcidPublicationTypes.contains(output['type'])
+        ? 'publication'
+        : 'activity');
+
 List<Map<String, dynamic>> filterOutputs(
   List<Map<String, dynamic>> outputs,
   OutputFilter filter, {
@@ -91,7 +109,6 @@ List<Map<String, dynamic>> filterOutputs(
         });
     final website = output['website_status'] ?? 'not_published';
     final id = output['id']?.toString();
-    final root = rootOf(output);
     final matchesView = switch (filter.view) {
       OutputView.all ||
       OutputView.recent ||
@@ -107,7 +124,7 @@ List<Map<String, dynamic>> filterOutputs(
         (filter.website == null || website == filter.website) &&
         (!filter.featuredOnly || featuredIds.contains(id)) &&
         (!filter.issuesOnly || hasIssues(output)) &&
-        (filter.kind == null || kindByRoot[root] == filter.kind) &&
+        (filter.kind == null || kindOf(output, kindByRoot) == filter.kind) &&
         matchesView;
   }).toList();
 
