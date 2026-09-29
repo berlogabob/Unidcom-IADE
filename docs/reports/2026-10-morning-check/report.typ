@@ -46,7 +46,7 @@
 ))
 
 #callout(title: "What we need from Rui this morning", tone: "info")[
-  Walk parts A, B and C (about 45 minutes). Then go through the decision table in part D and write one word per line: *keep*, *change*, or *later*. Anything marked *change* becomes a task we build today.
+  Walk parts A, B and C (about 55 minutes); E if there is time. Then go through the decision table in part D and write one word per line: *keep*, *change*, or *later*. Anything marked *change* becomes a task we build today.
 ]
 
 #pagebreak()
@@ -126,24 +126,23 @@
   ([Open *Pending approval*.], [First tab *Pipeline*: To validate · Submitted · Approved, not published · Published. Andrey is under Submitted (from My Profile step 8).]),
 ))
 
-= C · One record, end to end (15 minutes)
+= C · A bio change, end to end (25 minutes)
 
-This is the only way to show a real publication going from the researcher to the website: add a publication that is not on the site yet. Use one of Andrey's real recent journal articles or books, so nothing fake reaches the public site.
+The whole path of one real change: Andrey edits his biography where Portuguese researchers keep it, and we follow it to the portal, through UNIDCOM review, onto the website and into the Sanity test copy. RIMS does not notify anyone about the change today; each hand-over below is a person clicking.
 
 #steps((
-  ([Switch to researcher. *Scientific Outputs* → *+ Add output*.], [A step-by-step form: DOI → type → subtype → details → project → review.]),
-  ([Fill it for a real article or book and finish.], [The new output appears with status "Submitted".]),
-  ([Switch to admin → *Pending approval* → *Outputs to approve*.], [The new output is listed.]),
-  ([Click *Approve*.], [It is approved but not published — approving never publishes.]),
-  ([Open the output's page.], [A Website panel with *Publish to website*.]),
-  ([Click *Publish to website*.], [Website status becomes "Published".]),
-  ([Pipeline tab: find Andrey under Submitted; click *Approve*.], [Andrey moves to Published (his profile was already on the site from the import).]),
-  ([Open the public website, find the article.], [Not there yet — the site updates on sync.]),
-  ([GitHub → unidcom-site → Actions → *Sync content from Supabase* → Run workflow (preview off).], [The run finishes green in about 2 minutes, then the site redeploys.]),
-  ([Reload the public website.], [The article is on Andrey's page. Done: Submitted → Approved → Publish → visible.]),
+  ([*Ciência Vitae*: edit the summary (Resumo) and save.], [Saved in Ciência Vitae. RIMS is not connected to Ciência Vitae — we only learn here whether it passes the text on to ORCID.]),
+  ([*ORCID* (orcid.org, signed in): open Biography.], [If Ciência Vitae passed it on, the new text is there. If not, paste the same text into Biography and save.]),
+  ([*Portal*: sign out, then sign in with ORCID again.], [Overview opens.]),
+  ([*My Profile* → Biography.], [Two columns: *UNIDCOM* (old text) and *ORCID* (new text), and *Import bio from ORCID*. ORCID can take a few minutes to show a change to others.]),
+  ([Click *Import bio from ORCID*.], [The ORCID text becomes a proposal for UNIDCOM review. The UNIDCOM text does not change yet.]),
+  ([Switch to admin → *Pending approval* → *Suggestions*.], [A row "Proposed by researcher", field Bio, with the new text.]),
+  ([Click *Accept*.], [The row leaves the queue. Andrey's portal bio shows the new text.]),
+  ([Open the public website, Andrey's page.], [Still the old bio — the site changes on sync.]),
+  ([GitHub → unidcom-site → Actions → *Sync content from Supabase* → Run workflow (preview off).], [Green in about 2 minutes, then the site redeploys.]),
+  ([Reload Andrey's page on the website.], [The new bio.]),
+  ([*Sanity test*: run the push for Andrey (we do this part).], [His `member` document in the test project shows the new text as `shortBio`. The agency's Sanity is not touched.]),
 ))
-
-#pagebreak()
 
 = D · Rui's decisions (15 minutes)
 
@@ -156,7 +155,7 @@ Each line was built differently from the document, or only partly, for the reaso
     ([Sidebar \#16213A; grey text \#888680], [Sidebar \#0E1525 kept; grey text \#6A6862], [His note says "as the platform already has"; \#888680 fails contrast on the page background], []),
     ([Outputs by type with year and semester tabs], [Year chips only], [Outputs carry a reporting year, no publication date; a semester needs a new date field], []),
     ([Pipeline Draft · Submitted · Under review · Approved not published · Published], [4 columns: To validate · Submitted · Approved, not published · Published], [No separate "Under review" state exists; submitted means under review], []),
-    ([Show one profile reach the website], [Portal half done; website step is C9–C10], [Needs a real record; we would not publish a test profile], []),
+    ([Show one profile reach the website], [Portal half done; website step is C9–C10 (and E9–E10)], [Needs a real record; we would not publish a test profile], []),
   ),
   widths: (1.1fr, 1.1fr, 1.3fr, 0.5fr),
   right-from: none,
@@ -177,9 +176,29 @@ Each line was built differently from the document, or only partly, for the reaso
   right-from: none,
 )
 
+= E · Optional: a new publication, end to end (15 minutes)
+
+This is the only way to show a real publication going from the researcher to the website: add a publication that is not on the site yet. Use one of Andrey's real recent journal articles or books, so nothing fake reaches the public site.
+
+#steps((
+  ([Switch to researcher. *Scientific Outputs* → *+ Add output*.], [A step-by-step form: DOI → type → subtype → details → project → review.]),
+  ([Fill it for a real article or book and finish.], [The new output appears with status "Submitted".]),
+  ([Switch to admin → *Pending approval* → *Outputs to approve*.], [The new output is listed.]),
+  ([Click *Approve*.], [It is approved but not published — approving never publishes.]),
+  ([Open the output's page.], [A Website panel with *Publish to website*.]),
+  ([Click *Publish to website*.], [Website status becomes "Published".]),
+  ([Pipeline tab: find Andrey under Submitted; click *Approve*.], [Andrey moves to Published (his profile was already on the site from the import).]),
+  ([Open the public website, find the article.], [Not there yet — the site updates on sync.]),
+  ([GitHub → unidcom-site → Actions → *Sync content from Supabase* → Run workflow (preview off).], [The run finishes green in about 2 minutes, then the site redeploys.]),
+  ([Reload the public website.], [The article is on Andrey's page. Done: Submitted → Approved → Publish → visible.]),
+))
+
+
 = Known limits
 
 - *Rui's own account has no outputs linked*, so his researcher view is almost empty. Use Andrey's for parts A and C.
 - *The website updates only on sync* (04:00 UTC nightly, or step C9).
-- *Sanity:* the test copy for the new website is being set up on a separate test project; the agency's project is not touched.
+- *Ciência Vitae is not connected to RIMS.* It was left out of the pilot on 4 Aug: ORCID is the one source. Researchers keep Ciência Vitae, but RIMS reads ORCID.
+- *No notifications.* A change on ORCID reaches RIMS only when the researcher opens My Profile and imports it; UNIDCOM sees it in Pending approval → Suggestions. Automatic detection is possible later (a daily job already exists in the code, unscheduled).
+- *Sanity:* the test copy lives in a separate test project; the agency's project is not touched.
 - *Security:* checked 29 Sep — no privileged database function can be called without signing in.
