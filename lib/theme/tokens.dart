@@ -52,6 +52,8 @@ abstract final class AppColors {
   // Pill / badge background tints
   static const tealTint = Color(0xFFE6F6F2);
   static const amberTint = Color(0xFFFDF0DC);
+  // Calm yellow for attention banners (Rui, 25 Sep: yellow, not red).
+  static const warnTint = Color(0xFFFEF9C3);
   static const amberTintSoft = Color(0xFFFFF3DE);
   static const greyTint = Color(0xFFEFEEEA);
   static const redTint = Color(0xFFFDEAEA);
