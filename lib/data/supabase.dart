@@ -615,6 +615,27 @@ Future<void> approvePerson(String id) async {
   });
 }
 
+/// Admin: put a profile on the website or take it off — separate from approval.
+Future<void> setPersonPublished(String id, bool published) =>
+    updatePerson(id, {'public_visibility': published});
+
+/// Members for the Pending approval pipeline.
+Future<List<Map<String, dynamic>>> fetchPipelinePeople() async {
+  try {
+    final rows = await db
+        .from('people')
+        .select(
+          'id, preferred_name, profile_status, public_visibility, membership_type',
+        )
+        .filter('merged_into', 'is', null)
+        .inFilter('membership_type', const ['integrated', 'collaborator'])
+        .order('preferred_name');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 /// Files an output the signed-in researcher typed in themselves, returning its
 /// id.
 ///
