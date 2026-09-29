@@ -1,6 +1,6 @@
 # Rui UI decisions for the pilot — acceptance map
 
-Acceptance map for Rui Ramos's 25 Sep 2026 UI decisions, checked against the Phase E ledger and v1 code/tests. As at 30 Sep 2026: **Done: 68 · Partial: 5 · Deferred: 0**.
+Acceptance map for Rui Ramos's 25 Sep 2026 UI decisions, checked against the Phase E ledger and v1 code/tests. As at 30 Sep 2026: **Done: 70 · Partial: 3 · Deferred: 0** (68 · 5 on 29 Sep; info icons and the Under review stage closed on 30 Sep).
 
 Date: 30 Sep 2026
 
@@ -12,7 +12,7 @@ Date: 30 Sep 2026
 | 2 | KEEP compact status line on every page | Done | E2.2 — `lib/widgets/status_line.dart` | `test/status_line_test.dart` |
 | 3 | REMOVE automatic publishing / “Auto-published” | Done | E2.6 — `lib/` v1 surface | `test/forbidden_strings_test.dart` |
 | 4 | CHANGE ORCID: import only, no Sync | Done | E2.1 — `lib/widgets/orcid_block.dart` | `test/orcid_block_test.dart` |
-| 5 | CHANGE Info icon on fields and actions | Partial — coverage is My Profile fields + Submit + Lab/cluster, not every action on every page | E2.3–E2.4 — `lib/widgets/info_tip.dart` | `test/info_tip_test.dart` |
+| 5 | CHANGE Info icon on fields and actions | Done — (i) on every My Profile field and on every action (13 actions added 30 Sep) | E2.4 + 30 Sep — `lib/widgets/info_tip.dart`, used in 9 files | `test/info_tip_test.dart` |
 | 6 | KEEP dark sidebar, lighter content, calm yellow | Partial — sidebar colour `#0E1525` is kept “as the platform already has”; secondary text is `#6A6862` instead of `#888680` for WCAG | E2.5 — `lib/theme/tokens.dart` | `test/contrast_test.dart` |
 
 ## Overview
@@ -96,7 +96,7 @@ Date: 30 Sep 2026
 | A1.5 | REMOVE bars; use numbers only | Done | E6.4 — `lib/widgets/admin_overview.dart` | `test/admin_overview_test.dart` |
 | A1.6 | REMOVE FCT deadline and applications alerts | Done | E6.4 — `lib/widgets/admin_overview.dart` | `test/admin_overview_test.dart` |
 | A1.7 | MOVE per-researcher table to People | Done | E6.5 — `lib/public/people_list.dart` | `test/admin_overview_test.dart` |
-| A1.8 | MOVE stage pipeline to Pending approval; separate Publish | Partial — pipeline has four states, with no separate Under review state | E6.6 — `lib/widgets/pipeline_board.dart` | `test/pipeline_board_test.dart` |
+| A1.8 | MOVE stage pipeline to Pending approval; separate Publish | Done — five columns To validate · Submitted · Under review · Approved, not published · Published; Start review / Approve / Publish are separate | E6.6 + 30 Sep — `lib/widgets/pipeline_board.dart`, migration `20260930100000_under_review.sql` | `test/pipeline_board_test.dart` |
 
 ## Platform checks
 

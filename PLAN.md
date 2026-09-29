@@ -830,6 +830,8 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 | E7.7 | `DEMO.md` script for the new flow; timed dry run | orch | ≤ 15 min | [x] ✅ DEMO.md 15-min script (Codex); timed dry run → you |
 | E7.8 | `graphify update .` | orch | runs clean | [x] ✅ graphify hook rebuilds on each commit |
 
+**30 Sep additions (after Stage 3):** Sanity-bridge RPCs no longer callable by anon (fa2046c, advisor 0028 clear); Under review stage — 5-column pipeline with Start review, timeline step dated (d4ea26c, 29d9cea); (i) on every action (0c38f2d); status line reachable by screen readers (13a2d5d); acceptance map 70 done · 3 for Rui; flows 6/7 pass (add_output wizard walk = test gap); morning check report `docs/reports/2026-10-morning-check/`. Stage 4 (Sanity test project) waits on `sanity login`.
+
 #### Open for Rui (review Thu 1 Oct)
 
 - **Bio 300 limit is soft.** 109 of 112 live bios are over 300 characters (longest 20,627). The counter reads "N / 300" and turns amber over the limit ("the website shows the first 300"); nothing is blocked or cut (E4.4).
