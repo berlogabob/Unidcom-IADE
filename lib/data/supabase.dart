@@ -1030,6 +1030,41 @@ Future<int> proposeMyChanges(
   }
 }
 
+/// Rui B3·4: the researcher uploads their own photo. It lands under
+/// proposed/<auth uid>/ (storage RLS) and goes to UNIDCOM review as a
+/// photo_url suggestion — nothing is published automatically.
+Future<void> proposeMyPhoto(
+  String personId,
+  String? currentUrl,
+  ({Uint8List bytes, String name, String mime}) file,
+) async {
+  if (file.bytes.length > 5 * 1024 * 1024) {
+    throw Exception('Photo must be 5 MB or smaller');
+  }
+  final userId = db.auth.currentUser?.id;
+  if (userId == null) throw Exception('Not signed in');
+  final ext = file.name.contains('.')
+      ? file.name.split('.').last.toLowerCase()
+      : 'jpg';
+  final path = 'proposed/$userId/${DateTime.now().millisecondsSinceEpoch}.$ext';
+  try {
+    final bucket = db.storage.from('people-photos');
+    await bucket.uploadBinary(
+      path,
+      file.bytes,
+      fileOptions: FileOptions(contentType: file.mime),
+    );
+    final url = bucket.getPublicUrl(path);
+    await proposeMyChanges(
+      personId,
+      {'photo_url': currentUrl},
+      {'photo_url': url},
+    );
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<int> proposeOutputChanges(
   String outputId,
   Map<String, String?> current,
@@ -1118,12 +1153,15 @@ Future<List<Map<String, dynamic>>> fetchPeopleForStats() async {
   }
 }
 
-Future<({
-  List<Map<String, dynamic>> people,
-  List<Map<String, dynamic>> outputs,
-  Set<String> orcidOutputIds,
-  Map<String, DateTime?> lastSignIn,
-})> loadAdminOverview() async {
+Future<
+  ({
+    List<Map<String, dynamic>> people,
+    List<Map<String, dynamic>> outputs,
+    Set<String> orcidOutputIds,
+    Map<String, DateTime?> lastSignIn,
+  })
+>
+loadAdminOverview() async {
   try {
     final rows = await Future.wait([
       db
