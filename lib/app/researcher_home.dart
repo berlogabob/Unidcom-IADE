@@ -10,7 +10,6 @@ import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/output_row.dart';
 import '../widgets/panels.dart';
-import '../widgets/status_strip.dart';
 import 'my_profile.dart' show profileStatusLabel;
 
 /// Home-page fetch, public so the split-out `/app/home/*` leaves (see
@@ -241,11 +240,6 @@ class _IdentityHeader extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text('ORCID iD $orcid', style: const TextStyle(fontSize: 12)),
                 ],
-                const SizedBox(height: 12),
-                StatusStrip(
-                  person: person,
-                  pendingCandidates: pendingCandidates,
-                ),
               ],
             ),
           ),

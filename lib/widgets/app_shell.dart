@@ -7,6 +7,7 @@ import '../data/supabase.dart' as data;
 import '../theme/tokens.dart';
 import 'nav_model.dart';
 import 'side_nav.dart';
+import 'status_line.dart';
 
 /// The public UNIDCOM site. This app is the portal you arrive at *from* there,
 /// so every shell offers the way back.
@@ -86,7 +87,10 @@ class _AppShellState extends State<AppShell> {
                 Expanded(
                   // Contain the nested Navigator's route semantics barrier so
                   // it cannot hide the sidebar painted before this pane.
-                  child: Semantics(container: true, child: widget.child),
+                  child: Semantics(
+                    container: true,
+                    child: _wrapWithStatusLine(widget.child, hasSession, admin),
+                  ),
                 ),
               ],
             ),
@@ -133,7 +137,7 @@ class _AppShellState extends State<AppShell> {
               onNavigate: () => Navigator.of(context).pop(),
             ),
           ),
-          body: widget.child,
+          body: _wrapWithStatusLine(widget.child, hasSession, admin),
         );
       },
     );
@@ -342,6 +346,30 @@ class _AppShellState extends State<AppShell> {
         ],
       ),
     );
+  }
+
+  Widget _wrapWithStatusLine(Widget child, bool hasSession, bool admin) {
+    // Only show status line for signed-in researchers
+    if (hasSession && !admin) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FutureBuilder<Map<String, dynamic>?>(
+            future: _person,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done &&
+                  snapshot.data != null) {
+                return StatusLine(person: snapshot.data);
+              }
+              // Return empty container while loading
+              return Container();
+            },
+          ),
+          Expanded(child: child),
+        ],
+      );
+    }
+    return child;
   }
 }
 
