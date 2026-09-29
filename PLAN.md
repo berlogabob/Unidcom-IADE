@@ -828,6 +828,15 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 | E7.7 | `DEMO.md` script for the new flow; timed dry run | orch | ≤ 15 min | [ ] |
 | E7.8 | `graphify update .` | orch | runs clean | [ ] |
 
+#### Open for Rui (review Thu 1 Oct)
+
+- **Bio 300 limit is soft.** 109 of 112 live bios are over 300 characters (longest 20,627). The counter reads "N / 300" and turns amber over the limit ("the website shows the first 300"); nothing is blocked or cut (E4.4).
+- **No semester tabs on the admin dashboard.** Outputs carry only `reporting_year`; `created_at` is the import date. S1/S2 needs a publication-date field; year tabs only for the demo (E6.2/E6.4).
+- **Admin menu.** Kept Projects, Structure, Data browser, Settings, Merge duplicates; "Pending approval" is top level and "Scientific outputs" is "Outputs", per B1·1 ("remove Requests; add Pending approval") rather than the 5-item mock (E6.1).
+- **Approve ≠ publish for profiles too.** Approving a profile no longer sets it public; "Publish to website" is its own action (E1.8, E6.6). Existing 183 public profiles unchanged.
+- **Secondary text colour** stays #6A6862, not Carmela's #888680 (#888680 fails WCAG AA contrast on #F5F4F0).
+- **Imported = to_validate for profiles as well as outputs** (184 profiles, 365 outputs); the site still shows what it showed.
+
 #### Stage 4 — Stretch: Sanity (gate: E7.1–E7.5 green by Thu 12:00)
 E9.1 rebase `feat/sanity-bridge`, fix `anon`-callable `sanity_*` RPCs · E9.2 push approved ∧ published profile to dataset `vj0axykv` · E9.3 show it on the Sanity site. Otherwise: one slide saying Hugo is live, Sanity bridge built and next.
 
