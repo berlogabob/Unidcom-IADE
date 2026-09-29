@@ -23,7 +23,7 @@
 #title-block(
   "Rui's UI decisions — ready to check",
   subtitle: "What Rui asked on 25 Sep, what is live today, and how to confirm it in about an hour.",
-  meta-line: [Portal on `main` bd088b0, deployed 30 Sep · CI and deploy green · 331 automated tests pass · 6 of 7 browser flows pass · every number below read from the live system on 29–30 Sep.],
+  meta-line: [Portal on `main` ff17ac5, deployed 30 Sep · CI and deploy green · 333 automated tests pass · 6 of 7 browser flows pass · every number below read from the live system on 29–30 Sep.],
   standfirst: [#pill("READY", tone: "ok") All 73 decisions in Rui's document were built. 70 are done exactly as asked. 3 are done differently or partly, each for a stated reason, and need Rui's yes or no. Nothing was deferred. The one step we did not do alone is putting a real profile on the public website: that needs a real person's record, and it is step C below.],
 )
 
@@ -31,7 +31,7 @@
   ("70", "Done as asked", "of 73 decisions"),
   ("3", "Need Rui's call", "done differently or partly"),
   ("0", "Deferred", ""),
-  ("331", "Automated tests", "all pass"),
+  ("333", "Automated tests", "all pass"),
 ))
 
 = Rui asked vs we have
@@ -62,7 +62,7 @@
 #v(6pt)
 #callout(title: "What is normal, not a bug", tone: "neutral")[
   - *Everything says "To be validated".* On 29 Sep all 365 imported outputs and 184 imported profiles were set back to "To be validated by the researcher", as Rui asked. The website still shows the same 76 publications and 183 people, because showing on the website is a separate decision now.
-  - *Nothing changes on the website until the sync runs.* It runs every night at 04:00 UTC, or on demand (step C9).
+  - *Nothing changes on the website until the sync runs.* It runs every night at 04:00 UTC, or on demand (step C10).
   - *Researchers who have not logged in yet see nothing new.* Only 4 accounts are linked today.
 ]
 
@@ -117,7 +117,7 @@
 
 #steps((
   ([Bottom-left, click *Switch to admin*.], [The admin dashboard.]),
-  ([Read the four tiles.], [Integrated researchers 46 · Collaborators 109 · Profiles to approve · Outputs to approve.]),
+  ([Read the five tiles.], [Integrated researchers 46 · Collaborators 109 · Profiles to approve · Outputs to approve · Proposals to review.]),
   ([Read *Sync status*.], [Two lines: ORCID linked / not linked, and Website published / approved-not-published / not published. Numbers only, no bars.]),
   ([Read *Issues*.], [Missing DOI and Not on ORCID. No "Not approved yet" (that is a review state, not an issue).]),
   ([Click a year chip in *Outputs by type*.], [The numbers change. There is no semester chip — see part D.]),
@@ -128,7 +128,7 @@
 
 = C · A bio change, end to end (25 minutes)
 
-The whole path of one real change: Andrey edits his biography where Portuguese researchers keep it, and we follow it to the portal, through UNIDCOM review, onto the website and into the Sanity test copy. RIMS does not notify anyone about the change today; each hand-over below is a person clicking.
+The whole path of one real change: Andrey edits his biography where Portuguese researchers keep it, and we follow it to the portal, through UNIDCOM review, onto the website and into the Sanity test copy. RIMS sends no e-mail; each hand-over below is a person clicking, and UNIDCOM sees a count on its dashboard.
 
 #steps((
   ([*Ciência Vitae*: edit the summary (Resumo) and save.], [Saved in Ciência Vitae. RIMS is not connected to Ciência Vitae — we only learn here whether it passes the text on to ORCID.]),
@@ -136,7 +136,8 @@ The whole path of one real change: Andrey edits his biography where Portuguese r
   ([*Portal*: sign out, then sign in with ORCID again.], [Overview opens.]),
   ([*My Profile* → Biography.], [Two columns: *UNIDCOM* (old text) and *ORCID* (new text), and *Import bio from ORCID*. ORCID can take a few minutes to show a change to others.]),
   ([Click *Import bio from ORCID*.], [The ORCID text becomes a proposal for UNIDCOM review. The UNIDCOM text does not change yet.]),
-  ([Switch to admin → *Pending approval* → *Suggestions*.], [A row "Proposed by researcher", field Bio, with the new text.]),
+  ([Switch to admin. Look at the dashboard.], [Tile *Proposals to review · 1*.]),
+  ([Click the tile, then the tab *Suggestions*.], [A row "Proposed by researcher", field Bio, with the new text.]),
   ([Click *Accept*.], [The row leaves the queue. Andrey's portal bio shows the new text.]),
   ([Open the public website, Andrey's page.], [Still the old bio — the site changes on sync.]),
   ([GitHub → unidcom-site → Actions → *Sync content from Supabase* → Run workflow (preview off).], [Green in about 2 minutes, then the site redeploys.]),
@@ -153,7 +154,7 @@ Each line was built differently from the document, or only partly, for the reaso
   (
     ([Sidebar \#16213A; grey text \#888680], [Sidebar \#0E1525 kept; grey text \#6A6862], [His note says "as the platform already has"; \#888680 fails contrast on the page background], []),
     ([Outputs by type with year and semester tabs], [Year chips only], [Outputs carry a reporting year, no publication date; a semester needs a new date field], []),
-    ([Show one profile reach the website], [Portal half done; website step is C9–C10 (and E10–E11)], [Needs a real record; we would not publish a test profile], []),
+    ([Show one profile reach the website], [Portal half done; website step is C10–C11 (and E10–E11)], [Needs a real record; we would not publish a test profile], []),
   ),
   widths: (1.1fr, 1.1fr, 1.3fr, 0.5fr),
   right-from: none,
@@ -196,8 +197,9 @@ This is the only way to show a real publication going from the researcher to the
 = Known limits
 
 - *Rui's own account has no outputs linked*, so his researcher view is almost empty. Use Andrey's for parts A and C.
-- *The website updates only on sync* (04:00 UTC nightly, or step C9).
+- *The website updates only on sync* (04:00 UTC nightly, or step C10).
 - *Ciência Vitae is not connected to RIMS.* It was left out of the pilot on 4 Aug: ORCID is the one source. Researchers keep Ciência Vitae, but RIMS reads ORCID.
-- *No notifications.* A change on ORCID reaches RIMS only when the researcher opens My Profile and imports it; UNIDCOM sees it in Pending approval → Suggestions. Automatic detection is possible later (a daily job already exists in the code, unscheduled).
+- *No e-mail notifications.* A change on ORCID reaches RIMS when the researcher opens My Profile and imports it; UNIDCOM then sees *Proposals to review* on the dashboard. Automatic detection is possible later (a daily job already exists in the code, unscheduled).
+- *Undo after the check.* Andrey's record was saved on 29 Sep 22:25; `audit/snapshots/2026-09-30-before-walkthrough.sql` puts it back and lists anything the walk added.
 - *Sanity:* the test copy lives in a separate test project; the agency's project is not touched.
 - *Security:* checked 29 Sep — no privileged database function can be called without signing in.
