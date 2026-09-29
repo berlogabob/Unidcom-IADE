@@ -181,7 +181,7 @@ void main() {
 
     expect(find.text('2025'), findsNothing);
     expect(
-      find.text('Author · Q1 journal · DOI 10.1234/example'),
+      find.text('Author · DOI 10.1234/example'),
       findsOneWidget,
     );
   });
@@ -208,7 +208,7 @@ void main() {
       ),
     );
 
-    expect(find.text('ORCID ✓'), findsOneWidget);
+    expect(find.text('On ORCID'), findsOneWidget);
     expect(find.text('Website · Published'), findsOneWidget);
   });
 

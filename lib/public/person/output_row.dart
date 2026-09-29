@@ -13,6 +13,7 @@ class PersonOutputRow extends StatelessWidget {
     this.onToggle,
     this.onEdit,
     this.showStates = false,
+    this.featurable = true,
   });
 
   final Map<String, dynamic> author;
@@ -21,6 +22,7 @@ class PersonOutputRow extends StatelessWidget {
   final ValueChanged<String>? onToggle;
   final ValueChanged<String>? onEdit;
   final bool showStates;
+  final bool featurable;
 
   @override
   Widget build(BuildContext context) {
@@ -29,15 +31,18 @@ class PersonOutputRow extends StatelessWidget {
     final id = output['id'] as String;
     final subtype = output['subtype'] as String?;
     final doi = output['doi'] as String?;
+    final type = [output['type'], subtype]
+        .whereType<String>()
+        .where((value) => value.isNotEmpty)
+        .join(' · ');
     final detail = [
       if ((author['role'] as String?)?.isNotEmpty == true) author['role'],
-      if (subtype?.isNotEmpty == true) subtype,
       if (doi?.trim().isNotEmpty == true) 'DOI $doi',
     ].join(' · ');
     return OutputRow(
       title: output['title'] as String? ?? 'Untitled',
       year: output['reporting_year'] as int?,
-      type: output['type'] as String?,
+      type: type.isEmpty ? null : type,
       detail: detail.isEmpty ? null : detail,
       status: output['approval_status'] == 'approved'
           ? null
@@ -48,9 +53,13 @@ class PersonOutputRow extends StatelessWidget {
       issueCodes: (output['issue_codes'] as List<dynamic>?)?.cast<String>(),
       errorCount: output['error_count'] as int? ?? 0,
       warningCount: output['warning_count'] as int? ?? 0,
+      showNoIssues: showStates,
       extraPills: showStates
           ? [
-              if (output['source'] == 'orcid') ('ORCID ✓', PillTone.teal),
+              (
+                output['source'] == 'orcid' ? 'On ORCID' : 'Not on ORCID',
+                output['source'] == 'orcid' ? PillTone.teal : PillTone.grey,
+              ),
               (
                 'Website · ${websiteLabel(output['website_status'] as String?)}',
                 output['website_status'] == 'published'
@@ -68,7 +77,7 @@ class PersonOutputRow extends StatelessWidget {
               icon: const Icon(Icons.edit_outlined, size: 20),
               onPressed: () => onEdit!(id),
             ),
-          if (onToggle != null)
+          if (onToggle != null && featurable)
             IconButton(
               // The tooltip doubles as the UI-test handle: it reaches the web
               // semantics tree as text, and encodes which state we're in.
