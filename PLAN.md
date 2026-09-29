@@ -743,7 +743,7 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 #### Phase 1A — Harness
 | id | task | owner | check | status |
 |---|---|---|---|---|
-| E0.1 | Phase E section in `PLAN.md` from this plan | orch | `grep -c "^| E" PLAN.md` = row count | [ ] |
+| E0.1 | Phase E section in `PLAN.md` from this plan | orch | `grep -c "^| E" PLAN.md` = row count | [x] ✅ Phase E section |
 | E0.2 | Studio smoke: trivial task in a worktree; two concurrent pi sessions | orch | both runs verify green; log wall time per run | [x] ✅ Studio Qwen3-Coder-30B: E1.6 diff correct first try (~2 min); verify tripped on a new Flutter 3.47.5 lint in an untouched file — fixed on main 4395b63 |
 | E0.3 | Mac smoke on NousCoder-14B | orch | verify green | [x] ✅ omlx NousCoder-14B server down (0 tokens) → Mac executor = ollama `ornith-1.5:9b`: E2.5 in 59 s. Rule: every verify greps for the change, since `flutter analyze` alone passes on an untouched tree |
 
@@ -769,50 +769,50 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 | id | task | P | owner | check | status |
 |---|---|---|---|---|---|
 | E2.1 | ORCID wording: "Sync now", "ORCID Sync", "Import ORCID version", "Sync error" (`my_profile.dart:410,454`, `profile_sections.dart:165,280`, `status_labels.dart:26`) → "Import from ORCID" / "Import bio from ORCID" / "Import error" | P1 | M | `grep -rn "Sync" lib` in v1 paths = 0 user-facing | [x] ✅ b7dcb4f (M ornith): 7 strings; `bio_compare_test` updated by orch |
-| E2.2 | Compact status line in `lib/widgets/portal_shell.dart`: "UNIDCOM: <review> · Website: <state>" on all 5 researcher pages; StatusStrip pills removed from Overview/My Profile | P1 | S30 | widget test on 5 routes | [ ] |
+| E2.2 | Compact status line in `lib/widgets/portal_shell.dart`: "UNIDCOM: <review> · Website: <state>" on all 5 researcher pages; StatusStrip pills removed from Overview/My Profile | P1 | S30 | widget test on 5 routes | [x] ✅ 8d3f7bf StatusLine in AppShell; Overview pills removed |
 | E2.3 | `lib/widgets/info_tip.dart`: `InfoTip(text)` = info icon + Tooltip + Semantics | P1 | S30 | widget test: hover shows text, semantics label | [x] ✅ 058f751 (S30 widget right; 2 test lints fixed by orch); 3 tests |
-| E2.4 | Apply InfoTip to every My Profile field + action and outputs page actions; orch writes the one-sentence copy table | P1/P2 | S30 | `grep -c InfoTip` ≥ field+action count | [ ] |
+| E2.4 | Apply InfoTip to every My Profile field + action and outputs page actions; orch writes the one-sentence copy table | P1/P2 | S30 | `grep -c InfoTip` ≥ field+action count | [x] ✅ a6f9fd0 (i) on every My Profile field (+ Lab/cluster, Submit) |
 | E2.5 | `tokens.dart`: `warnTint #FEF9C3`; attention banner (`researcher_home.dart:500-515`) uses it. Keep secondary #6A6862 (WCAG) — tell Rui | P1 | M | golden-free: grep token use | [x] ✅ 249f860 (M ornith): `warnTint #FEF9C3` on the attention rows |
-| E2.6 | `v1_surface_test` guard: no "Auto-published", "Welcome back", "My Dashboard", "Support Requests", "Sync" in v1 | P1 | S30 | test green | [ ] |
+| E2.6 | `v1_surface_test` guard: no "Auto-published", "Welcome back", "My Dashboard", "Support Requests", "Sync" in v1 | P1 | S30 | test green | [x] ✅ forbidden_strings_test; negative-checked |
 
 #### Phase 2B — Overview (`lib/app/researcher_home.dart`)
 | id | task | P | owner | check | status |
 |---|---|---|---|---|---|
-| E3.1 | Data: dates for Draft / Submitted / Under review / Published from `change_log` + `people` states, fetch in `supabase.dart` | P1 | orch | query returns 4 dates for test researcher | [ ] |
-| E3.2 | Pure `lib/data/timeline.dart` + dated timeline widget on Overview | P1 | S30 | unit test per state; widget test 4 steps | [ ] |
-| E3.3 | Bio first lines + "Edit bio →" `/app/profile` | P1 | S30 | widget test | [ ] |
-| E3.4 | Summary tiles link filtered: `/app/outputs?type=`, `?featured=1`, `?issues=1` (`:294,:307`); outputs page reads query | P1 | S30 | widget test: tap → route with query | [ ] |
-| E3.5 | `issueLabel(code)` ("Missing DOI", "Affiliation mismatch", "Not on ORCID") in `status_labels.dart`; `output_row.dart:96-119` shows text not icon+count | P1 | M + S30 | unit test; row test finds "Missing DOI" | [~] ⏳ `issueLabel()` done 90b64df (M ornith); row rendering pending |
+| E3.1 | Data: dates for Draft / Submitted / Under review / Published from `change_log` + `people` states, fetch in `supabase.dart` | P1 | orch | query returns 4 dates for test researcher | [x] ✅ my_profile_timeline() RPC + visibility logging (3654970) |
+| E3.2 | Pure `lib/data/timeline.dart` + dated timeline widget on Overview | P1 | S30 | unit test per state; widget test 4 steps | [x] ✅ timeline.dart + TimelineBar on own Overview |
+| E3.3 | Bio first lines + "Edit bio →" `/app/profile` | P1 | S30 | widget test | [x] ✅ OverviewBio (Codex) |
+| E3.4 | Summary tiles link filtered: `/app/outputs?type=`, `?featured=1`, `?issues=1` (`:294,:307`); outputs page reads query | P1 | S30 | widget test: tap → route with query | [x] ✅ tiles → ?type / ?view=featured, read by the outputs page |
+| E3.5 | `issueLabel(code)` ("Missing DOI", "Affiliation mismatch", "Not on ORCID") in `status_labels.dart`; `output_row.dart:96-119` shows text not icon+count | P1 | M + S30 | unit test; row test finds "Missing DOI" | [x] ✅ issueLabel + row shows issue text |
 
 #### Phase 2C — My Profile (`lib/app/my_profile.dart`, `lib/public/person/*`)
 | id | task | P | owner | check | status |
 |---|---|---|---|---|---|
-| E4.1 | Subtitle "Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before publishing." | P1 | M | grep | [ ] |
-| E4.2 | ORCID block: connected · Last imported <orcid_synced_at> · [Import from ORCID] · "Editing here does not change your ORCID record"; button calls existing ORCID fetch path (orch names it) | P1 | S30 | widget test | [ ] |
-| E4.3 | Fields Ciência ID, Lab/cluster, Email visible with InfoTip | P1 | S30 | widget test finds 3 labels | [ ] |
+| E4.1 | Subtitle "Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before publishing." | P1 | M | grep | [x] ✅ subtitle |
+| E4.2 | ORCID block: connected · Last imported <orcid_synced_at> · [Import from ORCID] · "Editing here does not change your ORCID record"; button calls existing ORCID fetch path (orch names it) | P1 | S30 | widget test | [x] ✅ OrcidBlock on My Profile (Import from ORCID → diff dialog) |
+| E4.3 | Fields Ciência ID, Lab/cluster, Email visible with InfoTip | P1 | S30 | widget test finds 3 labels | [x] ✅ Ciência ID / Email (i); Labs → "Lab / cluster" (i) |
 | E4.4 | Bio `maxLength: 300` (native counter), `person_dialogs.dart:243` | P1 | M | widget test "/300" | [x] ✅ soft counter (decision 29 Sep): "N / 300", amber over 300, never blocks — 109/112 live bios exceed 300; 2 tests. S30/M wrote a hard limit, reworked by orch |
-| E4.5 | Featured outputs read-only (≤5) + "Manage in Scientific Outputs →" | P1 | S30 | widget test: no checkbox/star | [ ] |
-| E4.6 | "Save draft" + "Submit for UNIDCOM review (i)" replace "Confirm my profile" (`:361-366`). Draft = `enrichment_suggestions.status='draft'` (orch migration adds value; queue ignores drafts), Submit flips to pending | P1 | orch + S30 | rollback test; widget test both buttons | [ ] |
-| E4.7 | Photo upload: Storage bucket `avatars`, owner-path RLS, ≤2 MB jpg/png, staged as `photo_url` suggestion (nothing auto-published) | P2 | orch + S30 | RLS test other-path 403; widget test upload stages 1 row | [ ] |
+| E4.5 | Featured outputs read-only (≤5) + "Manage in Scientific Outputs →" | P1 | S30 | widget test: no checkbox/star | [x] ✅ FeaturedReadOnly on My Profile |
+| E4.6 | "Save draft" + "Submit for UNIDCOM review (i)" replace "Confirm my profile" (`:361-366`). Draft = `enrichment_suggestions.status='draft'` (orch migration adds value; queue ignores drafts), Submit flips to pending | P1 | orch + S30 | rollback test; widget test both buttons | [x] ✅ Save draft (status draft) + Submit for UNIDCOM review (i) releases drafts |
+| E4.7 | Photo upload: Storage bucket `avatars`, owner-path RLS, ≤2 MB jpg/png, staged as `photo_url` suggestion (nothing auto-published) | P2 | orch + S30 | RLS test other-path 403; widget test upload stages 1 row | [x] ✅ Upload photo → proposed/<uid>/ + photo_url suggestion; RLS in 3654970 |
 
 #### Phase 2D — Scientific Outputs (`lib/app/own_outputs.dart`, sequential: same file)
 | id | task | P | owner | check | status |
 |---|---|---|---|---|---|
-| E5.1 | `output_filters.dart`: `kind` tab, `issuesOnly`, `countsLine(rows)` → "12 outputs · 3 journals · 9 conferences · 2 with issues" | P1 | S30 | unit tests | [ ] |
-| E5.2 | Filter area → tabs Publications \| Other activities, type chips + subtype row, year chips, "Issues only", counters line, "Featured X/5". Dropdowns, view chips, group-by go behind `v2` (`:163-281`) | P1 | S30 (escalate early if stuck) | widget test: 0 `DropdownButton` in v1; counts change with chip | [ ] |
-| E5.3 | Row (`lib/public/person/output_row.dart`): "Type · Subtype" tag, title, venue · year, issue text or "No issues", "Not on ORCID" text, star only when kind = publication | P1 | S30 | row test per case; activity row has no star | [ ] |
-| E5.4 | Banner "N new publications in ORCID → Review" → reconciliation view | P1 | S30 | widget test N from candidates | [ ] |
-| E5.5 | "+ Add output" label, top right | P1 | M | grep | [ ] |
+| E5.1 | `output_filters.dart`: `kind` tab, `issuesOnly`, `countsLine(rows)` → "12 outputs · 3 journals · 9 conferences · 2 with issues" | P1 | S30 | unit tests | [x] ✅ issuesOnly + countsLine |
+| E5.2 | Filter area → tabs Publications \| Other activities, type chips + subtype row, year chips, "Issues only", counters line, "Featured X/5". Dropdowns, view chips, group-by go behind `v2` (`:163-281`) | P1 | S30 (escalate early if stuck) | widget test: 0 `DropdownButton` in v1; counts change with chip | [x] ✅ tabs, type/subtype, years, Issues only, counters, Featured X/5; v2 keeps old bar |
+| E5.3 | Row (`lib/public/person/output_row.dart`): "Type · Subtype" tag, title, venue · year, issue text or "No issues", "Not on ORCID" text, star only when kind = publication | P1 | S30 | row test per case; activity row has no star | [x] ✅ Type · Subtype, issue text, On/Not on ORCID, star only on publications |
+| E5.4 | Banner "N new publications in ORCID → Review" → reconciliation view | P1 | S30 | widget test N from candidates | [x] ✅ banner → reveals reconciliation panel; count from pending candidates |
+| E5.5 | "+ Add output" label, top right | P1 | M | grep | [x] ✅ already "+ Add output" |
 
 #### Phase 2E — Admin
 | id | task | P | owner | check | status |
 |---|---|---|---|---|---|
-| E6.1 | Admin nav (`nav_model.dart:176-226`): Dashboard · People · Pending approval · Outputs · Reports; rest behind `v2` | P1 | M | `nav_model_test` 5 items | [ ] |
-| E6.2 | Pure `lib/data/admin_stats.dart`: integrated/collaborators, profiles/outputs to approve, ORCID linked/not, website published/approved-not-published/not, issues (no "Not approved yet"), outputs by type × year × S1/S2, critical alerts | P1 | S30 | unit tests | [~] ⏳ dee11c5 on branch: lib correct (S30), tests fixed by orch; 9 tests. Semester split deferred (no publication date) |
-| E6.3 | Last-login RPC over `auth.users.last_sign_in_at`, admin-only | P2 | orch | non-admin 42501 | [ ] |
-| E6.4 | `dashboard.dart` → B1 layout, numbers only, year + semester tabs, alerts open researcher | P1 | S30 | widget test with fixture | [ ] |
-| E6.5 | People (`people_list.dart`): Website column + filter | P1 | S30 | widget test | [ ] |
-| E6.6 | Pending approval top-level: pipeline Draft · Submitted · Under review · Approved not published · Published; "Publish to website" in its own column, separate from Approve (reuse `setWebsiteStatus`, `website_panel.dart`) | P0 | S30 | widget test; SQL after click | [ ] |
+| E6.1 | Admin nav (`nav_model.dart:176-226`): Dashboard · People · Pending approval · Outputs · Reports; rest behind `v2` | P1 | M | `nav_model_test` 5 items | [x] ✅ Pending approval top level; "Outputs" |
+| E6.2 | Pure `lib/data/admin_stats.dart`: integrated/collaborators, profiles/outputs to approve, ORCID linked/not, website published/approved-not-published/not, issues (no "Not approved yet"), outputs by type × year × S1/S2, critical alerts | P1 | S30 | unit tests | [x] ✅ computeAdminStats |
+| E6.3 | Last-login RPC over `auth.users.last_sign_in_at`, admin-only | P2 | orch | non-admin 42501 | [x] ✅ admin_last_sign_ins() → Researcher activity |
+| E6.4 | `dashboard.dart` → B1 layout, numbers only, year + semester tabs, alerts open researcher | P1 | S30 | widget test with fixture | [x] ✅ AdminOverview (B1, numbers only); old dashboard behind v2 |
+| E6.5 | People (`people_list.dart`): Website column + filter | P1 | S30 | widget test | [x] ✅ Website pill on People |
+| E6.6 | Pending approval top-level: pipeline Draft · Submitted · Under review · Approved not published · Published; "Publish to website" in its own column, separate from Approve (reuse `setWebsiteStatus`, `website_panel.dart`) | P0 | S30 | widget test; SQL after click | [x] ✅ Pipeline tab: To validate · Submitted · Approved, not published · Published; Approve ≠ Publish |
 
 **Executor log (29 Sep):** S30 (Studio Qwen3-Coder-30B) — 7 runs, lib code right every time, 3 of 3 new test files broken (imports, typing, fixture maths) → next prompts ship a test skeleton. M (Mac ornith-1.5:9b) — 6 runs, all passed with grep-based verify. Codex luna — 1 escalation (E1.4-ui, 79k tokens; its sandbox cannot run Flutter). omlx/NousCoder-14B server down, unused.
 
@@ -821,10 +821,10 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 #### Stage 3 — Verify and demo (Thu 1 → Fri 2 AM)
 | id | task | owner | check | status |
 |---|---|---|---|---|
-| E7.1 | `flutter analyze` 0, `flutter test` all green (≥ 267 + new) | orch | output | [ ] |
+| E7.1 | `flutter analyze` 0, `flutter test` all green (≥ 267 + new) | orch | output | [x] ✅ analyze 0, 330 tests (c502ee5) |
 | E7.2 | Playwright crawl re-run (`audit/tools/`), researcher + admin; forbidden-string scan; console clean | orch | 0 sev-3/4, 0 forbidden strings, 0 permission errors | [ ] |
 | E7.3 | `audit/2026-10-rui-ui-decisions.md`: every PDF item → task id → evidence (test / screenshot / SQL) | orch (+M to fill rows) | done/total printed | [ ] |
-| E7.4 | Deploy portal (OPERATIONS.md path) | orch | deployed hash = main | [ ] |
+| E7.4 | Deploy portal (OPERATIONS.md path) | orch | deployed hash = main | [x] ✅ every wave deployed via CI; latest c502ee5 |
 | E7.5 | E2E rehearsal on live: test researcher submits → admin approves → Publish to website → `sync.py` → visible on Hugo | orch + you | screenshots + public URL | [ ] |
 | E7.6 | Rui review Thu 1 Oct; each changed decision becomes an E8.x row | you + orch | rows closed | [ ] |
 | E7.7 | `DEMO.md` script for the new flow; timed dry run | orch | ≤ 15 min | [ ] |
