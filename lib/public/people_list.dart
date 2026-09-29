@@ -162,33 +162,42 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
                                                 ],
                                               ),
                                             ),
-                                            if (membershipType != null) ...[
-                                              const SizedBox(width: 12),
-                                              TypeBadge(membershipType),
-                                            ],
-                                            if (status != null) ...[
-                                              const SizedBox(width: 12),
-                                              StatusPill(
-                                                queueStatusLabel(status),
-                                                tone: switch (status) {
-                                                  'active' => PillTone.teal,
-                                                  'a_confirmar' =>
-                                                    PillTone.amber,
-                                                  _ => PillTone.grey,
-                                                },
-                                              ),
-                                            ],
                                             const SizedBox(width: 12),
-                                            StatusPill(
-                                              person['public_visibility'] ==
-                                                      true
-                                                  ? 'Website · Published'
-                                                  : 'Website · Not published',
-                                              tone:
-                                                  person['public_visibility'] ==
-                                                      true
-                                                  ? PillTone.teal
-                                                  : PillTone.grey,
+                                            // Flexible + Wrap: on a phone the badges
+                                            // wrap instead of squeezing the name to one
+                                            // letter per line (seen 30 Sep at 390 px).
+                                            Flexible(
+                                              child: Wrap(
+                                                alignment: WrapAlignment.end,
+                                                spacing: 8,
+                                                runSpacing: 4,
+                                                children: [
+                                                  if (membershipType != null)
+                                                    TypeBadge(membershipType),
+                                                  if (status != null)
+                                                    StatusPill(
+                                                      queueStatusLabel(status),
+                                                      tone: switch (status) {
+                                                        'active' =>
+                                                          PillTone.teal,
+                                                        'a_confirmar' =>
+                                                          PillTone.amber,
+                                                        _ => PillTone.grey,
+                                                      },
+                                                    ),
+                                                  StatusPill(
+                                                    person['public_visibility'] ==
+                                                            true
+                                                        ? 'Website · Published'
+                                                        : 'Website · Not published',
+                                                    tone:
+                                                        person['public_visibility'] ==
+                                                            true
+                                                        ? PillTone.teal
+                                                        : PillTone.grey,
+                                                  ),
+                                                ],
+                                              ),
                                             ),
                                           ],
                                         ),
@@ -236,7 +245,13 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
         filterDropdown(
           'Profile',
           _profileStatus,
-          const ['to_validate', 'draft', 'pending_review', 'under_review', 'approved'],
+          const [
+            'to_validate',
+            'draft',
+            'pending_review',
+            'under_review',
+            'approved',
+          ],
           (value) {
             _profileStatus = value;
             _load();

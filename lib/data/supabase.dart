@@ -869,13 +869,29 @@ Future<List<Map<String, dynamic>>> fetchStalePeople() async {
   }
 }
 
+/// Proposals researchers made themselves (not machine enrichment) — the
+/// dashboard's "Proposals to review". Count only; no rows fetched.
+Future<int> countResearcherProposals() async {
+  try {
+    return await db
+        .from('enrichment_suggestions')
+        .count()
+        .eq('status', 'pending')
+        .eq('source', 'researcher');
+  } catch (_) {
+    return 0;
+  }
+}
+
 Future<List<Map<String, dynamic>>> fetchPendingSuggestions() async {
   try {
     final rows = await db
         .from('enrichment_suggestions')
         .select()
         .eq('status', 'pending')
-        .order('created_at');
+        // Newest first: a researcher's fresh proposal must not sit under the
+        // 253 older machine suggestions (ORCID/Crossref enrichment).
+        .order('created_at', ascending: false);
     final suggestions = rows
         .map((row) => Map<String, dynamic>.from(row))
         .toList();

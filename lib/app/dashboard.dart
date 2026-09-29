@@ -42,9 +42,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<_AdminOverviewData> _loadAdminOverview() async {
     final dataFuture = loadAdminOverview();
-    final suggestionsFuture = fetchPendingSuggestions();
+    final proposalsFuture = countResearcherProposals();
     final data = await dataFuture;
-    final proposalsToReview = (await suggestionsFuture).length;
+    final proposalsToReview = await proposalsFuture;
     final members = data.people.where(
       (person) =>
           person['membership_type'] == 'integrated' ||
