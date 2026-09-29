@@ -15,6 +15,12 @@ Future<bool> showPersonEditor(
       )
       stage =
       proposeMyChanges,
+  Future<int> Function(
+    String personId,
+    Map<String, String?> current,
+    Map<String, String> proposed,
+  )?
+  stageDraft,
   Future<void> Function(String id, Map<String, dynamic> fields) update =
       updatePerson,
 }) async {
@@ -24,6 +30,7 @@ Future<bool> showPersonEditor(
           person: person,
           canEditGovernance: canEditGovernance,
           stage: stage,
+          stageDraft: stageDraft,
           update: update,
         ),
       ) ??
@@ -41,6 +48,7 @@ class _PersonEditDialog extends StatefulWidget {
     this.person,
     this.canEditGovernance = true,
     this.stage = proposeMyChanges,
+    this.stageDraft,
     this.update = updatePerson,
   });
 
@@ -56,6 +64,12 @@ class _PersonEditDialog extends StatefulWidget {
     Map<String, String> proposed,
   )
   stage;
+  final Future<int> Function(
+    String personId,
+    Map<String, String?> current,
+    Map<String, String> proposed,
+  )?
+  stageDraft;
   final Future<void> Function(String id, Map<String, dynamic> fields) update;
 
   @override
@@ -211,6 +225,55 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
     }
   }
 
+  Future<void> _saveDraft() async {
+    setState(() => _saving = true);
+    try {
+      if (!_ownerMode) return;
+      final keys = [
+        'preferred_name',
+        'legal_name',
+        'bio',
+        'photo_url',
+        'email',
+        'job_title',
+        'phone',
+        'orcid',
+        'ciencia_id',
+      ];
+      final current = <String, String?>{
+        for (final key in keys) key: widget.person![key]?.toString(),
+      };
+      final proposed = <String, String>{
+        'preferred_name': _preferredName.text.trim(),
+        'legal_name': _legalName.text.trim(),
+        'bio': _bio.text.trim(),
+        'photo_url': _photoUrl.text.trim(),
+        'email': _email.text.trim(),
+        'job_title': _jobTitle.text.trim(),
+        'phone': _phone.text.trim(),
+        'orcid': _orcid.text.trim(),
+        'ciencia_id': _cienciaId.text.trim(),
+      };
+      final count = await widget.stageDraft!(
+        widget.person!['id'] as String,
+        current,
+        proposed,
+      );
+      if (!mounted) return;
+      if (count == 0) {
+        showSnack(context, 'No changes');
+        setState(() => _saving = false);
+      } else {
+        showSnack(context, 'Draft saved — not sent to UNIDCOM yet');
+        Navigator.of(context).pop(true);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      showSnack(context, error.toString());
+      setState(() => _saving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -303,13 +366,18 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
           onPressed: _saving ? null : () => Navigator.of(context).pop(false),
           child: const Text('Cancel'),
         ),
+        if (widget.stageDraft != null)
+          TextButton(
+            onPressed: _saving ? null : _saveDraft,
+            child: const Text('Save draft'),
+          ),
         FilledButton(
           onPressed: _saving ? null : _save,
           child: Text(
             _saving
                 ? 'Saving...'
                 : _ownerMode
-                ? 'Submit for review'
+                ? 'Submit for UNIDCOM review'
                 : 'Save',
           ),
         ),
