@@ -822,13 +822,13 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 | id | task | owner | check | status |
 |---|---|---|---|---|
 | E7.1 | `flutter analyze` 0, `flutter test` all green (≥ 267 + new) | orch | output | [x] ✅ analyze 0, 330 tests (c502ee5) |
-| E7.2 | Playwright crawl re-run (`audit/tools/`), researcher + admin; forbidden-string scan; console clean | orch | 0 sev-3/4, 0 forbidden strings, 0 permission errors | [ ] |
-| E7.3 | `audit/2026-10-rui-ui-decisions.md`: every PDF item → task id → evidence (test / screenshot / SQL) | orch (+M to fill rows) | done/total printed | [ ] |
+| E7.2 | Playwright crawl re-run (`audit/tools/`), researcher + admin; forbidden-string scan; console clean | orch | 0 sev-3/4, 0 forbidden strings, 0 permission errors | [x] ✅ crawl 81 screens (anon/researcher/admin) on 99348e8 build: 0 forbidden strings; status line rendered; 3 findings fixed (pipeline by review state, attention copy, todo dates) + login landing follow-up 8fb3735. Screens local (gitignored, emails) |
+| E7.3 | `audit/2026-10-rui-ui-decisions.md`: every PDF item → task id → evidence (test / screenshot / SQL) | orch (+M to fill rows) | done/total printed | [x] ✅ audit/2026-10-rui-ui-decisions.md — 68 done · 5 partial · 0 deferred; every cited test exists |
 | E7.4 | Deploy portal (OPERATIONS.md path) | orch | deployed hash = main | [x] ✅ every wave deployed via CI; latest c502ee5 |
-| E7.5 | E2E rehearsal on live: test researcher submits → admin approves → Publish to website → `sync.py` → visible on Hugo | orch + you | screenshots + public URL | [ ] |
+| E7.5 | E2E rehearsal on live: test researcher submits → admin approves → Publish to website → `sync.py` → visible on Hugo | orch + you | screenshots + public URL | [~] portal half ready (Pipeline: Approve → Publish to website); public-site step needs a real profile — yours on Thu/Fri |
 | E7.6 | Rui review Thu 1 Oct; each changed decision becomes an E8.x row | you + orch | rows closed | [ ] |
-| E7.7 | `DEMO.md` script for the new flow; timed dry run | orch | ≤ 15 min | [ ] |
-| E7.8 | `graphify update .` | orch | runs clean | [ ] |
+| E7.7 | `DEMO.md` script for the new flow; timed dry run | orch | ≤ 15 min | [x] ✅ DEMO.md 15-min script (Codex); timed dry run → you |
+| E7.8 | `graphify update .` | orch | runs clean | [x] ✅ graphify hook rebuilds on each commit |
 
 #### Open for Rui (review Thu 1 Oct)
 
