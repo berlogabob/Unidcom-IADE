@@ -23,25 +23,25 @@
 #title-block(
   "Rui's UI decisions — ready to check",
   subtitle: "What Rui asked on 25 Sep, what is live today, and how to confirm it in about an hour.",
-  meta-line: [Portal on `main` fa2046c, deployed 29 Sep 21:32 · CI and deploy green · 330 automated tests pass · every number below read from the live system on 29 Sep evening.],
-  standfirst: [#pill("READY", tone: "ok") All 73 decisions in Rui's document were built. 68 are done exactly as asked. 5 are done differently or partly, each for a stated reason, and need Rui's yes or no. Nothing was deferred. The one step we did not do alone is putting a real profile on the public website: that needs a real person's record, and it is step C below.],
+  meta-line: [Portal on `main` bd088b0, deployed 30 Sep · CI and deploy green · 331 automated tests pass · 6 of 7 browser flows pass · every number below read from the live system on 29–30 Sep.],
+  standfirst: [#pill("READY", tone: "ok") All 73 decisions in Rui's document were built. 70 are done exactly as asked. 3 are done differently or partly, each for a stated reason, and need Rui's yes or no. Nothing was deferred. The one step we did not do alone is putting a real profile on the public website: that needs a real person's record, and it is step C below.],
 )
 
 #kpi-row((
-  ("68", "Done as asked", "of 73 decisions"),
-  ("5", "Need Rui's call", "done differently or partly"),
+  ("70", "Done as asked", "of 73 decisions"),
+  ("3", "Need Rui's call", "done differently or partly"),
   ("0", "Deferred", ""),
-  ("330", "Automated tests", "all pass"),
+  ("331", "Automated tests", "all pass"),
 ))
 
 = Rui asked vs we have
 
 #scorecard((
-  ("Rules for every page", "4 of 6", "warn", "Info icon not on every action; colours: sidebar and grey text kept for readability"),
+  ("Rules for every page", "5 of 6", "warn", "Colours: sidebar and grey text kept for readability; (i) now on every field and action"),
   ("Overview", "16 of 16", "ok", "Timeline, yellow banner, bio, summary tiles, issues named in full"),
   ("My Profile", "16 of 16", "ok", "ORCID import only, photo upload, featured read only, Save draft / Submit"),
   ("Scientific Outputs", "16 of 16", "ok", "Tabs, chips, live counters, Featured N/5, stars only on publications"),
-  ("UNIDCOM Admin", "13 of 15", "warn", "No semester tabs (no publication date); pipeline has 4 columns, not 5"),
+  ("UNIDCOM Admin", "14 of 15", "warn", "No semester tabs (no publication date); pipeline now has all 5 columns"),
   ("Platform checks", "3 of 4", "warn", "Public-site step needs a real profile — step C"),
 ))
 
@@ -92,7 +92,7 @@
 #steps((
   ([Open *My Profile*.], [Subtitle "Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before publishing."]),
   ([Look at the ORCID block.], ["ORCID connected · Last imported …", button *Import from ORCID*, and "Editing here does not change your ORCID record." No "Sync" anywhere.]),
-  ([Hover the (i) next to ORCID, Ciência ID, Email and Lab / cluster.], [One short sentence each.]),
+  ([Hover the (i) next to ORCID, Ciência ID, Email and Lab / cluster, and next to *Import from ORCID* and *Upload photo*.], [One short sentence each — on fields and on actions.]),
   ([Click *Upload photo*, pick a JPG under 5 MB.], ["Photo sent for UNIDCOM review". The photo on the page does not change yet.]),
   ([Look for featured outputs.], [A read-only list "Featured outputs (N/5)" and "Manage in Scientific Outputs →". No checkboxes or stars here.]),
   ([Click *Edit*, change the phone, click *Save draft*.], ["Draft saved — not sent to UNIDCOM yet".]),
@@ -123,7 +123,7 @@
   ([Click a year chip in *Outputs by type*.], [The numbers change. There is no semester chip — see part D.]),
   ([Click one *Critical alert*.], [That researcher's page opens.]),
   ([Open *People*.], [Each row has a Website pill: "Website · Published" or "Not published".]),
-  ([Open *Pending approval*.], [First tab *Pipeline*: To validate · Submitted · Approved, not published · Published. Andrey is under Submitted (from My Profile step 8).]),
+  ([Open *Pending approval*.], [First tab *Pipeline*: To validate · Submitted · Under review · Approved, not published · Published. Andrey is under Submitted (from My Profile step 8).]),
 ))
 
 = C · A bio change, end to end (25 minutes)
@@ -151,11 +151,9 @@ Each line was built differently from the document, or only partly, for the reaso
 #data-table(
   ("Rui asked", "We built", "Why", "Rui"),
   (
-    ([Info icon (i) on every field and action], [(i) on every My Profile field, Lab / cluster and Submit], [Other pages first need the sentence for each action written], []),
     ([Sidebar \#16213A; grey text \#888680], [Sidebar \#0E1525 kept; grey text \#6A6862], [His note says "as the platform already has"; \#888680 fails contrast on the page background], []),
     ([Outputs by type with year and semester tabs], [Year chips only], [Outputs carry a reporting year, no publication date; a semester needs a new date field], []),
-    ([Pipeline Draft · Submitted · Under review · Approved not published · Published], [4 columns: To validate · Submitted · Approved, not published · Published], [No separate "Under review" state exists; submitted means under review], []),
-    ([Show one profile reach the website], [Portal half done; website step is C9–C10 (and E9–E10)], [Needs a real record; we would not publish a test profile], []),
+    ([Show one profile reach the website], [Portal half done; website step is C9–C10 (and E10–E11)], [Needs a real record; we would not publish a test profile], []),
   ),
   widths: (1.1fr, 1.1fr, 1.3fr, 0.5fr),
   right-from: none,
@@ -187,7 +185,8 @@ This is the only way to show a real publication going from the researcher to the
   ([Click *Approve*.], [It is approved but not published — approving never publishes.]),
   ([Open the output's page.], [A Website panel with *Publish to website*.]),
   ([Click *Publish to website*.], [Website status becomes "Published".]),
-  ([Pipeline tab: find Andrey under Submitted; click *Approve*.], [Andrey moves to Published (his profile was already on the site from the import).]),
+  ([Pipeline tab: Andrey under Submitted; click *Start review*.], [Andrey moves to Under review; his timeline shows "Under review" with today's date.]),
+  ([Under review: click *Approve*.], [Andrey moves to Published (his profile was already on the site from the import).]),
   ([Open the public website, find the article.], [Not there yet — the site updates on sync.]),
   ([GitHub → unidcom-site → Actions → *Sync content from Supabase* → Run workflow (preview off).], [The run finishes green in about 2 minutes, then the site redeploys.]),
   ([Reload the public website.], [The article is on Andrey's page. Done: Submitted → Approved → Publish → visible.]),
