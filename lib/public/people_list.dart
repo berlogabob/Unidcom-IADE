@@ -178,6 +178,18 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
                                                 },
                                               ),
                                             ],
+                                            const SizedBox(width: 12),
+                                            StatusPill(
+                                              person['public_visibility'] ==
+                                                      true
+                                                  ? 'Website · Published'
+                                                  : 'Website · Not published',
+                                              tone:
+                                                  person['public_visibility'] ==
+                                                      true
+                                                  ? PillTone.teal
+                                                  : PillTone.grey,
+                                            ),
                                           ],
                                         ),
                                       ),

@@ -184,6 +184,31 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
   }
 }
 
+class OverviewBio extends StatelessWidget {
+  const OverviewBio({super.key, required this.bio, this.personId});
+
+  final String? bio;
+  final String? personId;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasBio = bio?.trim().isNotEmpty ?? false;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasBio)
+          Text(bio!, maxLines: 3, overflow: TextOverflow.ellipsis)
+        else
+          const Text('No biography yet'),
+        TextButton(
+          onPressed: () => context.go(portalRoute('/app/profile', personId)),
+          child: Text(hasBio ? 'Edit bio →' : 'Add bio →'),
+        ),
+      ],
+    );
+  }
+}
+
 class _IdentityHeader extends StatelessWidget {
   const _IdentityHeader({
     required this.person,
@@ -240,6 +265,8 @@ class _IdentityHeader extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text('ORCID iD $orcid', style: const TextStyle(fontSize: 12)),
                 ],
+                const SizedBox(height: 12),
+                OverviewBio(bio: person['bio'] as String?),
               ],
             ),
           ),
@@ -285,7 +312,12 @@ class OutputSummary extends StatelessWidget {
           children: [
             for (final entry in entries)
               InkWell(
-                onTap: () => context.go(portalRoute('/app/outputs', personId)),
+                onTap: () => context.go(
+                  portalRoute(
+                    '/app/outputs?type=${Uri.encodeQueryComponent(entry.key)}',
+                    personId,
+                  ),
+                ),
                 child: SizedBox(
                   width: 150,
                   child: AccentStatCard(
@@ -298,7 +330,9 @@ class OutputSummary extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         InkWell(
-          onTap: () => context.go(portalRoute('/app/outputs', personId)),
+          onTap: () => context.go(
+            portalRoute('/app/outputs?view=featured', personId),
+          ),
           child: AccentStatCard(
             label: 'FEATURED OUTPUTS',
             value: '$featured / $maxFeaturedOutputs',
