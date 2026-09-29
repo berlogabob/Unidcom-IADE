@@ -1,6 +1,8 @@
 # Joining the RIMS pilot
 
-Welcome. This short guide explains how to check and confirm your UNIDCOM/IADE researcher profile.
+Welcome. This short guide explains how to review and submit your UNIDCOM/IADE researcher profile and scientific outputs.
+
+Updated 30 Sep 2026 (Phase E).
 
 ## Get started
 
@@ -8,29 +10,25 @@ Welcome. This short guide explains how to check and confirm your UNIDCOM/IADE re
    - Signing in requires an ORCID iD **already on file against your UNIDCOM profile**. If it is not, sign-in will fail with a message saying so — email <unidcom@iade.pt> and it will be added.
    - Everything in the portal needs a session. The **Welcome Pack** is the exception — it is open to everyone, signed in or not, at `/app/welcome/start`, so you can read the onboarding material before you have an account.
    - The portal is designed for a wide screen and is easier to use on one. It does work on a phone: the account menu at the top right reaches every portal page, though the side navigation collapses to a row of chips.
-2. Signing in lands you on the **Welcome Pack**. Open the user chip (your avatar and name) at the top right for a menu to **Overview**, **Support requests**, **Welcome pack**, **My profile**, **Public site**, and **Sign out**. Select **My profile** (`/app/profile`). The status chip at the top tells you where your profile is in the process:
-   - **Profile not confirmed** — your profile is still a draft.
-   - **Awaiting UNIDCOM approval** — you have confirmed it and it is waiting for review.
-   - **Approved** — UNIDCOM has reviewed and approved it.
-3. Check the information on your profile. When it is correct, select **Confirm my profile**.
-4. Review **My ORCID publications**. These are publications found on your ORCID record:
-   - Select **Add to my publications** to claim a publication. It will then wait for UNIDCOM approval.
-   - Select **Not mine** to dismiss a publication that does not belong to you.
-5. Use the star icon (**Highlight on profile** / **Remove highlight**) to feature publications on your profile. You can highlight up to five.
+2. Signing in lands on **Overview** (`/app/home`). A compact status line appears on every page. Overview shows your dated timeline, bio, summary tiles and featured-output count.
+3. Open **My Profile** (`/app/profile`). ORCID is import-only: use **Import from ORCID**; editing here does not edit ORCID. Review the fields and use **Save draft** while working, then **Submit for UNIDCOM review** when ready.
+   - Your profile shows as **To be validated by you**, **Submitted** or **Approved**.
+   - **Upload photo** sends your photo to UNIDCOM for review; it appears on the website only after UNIDCOM publishes it.
+4. Open **Scientific Outputs**. Use the **Publications** / **Other activities** tabs, type/subtype and year chips, and **Issues only**. Submit records marked **To be validated by you** with **Submit for UNIDCOM review**. Only publications can be starred, up to five.
 
 ## Beyond your profile
 
-On wide screens, **My profile** sits under a tab bar — Overview | Outputs | Support requests | Welcome pack — so you can move between them without going back through the menu:
+On wide screens, the researcher navigation takes you between Overview, My Profile, Scientific Outputs, Resources & Guidance and Help & Contacts:
 
-- **Overview** (`/app/home`) is your dashboard: outputs count, active requests, profile status, and quick links.
-- **Support requests** (`/app/requests`) is where you ask for DPD, Open Access, or Mission support — start a new request, attach a budget and checklist, and track its status.
+- **Overview** (`/app/home`) is the landing page: status timeline, bio, output totals and attention links.
+- **Scientific Outputs** (`/app/outputs`) is where you review, submit and feature your outputs.
 - **Welcome pack** (`/app/welcome/start`) has onboarding material, in five groups: **Getting started**; Email signature and Social media; Documents & forms, Conferences & events, Open Access and Missions; Affiliation & FCT and Report activity; Logos & brand and Contacts.
 
 ## What happens next?
 
-UNIDCOM reviews your confirmed profile and any publications you claim. Once approved, the content is included in institutional reports and is published to the [public website](https://berlogabob.github.io/unidcom-site/).
+UNIDCOM reviews submitted profiles and outputs. Approval is not publication: UNIDCOM publishes each profile and output to the website as a separate step.
 
-The website is rebuilt from the database overnight, so approved changes appear there the following day rather than instantly. The date it was last updated is in the site footer.
+The website sync follows those flags nightly at 04:00 UTC, or when an admin runs **Sync content from Supabase**. The date it was last updated is in the site footer.
 
 ## FAQ
 
@@ -40,7 +38,7 @@ Register at [orcid.org](https://orcid.org/), then tell the UNIDCOM coordination 
 
 ### A publication is missing from the list. How do I add it?
 
-Make sure the publication is on your ORCID record. Services such as ResearchGate and Scopus can deposit publications there. RIMS syncs with ORCID periodically, so an updated record appears in **My ORCID publications** after the next sync.
+Make sure the publication is on your ORCID record. Services such as ResearchGate and Scopus can deposit publications there. Use **Import from ORCID** when you want to bring the latest record into RIMS, then review and submit it; import does not publish it automatically.
 
 ### Who can help me?
 
