@@ -256,7 +256,7 @@ String? modeRedirect(
   }
   // Answered, or never asked: the chooser has nothing left to say.
   if (location == '/app/mode') {
-    return adminMode ? '/app/dashboard' : '/app/welcome/start';
+    return adminMode ? '/app/dashboard' : '/app/home';
   }
   if (!adminMode && _adminOnly.any(location.startsWith)) {
     return '/app/home';
@@ -289,7 +289,7 @@ final _router = GoRouter(
   // place decides that, and it has to be the one that also sees deep links.
   initialLocation: _orcidError != null
       ? '/login'
-      : _postAuthLanding ?? '/app/welcome/start',
+      : _postAuthLanding ?? '/app/home',
   // Two things now change what a route resolves to: signing in or out, and
   // switching mode. Merge them, or a mode switch leaves the old shell on screen
   // until the next navigation.

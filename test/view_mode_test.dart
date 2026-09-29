@@ -42,7 +42,7 @@ void main() {
     });
 
     test('a plain researcher is never asked, even by typing the URL', () {
-      expect(redirect('/app/mode'), '/app/welcome/start');
+      expect(redirect('/app/mode'), '/app/home');
     });
 
     test('once answered, the chooser sends you on rather than re-asking', () {
@@ -50,7 +50,7 @@ void main() {
         redirect('/app/mode', adminAccount: true, adminMode: true),
         '/app/dashboard',
       );
-      expect(redirect('/app/mode', adminAccount: true), '/app/welcome/start');
+      expect(redirect('/app/mode', adminAccount: true), '/app/home');
     });
   });
 
