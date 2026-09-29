@@ -19,6 +19,7 @@ import 'output_wizard.dart';
 String profileStatusLabel(String? status) => switch (status) {
   'pending_review' => 'Submitted',
   'approved' => 'Approved',
+  'to_validate' => 'To be validated by you',
   _ => 'Profile not confirmed',
 };
 
@@ -358,7 +359,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         person: person,
                         pendingCandidates: _candidates.length,
                       ),
-                      if (status == 'draft' && !viewing) ...[
+                      if (const {'draft', 'to_validate'}.contains(status) && !viewing) ...[
                         const Text('Check your data below, then confirm'),
                         FilledButton(
                           onPressed: _submitting ? null : _submitProfile,
