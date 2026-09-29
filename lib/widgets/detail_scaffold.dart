@@ -249,6 +249,7 @@ Widget editField(
   String label, {
   int maxLines = 1,
   TextInputType? keyboardType,
+  int? softMaxLength,
 }) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 12),
@@ -256,6 +257,22 @@ Widget editField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
+      // Soft limit (bios): count, never block or cut. 109 of 112 bios were
+      // already over 300 when the limit arrived (29 Sep).
+      buildCounter: softMaxLength == null
+          ? null
+          : (context, {required currentLength, required isFocused, maxLength}) {
+              final over = currentLength > softMaxLength;
+              return Text(
+                over
+                    ? '$currentLength / $softMaxLength · the website shows the first $softMaxLength'
+                    : '$currentLength / $softMaxLength',
+                style: TextStyle(
+                  color: over ? AppColors.amberDark : AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              );
+            },
       decoration: InputDecoration(
         labelText: label,
         border: const OutlineInputBorder(

@@ -240,7 +240,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
                 ),
               editField(_preferredName, 'Preferred name'),
               editField(_legalName, 'Legal name'),
-              editField(_bio, 'Bio', maxLines: 4),
+              editField(_bio, 'Bio', maxLines: 4, softMaxLength: 300),
               editField(_photoUrl, 'Photo URL'),
               editField(_email, 'Email'),
               editField(
