@@ -49,8 +49,13 @@ def pick(f, pg, label):
 
 def do_login(f, pg):
     f.step("open #/login"); pg.goto(f"{BASE}/#/login"); f.expect("^Email$", 60)
-    f.step("type email"); typein(pg, "Email", EMAIL); f.step("type password"); pg.keyboard.press("Tab"); pg.wait_for_timeout(300); pg.locator("input:focus").fill(PASSWORD)
-    f.step("tap Sign in"); click(pg, "^Sign in$"); f.expect("How do you want to continue", 40)
+    # Flutter web: fill the focused DOM input (keyboard.type drops keys; fill() on
+    # semantics nodes is ignored). Same helper as crawl.py.
+    f.step("type email"); click(pg, "^Email$"); pg.wait_for_timeout(300); pg.locator("input:focus").fill(EMAIL)
+    f.step("type password"); pg.keyboard.press("Tab"); pg.wait_for_timeout(300); pg.locator("input:focus").fill(PASSWORD)
+    f.step("tap Sign in"); click(pg, "^Sign in$")
+    if not visible(pg, "How do you want to continue", 6): dom_click(pg, "^Sign in$")  # app-bar title also reads "Sign in"
+    f.expect("How do you want to continue", 40)
 
 def auth_gate(f, pg):
     f.step("anon deep link #/people"); pg.goto(f"{BASE}/#/people"); f.expect("^Password$", 60); f.shot("bounced_to_login")
@@ -88,8 +93,8 @@ def orcid_error(f, pg):
 def profile_confirm(f, pg):
     do_login(f, pg); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Overview", 30)
     f.step("open #/app/profile"); pg.goto(f"{BASE}/#/app/profile"); f.expect("Submit for UNIDCOM review", 20); f.expect("Check your data below, then submit it", 10); f.shot("draft")
-    f.step("tap Submit for UNIDCOM review"); click(pg, "^Submit for UNIDCOM review$"); ok = f.expect("Awaiting UNIDCOM approval", 20); f.shot("after_confirm")
-    f.step("open #/app/home/status"); pg.goto(f"{BASE}/#/app/home/status"); f.expect("Awaiting UNIDCOM approval|pending", 20); f.shot("status_page")
+    f.step("tap Submit for UNIDCOM review"); click(pg, "^Submit for UNIDCOM review$"); ok = f.expect("Submitted", 20); f.shot("after_confirm")
+    f.step("open #/app/home/status"); pg.goto(f"{BASE}/#/app/home/status"); f.expect("Submitted|Under review", 20); f.shot("status_page")
 
 def add_output(f, pg):
     do_login(f, pg); f.step("tap As a researcher"); pick(f, pg, "As a researcher"); f.expect("Overview", 30)
@@ -112,7 +117,7 @@ def add_output(f, pg):
     f.step("clear DOI, type a fresh title"); typein(pg, r"DOI \(or paste the doi.org link\)", ""); typein(pg, "Title", "E2E UX audit output (delete me)")
     f.step("tap Save"); click(pg, "^Save$"); pg.wait_for_timeout(2500); f.shot("after_add")
     f.step("open #/app/outputs"); pg.goto(f"{BASE}/#/app/outputs"); f.expect("E2E UX audit output", 20); f.shot("in_my_outputs")
-    if not visible(pg, "Pending|pending|Awaiting", 5): f.warnings.append("no status tag on the new pending output in My Outputs (finding)")
+    if not visible(pg, "Submitted|Pending|pending", 5): f.warnings.append("no status tag on the new pending output in My Outputs (finding)")
 
 def review_queue(f, pg):
     do_login(f, pg); f.step("tap As an administrator"); pick(f, pg, "As an administrator"); f.expect("Integrated researchers|Collaborators|Profiles to approve|Outputs to approve", 30)

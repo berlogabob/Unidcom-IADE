@@ -365,7 +365,9 @@ class _AppShellState extends State<AppShell> {
               return Container();
             },
           ),
-          Expanded(child: child),
+          // Own container: the nested Navigator's route barrier would otherwise
+          // hide the status line from screen readers (seen in the 30 Sep crawl).
+          Expanded(child: Semantics(container: true, child: child)),
         ],
       );
     }
