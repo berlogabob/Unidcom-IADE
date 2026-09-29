@@ -128,6 +128,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
       context,
       person: person,
       canEditGovernance: canEditGovernance,
+      stageDraft: canEditGovernance ? null : saveMyDraft,
     );
     if (saved == true) _refresh();
   }

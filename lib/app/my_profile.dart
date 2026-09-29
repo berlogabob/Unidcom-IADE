@@ -11,6 +11,7 @@ import '../public/person/orcid_sync_dialog.dart';
 import '../public/person_page.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/info_tip.dart';
 import '../widgets/orcid_block.dart';
 import '../widgets/panels.dart';
 import 'portal_pages.dart';
@@ -170,6 +171,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     setState(() => _submitting = true);
     try {
       await submitMyProfileForReview(person['id'] as String);
+      await submitMyDrafts(person['id'] as String);
       if (!mounted) return;
       setState(() {
         _person = {...person, 'profile_status': 'pending_review'};
@@ -371,10 +373,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         ),
                       if (const {'draft', 'to_validate'}.contains(status) &&
                           !viewing) ...[
-                        const Text('Check your data below, then confirm'),
+                        const Text('Check your data below, then submit it'),
                         FilledButton(
                           onPressed: _submitting ? null : _submitProfile,
-                          child: const Text('Confirm my profile'),
+                          child: const Text('Submit for UNIDCOM review'),
+                        ),
+                        const InfoTip(
+                          text:
+                              'Saved changes will be re-submitted for UNIDCOM review.',
                         ),
                       ],
                     ],
