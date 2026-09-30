@@ -25,7 +25,7 @@ const stats = AdminStats(
 Future<List<String>> pump(
   WidgetTester tester, {
   int? year,
-  List<({String text, String personId})> alerts = const [],
+  List<({String text, String route})> alerts = const [],
   ValueChanged<int?>? onYear,
 }) async {
   tester.view.physicalSize = const Size(1400, 1600);
@@ -44,11 +44,9 @@ Future<List<String>> pump(
             onYear: onYear ?? (_) {},
             activity: (lastMonth: 11, lastWeek: 4, never: 20),
             alerts: alerts,
-            onOpenPerson: opened.add,
-            onOpenProfilesToApprove: () {},
-            onOpenOutputsToApprove: () {},
-            proposalsToReview: 2,
-            onOpenProposals: () => opened.add('proposals'),
+            onOpenAlert: opened.add,
+            onOpenProfilesToApprove: () => opened.add('profiles'),
+            onOpenOutputsToApprove: () => opened.add('outputs'),
           ),
         ),
       ),
@@ -66,6 +64,15 @@ void main() {
     expect(find.text('Outputs to approve'), findsOneWidget);
     expect(find.text('28'), findsWidgets);
     expect(find.text('14'), findsOneWidget);
+    // Brief AD-2: exactly four tiles — proposals are alerts, not a tile.
+    expect(find.text('Proposals to review'), findsNothing);
+  });
+
+  testWidgets('each approve tile opens its own tab', (tester) async {
+    final opened = await pump(tester);
+    await tester.tap(find.text('Profiles to approve'));
+    await tester.tap(find.text('Outputs to approve'));
+    expect(opened, ['profiles', 'outputs']);
   });
 
   testWidgets('sync status has an ORCID line and a Website line', (tester) async {
@@ -101,22 +108,19 @@ void main() {
     expect(find.text('Logged in last month · 11'), findsOneWidget);
     expect(find.text('Active last week · 4'), findsOneWidget);
     expect(find.text('Never logged in · 20'), findsOneWidget);
+    expect(find.text('low priority'), findsNothing);
   });
 
-  testWidgets('a critical alert opens the researcher', (tester) async {
+  testWidgets('a critical alert names the researcher and opens its target', (tester) async {
     final opened = await pump(
       tester,
-      alerts: [(text: 'Ana Nolasco — 3 outputs missing DOI', personId: 'p1')],
+      alerts: [
+        (text: 'Andrey Dyakov proposed a Bio change', route: '/app/admin/review?tab=suggestions'),
+        (text: 'Ana Nolasco — no ORCID linked', route: '/people/p1'),
+      ],
     );
-    await tester.tap(find.text('Ana Nolasco — 3 outputs missing DOI'));
-    expect(opened, ['p1']);
-  });
-
-  testWidgets('proposals from researchers are counted and open the queue', (tester) async {
-    final opened = await pump(tester);
-    expect(find.text('Proposals to review'), findsOneWidget);
-    expect(find.text('2'), findsOneWidget);
-    await tester.tap(find.text('Proposals to review'));
-    expect(opened, ['proposals']);
+    await tester.tap(find.text('Andrey Dyakov proposed a Bio change'));
+    await tester.tap(find.text('Ana Nolasco — no ORCID linked'));
+    expect(opened, ['/app/admin/review?tab=suggestions', '/people/p1']);
   });
 }

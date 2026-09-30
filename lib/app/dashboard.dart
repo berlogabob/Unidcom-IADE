@@ -43,9 +43,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<_AdminOverviewData> _loadAdminOverview() async {
     final dataFuture = loadAdminOverview();
-    final proposalsFuture = countResearcherProposals();
+    final suggestionsFuture = fetchPendingSuggestions();
     final data = await dataFuture;
-    final proposalsToReview = await proposalsFuture;
+    final suggestions = await suggestionsFuture;
     final members = data.people.where(
       (person) =>
           person['membership_type'] == 'integrated' ||
@@ -54,9 +54,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final now = DateTime.now();
     final lastWeek = now.subtract(const Duration(days: 7));
     final lastMonth = now.subtract(const Duration(days: 30));
+    final alerts = <({String text, String route})>[];
+    final seenSuggestions = <String>{};
+    final fieldLabels = {
+      'bio': 'Bio',
+      'preferred_name': 'Name',
+      'ciencia_id': 'Ciência ID',
+      'email': 'Email',
+      'photo_url': 'Photo',
+    };
+    for (final suggestion in suggestions) {
+      if (suggestion['source'] != 'researcher' ||
+          suggestion['subject_type'] != 'person') {
+        continue;
+      }
+      final subjectId = suggestion['subject_id'] as String?;
+      final field = suggestion['field'] as String?;
+      Map<String, dynamic>? person;
+      for (final candidate in data.people) {
+        if (candidate['id'] == subjectId) {
+          person = candidate;
+          break;
+        }
+      }
+      if (subjectId == null || field == null || person == null) continue;
+      if (!seenSuggestions.add('$subjectId:$field')) continue;
+      alerts.add(
+        (
+          text:
+              '${person['preferred_name']} proposed a ${fieldLabels[field] ?? field} change',
+          route: '/app/admin/review?tab=suggestions',
+        ),
+      );
+      if (alerts.length == 8) break;
+    }
+    if (alerts.length < 8) {
+      for (final person in data.people) {
+        if (person['membership_type'] != 'integrated' ||
+            !((person['orcid'] as String?)?.trim().isEmpty ?? true)) {
+          continue;
+        }
+        alerts.add(
+          (
+            text: '${person['preferred_name']} — no ORCID linked',
+            route: '/people/${person['id']}',
+          ),
+        );
+        if (alerts.length == 8) break;
+      }
+    }
     return _AdminOverviewData(
       data: data,
-      proposalsToReview: proposalsToReview,
       years:
           data.outputs
               .map((output) => output['reporting_year'])
@@ -81,20 +129,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .where((person) => data.lastSignIn[person['id']] == null)
             .length,
       ),
-      alerts: data.people
-          .where(
-            (person) =>
-                person['membership_type'] == 'integrated' &&
-                ((person['orcid'] as String?)?.trim().isEmpty ?? true),
-          )
-          .take(8)
-          .map(
-            (person) => (
-              text: '${person['preferred_name']} — no ORCID linked',
-              personId: person['id'] as String,
-            ),
-          )
-          .toList(),
+      alerts: alerts,
     );
   }
 
@@ -195,11 +230,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 onYear: _setYear,
                 activity: data.activity,
                 alerts: data.alerts,
-                onOpenPerson: (id) => context.go('/people/$id'),
-                onOpenProfilesToApprove: () => context.go('/app/admin/review'),
-                onOpenOutputsToApprove: () => context.go('/app/admin/review'),
-                proposalsToReview: data.proposalsToReview,
-                onOpenProposals: () => context.go('/app/admin/review'),
+                onOpenAlert: (route) => context.go(route),
+                onOpenProfilesToApprove: () =>
+                    context.go('/app/admin/review?tab=profileList'),
+                onOpenOutputsToApprove: () =>
+                    context.go('/app/admin/review?tab=outputs'),
               ),
             ],
           );
@@ -702,7 +737,6 @@ class _MembershipChart extends StatelessWidget {
 class _AdminOverviewData {
   const _AdminOverviewData({
     required this.data,
-    required this.proposalsToReview,
     required this.years,
     required this.activity,
     required this.alerts,
@@ -715,10 +749,9 @@ class _AdminOverviewData {
     Map<String, DateTime?> lastSignIn,
   })
   data;
-  final int proposalsToReview;
   final List<int> years;
   final ({int lastMonth, int lastWeek, int never}) activity;
-  final List<({String text, String personId})> alerts;
+  final List<({String text, String route})> alerts;
 }
 
 class _DashboardData {

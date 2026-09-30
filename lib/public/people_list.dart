@@ -8,6 +8,7 @@ import 'person_page.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/ds_page.dart';
 import '../widgets/panels.dart';
+import '../widgets/people_table.dart';
 import '../widgets/queue_list.dart';
 import '../widgets/search_bar.dart';
 
@@ -27,6 +28,8 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
   bool _needsVerification = false;
   bool _hasOutputs = false;
   late Future<List<Map<String, dynamic>>> _people = fetchPeople();
+  late final Future<({Map<String, DateTime?> lastSignIn, Map<String, int> issues})>
+  _extras = fetchPeopleTableExtras();
 
   void _search(String value) {
     _query = value;
@@ -103,6 +106,37 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
                     Expanded(
                       child: people.isEmpty
                           ? const Center(child: Text('No people found'))
+                          : isAdmin
+                          ? FutureBuilder(
+                              future: _extras,
+                              builder: (context, snapshot) {
+                                final extras = snapshot.data ?? (
+                                  lastSignIn: <String, DateTime?>{},
+                                  issues: <String, int>{},
+                                );
+                                return Container(
+                                  clipBehavior: Clip.antiAlias,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.cardBg,
+                                    border: Border.fromBorderSide(
+                                      BorderSide(color: AppColors.cardBorder),
+                                    ),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(AppDims.radius),
+                                    ),
+                                    boxShadow: AppDims.shadowCard,
+                                  ),
+                                  child: SingleChildScrollView(
+                                    child: PeopleTable(
+                                      people: people,
+                                      lastSignIn: extras.lastSignIn,
+                                      issues: extras.issues,
+                                      onOpen: (id) => context.go('/people/$id'),
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
                           : Container(
                               clipBehavior: Clip.antiAlias,
                               decoration: const BoxDecoration(

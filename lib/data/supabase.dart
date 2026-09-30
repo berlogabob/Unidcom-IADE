@@ -186,8 +186,8 @@ Future<List<Map<String, dynamic>>> fetchPeople({
   try {
     final q = query?.trim();
     final select = hasOutputs
-        ? 'id, preferred_name, membership_type, status, email, photo_url, profile_status, public_visibility, output_authors!inner(output_id)'
-        : 'id, preferred_name, membership_type, status, email, photo_url, profile_status, public_visibility';
+        ? 'id, preferred_name, membership_type, status, email, orcid, photo_url, profile_status, public_visibility, output_authors!inner(output_id)'
+        : 'id, preferred_name, membership_type, status, email, orcid, photo_url, profile_status, public_visibility';
     var request = db
         .from('people')
         .select(select)
@@ -1278,6 +1278,49 @@ loadAdminOverview() async {
           ),
       },
     );
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// People table extras (brief PE-1): last sign-in and open output issues per person.
+Future<({Map<String, DateTime?> lastSignIn, Map<String, int> issues})>
+fetchPeopleTableExtras() async {
+  try {
+    final rows = await Future.wait([
+      db.rpc('admin_last_sign_ins'),
+      db
+          .from('v_output_quality')
+          .select('output_id')
+          .or('error_count.gt.0,warning_count.gt.0'),
+    ]);
+    final lastSignIn = {
+      for (final row in rows[0] as List)
+        '${row['person_id']}': DateTime.tryParse(
+          row['last_sign_in_at'] as String? ?? '',
+        ),
+    };
+    final ids = (rows[1] as List)
+        .map((row) => row['output_id'])
+        .whereType<String>()
+        .toList();
+    if (ids.isEmpty) {
+      return (lastSignIn: lastSignIn, issues: <String, int>{});
+    }
+
+    // ponytail: ids go in the URL (67 flagged on 1 Oct); an RPC if it nears ~500.
+    final authors = await db
+        .from('output_authors')
+        .select('person_id,output_id')
+        .inFilter('output_id', ids);
+    final issues = <String, int>{};
+    for (final row in authors) {
+      final personId = row['person_id'] as String?;
+      if (personId != null) {
+        issues[personId] = (issues[personId] ?? 0) + 1;
+      }
+    }
+    return (lastSignIn: lastSignIn, issues: issues);
   } catch (error) {
     throw Exception(_error(error));
   }

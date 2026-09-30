@@ -16,11 +16,9 @@ class AdminOverview extends StatelessWidget {
     required this.onYear,
     required this.activity,
     this.alerts = const [],
-    required this.onOpenPerson,
+    required this.onOpenAlert,
     required this.onOpenProfilesToApprove,
     required this.onOpenOutputsToApprove,
-    this.proposalsToReview = 0,
-    this.onOpenProposals,
   });
 
   final AdminStats stats;
@@ -28,12 +26,10 @@ class AdminOverview extends StatelessWidget {
   final int? year;
   final ValueChanged<int?> onYear;
   final ({int lastMonth, int lastWeek, int never}) activity;
-  final List<({String text, String personId})> alerts;
-  final ValueChanged<String> onOpenPerson;
+  final List<({String text, String route})> alerts;
+  final ValueChanged<String> onOpenAlert;
   final VoidCallback onOpenProfilesToApprove;
   final VoidCallback onOpenOutputsToApprove;
-  final int proposalsToReview;
-  final VoidCallback? onOpenProposals;
 
   @override
   Widget build(BuildContext context) {
@@ -57,16 +53,6 @@ class AdminOverview extends StatelessWidget {
               'Outputs to approve',
               stats.outputsToApprove,
               onTap: onOpenOutputsToApprove,
-            ),
-            _tile(
-              context,
-              'Proposals to review',
-              proposalsToReview,
-              onTap: onOpenProposals,
-              info:
-                  'Changes researchers proposed to their profile or outputs '
-                  '(for example a new bio from ORCID). Review them in '
-                  'Pending approval → Suggestions.',
             ),
           ],
         ),
@@ -96,10 +82,6 @@ class AdminOverview extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'low priority',
-                    style: TextStyle(color: AppColors.textMuted),
-                  ),
                   _line('Logged in last month · ${activity.lastMonth}'),
                   _line('Active last week · ${activity.lastWeek}'),
                   _line('Never logged in · ${activity.never}'),
@@ -176,15 +158,26 @@ class AdminOverview extends StatelessWidget {
                   : Column(
                       children: alerts
                           .map(
-                            (alert) => ListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              leading: const Icon(
-                                Icons.warning_amber_rounded,
-                                color: AppColors.warn,
+                            // Not a ListTile: its intrinsic height is off by a
+                            // few px inside DsGrid's IntrinsicHeight rows.
+                            (alert) => InkWell(
+                              onTap: () => onOpenAlert(alert.route),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 6,
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: AppColors.warn,
+                                      size: 18,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(child: Text(alert.text)),
+                                  ],
+                                ),
                               ),
-                              title: Text(alert.text),
-                              onTap: () => onOpenPerson(alert.personId),
                             ),
                           )
                           .toList(),

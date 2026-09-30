@@ -26,7 +26,7 @@ void main() {
               years: const [2025],
               onYear: (_) {},
               activity: (lastMonth: 0, lastWeek: 0, never: 1),
-              onOpenPerson: (_) {},
+              onOpenAlert: (_) {},
               onOpenProfilesToApprove: () {},
               onOpenOutputsToApprove: () {},
             ),
@@ -34,7 +34,7 @@ void main() {
         ),
       ),
     );
-    expect(find.byType(Panel), findsAtLeastNWidgets(10));
+    expect(find.byType(Panel), findsAtLeastNWidgets(9));
     expect(find.byType(Card), findsNothing);
   });
 }
