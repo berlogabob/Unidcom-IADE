@@ -142,7 +142,7 @@ The whole path of one real change: Andrey edits his biography where Portuguese r
   ([Open the public website, Andrey's page.], [Still the old bio — the site changes on sync.]),
   ([GitHub → unidcom-site → Actions → *Sync content from Supabase* → Run workflow (preview off).], [Green in about 2 minutes, then the site redeploys.]),
   ([Reload Andrey's page on the website.], [The new bio.]),
-  ([*Sanity test*: run the push for Andrey (we do this part).], [His `member` document in the test project shows the new text as `shortBio`. The agency's Sanity is not touched.]),
+  ([*Sanity test*: we run `uv run python sanity_push.py "Andrey Dyakov"`, then open unidcom-test.sanity.studio → Member → Andrey Dyakov.], [The new text as `shortBio`. The agency's Sanity is not touched.]),
 ))
 
 = D · Rui's decisions (15 minutes)
@@ -202,5 +202,5 @@ This is the only way to show a real publication going from the researcher to the
 - *Ciência Vitae is not connected to RIMS.* It was left out of the pilot on 4 Aug: ORCID is the one source. Researchers keep Ciência Vitae, but RIMS reads ORCID.
 - *No e-mail notifications.* A change on ORCID reaches RIMS when the researcher opens My Profile and imports it; UNIDCOM then sees *Proposals to review* on the dashboard. Automatic detection is possible later (a daily job already exists in the code, unscheduled).
 - *Undo after the check.* Andrey's record was saved on 29 Sep 22:25; `audit/snapshots/2026-09-30-before-walkthrough.sql` puts it back and lists anything the walk added.
-- *Sanity:* the test copy lives in a separate test project; the agency's project is not touched.
+- *Sanity:* the test copy is the project testUNIDCOM (`ld5jhf23`), seeded from a snapshot of the agency's content; the push refuses the agency's project. Its editor is a Studio we built from the snapshot's fields, not the agency's own, so it looks plainer than theirs. Photos are not pushed yet.
 - *Security:* checked 29 Sep — no privileged database function can be called without signing in.

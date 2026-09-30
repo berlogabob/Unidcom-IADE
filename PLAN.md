@@ -830,7 +830,7 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 | E7.7 | `DEMO.md` script for the new flow; timed dry run | orch | ≤ 15 min | [x] ✅ DEMO.md 15-min script (Codex); timed dry run → you |
 | E7.8 | `graphify update .` | orch | runs clean | [x] ✅ graphify hook rebuilds on each commit |
 
-**30 Sep additions (after Stage 3):** Sanity-bridge RPCs no longer callable by anon (fa2046c, advisor 0028 clear); Under review stage — 5-column pipeline with Start review, timeline step dated (d4ea26c, 29d9cea); (i) on every action (0c38f2d); status line reachable by screen readers (13a2d5d); acceptance map 70 done · 3 for Rui; flows 6/7 pass (add_output wizard walk = test gap); morning check report `docs/reports/2026-10-morning-check/`. Stage 4 (Sanity test project) waits on `sanity login`.
+**30 Sep additions (after Stage 3):** Sanity-bridge RPCs no longer callable by anon (fa2046c, advisor 0028 clear); Under review stage — 5-column pipeline with Start review, timeline step dated (d4ea26c, 29d9cea); (i) on every action (0c38f2d); status line reachable by screen readers (13a2d5d); acceptance map 70 done · 3 for Rui; flows 6/7 pass (add_output wizard walk = test gap); morning check report `docs/reports/2026-10-morning-check/`. Stage 4 (Sanity test project) done the same evening — see below.
 
 #### Open for Rui (review Thu 1 Oct)
 
@@ -843,6 +843,12 @@ Priority: **P0** demo breaks without it · **P1** a PDF CHANGE/BRING · **P2** c
 
 #### Stage 4 — Stretch: Sanity (gate: E7.1–E7.5 green by Thu 12:00)
 E9.1 rebase `feat/sanity-bridge`, fix `anon`-callable `sanity_*` RPCs · E9.2 push approved ∧ published profile to dataset `vj0axykv` · E9.3 show it on the Sanity site. Otherwise: one slide saying Hugo is live, Sanity bridge built and next.
+
+**Stage 4 outcome (30 Sep):** target is the test project `ld5jhf23` (testUNIDCOM, personal org), never the agency's `vj0axykv` — the plan's "dataset vj0axykv" was wrong.
+- [x] E9.1 security half done on main (fa2046c). Rebase of `feat/sanity-bridge` **skipped**: 142 commits behind, and only bulk push needs its linking (`people.sanity_id` is empty for all 183 published people).
+- [x] E9.2 `scripts/sanity_push.py <person>` — one person per run, gate = `sync.person_passes` (published, not merged; profile approval is review state since 29 Sep), sets only name/shortBio/orcid/cienciaId, refuses `vj0axykv`. `ld5jhf23` seeded from `sanity-dump/vj0axykv/` (2,099 docs + images). Andrey pushed as `rims-72e62c1e-…`, read back.
+- [~] E9.3 Studio at unidcom-test.sanity.studio (`sanity-studio/`, schema rebuilt from dump field names: member, researchOutput, memberType, outputType). No Sanity-backed website: the agency's frontend reads `vj0axykv`.
+- Open: photos not pushed; bulk push needs the bridge's link step.
 
 
 ## 9. Out of scope / Phase 2+
