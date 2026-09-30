@@ -861,3 +861,15 @@ E9.1 rebase `feat/sanity-bridge`, fix `anon`-callable `sanity_*` RPCs · E9.2 pu
 - News / Events / Calls / Newsletters (Phase 3)
 - Dashboards-KPIs / FCT & annual reports automation (Phase 4)
 - OpenAlex / Crossref advanced integrations, AI-assisted analytics (Phase 5)
+
+### Phase F — Rui's v1.0 brief (30 Sep → 1 Oct, demo Fri 2 Oct)
+
+Brief (G/OV/PR/SO/AD/PE/PA/CK) + `RAW_DATA/RIMSv1/*.png`. Comparison and evidence:
+`audit/2026-10-01-rui-brief.md`, report `docs/reports/2026-10-rui-brief/rui-brief.pdf`, screens
+`audit/2026-10-01-brief-{before,after}/` (local). Branch `e/brief`, 361 tests.
+41 items: 36 done · 4 partial (G-6 admin tool actions lack (i); SO-6 no venue data; CK-1 no
+Sanity-backed site; CK-2 one transient 401 at sign-in, RLS fine) · 1 conflict (AD-5 semester needs
+an output date). Every signed-in page on the DsPage frame. DB: `people.review_note` (admin-only).
+Executors: Codex CLI (PA-1, PE-1, AD, OV-2, admin/list frames, report), Studio Qwen-30B (My Profile;
+SO-6 started, finished by orch), orch (specs/tests, small edits, review).
+

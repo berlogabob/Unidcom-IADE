@@ -95,9 +95,10 @@
   ([Hover the (i) next to ORCID, Ciência ID, Email and Lab / cluster, and next to *Import from ORCID* and *Upload photo*.], [One short sentence each — on fields and on actions.]),
   ([Click *Upload photo*, pick a JPG under 5 MB.], ["Photo sent for UNIDCOM review". The photo on the page does not change yet.]),
   ([Look for featured outputs.], [A read-only list "Featured outputs (N/5)" and "Manage in Scientific Outputs →". No checkboxes or stars here.]),
-  ([In *Your details*, change the email; click *Save draft* (bottom right).], ["Draft saved — not sent to UNIDCOM yet".]),
-  ([Type in the *Biography* box.], [A counter "N / 300". Over 300 it turns amber and says the website shows the first 300. It never blocks typing.]),
-  ([Click *Submit for UNIDCOM review* on the page; hover its (i).], [(i) says "Saved changes will be re-submitted for UNIDCOM review". The top line changes to "UNIDCOM: Submitted".]),
+  ([In *Identity & bio*, change the email; click *Save draft* (top right).], ["Draft saved — not sent to UNIDCOM yet".]),
+  ([Type in the *Bio* box.], [A counter "N / 300". Over 300 it turns amber and says the website shows the first 300. It never blocks typing.]),
+  ([Click *Import from ORCID*.], ["N fields filled in from ORCID — check them, then Submit for UNIDCOM review." Nothing is sent yet.]),
+  ([Click *Submit for UNIDCOM review* (top right); hover its (i).], [(i) says "Saved changes will be re-submitted for UNIDCOM review". The top line changes to "… UNIDCOM: Submitted".]),
 ))
 
 == Scientific Outputs
@@ -106,7 +107,7 @@
   ([Open *Scientific Outputs*.], [Tabs *Publications* · *Other activities*, and "Featured N/5" on the right. No dropdown filters.]),
   ([Click a type chip, then one of its subtypes.], [A second row of subtype chips; the list narrows.]),
   ([Click a year chip, then *Issues only*.], [The counter line ("N outputs · … · N with issues") changes with every click.]),
-  ([Read one row.], ["Type · Subtype", the issue in full or "No issues", and "On ORCID" or "Not on ORCID" as text.]),
+  ([Read one row.], ["Type · Subtype", the title, the year, and every issue in full ("Missing DOI · Not on ORCID") or "No issues". No View button — the whole row opens the output.]),
   ([Switch to *Other activities*.], [No stars on these rows. Stars only on publications, and a 6th star is refused.]),
   ([Look above the list.], ["N outputs to be validated by you" and *Submit for UNIDCOM review (N)*. Do not click yet — step C uses it.]),
 ))
@@ -117,13 +118,13 @@
 
 #steps((
   ([Bottom-left, click *Switch to admin*.], [The admin dashboard.]),
-  ([Read the five tiles.], [Integrated researchers 46 · Collaborators 109 · Profiles to approve · Outputs to approve · Proposals to review.]),
+  ([Read the four tiles; click *Outputs to approve*.], [Integrated researchers · Collaborators · Profiles to approve · Outputs to approve. The click opens Pending approval on the *Outputs* tab.]),
   ([Read *Sync status*.], [Two lines: ORCID linked / not linked, and Website published / approved-not-published / not published. Numbers only, no bars.]),
   ([Read *Issues*.], [Missing DOI and Not on ORCID. No "Not approved yet" (that is a review state, not an issue).]),
   ([Click a year chip in *Outputs by type*.], [The numbers change. There is no semester chip — see part D.]),
-  ([Click one *Critical alert*.], [That researcher's page opens.]),
-  ([Open *People*.], [Each row has a Website pill: "Website · Published" or "Not published".]),
-  ([Open *Pending approval*.], [First tab *Pipeline*: To validate · Submitted · Under review · Approved, not published · Published. Andrey is under Submitted (from My Profile step 8).]),
+  ([Click one *Critical alert*.], [It names the researcher and opens what needs attention.]),
+  ([Open *People*.], [A table: Name · Type · ORCID · Last login · Issues · UNIDCOM status · Website. A row opens the researcher.]),
+  ([Open *Pending approval*.], [Tabs *Profiles* · *Outputs* · *More*. Profiles: Draft · Submitted · Under review · Approved, not published · Published. Andrey is under Submitted, with Approve · Request changes · Reject.]),
 ))
 
 = C · A bio change, end to end (25 minutes)
@@ -136,8 +137,8 @@ The whole path of one real change: Andrey edits his biography where Portuguese r
   ([*Portal*: sign out, then sign in with ORCID again.], [Overview opens.]),
   ([*My Profile* → *Biography* block.], [Your current text, and the link *Import bio from ORCID →* (it appears only when ORCID has different text; ORCID can take a few minutes to show a change).]),
   ([Click *Import bio from ORCID →*, then *Submit for UNIDCOM review*.], [The ORCID text fills the box, then goes to UNIDCOM as a proposal. The published bio does not change yet.]),
-  ([Switch to admin. Look at the dashboard.], [Tile *Proposals to review · 1*.]),
-  ([Click the tile, then the tab *Suggestions*.], [At the top: a row "Proposed by researcher", field Bio, with the new text. The older rows below are machine suggestions from ORCID and Crossref.]),
+  ([Switch to admin. Look at *Critical alerts* on the dashboard.], ["Andrey Dyakov proposed a Bio change".]),
+  ([Click it.], [Pending approval opens on *More · Suggestions*. At the top: a row "Proposed by researcher", field Bio, with the new text.]),
   ([Click *Accept*.], [The row leaves the queue. Andrey's portal bio shows the new text.]),
   ([Open the public website, Andrey's page.], [Still the old bio — the site changes on sync.]),
   ([GitHub → unidcom-site → Actions → *Sync content from Supabase* → Run workflow (preview off).], [Green in about 2 minutes, then the site redeploys.]),
@@ -200,7 +201,7 @@ This is the only way to show a real publication going from the researcher to the
 - *Rui's own account has no outputs linked*, so his researcher view is almost empty. Use Andrey's for parts A and C.
 - *The website updates only on sync* (04:00 UTC nightly, or step C10).
 - *Ciência Vitae is not connected to RIMS.* It was left out of the pilot on 4 Aug: ORCID is the one source. Researchers keep Ciência Vitae, but RIMS reads ORCID.
-- *No e-mail notifications.* A change on ORCID reaches RIMS when the researcher opens My Profile and imports it; UNIDCOM then sees *Proposals to review* on the dashboard. Automatic detection is possible later (a daily job already exists in the code, unscheduled).
+- *No e-mail notifications.* A change on ORCID reaches RIMS when the researcher opens My Profile and imports it; UNIDCOM then sees it as a Critical alert on the dashboard. Automatic detection is possible later (a daily job already exists in the code, unscheduled).
 - *Undo after the check.* Andrey's record was saved on 29 Sep 22:25; `audit/snapshots/2026-09-30-before-walkthrough.sql` puts it back and lists anything the walk added.
 - *Sanity:* the test copy is the project testUNIDCOM (`ld5jhf23`), seeded from a snapshot of the agency's content; the push refuses the agency's project. Its editor is a Studio we built from the snapshot's fields, not the agency's own, so it looks plainer than theirs. Photos are not pushed yet.
 - *Security:* checked 29 Sep — no privileged database function can be called without signing in.
