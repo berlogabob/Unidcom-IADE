@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:unidcom_iade/data/admin_stats.dart';
 import 'package:unidcom_iade/theme/tokens.dart';
 import 'package:unidcom_iade/widgets/info_tip.dart';
+import 'package:unidcom_iade/widgets/panels.dart';
+import 'package:unidcom_iade/widgets/ds_page.dart';
 
 /// Rui 25 Sep (Admin B1): the admin dashboard, numbers only.
 class AdminOverview extends StatelessWidget {
@@ -39,8 +41,8 @@ class AdminOverview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Wrap(
-          spacing: 16,
-          runSpacing: 16,
+          spacing: dsGap,
+          runSpacing: dsGap,
           children: [
             _tile(context, 'Integrated researchers', stats.integrated),
             _tile(context, 'Collaborators', stats.collaborators),
@@ -68,10 +70,10 @@ class AdminOverview extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: dsGap),
         Wrap(
-          spacing: 16,
-          runSpacing: 16,
+          spacing: dsGap,
+          runSpacing: dsGap,
           children: [
             _card(
               'Sync status',
@@ -106,10 +108,10 @@ class AdminOverview extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: dsGap),
         Wrap(
-          spacing: 16,
-          runSpacing: 16,
+          spacing: dsGap,
+          runSpacing: dsGap,
           children: [
             _card(
               'Issues',
@@ -200,37 +202,29 @@ class AdminOverview extends StatelessWidget {
     VoidCallback? onTap,
     String? info,
   }) {
-    final child = Card(
-      color: AppColors.cardBg,
-      shape: const RoundedRectangleBorder(
-        side: BorderSide(color: AppColors.cardBorder),
-        borderRadius: BorderRadius.all(Radius.circular(AppDims.radius)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '$value',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary),
-            ),
-            info == null
-                ? Text(
+    final child = Panel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$value',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary),
+          ),
+          info == null
+              ? Text(
+                  label,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                )
+              : WithInfo(
+                  info: info,
+                  child: Text(
                     label,
                     style: const TextStyle(color: AppColors.textSecondary),
-                  )
-                : WithInfo(
-                    info: info,
-                    child: Text(
-                      label,
-                      style: const TextStyle(color: AppColors.textSecondary),
-                    ),
                   ),
-          ],
-        ),
+                ),
+        ],
       ),
     );
     return SizedBox(
@@ -242,30 +236,7 @@ class AdminOverview extends StatelessWidget {
   Widget _card(String title, Widget child) {
     return SizedBox(
       width: 360,
-      child: Card(
-        color: AppColors.cardBg,
-        shape: const RoundedRectangleBorder(
-          side: BorderSide(color: AppColors.cardBorder),
-          borderRadius: BorderRadius.all(Radius.circular(AppDims.radius)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 12),
-              child,
-            ],
-          ),
-        ),
-      ),
+      child: Panel(title: title, child: child),
     );
   }
 

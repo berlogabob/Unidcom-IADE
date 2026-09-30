@@ -9,6 +9,7 @@ import '../theme/tokens.dart';
 import '../widgets/chart_palette.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/admin_overview.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/panels.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -56,18 +57,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return _AdminOverviewData(
       data: data,
       proposalsToReview: proposalsToReview,
-      years: data.outputs
-          .map((output) => output['reporting_year'])
-          .whereType<int>()
-          .toSet()
-          .toList()
-        ..sort((a, b) => b.compareTo(a)),
+      years:
+          data.outputs
+              .map((output) => output['reporting_year'])
+              .whereType<int>()
+              .toSet()
+              .toList()
+            ..sort((a, b) => b.compareTo(a)),
       activity: (
         lastMonth: members
-            .where((person) => data.lastSignIn[person['id']]?.isAfter(lastMonth) ?? false)
+            .where(
+              (person) =>
+                  data.lastSignIn[person['id']]?.isAfter(lastMonth) ?? false,
+            )
             .length,
         lastWeek: members
-            .where((person) => data.lastSignIn[person['id']]?.isAfter(lastWeek) ?? false)
+            .where(
+              (person) =>
+                  data.lastSignIn[person['id']]?.isAfter(lastWeek) ?? false,
+            )
             .length,
         never: members
             .where((person) => data.lastSignIn[person['id']] == null)
@@ -175,22 +183,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
             orcidOutputIds: data.data.orcidOutputIds,
             year: _year,
           );
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: AdminOverview(
-              stats: stats,
-              years: data.years,
-              year: _year,
-              onYear: _setYear,
-              activity: data.activity,
-              alerts: data.alerts,
-              onOpenPerson: (id) => context.go('/people/$id'),
-              onOpenProfilesToApprove: () =>
-                  context.go('/app/admin/review'),
-              onOpenOutputsToApprove: () => context.go('/app/admin/review'),
-              proposalsToReview: data.proposalsToReview,
-              onOpenProposals: () => context.go('/app/admin/review'),
-            ),
+          return DsPage(
+            title: 'Dashboard',
+            subtitle:
+                'How many researchers are up to date, what is waiting for you, and what is already on the website.',
+            children: [
+              AdminOverview(
+                stats: stats,
+                years: data.years,
+                year: _year,
+                onYear: _setYear,
+                activity: data.activity,
+                alerts: data.alerts,
+                onOpenPerson: (id) => context.go('/people/$id'),
+                onOpenProfilesToApprove: () => context.go('/app/admin/review'),
+                onOpenOutputsToApprove: () => context.go('/app/admin/review'),
+                proposalsToReview: data.proposalsToReview,
+                onOpenProposals: () => context.go('/app/admin/review'),
+              ),
+            ],
           );
         },
       );
@@ -334,9 +345,7 @@ class _StatTilesRow extends StatelessWidget {
 }
 
 AccentTone dataQualityTone(int missing, int total) =>
-    total > 0 && missing / total > 0.5
-        ? AccentTone.warn
-        : AccentTone.neutral;
+    total > 0 && missing / total > 0.5 ? AccentTone.warn : AccentTone.neutral;
 
 class DashboardKpiTiles extends StatelessWidget {
   const DashboardKpiTiles({required this.tiles, super.key});
@@ -704,7 +713,8 @@ class _AdminOverviewData {
     List<Map<String, dynamic>> outputs,
     Set<String> orcidOutputIds,
     Map<String, DateTime?> lastSignIn,
-  }) data;
+  })
+  data;
   final int proposalsToReview;
   final List<int> years;
   final ({int lastMonth, int lastWeek, int never}) activity;

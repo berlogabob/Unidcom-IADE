@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/features.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
 import 'person_page.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/panels.dart';
 import '../widgets/queue_list.dart';
 import '../widgets/search_bar.dart';
@@ -57,9 +59,19 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: !v2 && isAdmin
+          ? const EdgeInsets.fromLTRB(24, 16, 24, 16)
+          : const EdgeInsets.all(16),
       child: Column(
         children: [
+          if (!v2 && isAdmin) ...[
+            const DsTitleCard(
+              title: 'People',
+              subtitle:
+                  'Every researcher, their review state and whether their profile is on the website.',
+            ),
+            const SizedBox(height: dsGap),
+          ],
           Row(
             children: [
               Expanded(child: SearchBarField(onChanged: _search)),
