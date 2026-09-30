@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/features.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
 import '../widgets/candidate_tile.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/output_row.dart';
 import '../widgets/pipeline_board.dart';
 import '../widgets/panels.dart';
@@ -224,6 +226,17 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
       length: 8,
       child: Column(
         children: [
+          if (!v2) ...[
+            const Padding(
+              padding: EdgeInsets.fromLTRB(24, 16, 24, 0),
+              child: DsTitleCard(
+                title: 'Pending approval',
+                subtitle:
+                    'Review what researchers submitted, then publish to the website — two separate steps.',
+              ),
+            ),
+            const SizedBox(height: dsGap),
+          ],
           const ReviewQueueTabs(),
           Expanded(
             child: ListTileTheme(
