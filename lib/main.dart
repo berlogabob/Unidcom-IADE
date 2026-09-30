@@ -213,7 +213,7 @@ Widget parameterizedRouteWidget(String path, String value, {String? tab}) =>
         child: RequestFormPage(key: ValueKey(value), requestId: value),
       ),
       '/app/admin/:tool' => AdminScreen(
-        key: ValueKey('$value?$tab'),
+        key: ValueKey(tab == null ? value : '$value?$tab'),
         tool: value,
         tab: tab,
       ),
