@@ -52,6 +52,7 @@ class PersonPageScreen extends StatefulWidget {
     this.leading = const <Widget>[],
     this.trailing = const <Widget>[],
     this.outputsOnly = false,
+    this.framed = false,
     this.orcidPanel,
     this.newOrcidPublications = 0,
     this.admin,
@@ -64,6 +65,7 @@ class PersonPageScreen extends StatefulWidget {
   final bool? admin;
   final Set<PersonSection> sections;
   final bool outputsOnly;
+  final bool framed;
   final Widget? orcidPanel;
   final int newOrcidPublications;
 
@@ -249,6 +251,19 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
             .cast<Map<String, dynamic>>()
             .where((membership) => membership['labs'] is Map)
             .toList();
+
+        if (widget.framed) {
+          return OwnOutputsSection(
+            authors: ordered,
+            featured: featured,
+            framed: true,
+            onToggleFeatured: (id) => _toggleFeatured(person, featured, id),
+            onOpenOutput: (id) => context.go('/outputs/$id'),
+            onEditOutput: isOwner ? _proposeOutputEdit : null,
+            orcidPanel: widget.orcidPanel,
+            newOrcidPublications: widget.newOrcidPublications,
+          );
+        }
 
         return DetailBody(
           children: [

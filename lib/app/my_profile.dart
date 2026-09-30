@@ -12,6 +12,7 @@ import '../public/person/orcid_sync_dialog.dart';
 import '../public/person_page.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/info_tip.dart';
 import '../widgets/orcid_block.dart';
 import '../widgets/panels.dart';
@@ -97,6 +98,7 @@ class MyProfileScreen extends StatefulWidget {
     super.key,
     this.section = MySection.personal,
     this.personId,
+    this.framed = false,
   });
 
   final MySection section;
@@ -104,6 +106,7 @@ class MyProfileScreen extends StatefulWidget {
   /// Null = the signed-in researcher. Set = an admin viewing that researcher's
   /// portal (`/people/:id`): same page, minus the writes only the owner may do.
   final String? personId;
+  final bool framed;
 
   @override
   State<MyProfileScreen> createState() => _MyProfileScreenState();
@@ -349,13 +352,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       final viewing = widget.personId != null;
       // ponytail: still the detail page, now with more slots. Split only if
       // the own-profile UI genuinely diverges from the directory one.
-      return PersonPageScreen(
+      final page = PersonPageScreen(
         // Re-key on claims too, so a promoted publication shows up below.
         key: ValueKey('$status-${_candidates.length}'),
         id: person['id'] as String,
         sections: personSectionsFor(widget.section),
         admin: viewing ? false : null,
         outputsOnly: widget.section == MySection.outputs,
+        framed: widget.framed,
         newOrcidPublications: _candidates
             .where((c) => c['status'] == 'pending')
             .length,
@@ -456,6 +460,19 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           ],
         ],
       );
+      return widget.framed
+          ? DsPage(
+              title: 'Scientific Outputs',
+              subtitle:
+                  'All your research outputs — journals, conferences, books and other activities. Click an output to see details or fix issues.',
+              action: FilledButton.icon(
+                onPressed: _addOutput,
+                icon: const Icon(Icons.add),
+                label: const Text('Add output'),
+              ),
+              children: [page],
+            )
+          : page;
     }
 
     return _unlinkedView();

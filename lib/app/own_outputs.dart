@@ -10,6 +10,7 @@ import '../public/person/featured_outputs.dart';
 import '../public/person/output_row.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/info_tip.dart';
 import '../widgets/panels.dart';
 import '../widgets/search_bar.dart';
@@ -30,6 +31,7 @@ class OwnOutputsSection extends StatefulWidget {
     this.loadKinds = fetchTaxonomyKinds,
     this.loadQuality = mergeOutputQuality,
     this.submitOutputs = submitMyOutputs,
+    this.framed = false,
   });
 
   final List<Map<String, dynamic>> authors;
@@ -44,6 +46,7 @@ class OwnOutputsSection extends StatefulWidget {
   final Future<Map<String, String>> Function() loadKinds;
   final Future<void> Function(List<Map<String, dynamic>>) loadQuality;
   final Future<int> Function(List<String>) submitOutputs;
+  final bool framed;
 
   @override
   State<OwnOutputsSection> createState() => _OwnOutputsSectionState();
@@ -239,6 +242,219 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                   output['approval_status'] == 'rejected',
             )
             .toList();
+
+        if (widget.framed && !v2) {
+          final orcidBanner = WithInfo(
+            info: 'Works on your ORCID record that are not in RIMS yet.',
+            child: TextButton(
+              onPressed: () {
+                setState(() => _showOrcid = true);
+                widget.onReviewOrcid?.call();
+              },
+              child: Text(
+                '${widget.newOrcidPublications} new publications in ORCID → Review',
+              ),
+            ),
+          );
+          final submitPanel = Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.warnTint,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${outputsToValidate.length} outputs to be validated by you. Check them, then submit.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 8),
+                WithInfo(
+                  info:
+                      'Sends these outputs to UNIDCOM. Nothing is published until UNIDCOM approves and publishes it.',
+                  child: FilledButton(
+                    onPressed: _submitting ? null : _submitOutputs,
+                    child: Text(
+                      'Submit for UNIDCOM review (${outputsToValidate.length})',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+          final filters = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  ChoiceChip(
+                    label: const Text('Publications'),
+                    selected: _filter.kind == 'publication',
+                    onSelected: (_) => setState(() {
+                      _filter = _filter.copyWith(
+                        kind: 'publication',
+                        category: const <String>[],
+                      );
+                    }),
+                  ),
+                  const SizedBox(width: 8),
+                  ChoiceChip(
+                    label: const Text('Other activities'),
+                    selected: _filter.kind == 'activity',
+                    onSelected: (_) => setState(() {
+                      _filter = _filter.copyWith(
+                        kind: 'activity',
+                        category: const <String>[],
+                      );
+                    }),
+                  ),
+                  const Spacer(),
+                  Text('Featured ${widget.featured.length}/5'),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('All types'),
+                    selected: _filter.category.isEmpty,
+                    onSelected: (_) => setState(
+                      () => _filter = _filter.copyWith(category: const []),
+                    ),
+                  ),
+                  for (final node in roots)
+                    ChoiceChip(
+                      label: Text(node.label),
+                      selected: _filter.category.firstOrNull == node.label,
+                      onSelected: (_) => setState(
+                        () =>
+                            _filter = _filter.copyWith(category: [node.label]),
+                      ),
+                    ),
+                ],
+              ),
+              if (children.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final node in children)
+                      ChoiceChip(
+                        label: Text(node.label),
+                        selected:
+                            _filter.category.length > 1 &&
+                            _filter.category[1] == node.label,
+                        onSelected: (_) => setState(
+                          () => _filter = _filter.copyWith(
+                            category: [_filter.category.first, node.label],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('All years'),
+                    selected: _filter.year == null,
+                    onSelected: (_) =>
+                        setState(() => _filter = _filter.copyWith(year: null)),
+                  ),
+                  for (final year in yearsOf(tabRows))
+                    ChoiceChip(
+                      label: Text('$year'),
+                      selected: _filter.year == year,
+                      onSelected: (_) => setState(
+                        () => _filter = _filter.copyWith(year: year),
+                      ),
+                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FilterChip(
+                        label: const Text('Issues only'),
+                        selected: _filter.issuesOnly,
+                        onSelected: (selected) => setState(
+                          () =>
+                              _filter = _filter.copyWith(issuesOnly: selected),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const InfoTip(
+                        text:
+                            'Shows only outputs with missing or inconsistent data.',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(countsLine(visibleRows)),
+            ],
+          );
+          final rows = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (visibleRows.isEmpty)
+                mutedText(
+                  context,
+                  _outputs.isEmpty
+                      ? 'No outputs yet'
+                      : 'No outputs match these filters',
+                )
+              else
+                for (final output in visibleRows)
+                  PersonOutputRow(
+                    author: _authorByOutputId[output['id'].toString()]!,
+                    featurable: kindOf(output, kinds) == 'publication',
+                    isFeatured:
+                        kinds[rootOf(output)] == 'publication' &&
+                        widget.featured.contains(output['id'].toString()),
+                    onToggle: widget.onToggleFeatured,
+                    onTap: widget.onOpenOutput,
+                    onEdit: widget.onEditOutput == null
+                        ? null
+                        : (_) => widget.onEditOutput!(output),
+                    showStates: true,
+                  ),
+            ],
+          );
+          final blocks = <Widget>[
+            if (widget.newOrcidPublications > 0)
+              Panel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    orcidBanner,
+                    if (_showOrcid && widget.orcidPanel != null) ...[
+                      const SizedBox(height: 16),
+                      widget.orcidPanel!,
+                    ],
+                  ],
+                ),
+              ),
+            if (outputsToValidate.isNotEmpty) Panel(child: submitPanel),
+            Panel(child: filters),
+            Panel(padding: EdgeInsets.zero, child: rows),
+          ];
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < blocks.length; i++) ...[
+                if (i > 0) const SizedBox(height: dsGap),
+                blocks[i],
+              ],
+            ],
+          );
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

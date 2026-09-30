@@ -14,6 +14,7 @@ import 'app/dashboard.dart';
 import 'app/mode_chooser.dart';
 import 'app/my_profile.dart';
 import 'app/v1/my_profile_page.dart';
+import 'app/v1/outputs_page.dart';
 import 'app/portal_pages.dart';
 import 'app/request_form.dart';
 import 'app/researcher_home.dart';
@@ -469,8 +470,10 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/app/outputs',
-          builder: (_, _) => const PortalShell(
-            child: MyProfileScreen(section: MySection.outputs),
+          builder: (_, _) => PortalShell(
+            child: v2
+                ? const MyProfileScreen(section: MySection.outputs)
+                : const ScientificOutputsPage(),
           ),
         ),
         GoRoute(
