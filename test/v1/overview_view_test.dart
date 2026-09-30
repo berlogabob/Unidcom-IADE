@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide StepState;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/app/v1/overview_view.dart';
 import 'package:unidcom_iade/data/attention.dart';

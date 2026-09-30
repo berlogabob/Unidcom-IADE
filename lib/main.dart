@@ -13,6 +13,7 @@ import 'app/admin_requests.dart';
 import 'app/dashboard.dart';
 import 'app/mode_chooser.dart';
 import 'app/my_profile.dart';
+import 'app/v1/my_profile_page.dart';
 import 'app/portal_pages.dart';
 import 'app/request_form.dart';
 import 'app/researcher_home.dart';
@@ -431,7 +432,9 @@ final _router = GoRouter(
         ),
         GoRoute(
           path: '/app/profile',
-          builder: (_, _) => const PortalShell(child: MyProfileScreen()),
+          builder: (_, _) => PortalShell(
+            child: v2 ? const MyProfileScreen() : const MyProfilePage(),
+          ),
         ),
         GoRoute(
           path: '/app/profile/identifiers',

@@ -13,6 +13,7 @@ import '../widgets/detail_scaffold.dart';
 import '../widgets/info_tip.dart';
 import '../widgets/output_row.dart';
 import '../widgets/panels.dart';
+import 'v1/overview_view.dart';
 import 'my_profile.dart' show profileStatusLabel;
 
 /// Home-page fetch, public so the split-out `/app/home/*` leaves (see
@@ -111,6 +112,30 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
       builder: (context, data) {
         final person = data.person;
         if (person == null) return const _NoProfileView();
+
+        if (!v2) {
+          return FutureBuilder<Map<String, dynamic>?>(
+            future: _timeline,
+            builder: (context, snapshot) => OverviewView(
+              person: person,
+              alerts: attentionItems(
+                person: person,
+                outputs: data.outputs,
+                candidates: data.candidates,
+                suggestions: data.suggestions,
+              ),
+              timeline: snapshot.data == null
+                  ? null
+                  : profileTimeline(snapshot.data!),
+              outputs: data.outputs,
+              featuredCount:
+                  (person['featured_outputs'] as List<dynamic>? ?? const [])
+                      .length,
+              onNavigate: (route) =>
+                  context.go(portalRoute(route, widget.personId)),
+            ),
+          );
+        }
 
         return ColoredBox(
           color: AppColors.pageBg,
