@@ -127,7 +127,7 @@ void main() {
     expect(navGroupOf(researcher, '/app/profile/identifiers')?.label, '');
 
     final admin = adminNav();
-    expect(navGroupOf(admin, '/app/admin/merge')?.label, '');
+    expect(navGroupOf(admin, '/app/admin/merge')?.label, 'More');
     expect(navGroupOf(admin, '/app/admin/review')?.label, '');
   });
   test('researcher nav is the five v1 items', () {
@@ -209,9 +209,20 @@ void main() {
       expandedGroup.value = null;
     },
   );
+  test('admin sidebar is the brief\'s five, the rest under More (AD-1)', () {
+    final groups = adminNav();
+    expect(groups.first.items.map((i) => i.label), [
+      'Dashboard', 'People', 'Pending approval', 'Outputs', 'Reports',
+    ]);
+    expect(groups[1].label, 'More');
+    expect(groups[1].items.map((i) => i.label), containsAll([
+      'Projects', 'Structure', 'Data browser', 'Merge duplicates', 'Settings',
+    ]));
+  });
   test('navGroupOf finds the owning group', () {
     final groups = adminNav();
-    expect(navGroupOf(groups, '/outputs/123')?.label, 'Research');
+    expect(navGroupOf(groups, '/outputs/123')?.label, '');
+    expect(navGroupOf(groups, '/labs/1')?.label, 'More');
     expect(navGroupOf(groups, '/app/admin/review')?.label, '');
     expect(navGroupOf(groups, '/nope'), isNull);
   });

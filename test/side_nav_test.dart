@@ -77,7 +77,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('RESEARCH'), findsOneWidget);
+    expect(find.text('MORE'), findsOneWidget);
   });
 
   testWidgets('children render whether or not their parent is active', (
@@ -86,7 +86,14 @@ void main() {
     await tester.pumpWidget(
       host(
         SideNav(
-          groups: adminNav(),
+          groups: [
+            NavGroup('', [
+              NavItem('Dashboard', '/app/dashboard'),
+              NavItem('People', '/people', children: [
+                NavItem('Merge duplicates', '/app/admin/merge'),
+              ]),
+            ]),
+          ],
           path: '/app/dashboard', // Dashboard active, not People
           header: const SizedBox(),
           footer: const SizedBox(),

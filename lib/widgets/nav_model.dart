@@ -166,29 +166,26 @@ List<NavGroup> _welcomeGroups({required bool signedIn}) => [
   ], route: '/app/welcome/contacts'),
 ];
 
-/// Admin — "UNIDCOM Research Management".
+/// Admin — "UNIDCOM Research Management". Rui's v1.0 brief AD-1: five items;
+/// the rest stay reachable under a collapsed "More" (decided 30 Sep).
 List<NavGroup> adminNav() => [
   NavGroup('', [
     NavItem('Dashboard', '/app/dashboard', icon: Icons.dashboard_outlined),
-    NavItem(
-      'People',
-      '/people',
-      icon: Icons.people_outline,
-      children: [NavItem('Merge duplicates', '/app/admin/merge')],
-    ),
+    NavItem('People', '/people', icon: Icons.people_outline),
     NavItem(
       'Pending approval',
       '/app/admin/review',
       icon: Icons.fact_check_outlined,
     ),
-  ]),
-  NavGroup('Research', [
     NavItem(
       'Outputs',
       '/outputs',
       icon: Icons.article_outlined,
       prefixes: ['/conferences'],
     ),
+    NavItem('Reports', '/app/admin/reports', icon: Icons.summarize_outlined),
+  ]),
+  NavGroup('More', [
     NavItem('Projects', '/projects', icon: Icons.work_outline),
     NavItem(
       'Structure',
@@ -196,23 +193,19 @@ List<NavGroup> adminNav() => [
       icon: Icons.account_tree_outlined,
       prefixes: ['/labs', '/clusters', '/objectives'],
     ),
-  ]),
-  NavGroup('Data & reporting', [
-    NavItem('Reports', '/app/admin/reports', icon: Icons.summarize_outlined),
     NavItem(
       'Data browser',
       '/app/admin/data',
       icon: Icons.table_chart_outlined,
     ),
+    NavItem('Merge duplicates', '/app/admin/merge', icon: Icons.merge_type),
+    NavItem('Settings', '/app/settings', icon: Icons.settings_outlined),
     if (v2)
       NavItem(
         'Support requests',
         '/app/admin/requests',
         icon: Icons.inbox_outlined,
       ),
-  ]),
-  NavGroup('', [
-    NavItem('Settings', '/app/settings', icon: Icons.settings_outlined),
   ]),
   // M2 from the IA (not built): Research activities, Planning & monitoring,
   // Data export page, Settings sub-pages (centre info, users & roles, ...).
