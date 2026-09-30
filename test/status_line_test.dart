@@ -51,5 +51,24 @@ void main() {
         );
       },
     );
+
+    testWidgets('leads with name and researcher type (brief G-3)', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: StatusLine(
+            person: {
+              'preferred_name': 'Ana Nolasco',
+              'membership_type': 'integrated',
+              'profile_status': 'under_review',
+              'public_visibility': false,
+            },
+          ),
+        ),
+      );
+      expect(
+        find.text('Ana Nolasco · Integrated researcher  ·  UNIDCOM: Under review · Website: Not published'),
+        findsOneWidget,
+      );
+    });
   });
 }

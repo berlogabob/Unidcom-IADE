@@ -325,7 +325,8 @@ List<Widget> editorActions(
   ),
 ];
 
-/// Centered, width-capped scrolling column — the standard detail layout.
+/// Detail pages share DsPage's frame — same width, padding and background —
+/// with their own header card in place of the title card.
 class DetailBody extends StatelessWidget {
   const DetailBody({super.key, required this.children});
 
@@ -333,14 +334,14 @@ class DetailBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
+    return Material(
       color: AppColors.pageBg,
       child: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
+          constraints: const BoxConstraints(maxWidth: 1100),
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
             children: children,
           ),
         ),

@@ -126,7 +126,10 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
               ),
               timeline: snapshot.data == null
                   ? null
-                  : profileTimeline(snapshot.data!),
+                  : profileTimeline({
+                      ...snapshot.data!,
+                      'review_note': person['review_note'],
+                    }),
               outputs: data.outputs,
               featuredCount:
                   (person['featured_outputs'] as List<dynamic>? ?? const [])
@@ -177,7 +180,10 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
                                 : Padding(
                                     padding: const EdgeInsets.only(bottom: 16),
                                     child: TimelineBar(
-                                      steps: profileTimeline(snap.data!),
+                                      steps: profileTimeline({
+                                        ...snap.data!,
+                                        'review_note': person['review_note'],
+                                      }),
                                     ),
                                   ),
                           ),

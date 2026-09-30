@@ -208,8 +208,9 @@ void main() {
       ),
     );
 
-    expect(find.text('On ORCID'), findsOneWidget);
-    expect(find.text('Website · Published'), findsOneWidget);
+    // Brief SO-6: ORCID and website state are not row pills.
+    expect(find.text('On ORCID'), findsNothing);
+    expect(find.text('Website · Published'), findsNothing);
   });
 
   testWidgets('showStates labels a missing website as not published', (
@@ -231,7 +232,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Website · Not published'), findsOneWidget);
+    expect(find.text('Website · Not published'), findsNothing);
   });
 
   testWidgets('edit action fires with output id', (tester) async {

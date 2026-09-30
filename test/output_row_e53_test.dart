@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/public/person/output_row.dart';
 
-// E5.3 (Rui 25 Sep, Scientific Outputs A4·7, A4·8, B4·6).
+// E5.3 (Rui 25 Sep, A4·7, A4·8, B4·6) and the v1.0 brief SO-6: one row —
+// type · subtype tag, title, year underneath, every issue in full, star.
 Map<String, dynamic> author({
   String type = 'Artigos em revistas',
   String? subtype = 'Artigo',
@@ -56,23 +57,36 @@ void main() {
     expect(find.text('ARTIGOS EM REVISTAS · ARTIGO'), findsOneWidget);
   });
 
-  testWidgets('the first issue is written in full, with a count of the rest', (
-    tester,
-  ) async {
-    await pumpRow(tester, author(codes: ['missing_doi', 'missing_year']));
-    expect(find.text('Missing DOI +1'), findsOneWidget);
+  testWidgets('every issue is written in full, never "+N"', (tester) async {
+    await pumpRow(tester, author(source: 'orcid', codes: ['missing_doi', 'missing_year']));
+    expect(find.text('Missing DOI · Missing year'), findsOneWidget);
+    expect(find.textContaining('+1'), findsNothing);
   });
 
   testWidgets('no issues says so', (tester) async {
-    await pumpRow(tester, author());
+    await pumpRow(tester, author(source: 'orcid'));
     expect(find.text('No issues'), findsOneWidget);
   });
 
-  testWidgets('ORCID state is text, not a tick', (tester) async {
+  testWidgets('a publication missing from ORCID names it as an issue', (tester) async {
+    await pumpRow(tester, author(codes: ['missing_doi']));
+    expect(find.text('Missing DOI · Not on ORCID'), findsOneWidget);
     await pumpRow(tester, author());
     expect(find.text('Not on ORCID'), findsOneWidget);
+  });
+
+  testWidgets('an activity is never "Not on ORCID"', (tester) async {
+    await pumpRow(tester, author(), featurable: false);
+    expect(find.text('No issues'), findsOneWidget);
+    expect(find.textContaining('ORCID'), findsNothing);
+  });
+
+  testWidgets('no ORCID or Website pills; year underneath, no role or DOI', (tester) async {
     await pumpRow(tester, author(source: 'orcid'));
-    expect(find.text('On ORCID'), findsOneWidget);
+    expect(find.text('On ORCID'), findsNothing);
+    expect(find.textContaining('Website ·'), findsNothing);
+    expect(find.text('2025'), findsOneWidget);
+    expect(find.textContaining('Autor'), findsNothing);
   });
 
   testWidgets('only featurable rows (publications) get a star', (tester) async {

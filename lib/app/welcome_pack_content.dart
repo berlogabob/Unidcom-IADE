@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/ds_page.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -585,25 +586,10 @@ Widget _section({
   required String lead,
   required List<Widget> children,
 }) => Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
+  crossAxisAlignment: CrossAxisAlignment.stretch,
   children: [
-    Text(
-      title,
-      style: const TextStyle(
-        color: AppColors.textPrimary,
-        fontSize: 22,
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-    const SizedBox(height: 8),
-    Text(
-      lead,
-      style: const TextStyle(
-        color: AppColors.textMuted,
-        fontSize: 14,
-        height: 1.5,
-      ),
-    ),
+    // Same title card as every v1 page (brief: one look everywhere).
+    DsTitleCard(title: title, subtitle: lead),
     ...children,
   ],
 );

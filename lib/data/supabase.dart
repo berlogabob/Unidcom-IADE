@@ -228,7 +228,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
         .from('people')
         .select(
           'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, job_title, phone, '
-          'orcid, ciencia_id, profile_status, public_visibility, last_verified_at, '
+          'orcid, ciencia_id, profile_status, review_note, public_visibility, last_verified_at, '
           'join_date, exit_date, phd, notes, integration_year, auth_user_id, updated_at, '
           'orcid_synced_at, featured_outputs, '
           // category_path feeds the timeline's cascade filter — without it
@@ -763,7 +763,7 @@ Future<Map<String, dynamic>?> fetchMyPerson() async {
     final rows = await db
         .from('people')
         .select(
-          'id, preferred_name, bio, photo_url, email, job_title, phone, orcid, ciencia_id, profile_status, orcid_synced_at, public_visibility',
+          'id, preferred_name, membership_type, bio, photo_url, email, job_title, phone, orcid, ciencia_id, profile_status, orcid_synced_at, public_visibility, review_note',
         )
         .eq('auth_user_id', userId)
         .limit(1);

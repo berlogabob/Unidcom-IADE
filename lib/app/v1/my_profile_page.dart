@@ -8,6 +8,7 @@ import '../../data/supabase.dart';
 import '../../public/person/featured_outputs.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/detail_scaffold.dart';
+import '../../widgets/status_line.dart';
 import 'my_profile_view.dart';
 
 class MyProfilePage extends StatefulWidget {
@@ -104,6 +105,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
           if (status == 'draft' || status == 'to_validate') {
             await submitMyProfileForReview(id);
           }
+          statusLineRefresh.value++;
         },
         onConnectOrcid: _connectOrcid,
         onUploadPhoto: () async {

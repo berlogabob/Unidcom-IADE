@@ -119,7 +119,7 @@ class _Bio extends StatelessWidget {
           if (text == null || text.isEmpty)
             const Text('No biography yet')
           else
-            Text(text, maxLines: 4, overflow: TextOverflow.ellipsis),
+            Text(text, maxLines: 3, overflow: TextOverflow.ellipsis),
           TextButton(
             onPressed: () => onNavigate('/app/profile'),
             child: const Text('Edit bio →'),
@@ -145,6 +145,9 @@ class _Summary extends StatelessWidget {
   Widget build(BuildContext context) {
     final counts = countByType(outputs);
     final issueCount = outputs.where(hasIssues).length;
+    final pendingCount = outputs
+        .where((o) => o['approval_status'] == 'pending')
+        .length;
     final links = [
       ('${outputs.length} outputs', '/app/outputs'),
       for (final entry in counts.entries)
@@ -153,6 +156,8 @@ class _Summary extends StatelessWidget {
           '/app/outputs?type=${Uri.encodeQueryComponent(entry.key)}',
         ),
       if (issueCount > 0) ('$issueCount with issues', '/app/outputs?issues=1'),
+      if (pendingCount > 0)
+        ('$pendingCount pending UNIDCOM approval', '/app/outputs?review=pending'),
       ('Featured $featuredCount/5', '/app/outputs?view=featured'),
     ];
 

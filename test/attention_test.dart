@@ -126,4 +126,16 @@ void main() {
       '/app/profile',
     ]);
   });
+
+  test('a profile sent back by UNIDCOM leads with the note (brief PA-1)', () {
+    final items = attentionItems(
+      person: {'profile_status': 'draft', 'review_note': 'Shorten the bio'},
+      outputs: const [],
+      candidates: const [],
+      suggestions: const [],
+    );
+    expect(items.map((item) => (item.text, item.route)), [
+      ('UNIDCOM asked for changes: Shorten the bio', '/app/profile'),
+    ]);
+  });
 }

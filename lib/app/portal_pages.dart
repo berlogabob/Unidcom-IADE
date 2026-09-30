@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../widgets/ds_page.dart';
 import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
@@ -129,8 +131,8 @@ class WipCallout extends StatelessWidget {
   }
 }
 
-/// Shared frame for the small portal pages: sand background, 1100 max width,
-/// 16 padding, a titleLarge heading.
+/// The small portal pages use the one v1 page frame (brief: every page looks
+/// and behaves the same).
 class PortalPage extends StatelessWidget {
   const PortalPage({super.key, required this.title, required this.child});
 
@@ -138,25 +140,7 @@ class PortalPage extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: AppColors.pageBg,
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1100),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Text(title, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 16),
-              child,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => DsPage(title: title, children: [child]);
 }
 
 Widget _noProfilePanel() => const Panel(

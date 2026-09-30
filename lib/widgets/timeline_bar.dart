@@ -37,6 +37,8 @@ class TimelineBar extends StatelessWidget {
 
         final iconColor = step.state == timeline.StepState.todo
             ? AppColors.textMuted
+            : step.state == timeline.StepState.current
+            ? AppColors.tealDark
             : AppColors.teal;
 
         final labelText = step.state == timeline.StepState.done
@@ -50,32 +52,50 @@ class TimelineBar extends StatelessWidget {
             ? '${step.date!.day} ${months[step.date!.month - 1]} ${step.date!.year}'
             : (step.state == timeline.StepState.current ? 'In progress' : '—');
 
+        final current = step.state == timeline.StepState.current;
         return Semantics(
           label: '${step.label}, $labelText',
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 18, color: iconColor),
-              const SizedBox(width: 6),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    step.label,
-                    style: TextStyle(
-                      fontWeight: step.state == timeline.StepState.current
-                          ? FontWeight.bold
-                          : FontWeight.normal,
+          child: Container(
+            key: ValueKey(
+              current ? 'timeline-step-current' : 'timeline-step-${step.label}',
+            ),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: current ? AppColors.tealTint : null,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 18, color: iconColor),
+                const SizedBox(width: 6),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      step.label,
+                      style: TextStyle(
+                        fontWeight: current
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
                     ),
-                  ),
-                  Text(
-                    dateText,
-                    style: TextStyle(fontSize: 12, color: AppColors.textMuted),
-                  ),
-                ],
-              ),
-            ],
+                    Text(
+                      step.status,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    Text(
+                      dateText,
+                      style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       }).toList(),

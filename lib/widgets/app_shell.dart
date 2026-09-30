@@ -47,7 +47,21 @@ class _AppShellState extends State<AppShell> {
     data.countPendingRequests,
   );
   late final Future<int> _attention = data.attentionCount();
-  late final Future<Map<String, dynamic>?> _person = data.fetchMyPerson();
+  late Future<Map<String, dynamic>?> _person = data.fetchMyPerson();
+
+  void _reloadPerson() => setState(() => _person = data.fetchMyPerson());
+
+  @override
+  void initState() {
+    super.initState();
+    statusLineRefresh.addListener(_reloadPerson);
+  }
+
+  @override
+  void dispose() {
+    statusLineRefresh.removeListener(_reloadPerson);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

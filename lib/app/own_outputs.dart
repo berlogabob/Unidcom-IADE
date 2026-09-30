@@ -106,6 +106,11 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
     if (query['view'] == 'featured') {
       _filter = _filter.copyWith(featuredOnly: true);
     }
+    // Overview Summary links (brief OV-3): each number opens its filter.
+    if (query['issues'] == '1') _filter = _filter.copyWith(issuesOnly: true);
+    if (query['review'] != null) {
+      _filter = _filter.copyWith(review: query['review']);
+    }
   }
 
   Future<void> _loadQuality() async {

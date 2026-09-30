@@ -108,10 +108,9 @@ class OutputRow extends StatelessWidget {
             const SizedBox(width: 2),
             // Capped: the full list is in the tooltip.
             ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 140),
+              constraints: const BoxConstraints(maxWidth: 320),
               child: Text(
-                '${issueLabel(codes.first)}'
-                '${codes.length > 1 ? ' +${codes.length - 1}' : ''}',
+                codes.map(issueLabel).join(' · '),
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.textMuted,

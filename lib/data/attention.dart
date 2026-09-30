@@ -44,7 +44,13 @@ List<AttentionItem> attentionItems({
       count == 1 ? singular : plural;
 
   return [
-    if (const {'draft', 'to_validate'}.contains(person['profile_status']))
+    if (person['profile_status'] == 'draft' &&
+        (person['review_note'] as String?)?.isNotEmpty == true)
+      AttentionItem(
+        'UNIDCOM asked for changes: ${person['review_note']}',
+        '/app/profile',
+      )
+    else if (const {'draft', 'to_validate'}.contains(person['profile_status']))
       const AttentionItem(
         'Your profile is to be validated → Submit it for UNIDCOM review',
         '/app/profile',
