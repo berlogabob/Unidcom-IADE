@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Design tokens from RAW_DATA/TemplatesFromCarmela (admin + researcher templates).
 abstract final class AppColors {
   // Structure
-  static const sidebar = Color(0xFF0E1525);      // --sidebar-bg / --topnav-bg
+  static const sidebar = Color(0xFF16213A);      // brief v1.0: navy #16213A (was #0E1525)
   static const profileBand = Color(0xFF101A30);  // --profile-bg
   static const pageBg = Color(0xFFF5F4F0);       // --page-bg (sand)
   static const cardBg = Color(0xFFFFFFFF);

@@ -16,7 +16,10 @@ ThemeData unidcomTheme() {
     onSurfaceVariant: AppColors.textMuted,
   );
   final base = ThemeData(colorScheme: colorScheme, useMaterial3: true);
-  final inter = GoogleFonts.interTextTheme(base.textTheme);
+  // Brief v1.0: Inter, fallback Segoe UI, sans-serif.
+  final inter = GoogleFonts.interTextTheme(
+    base.textTheme,
+  ).apply(fontFamilyFallback: const ['Segoe UI', 'sans-serif']);
   final smallRadius = BorderRadius.circular(AppDims.radiusSm);
 
   return base.copyWith(
