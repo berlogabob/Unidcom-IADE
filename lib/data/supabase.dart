@@ -612,12 +612,36 @@ Future<void> approvePerson(String id) async {
   await updatePerson(id, {
     'profile_status': 'approved',
     'last_verified_at': DateTime.now().toIso8601String(),
+    'review_note': null,
   });
 }
 
 /// Admin: take a submitted profile into review (Rui A1·8).
 Future<void> startReview(String id) =>
     updatePerson(id, {'profile_status': 'under_review'});
+
+/// Admin (brief PA-1): back to the researcher as a draft, with a note.
+Future<void> requestProfileChanges(String id, String note) =>
+    updatePerson(id, {'profile_status': 'draft', 'review_note': note.trim()});
+
+/// Admin (brief PA-1): decline the submission — pending researcher proposals are rejected and the profile returns to draft with the note.
+Future<void> rejectProfile(String id, String note) async {
+  try {
+    await db
+        .from('enrichment_suggestions')
+        .update({'status': 'rejected'})
+        .eq('subject_type', 'person')
+        .eq('subject_id', id)
+        .eq('source', 'researcher')
+        .eq('status', 'pending');
+    await updatePerson(id, {
+      'profile_status': 'draft',
+      'review_note': 'Not accepted: ${note.trim()}',
+    });
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
 
 /// Admin: put a profile on the website or take it off — separate from approval.
 Future<void> setPersonPublished(String id, bool published) =>
@@ -629,7 +653,7 @@ Future<List<Map<String, dynamic>>> fetchPipelinePeople() async {
     final rows = await db
         .from('people')
         .select(
-          'id, preferred_name, profile_status, public_visibility, membership_type',
+          'id, preferred_name, profile_status, public_visibility, membership_type, review_note',
         )
         .filter('merged_into', 'is', null)
         .inFilter('membership_type', const ['integrated', 'collaborator'])

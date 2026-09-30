@@ -58,6 +58,46 @@ Future<bool?> showRejectOutputDialog(
   );
 }
 
+Future<String?> showProfileNoteDialog(
+  BuildContext context, {
+  required String title,
+  required String action,
+}) async {
+  final note = TextEditingController();
+  try {
+    return await showDialog<String>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: note,
+            maxLines: 4,
+            onChanged: (_) => setState(() {}),
+            decoration: const InputDecoration(
+              labelText: 'Note for the researcher (required)',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: note.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.of(context).pop(note.text.trim()),
+              child: Text(action),
+            ),
+          ],
+        ),
+      ),
+    );
+  } finally {
+    note.dispose();
+  }
+}
+
 class ReviewQueueScreen extends StatefulWidget {
   const ReviewQueueScreen({super.key, this.initialTab});
 
@@ -334,6 +374,26 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                           },
                           onApprove: (id) async {
                             await approvePerson(id);
+                            _refresh();
+                          },
+                          onRequestChanges: (id) async {
+                            final note = await showProfileNoteDialog(
+                              context,
+                              title: 'Request changes',
+                              action: 'Send back',
+                            );
+                            if (note == null) return;
+                            await requestProfileChanges(id, note);
+                            _refresh();
+                          },
+                          onReject: (id) async {
+                            final note = await showProfileNoteDialog(
+                              context,
+                              title: 'Reject this submission?',
+                              action: 'Reject',
+                            );
+                            if (note == null) return;
+                            await rejectProfile(id, note);
                             _refresh();
                           },
                           onPublish: (id) async {

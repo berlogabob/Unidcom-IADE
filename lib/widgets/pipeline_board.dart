@@ -6,7 +6,7 @@ Map<String, List<Map<String, dynamic>>> pipelineColumns(
   List<Map<String, dynamic>> people,
 ) {
   final columns = <String, List<Map<String, dynamic>>>{
-    'To validate': [],
+    'Draft': [],
     'Submitted': [],
     'Under review': [],
     'Approved, not published': [],
@@ -17,9 +17,9 @@ Map<String, List<Map<String, dynamic>>> pipelineColumns(
     final status = person['profile_status'];
     final published = person['public_visibility'] == true;
     // By review state first: an imported profile already on the site is
-    // still "To validate" until its researcher submits (Rui 25 Sep).
+    // still "Draft" until its researcher submits (Rui 25 Sep).
     final column = switch (status) {
-      'to_validate' || 'draft' => 'To validate',
+      'to_validate' || 'draft' => 'Draft',
       'pending_review' => 'Submitted',
       'under_review' => 'Under review',
       'approved' => published ? 'Published' : 'Approved, not published',
@@ -37,6 +37,8 @@ class PipelineBoard extends StatelessWidget {
     required this.people,
     required this.onStartReview,
     required this.onApprove,
+    required this.onRequestChanges,
+    required this.onReject,
     required this.onPublish,
     required this.onUnpublish,
     required this.onOpen,
@@ -45,6 +47,8 @@ class PipelineBoard extends StatelessWidget {
   final List<Map<String, dynamic>> people;
   final ValueChanged<String> onStartReview;
   final ValueChanged<String> onApprove;
+  final ValueChanged<String> onRequestChanges;
+  final ValueChanged<String> onReject;
   final ValueChanged<String> onPublish;
   final ValueChanged<String> onUnpublish;
   final ValueChanged<String> onOpen;
@@ -94,19 +98,28 @@ class PipelineBoard extends StatelessWidget {
   Widget _personCard(String column, Map<String, dynamic> person) {
     final id = person['id'] as String;
     final action = switch (column) {
-      'Submitted' => WithInfo(
-        info: 'Moves the profile to Under review, so the researcher sees UNIDCOM is on it.',
-        child: TextButton(
-          onPressed: () => onStartReview(id),
-          child: const Text('Start review'),
-        ),
+      'Submitted' => Wrap(
+        spacing: 4,
+        children: [
+          WithInfo(
+            info: 'Moves the profile to Under review, so the researcher sees UNIDCOM is on it.',
+            child: TextButton(
+              onPressed: () => onStartReview(id),
+              child: const Text('Start review'),
+            ),
+          ),
+          _approveAction(id),
+          _requestChangesAction(id),
+          _rejectAction(id),
+        ],
       ),
-      'Under review' => WithInfo(
-        info: 'Confirms the profile. It does not publish it.',
-        child: TextButton(
-          onPressed: () => onApprove(id),
-          child: const Text('Approve'),
-        ),
+      'Under review' => Wrap(
+        spacing: 4,
+        children: [
+          _approveAction(id),
+          _requestChangesAction(id),
+          _rejectAction(id),
+        ],
       ),
       'Approved, not published' => WithInfo(
         info: 'Puts this on the UNIDCOM website at the next sync.',
@@ -130,9 +143,12 @@ class PipelineBoard extends StatelessWidget {
         children: [
           ListTile(
             title: Text(person['preferred_name'] as String? ?? 'Unnamed'),
-            subtitle: column == 'To validate'
+            subtitle: column == 'Draft'
                 ? Text(
-                    person['public_visibility'] == true
+                    person['review_note'] is String &&
+                            (person['review_note'] as String).isNotEmpty
+                        ? 'Changes requested: ${person['review_note']}'
+                        : person['public_visibility'] == true
                         ? 'On the website (imported) · waiting for the researcher'
                         : 'Waiting for the researcher',
                   )
@@ -145,4 +161,28 @@ class PipelineBoard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _approveAction(String id) => WithInfo(
+    info: 'Confirms the profile. It does not publish it.',
+    child: TextButton(
+      onPressed: () => onApprove(id),
+      child: const Text('Approve'),
+    ),
+  );
+
+  Widget _requestChangesAction(String id) => WithInfo(
+    info: 'Sends the profile back to the researcher as a draft, with your note.',
+    child: TextButton(
+      onPressed: () => onRequestChanges(id),
+      child: const Text('Request changes'),
+    ),
+  );
+
+  Widget _rejectAction(String id) => WithInfo(
+    info: 'Declines this submission and its proposed changes; the researcher sees your note.',
+    child: TextButton(
+      onPressed: () => onReject(id),
+      child: const Text('Reject'),
+    ),
+  );
 }
