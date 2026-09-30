@@ -6,7 +6,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../csv_download.dart';
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/panels.dart';
+import '../theme/tokens.dart';
 
 /// The report kinds the `report` Edge Function can render. `kind` is sent verbatim;
 /// `usesTypeFilter` decides whether the Type dropdown applies to this report.
@@ -69,9 +71,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       final body = {
         'kind': _kind.kind,
         'year': _year,
-        'filters': {
-          if (_kind.usesTypeFilter && _type != null) 'type': _type,
-        },
+        'filters': {if (_kind.usesTypeFilter && _type != null) 'type': _type},
       };
 
       Uint8List? bytes;
@@ -135,166 +135,235 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   output['type'] == _type);
         }).toList();
 
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  SizedBox(
-                    width: 260,
-                    child: DropdownButtonFormField<ReportKind>(
-                      initialValue: _kind,
-                      decoration: const InputDecoration(
-                        labelText: 'Report',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: [
-                        for (final kind in ReportKind.values)
-                          DropdownMenuItem(value: kind, child: Text(kind.label)),
-                      ],
-                      onChanged: (value) => setState(() {
-                        _kind = value ?? ReportKind.outputs;
-                        // The Type filter only exists for the simple listing.
-                        if (!_kind.usesTypeFilter) _type = null;
-                      }),
+        return Material(
+          color: AppColors.pageBg,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1100),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const DsTitleCard(
+                      title: 'Reports',
+                      subtitle: 'Outputs for a period, ready to export.',
                     ),
-                  ),
-                  SizedBox(
-                    width: 160,
-                    child: DropdownButtonFormField<int?>(
-                      initialValue: _year,
-                      decoration: const InputDecoration(
-                        labelText: 'Year',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: [
-                        const DropdownMenuItem(value: null, child: Text('All')),
-                        for (final year in years)
-                          DropdownMenuItem(value: year, child: Text('$year')),
-                      ],
-                      onChanged: (value) => setState(() => _year = value),
-                    ),
-                  ),
-                  if (_kind.usesTypeFilter)
-                    SizedBox(
-                      width: 320,
-                      child: DropdownButtonFormField<String?>(
-                        initialValue: _type,
-                        decoration: const InputDecoration(
-                          labelText: 'Type',
-                          border: OutlineInputBorder(),
-                        ),
-                        items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('All'),
-                          ),
-                          for (final type in types)
-                            DropdownMenuItem(value: type, child: Text(type)),
-                        ],
-                        onChanged: (value) => setState(() => _type = value),
-                      ),
-                    ),
-                  FilledButton.icon(
-                    onPressed: _generating ? null : _generatePdf,
-                    icon: _generating
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.picture_as_pdf),
-                    label: Text(_generating ? 'Generating…' : 'Generate PDF'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: filtered.isEmpty
-                        ? null
-                        : () {
-                            final ok = downloadCsv(
-                              'unidcom_outputs_report.csv',
-                              _csv(filtered),
-                            );
-                            if (!ok && context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'CSV download is available on web.',
+                    const SizedBox(height: dsGap),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Panel(
+                            child: Wrap(
+                              spacing: 12,
+                              runSpacing: 12,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 260,
+                                  child: DropdownButtonFormField<ReportKind>(
+                                    initialValue: _kind,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Report',
+                                      border: OutlineInputBorder(),
+                                    ),
+                                    items: [
+                                      for (final kind in ReportKind.values)
+                                        DropdownMenuItem(
+                                          value: kind,
+                                          child: Text(kind.label),
+                                        ),
+                                    ],
+                                    onChanged: (value) => setState(() {
+                                      _kind = value ?? ReportKind.outputs;
+                                      // The Type filter only exists for the simple listing.
+                                      if (!_kind.usesTypeFilter) _type = null;
+                                    }),
                                   ),
                                 ),
-                              );
-                            }
-                          },
-                    icon: const Icon(Icons.download),
-                    label: const Text('Download CSV'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: Panel(
-                  title: 'Outputs (${filtered.length})',
-                  padding: const EdgeInsets.all(0),
-                  child: filtered.isEmpty
-                      ? const Center(child: Text('No outputs found'))
-                      : Scrollbar(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: SingleChildScrollView(
-                              child: DataTable(
-                                columns: const [
-                                  DataColumn(label: Text('Title')),
-                                  DataColumn(label: Text('Year')),
-                                  DataColumn(label: Text('Type')),
-                                  DataColumn(label: Text('Subtype')),
-                                  DataColumn(label: Text('Authors')),
-                                  DataColumn(label: Text('DOI / URL')),
-                                ],
-                                rows: [
-                                  for (final output in filtered)
-                                    DataRow(
-                                      cells: [
-                                        DataCell(
-                                          ConstrainedBox(
-                                            constraints: const BoxConstraints(
-                                              maxWidth: 360,
-                                            ),
-                                            child: Text(
-                                              output['title'] as String? ?? '',
-                                            ),
-                                          ),
-                                        ),
-                                        DataCell(
-                                          Text(
-                                            '${output['reporting_year'] ?? ''}',
-                                          ),
-                                        ),
-                                        DataCell(
-                                          ReportTypeCell(
-                                            output['type'] as String? ?? '',
-                                          ),
-                                        ),
-                                        DataCell(
-                                          Text(
-                                            output['subtype'] as String? ?? '',
-                                          ),
-                                        ),
-                                        DataCell(Text(_authors(output))),
-                                        DataCell(Text(_doiOrUrl(output))),
-                                      ],
+                                SizedBox(
+                                  width: 160,
+                                  child: DropdownButtonFormField<int?>(
+                                    initialValue: _year,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Year',
+                                      border: OutlineInputBorder(),
                                     ),
-                                ],
-                              ),
+                                    items: [
+                                      const DropdownMenuItem(
+                                        value: null,
+                                        child: Text('All'),
+                                      ),
+                                      for (final year in years)
+                                        DropdownMenuItem(
+                                          value: year,
+                                          child: Text('$year'),
+                                        ),
+                                    ],
+                                    onChanged: (value) =>
+                                        setState(() => _year = value),
+                                  ),
+                                ),
+                                if (_kind.usesTypeFilter)
+                                  SizedBox(
+                                    width: 320,
+                                    child: DropdownButtonFormField<String?>(
+                                      initialValue: _type,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Type',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                      items: [
+                                        const DropdownMenuItem(
+                                          value: null,
+                                          child: Text('All'),
+                                        ),
+                                        for (final type in types)
+                                          DropdownMenuItem(
+                                            value: type,
+                                            child: Text(type),
+                                          ),
+                                      ],
+                                      onChanged: (value) =>
+                                          setState(() => _type = value),
+                                    ),
+                                  ),
+                                FilledButton.icon(
+                                  onPressed: _generating ? null : _generatePdf,
+                                  icon: _generating
+                                      ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.picture_as_pdf),
+                                  label: Text(
+                                    _generating
+                                        ? 'Generating…'
+                                        : 'Generate PDF',
+                                  ),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: filtered.isEmpty
+                                      ? null
+                                      : () {
+                                          final ok = downloadCsv(
+                                            'unidcom_outputs_report.csv',
+                                            _csv(filtered),
+                                          );
+                                          if (!ok && context.mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'CSV download is available on web.',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                  icon: const Icon(Icons.download),
+                                  label: const Text('Download CSV'),
+                                ),
+                              ],
                             ),
                           ),
-                        ),
+                          const SizedBox(height: 12),
+                          Expanded(
+                            child: Panel(
+                              title: 'Outputs (${filtered.length})',
+                              padding: const EdgeInsets.all(0),
+                              child: filtered.isEmpty
+                                  ? const Center(
+                                      child: Text(
+                                        'No outputs found',
+                                        style: TextStyle(
+                                          color: AppColors.textMuted,
+                                        ),
+                                      ),
+                                    )
+                                  : Scrollbar(
+                                      child: SingleChildScrollView(
+                                        scrollDirection: Axis.horizontal,
+                                        child: SingleChildScrollView(
+                                          child: DataTable(
+                                            columns: const [
+                                              DataColumn(label: Text('Title')),
+                                              DataColumn(label: Text('Year')),
+                                              DataColumn(label: Text('Type')),
+                                              DataColumn(
+                                                label: Text('Subtype'),
+                                              ),
+                                              DataColumn(
+                                                label: Text('Authors'),
+                                              ),
+                                              DataColumn(
+                                                label: Text('DOI / URL'),
+                                              ),
+                                            ],
+                                            rows: [
+                                              for (final output in filtered)
+                                                DataRow(
+                                                  cells: [
+                                                    DataCell(
+                                                      ConstrainedBox(
+                                                        constraints:
+                                                            const BoxConstraints(
+                                                              maxWidth: 360,
+                                                            ),
+                                                        child: Text(
+                                                          output['title']
+                                                                  as String? ??
+                                                              '',
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    DataCell(
+                                                      Text(
+                                                        '${output['reporting_year'] ?? ''}',
+                                                      ),
+                                                    ),
+                                                    DataCell(
+                                                      ReportTypeCell(
+                                                        output['type']
+                                                                as String? ??
+                                                            '',
+                                                      ),
+                                                    ),
+                                                    DataCell(
+                                                      Text(
+                                                        output['subtype']
+                                                                as String? ??
+                                                            '',
+                                                      ),
+                                                    ),
+                                                    DataCell(
+                                                      Text(_authors(output)),
+                                                    ),
+                                                    DataCell(
+                                                      Text(_doiOrUrl(output)),
+                                                    ),
+                                                  ],
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         );
       },

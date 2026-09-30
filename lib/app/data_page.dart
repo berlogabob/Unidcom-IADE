@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import '../csv_download.dart';
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/panels.dart';
 import '../widgets/schema_view.dart';
+import '../theme/tokens.dart';
 
 class DataScreen extends StatefulWidget {
   const DataScreen({super.key});
@@ -111,93 +113,122 @@ class _DataScreenState extends State<DataScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Back up or migrate the whole database as JSON. '
-            'Import upserts by primary key — it never deletes.',
-          ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              FilledButton.icon(
-                onPressed: _busy ? null : _export,
-                icon: const Icon(Icons.download),
-                label: const Text('Export all to JSON'),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: _busy ? null : _import,
-                icon: const Icon(Icons.upload_file),
-                label: const Text('Import from JSON'),
-              ),
-            ],
-          ),
-          if (_busy) ...[
-            const SizedBox(height: 24),
-            const Center(child: CircularProgressIndicator()),
-          ],
-          const Divider(height: 32),
-          SegmentedButton<_View>(
-            segments: const [
-              ButtonSegment(
-                value: _View.table,
-                label: Text('Table'),
-                icon: Icon(Icons.table_rows),
-              ),
-              ButtonSegment(
-                value: _View.diagram,
-                label: Text('Diagram'),
-                icon: Icon(Icons.schema),
-              ),
-              ButtonSegment(
-                value: _View.outputsTree,
-                label: Text('Outputs Tree'),
-                icon: Icon(Icons.account_tree),
-              ),
-            ],
-            selected: {_view},
-            onSelectionChanged: (s) => setState(() => _view = s.first),
-          ),
-          const SizedBox(height: 12),
-          if (_view == _View.table) ...[
-            Row(
+    return Material(
+      color: AppColors.pageBg,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Browse table:'),
-                const SizedBox(width: 12),
-                DropdownButton<String>(
-                  value: _table,
-                  items: [
-                    for (final table in dbTables)
-                      DropdownMenuItem(value: table, child: Text(table)),
-                  ],
-                  onChanged: _selectTable,
+                const DsTitleCard(
+                  title: 'Data browser',
+                  subtitle: 'Every table as stored, read-only.',
+                ),
+                const SizedBox(height: dsGap),
+                Expanded(
+                  child: Panel(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Back up or migrate the whole database as JSON. '
+                          'Import upserts by primary key — it never deletes.',
+                        ),
+                        const SizedBox(height: 16),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            FilledButton.icon(
+                              onPressed: _busy ? null : _export,
+                              icon: const Icon(Icons.download),
+                              label: const Text('Export all to JSON'),
+                            ),
+                            FilledButton.tonalIcon(
+                              onPressed: _busy ? null : _import,
+                              icon: const Icon(Icons.upload_file),
+                              label: const Text('Import from JSON'),
+                            ),
+                          ],
+                        ),
+                        if (_busy) ...[
+                          const SizedBox(height: 24),
+                          const Center(child: CircularProgressIndicator()),
+                        ],
+                        const Divider(height: 32),
+                        SegmentedButton<_View>(
+                          segments: const [
+                            ButtonSegment(
+                              value: _View.table,
+                              label: Text('Table'),
+                              icon: Icon(Icons.table_rows),
+                            ),
+                            ButtonSegment(
+                              value: _View.diagram,
+                              label: Text('Diagram'),
+                              icon: Icon(Icons.schema),
+                            ),
+                            ButtonSegment(
+                              value: _View.outputsTree,
+                              label: Text('Outputs Tree'),
+                              icon: Icon(Icons.account_tree),
+                            ),
+                          ],
+                          selected: {_view},
+                          onSelectionChanged: (s) =>
+                              setState(() => _view = s.first),
+                        ),
+                        const SizedBox(height: 12),
+                        if (_view == _View.table) ...[
+                          Row(
+                            children: [
+                              const Text('Browse table:'),
+                              const SizedBox(width: 12),
+                              DropdownButton<String>(
+                                value: _table,
+                                items: [
+                                  for (final table in dbTables)
+                                    DropdownMenuItem(
+                                      value: table,
+                                      child: Text(table),
+                                    ),
+                                ],
+                                onChanged: _selectTable,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(child: _TableView(future: _rows)),
+                        ] else if (_view == _View.diagram)
+                          Expanded(
+                            child: Panel(
+                              title: 'Diagram',
+                              padding: const EdgeInsets.all(0),
+                              child: schemaView(),
+                            ),
+                          )
+                        else
+                          Expanded(
+                            child: Panel(
+                              title: 'Outputs Tree',
+                              padding: const EdgeInsets.all(0),
+                              child: schemaView(
+                                page: 'schema.html?src=outputs.mmd',
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Expanded(child: _TableView(future: _rows)),
-          ] else if (_view == _View.diagram)
-            Expanded(
-              child: Panel(
-                title: 'Diagram',
-                padding: const EdgeInsets.all(0),
-                child: schemaView(),
-              ),
-            )
-          else
-            Expanded(
-              child: Panel(
-                title: 'Outputs Tree',
-                padding: const EdgeInsets.all(0),
-                child: schemaView(page: 'schema.html?src=outputs.mmd'),
-              ),
-            ),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -213,11 +244,17 @@ class _TableView extends StatelessWidget {
     return AsyncView<List<Map<String, dynamic>>>(
       future: future,
       builder: (context, rows) {
-        if (rows.isEmpty) return const Center(child: Text('No rows'));
+        if (rows.isEmpty) {
+          return const Center(
+            child: Text(
+              'No rows',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
+          );
+        }
         // Column set = union of keys across rows, minus the noisy tsvector.
-        final columns =
-            <String>{for (final row in rows) ...row.keys}
-              ..remove('search');
+        final columns = <String>{for (final row in rows) ...row.keys}
+          ..remove('search');
         final cols = columns.toList();
         // ponytail: render all rows (<=360 at lab scale); paginate only if a
         // table ever grows large.

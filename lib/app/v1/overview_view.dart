@@ -6,6 +6,7 @@ import '../../data/status_labels.dart';
 import '../../data/timeline.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/ds_page.dart';
+import '../../widgets/info_tip.dart';
 import '../../widgets/panels.dart';
 import '../../widgets/timeline_bar.dart';
 
@@ -45,6 +46,10 @@ class OverviewView extends StatelessWidget {
         if (timeline != null)
           Panel(
             title: 'Your record',
+            trailing: const InfoTip(
+              text:
+                  'Where your public profile is: from draft to the UNIDCOM website.',
+            ),
             child: TimelineBar(steps: timeline!),
           ),
         DsRow(
@@ -71,6 +76,10 @@ class _Attention extends StatelessWidget {
   Widget build(BuildContext context) {
     return Panel(
       title: alerts.isEmpty ? 'No action required' : 'Needs your attention',
+      trailing: const InfoTip(
+        text:
+            'Things only you can fix. Each line opens the page where you fix it.',
+      ),
       padding: EdgeInsets.zero,
       child: Material(
         color: AppColors.warnTint,
@@ -113,6 +122,10 @@ class _Bio extends StatelessWidget {
     final text = bio?.trim();
     return Panel(
       title: 'Bio',
+      trailing: const InfoTip(
+        text:
+            'The first lines of the bio on your public page. Edit it in My Profile.',
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -157,12 +170,19 @@ class _Summary extends StatelessWidget {
         ),
       if (issueCount > 0) ('$issueCount with issues', '/app/outputs?issues=1'),
       if (pendingCount > 0)
-        ('$pendingCount pending UNIDCOM approval', '/app/outputs?review=pending'),
+        (
+          '$pendingCount pending UNIDCOM approval',
+          '/app/outputs?review=pending',
+        ),
       ('Featured $featuredCount/5', '/app/outputs?view=featured'),
     ];
 
     return Panel(
       title: 'Summary',
+      trailing: const InfoTip(
+        text:
+            'Your outputs in numbers. Each number opens Scientific Outputs filtered.',
+      ),
       child: Wrap(
         spacing: 12,
         runSpacing: 4,
@@ -205,9 +225,12 @@ class _RecentOutputs extends StatelessWidget {
 
     return Panel(
       title: 'Recent outputs',
-      trailing: TextButton(
-        onPressed: () => onNavigate('/app/outputs'),
-        child: const Text('See all →'),
+      trailing: WithInfo(
+        info: 'Your three most recent outputs and whether each has an issue.',
+        child: TextButton(
+          onPressed: () => onNavigate('/app/outputs'),
+          child: const Text('See all →'),
+        ),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {

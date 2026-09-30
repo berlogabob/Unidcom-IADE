@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/tokens.dart';
-import '../widgets/detail_scaffold.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/panels.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -11,15 +11,17 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DetailBody(
+    return DsPage(
+      title: 'Settings',
+      subtitle: 'Your account and the admin tools.',
       children: [
         Panel(
           title: 'Centre',
           child: Column(
             children: [
-              _detailRow('Unit', 'UNIDCOM/IADE'),
+              _detailRow(context, 'Unit', 'UNIDCOM/IADE'),
               const SizedBox(height: 12),
-              _detailRow('FCT UID', 'UID/00711/2025'),
+              _detailRow(context, 'FCT UID', 'UID/00711/2025'),
             ],
           ),
         ),
@@ -29,9 +31,9 @@ class SettingsPage extends StatelessWidget {
           padding: EdgeInsets.zero,
           child: Column(
             children: [
-              _linkRow(context, 'Data browser', '/app/admin'),
+              _linkRow(context, 'Data browser', '/app/admin/data'),
               const Divider(height: 1),
-              _linkRow(context, 'Reports', '/app/admin'),
+              _linkRow(context, 'Reports', '/app/admin/reports'),
               const Divider(height: 1),
               _linkRow(context, 'CSV export', '/outputs'),
             ],
@@ -55,25 +57,23 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget _detailRow(String label, String value) {
+  Widget _detailRow(BuildContext context, String label, String value) {
     return Row(
       children: [
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 12,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
           ),
         ),
         const SizedBox(width: 16),
         Text(
           value,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 13,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textPrimary),
         ),
       ],
     );
@@ -89,10 +89,9 @@ class SettingsPage extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 13,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textPrimary),
               ),
             ),
             const Icon(

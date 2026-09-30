@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/features.dart';
 import '../public/person_page.dart';
 import '../widgets/portal_shell.dart';
 import 'my_profile.dart';
 import 'researcher_home.dart';
+import 'v1/my_profile_page.dart';
+import 'v1/outputs_page.dart';
 
 /// Tabs /people/:id/:tab can show; the first is what /people/:id opens.
 const researcherTabs = {
@@ -45,11 +48,15 @@ class ResearcherView extends StatelessWidget {
           ),
           Expanded(
             child: switch (tab) {
-              'profile' => MyProfileScreen(personId: id),
-              'outputs' => MyProfileScreen(
-                personId: id,
-                section: MySection.outputs,
-              ),
+              // The researcher's own v1 pages, read-only for the admin.
+              'profile' =>
+                v2
+                    ? MyProfileScreen(personId: id)
+                    : MyProfilePage(personId: id),
+              'outputs' =>
+                v2
+                    ? MyProfileScreen(personId: id, section: MySection.outputs)
+                    : ScientificOutputsPage(personId: id),
               'import' => MyProfileScreen(
                 personId: id,
                 section: MySection.importSync,

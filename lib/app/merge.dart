@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/merge_matrix.dart';
 import '../widgets/panels.dart';
 import '../widgets/search_bar.dart';
@@ -27,60 +28,91 @@ class _MergeScreenState extends State<MergeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!isAdmin) return const Center(child: Text('Admin access required'));
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: SegmentedButton<_MergeSection>(
-            segments: const [
-              ButtonSegment(
-                value: _MergeSection.people,
-                label: Text('People'),
-                icon: Icon(Icons.people_outline),
-              ),
-              ButtonSegment(
-                value: _MergeSection.outputs,
-                label: Text('Outputs'),
-                icon: Icon(Icons.article_outlined),
-              ),
-            ],
-            selected: {_section},
-            onSelectionChanged: (selection) =>
-                setState(() => _section = selection.first),
+    return Material(
+      color: AppColors.pageBg,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const DsTitleCard(
+                  title: 'Merge duplicates',
+                  subtitle:
+                      'Pick the record to keep; the other is merged into it.',
+                ),
+                const SizedBox(height: dsGap),
+                Expanded(
+                  child: !isAdmin
+                      ? const Center(
+                          child: Text(
+                            'Admin access required',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        )
+                      : Column(
+                          children: [
+                            Panel(
+                              padding: const EdgeInsets.all(16),
+                              child: SegmentedButton<_MergeSection>(
+                                segments: const [
+                                  ButtonSegment(
+                                    value: _MergeSection.people,
+                                    label: Text('People'),
+                                    icon: Icon(Icons.people_outline),
+                                  ),
+                                  ButtonSegment(
+                                    value: _MergeSection.outputs,
+                                    label: Text('Outputs'),
+                                    icon: Icon(Icons.article_outlined),
+                                  ),
+                                ],
+                                selected: {_section},
+                                onSelectionChanged: (selection) =>
+                                    setState(() => _section = selection.first),
+                              ),
+                            ),
+                            const SizedBox(height: dsGap),
+                            Expanded(
+                              child: switch (_section) {
+                                _MergeSection.people => _MergeSectionView(
+                                  key: const ValueKey('people'),
+                                  title: 'Merge people',
+                                  searchLabel: 'Search people',
+                                  candidates: fetchMergeCandidates,
+                                  search: (query) => fetchPeople(query: query),
+                                  fields: personMergeFields,
+                                  nameOf: _personName,
+                                  subtitleOf: (p) =>
+                                      p['email'] as String? ?? '',
+                                  onMerge: mergePeople,
+                                ),
+                                _MergeSection.outputs => _MergeSectionView(
+                                  key: const ValueKey('outputs'),
+                                  title: 'Merge outputs',
+                                  searchLabel: 'Search outputs',
+                                  candidates: fetchOutputDuplicateGroups,
+                                  search: (query) => fetchOutputs(query: query),
+                                  fields: outputMergeFields,
+                                  nameOf: _outputName,
+                                  subtitleOf: (o) => [
+                                    o['reporting_year']?.toString(),
+                                    o['type'] as String?,
+                                  ].whereType<String>().join(' · '),
+                                  onMerge: mergeOutputs,
+                                ),
+                              },
+                            ),
+                          ],
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
-        Expanded(
-          child: switch (_section) {
-            _MergeSection.people => _MergeSectionView(
-              key: const ValueKey('people'),
-              title: 'Merge people',
-              searchLabel: 'Search people',
-              candidates: fetchMergeCandidates,
-              search: (query) => fetchPeople(query: query),
-              fields: personMergeFields,
-              nameOf: _personName,
-              subtitleOf: (p) => p['email'] as String? ?? '',
-              onMerge: mergePeople,
-            ),
-            _MergeSection.outputs => _MergeSectionView(
-              key: const ValueKey('outputs'),
-              title: 'Merge outputs',
-              searchLabel: 'Search outputs',
-              candidates: fetchOutputDuplicateGroups,
-              search: (query) => fetchOutputs(query: query),
-              fields: outputMergeFields,
-              nameOf: _outputName,
-              subtitleOf: (o) => [
-                o['reporting_year']?.toString(),
-                o['type'] as String?,
-              ].whereType<String>().join(' · '),
-              onMerge: mergeOutputs,
-            ),
-          },
-        ),
-      ],
+      ),
     );
   }
 }
@@ -183,7 +215,12 @@ class _MergeSectionViewState extends State<_MergeSectionView> {
       future: _candidates,
       builder: (context, groups) {
         if (groups.isEmpty) {
-          return const Center(child: Text('No duplicate candidates found'));
+          return const Center(
+            child: Text(
+              'No duplicate candidates found',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
+          );
         }
         return RefreshIndicator(
           onRefresh: () async => _refreshCandidates(),
@@ -209,11 +246,11 @@ class _MergeSectionViewState extends State<_MergeSectionView> {
                         ),
                         child: Text(
                           widget.nameOf(record),
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ),
                     const SizedBox(height: 12),
@@ -235,7 +272,7 @@ class _MergeSectionViewState extends State<_MergeSectionView> {
   }
 
   Widget _manualTab() {
-    return Padding(
+    return Panel(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
@@ -274,7 +311,12 @@ class _MergeSectionViewState extends State<_MergeSectionView> {
               future: _rows,
               builder: (context, rows) {
                 if (rows.isEmpty) {
-                  return const Center(child: Text('No results'));
+                  return const Center(
+                    child: Text(
+                      'No results',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
+                  );
                 }
                 return ListView.builder(
                   itemCount: rows.length,
@@ -290,17 +332,16 @@ class _MergeSectionViewState extends State<_MergeSectionView> {
                       ),
                       title: Text(
                         widget.nameOf(record),
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
                       ),
                       subtitle: Text(
                         widget.subtitleOf(record),
-                        style: const TextStyle(
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textMuted,
-                          fontSize: 12,
                         ),
                       ),
                       onChanged: (value) => setState(() {
