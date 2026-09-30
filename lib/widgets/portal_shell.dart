@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../data/features.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
 
@@ -33,7 +34,9 @@ class _PortalShellState extends State<PortalShell> {
       children: [
         if (!hasSession)
           _profileBand()
-        else
+        // v1: signed-in pages open with their own DsTitleCard (Rui's target
+        // layouts have no identity band); the band stays for v2.
+        else if (v2)
           FutureBuilder<Map<String, dynamic>?>(
             future: _person,
             builder: (context, snapshot) => _profileBand(snapshot.data),

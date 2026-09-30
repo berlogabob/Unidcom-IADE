@@ -188,6 +188,15 @@ class _RecentOutputs extends StatelessWidget {
         ),
       );
     final cards = recent.take(3).toList();
+    if (cards.isEmpty) {
+      return Panel(
+        title: 'Recent outputs',
+        child: const Text(
+          'No outputs yet. Add one in Scientific Outputs, or import from ORCID.',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
+      );
+    }
 
     return Panel(
       title: 'Recent outputs',
