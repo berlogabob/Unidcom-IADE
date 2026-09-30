@@ -65,7 +65,7 @@ void main() {
     expect(find.text('Profiles'), findsOneWidget);
     expect(find.text('Outputs'), findsOneWidget);
     expect(find.text('Suggestions'), findsNothing);
-    await tester.tap(find.text('More ▾'));
+    await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
     for (final label in [
       'Profiles to approve',

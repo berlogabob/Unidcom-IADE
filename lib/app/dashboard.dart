@@ -43,7 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<_AdminOverviewData> _loadAdminOverview() async {
     final dataFuture = loadAdminOverview();
-    final suggestionsFuture = fetchPendingSuggestions();
+    final suggestionsFuture = fetchResearcherProposals();
     final data = await dataFuture;
     final suggestions = await suggestionsFuture;
     final members = data.people.where(
@@ -64,10 +64,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       'photo_url': 'Photo',
     };
     for (final suggestion in suggestions) {
-      if (suggestion['source'] != 'researcher' ||
-          suggestion['subject_type'] != 'person') {
-        continue;
-      }
+      // fetchResearcherProposals already keeps researcher → person rows only.
       final subjectId = suggestion['subject_id'] as String?;
       final field = suggestion['field'] as String?;
       Map<String, dynamic>? person;

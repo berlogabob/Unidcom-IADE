@@ -23,6 +23,7 @@ class PeopleTable extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: DataTable(
         showCheckboxColumn: false,
+        columnSpacing: 24,
         headingTextStyle: const TextStyle(
           color: AppColors.textPrimary,
           fontSize: 13,

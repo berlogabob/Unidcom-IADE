@@ -144,7 +144,12 @@ class ReviewTabsBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final inMore = !_main.contains(selected);
-    Widget tab(String label, bool active, VoidCallback? onTap) => InkWell(
+    Widget tab(
+      String label,
+      bool active,
+      VoidCallback? onTap, {
+      bool menu = false,
+    }) => InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -156,16 +161,29 @@ class ReviewTabsBar extends StatelessWidget {
             ),
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: active ? AppColors.textPrimary : AppColors.textMuted,
-            fontWeight: active ? FontWeight.w600 : FontWeight.normal,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: active ? AppColors.textPrimary : AppColors.textMuted,
+                fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+            // An icon, not '▾': Inter has no such glyph (rendered as a box).
+            if (menu)
+              const Icon(
+                Icons.arrow_drop_down,
+                size: 18,
+                color: AppColors.textMuted,
+              ),
+          ],
         ),
       ),
     );
     return Container(
+      width: double.infinity,
       decoration: const BoxDecoration(
         color: AppColors.cardBg,
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
@@ -185,9 +203,10 @@ class ReviewTabsBar extends StatelessWidget {
                     PopupMenuItem(value: t, child: Text(t.label)),
               ],
               child: tab(
-                inMore ? 'More · ${selected.label} ▾' : 'More ▾',
+                inMore ? 'More · ${selected.label}' : 'More',
                 inMore,
                 null,
+                menu: true,
               ),
             ),
           ],

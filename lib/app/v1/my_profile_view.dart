@@ -7,6 +7,7 @@ import '../../widgets/featured_readonly.dart';
 import '../../widgets/info_tip.dart';
 import '../../widgets/orcid_block.dart';
 import '../../widgets/panels.dart';
+import '../../widgets/status_line.dart';
 
 class MyProfileView extends StatefulWidget {
   const MyProfileView({
@@ -95,26 +96,24 @@ class _MyProfileViewState extends State<MyProfileView> {
       count++;
     }
     setState(() {});
-    
+
     final message = count == 0
         ? 'Your profile already matches ORCID.'
         : '$count ${count == 1 ? 'field' : 'fields'} filled in from ORCID — check them, then Submit for UNIDCOM review.';
-    
+
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final orcid = _value('orcid').trim();
-    final role =
-        (_value('job_title').trim().isNotEmpty
-                ? _value('job_title')
-                : _value('membership_type'))
-            .trim();
+    final role = _value('job_title').trim().isNotEmpty
+        ? _value('job_title').trim()
+        : memberLabel(widget.person['membership_type'] as String?);
     final photo = _value('photo_url').trim();
     final synced = DateTime.tryParse(_value('orcid_synced_at'));
     final bioDiffers =
@@ -135,7 +134,8 @@ class _MyProfileViewState extends State<MyProfileView> {
                 child: const Text('Save draft'),
               ),
               const InfoTip(
-                text: 'Keeps your changes here without sending them to UNIDCOM.',
+                text:
+                    'Keeps your changes here without sending them to UNIDCOM.',
               ),
               FilledButton(
                 onPressed: () =>
@@ -143,8 +143,7 @@ class _MyProfileViewState extends State<MyProfileView> {
                 child: const Text('Submit for UNIDCOM review'),
               ),
               const InfoTip(
-                text:
-                    'Saved changes will be re-submitted for UNIDCOM review.',
+                text: 'Saved changes will be re-submitted for UNIDCOM review.',
               ),
             ],
           );
@@ -214,12 +213,14 @@ class _MyProfileViewState extends State<MyProfileView> {
                 ),
                 DsField(
                   label: 'ORCID iD',
-                  info: 'Your ORCID identifier. It is set when you connect ORCID.',
+                  info:
+                      'Your ORCID identifier. It is set when you connect ORCID.',
                   child: Text(orcid.isEmpty ? 'Not connected' : orcid),
                 ),
                 DsField(
                   label: 'Bio',
-                  info: 'Shown on your public page. Changes go to UNIDCOM review.',
+                  info:
+                      'Shown on your public page. Changes go to UNIDCOM review.',
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -231,7 +232,9 @@ class _MyProfileViewState extends State<MyProfileView> {
                         maxLength: 300,
                         maxLengthEnforcement: MaxLengthEnforcement.none,
                         onChanged: (_) => setState(() {}),
-                        decoration: const InputDecoration(border: OutlineInputBorder()),
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                        ),
                         buildCounter:
                             (
                               context, {
@@ -239,21 +242,22 @@ class _MyProfileViewState extends State<MyProfileView> {
                               required isFocused,
                               maxLength,
                             }) {
-                          final over = currentLength > 300;
-                          return Text(
-                            '$currentLength / 300${over ? ' · the website shows the first 300' : ''}',
-                            style: TextStyle(
-                              color: over ? AppColors.amberDark : null,
-                            ),
-                          );
-                        },
+                              final over = currentLength > 300;
+                              return Text(
+                                '$currentLength / 300${over ? ' · the website shows the first 300' : ''}',
+                                style: TextStyle(
+                                  color: over ? AppColors.amberDark : null,
+                                ),
+                              );
+                            },
                       ),
                       if (bioDiffers)
                         TextButton(
                           onPressed: widget.readOnly
                               ? null
-                              : () =>
-                                    setState(() => _bio.text = widget.orcid!['bio']!),
+                              : () => setState(
+                                  () => _bio.text = widget.orcid!['bio']!,
+                                ),
                           child: const Text('Import bio from ORCID →'),
                         ),
                     ],

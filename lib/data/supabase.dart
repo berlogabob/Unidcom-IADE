@@ -907,6 +907,24 @@ Future<int> countResearcherProposals() async {
   }
 }
 
+/// Researchers' pending profile proposals (subject_id, field) for the admin
+/// dashboard's Critical alerts — one query; names come from the people the
+/// dashboard already loaded (fetchPendingSuggestions does a lookup per row).
+Future<List<Map<String, dynamic>>> fetchResearcherProposals() async {
+  try {
+    final rows = await db
+        .from('enrichment_suggestions')
+        .select('subject_id, field, created_at')
+        .eq('status', 'pending')
+        .eq('source', 'researcher')
+        .eq('subject_type', 'person')
+        .order('created_at', ascending: false);
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 Future<List<Map<String, dynamic>>> fetchPendingSuggestions() async {
   try {
     final rows = await db
