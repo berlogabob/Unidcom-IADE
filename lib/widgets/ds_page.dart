@@ -123,7 +123,11 @@ class DsRow extends StatelessWidget {
         if (constraints.maxWidth < 760) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [left, const SizedBox(height: dsGap), right],
+            children: [
+              left,
+              const SizedBox(height: dsGap),
+              right,
+            ],
           );
         }
         return IntrinsicHeight(
@@ -185,6 +189,53 @@ class DsField extends StatelessWidget {
           Expanded(child: child),
         ],
       ),
+    );
+  }
+}
+
+/// N blocks in one row, equal width and height on wide screens; stacked on
+/// phones. Same call shape as Wrap(spacing:, runSpacing:, children:).
+class DsGrid extends StatelessWidget {
+  const DsGrid({
+    super.key,
+    required this.children,
+    this.spacing = dsGap,
+    this.runSpacing = dsGap,
+    this.minWidth = 760,
+  });
+
+  final List<Widget> children;
+  final double spacing;
+  final double runSpacing;
+  final double minWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < minWidth) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) SizedBox(height: runSpacing),
+                children[i],
+              ],
+            ],
+          );
+        }
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) SizedBox(width: spacing),
+                Expanded(child: children[i]),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }

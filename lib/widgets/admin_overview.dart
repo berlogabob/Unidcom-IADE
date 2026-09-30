@@ -40,7 +40,7 @@ class AdminOverview extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Wrap(
+        DsGrid(
           spacing: dsGap,
           runSpacing: dsGap,
           children: [
@@ -71,7 +71,7 @@ class AdminOverview extends StatelessWidget {
           ],
         ),
         const SizedBox(height: dsGap),
-        Wrap(
+        DsGrid(
           spacing: dsGap,
           runSpacing: dsGap,
           children: [
@@ -109,7 +109,7 @@ class AdminOverview extends StatelessWidget {
           ],
         ),
         const SizedBox(height: dsGap),
-        Wrap(
+        DsGrid(
           spacing: dsGap,
           runSpacing: dsGap,
           children: [
@@ -177,6 +177,7 @@ class AdminOverview extends StatelessWidget {
                       children: alerts
                           .map(
                             (alert) => ListTile(
+                              dense: true,
                               contentPadding: EdgeInsets.zero,
                               leading: const Icon(
                                 Icons.warning_amber_rounded,
@@ -228,14 +229,12 @@ class AdminOverview extends StatelessWidget {
       ),
     );
     return SizedBox(
-      width: 200,
       child: onTap == null ? child : InkWell(onTap: onTap, child: child),
     );
   }
 
   Widget _card(String title, Widget child) {
     return SizedBox(
-      width: 360,
       child: Panel(title: title, child: child),
     );
   }
