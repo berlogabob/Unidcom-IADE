@@ -4,6 +4,7 @@ import '../data/supabase.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/ds_page.dart';
+import '../widgets/info_tip.dart';
 import '../widgets/merge_matrix.dart';
 import '../widgets/panels.dart';
 import '../widgets/search_bar.dart';
@@ -256,9 +257,13 @@ class _MergeSectionViewState extends State<_MergeSectionView> {
                     const SizedBox(height: 12),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: FilledButton(
-                        onPressed: () => _openMatrix(group),
-                        child: const Text('Review & merge'),
+                      child: WithInfo(
+                        info:
+                            'Opens the duplicate group so you can review and merge it.',
+                        child: FilledButton(
+                          onPressed: () => _openMatrix(group),
+                          child: const Text('Review & merge'),
+                        ),
                       ),
                     ),
                   ],
@@ -297,12 +302,15 @@ class _MergeSectionViewState extends State<_MergeSectionView> {
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              onPressed: _selected.length < 2
-                  ? null
-                  : () => _openMatrix(_selected.values.toList()),
-              icon: const Icon(Icons.merge),
-              label: const Text('Merge selected'),
+            child: WithInfo(
+              info: 'Opens the merge review for the selected records.',
+              child: FilledButton.icon(
+                onPressed: _selected.length < 2
+                    ? null
+                    : () => _openMatrix(_selected.values.toList()),
+                icon: const Icon(Icons.merge),
+                label: const Text('Merge selected'),
+              ),
             ),
           ),
           const SizedBox(height: 12),

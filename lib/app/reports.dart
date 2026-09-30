@@ -7,6 +7,7 @@ import '../csv_download.dart';
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/ds_page.dart';
+import '../widgets/info_tip.dart';
 import '../widgets/panels.dart';
 import '../theme/tokens.dart';
 
@@ -230,45 +231,55 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                           setState(() => _type = value),
                                     ),
                                   ),
-                                FilledButton.icon(
-                                  onPressed: _generating ? null : _generatePdf,
-                                  icon: _generating
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                      : const Icon(Icons.picture_as_pdf),
-                                  label: Text(
-                                    _generating
-                                        ? 'Generating…'
-                                        : 'Generate PDF',
+                                WithInfo(
+                                  info:
+                                      'Generates and downloads the selected report as a PDF.',
+                                  child: FilledButton.icon(
+                                    onPressed: _generating
+                                        ? null
+                                        : _generatePdf,
+                                    icon: _generating
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const Icon(Icons.picture_as_pdf),
+                                    label: Text(
+                                      _generating
+                                          ? 'Generating…'
+                                          : 'Generate PDF',
+                                    ),
                                   ),
                                 ),
-                                OutlinedButton.icon(
-                                  onPressed: filtered.isEmpty
-                                      ? null
-                                      : () {
-                                          final ok = downloadCsv(
-                                            'unidcom_outputs_report.csv',
-                                            _csv(filtered),
-                                          );
-                                          if (!ok && context.mounted) {
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'CSV download is available on web.',
-                                                ),
-                                              ),
+                                WithInfo(
+                                  info:
+                                      'Downloads the currently filtered outputs as a CSV file.',
+                                  child: OutlinedButton.icon(
+                                    onPressed: filtered.isEmpty
+                                        ? null
+                                        : () {
+                                            final ok = downloadCsv(
+                                              'unidcom_outputs_report.csv',
+                                              _csv(filtered),
                                             );
-                                          }
-                                        },
-                                  icon: const Icon(Icons.download),
-                                  label: const Text('Download CSV'),
+                                            if (!ok && context.mounted) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'CSV download is available on web.',
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                    icon: const Icon(Icons.download),
+                                    label: const Text('Download CSV'),
+                                  ),
                                 ),
                               ],
                             ),

@@ -6,6 +6,7 @@ import '../csv_download.dart';
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/ds_page.dart';
+import '../widgets/info_tip.dart';
 import '../widgets/panels.dart';
 import '../widgets/schema_view.dart';
 import '../theme/tokens.dart';
@@ -92,11 +93,15 @@ class _DataScreenState extends State<DataScreen> {
               onPressed: () => Navigator.pop(context, false),
               child: const Text('Cancel'),
             ),
-            FilledButton(
-              onPressed: counts.isEmpty
-                  ? null
-                  : () => Navigator.pop(context, true),
-              child: const Text('Import'),
+            WithInfo(
+              info:
+                  'Imports the selected JSON data and upserts rows by primary key.',
+              child: FilledButton(
+                onPressed: counts.isEmpty
+                    ? null
+                    : () => Navigator.pop(context, true),
+                child: const Text('Import'),
+              ),
             ),
           ],
         ),
@@ -143,15 +148,23 @@ class _DataScreenState extends State<DataScreen> {
                           spacing: 12,
                           runSpacing: 12,
                           children: [
-                            FilledButton.icon(
-                              onPressed: _busy ? null : _export,
-                              icon: const Icon(Icons.download),
-                              label: const Text('Export all to JSON'),
+                            WithInfo(
+                              info:
+                                  'Exports all database tables as a JSON backup file.',
+                              child: FilledButton.icon(
+                                onPressed: _busy ? null : _export,
+                                icon: const Icon(Icons.download),
+                                label: const Text('Export all to JSON'),
+                              ),
                             ),
-                            FilledButton.tonalIcon(
-                              onPressed: _busy ? null : _import,
-                              icon: const Icon(Icons.upload_file),
-                              label: const Text('Import from JSON'),
+                            WithInfo(
+                              info:
+                                  'Selects a JSON file to import into the database.',
+                              child: FilledButton.tonalIcon(
+                                onPressed: _busy ? null : _import,
+                                icon: const Icon(Icons.upload_file),
+                                label: const Text('Import from JSON'),
+                              ),
                             ),
                           ],
                         ),
@@ -188,16 +201,19 @@ class _DataScreenState extends State<DataScreen> {
                             children: [
                               const Text('Browse table:'),
                               const SizedBox(width: 12),
-                              DropdownButton<String>(
-                                value: _table,
-                                items: [
-                                  for (final table in dbTables)
-                                    DropdownMenuItem(
-                                      value: table,
-                                      child: Text(table),
-                                    ),
-                                ],
-                                onChanged: _selectTable,
+                              WithInfo(
+                                info: 'Chooses which database table to browse.',
+                                child: DropdownButton<String>(
+                                  value: _table,
+                                  items: [
+                                    for (final table in dbTables)
+                                      DropdownMenuItem(
+                                        value: table,
+                                        child: Text(table),
+                                      ),
+                                  ],
+                                  onChanged: _selectTable,
+                                ),
                               ),
                             ],
                           ),
