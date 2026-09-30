@@ -6,6 +6,7 @@ import '../data/status_labels.dart';
 import '../data/taxonomy.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/output_row.dart';
 import '../widgets/panels.dart';
 import '../widgets/queue_list.dart';
@@ -58,112 +59,133 @@ class _OutputsScreenState extends State<OutputsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(child: SearchBarField(onChanged: _search)),
-              const SizedBox(width: 12),
-              SizedBox(
-                width: 120,
-                child: SearchBarField(
-                  label: 'Year',
-                  keyboardType: TextInputType.number,
-                  onChanged: (value) {
-                    _year = value;
-                    _load();
-                  },
+    return Material(
+      color: AppColors.pageBg,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const DsTitleCard(
+                  title: 'Outputs',
+                  subtitle:
+                      'Every output in RIMS, with its review and website state.',
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          FutureBuilder<List<TaxonomyNode>>(
-            future: _taxonomy,
-            builder: (context, snapshot) => _filters(snapshot.data ?? const []),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: AsyncView<List<Map<String, dynamic>>>(
-              future: _outputs,
-              builder: (context, allOutputs) {
-                final outputs = _severity == null
-                    ? allOutputs
-                    : allOutputs.where((o) {
-                        final errors = o['error_count'] as int? ?? 0;
-                        final warnings = o['warning_count'] as int? ?? 0;
-                        switch (_severity) {
-                          case 'Errors':
-                            return errors > 0;
-                          case 'Warnings':
-                            return errors == 0 && warnings > 0;
-                          default: // 'Any issue'
-                            return errors > 0 || warnings > 0;
-                        }
-                      }).toList();
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                const SizedBox(height: dsGap),
+                Row(
                   children: [
-                    Text(
-                      '${outputs.length} outputs',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: outputs.isEmpty
-                          ? const Center(child: Text('No outputs found'))
-                          : ListView(
-                              children: [
-                                Panel(
-                                  padding: EdgeInsets.zero,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      for (
-                                        var index = 0;
-                                        index < outputs.length;
-                                        index++
-                                      ) ...[
-                                        if (outputs[index]['reporting_year'] !=
-                                                null &&
-                                            (index == 0 ||
-                                                outputs[index -
-                                                        1]['reporting_year'] !=
-                                                    outputs[index]['reporting_year']))
-                                          Padding(
-                                            padding: const EdgeInsets.fromLTRB(
-                                              16,
-                                              14,
-                                              16,
-                                              8,
-                                            ),
-                                            child: Text(
-                                              '${outputs[index]['reporting_year']}',
-                                              style: const TextStyle(
-                                                color: AppColors.textMuted,
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
-                                          ),
-                                        _outputRow(outputs[index]),
-                                      ],
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
+                    Expanded(child: SearchBarField(onChanged: _search)),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      width: 120,
+                      child: SearchBarField(
+                        label: 'Year',
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          _year = value;
+                          _load();
+                        },
+                      ),
                     ),
                   ],
-                );
-              },
+                ),
+                const SizedBox(height: 12),
+                FutureBuilder<List<TaxonomyNode>>(
+                  future: _taxonomy,
+                  builder: (context, snapshot) =>
+                      _filters(snapshot.data ?? const []),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: AsyncView<List<Map<String, dynamic>>>(
+                    future: _outputs,
+                    builder: (context, allOutputs) {
+                      final outputs = _severity == null
+                          ? allOutputs
+                          : allOutputs.where((o) {
+                              final errors = o['error_count'] as int? ?? 0;
+                              final warnings = o['warning_count'] as int? ?? 0;
+                              switch (_severity) {
+                                case 'Errors':
+                                  return errors > 0;
+                                case 'Warnings':
+                                  return errors == 0 && warnings > 0;
+                                default: // 'Any issue'
+                                  return errors > 0 || warnings > 0;
+                              }
+                            }).toList();
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            '${outputs.length} outputs',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: outputs.isEmpty
+                                ? const Center(child: Text('No outputs found'))
+                                : ListView(
+                                    children: [
+                                      Panel(
+                                        padding: EdgeInsets.zero,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            for (
+                                              var index = 0;
+                                              index < outputs.length;
+                                              index++
+                                            ) ...[
+                                              if (outputs[index]['reporting_year'] !=
+                                                      null &&
+                                                  (index == 0 ||
+                                                      outputs[index -
+                                                              1]['reporting_year'] !=
+                                                          outputs[index]['reporting_year']))
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.fromLTRB(
+                                                        16,
+                                                        14,
+                                                        16,
+                                                        8,
+                                                      ),
+                                                  child: Text(
+                                                    '${outputs[index]['reporting_year']}',
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodySmall
+                                                        ?.copyWith(
+                                                          color: AppColors
+                                                              .textMuted,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                        ),
+                                                  ),
+                                                ),
+                                              _outputRow(outputs[index]),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/output_row.dart';
 import '../widgets/panels.dart';
 import '../widgets/person_card.dart';
@@ -51,39 +52,68 @@ class _ConferencesScreenState extends State<ConferencesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return QueueList(
-      future: _groups,
-      emptyText: 'No conferences found',
-      searchOf: (g) => g['name'] as String,
-      timeOf: (g) {
-        final years = g['years'] as Set<int>;
-        return years.isEmpty ? 0 : years.reduce((a, b) => a > b ? a : b);
-      },
-      itemBuilder: (group) => Panel(
-        padding: EdgeInsets.zero,
-        child: ListTile(
-          tileColor: AppColors.cardBg,
-          shape: const Border(bottom: BorderSide(color: AppColors.cardBorder)),
-          titleTextStyle: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-          subtitleTextStyle: const TextStyle(
-            color: AppColors.textMuted,
-            fontSize: 12,
-          ),
-          leading: const Icon(Icons.event, color: AppColors.textMuted),
-          title: Text(group['name'] as String),
-          subtitle: Text(
-            [
-              '${group['count']} output${group['count'] == 1 ? '' : 's'}',
-              if ((group['years'] as Set<int>).isNotEmpty) _yearsLabel(group),
-            ].join(' · '),
-          ),
-          trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
-          onTap: () => context.go(
-            '/conferences/${Uri.encodeComponent(group['key'] as String)}',
+    return Material(
+      color: AppColors.pageBg,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const DsTitleCard(
+                  title: 'Conferences',
+                  subtitle: 'Conferences where UNIDCOM researchers presented.',
+                ),
+                const SizedBox(height: dsGap),
+                Expanded(
+                  child: QueueList(
+                    future: _groups,
+                    emptyText: 'No conferences found',
+                    searchOf: (g) => g['name'] as String,
+                    timeOf: (g) {
+                      final years = g['years'] as Set<int>;
+                      return years.isEmpty
+                          ? 0
+                          : years.reduce((a, b) => a > b ? a : b);
+                    },
+                    itemBuilder: (group) => Panel(
+                      padding: EdgeInsets.zero,
+                      child: ListTile(
+                        tileColor: AppColors.cardBg,
+                        shape: const Border(
+                          bottom: BorderSide(color: AppColors.cardBorder),
+                        ),
+                        titleTextStyle: Theme.of(context).textTheme.titleSmall,
+                        subtitleTextStyle: Theme.of(
+                          context,
+                        ).textTheme.bodySmall,
+                        leading: const Icon(
+                          Icons.event,
+                          color: AppColors.textMuted,
+                        ),
+                        title: Text(group['name'] as String),
+                        subtitle: Text(
+                          [
+                            '${group['count']} output${group['count'] == 1 ? '' : 's'}',
+                            if ((group['years'] as Set<int>).isNotEmpty)
+                              _yearsLabel(group),
+                          ].join(' · '),
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                          color: AppColors.textMuted,
+                        ),
+                        onTap: () => context.go(
+                          '/conferences/${Uri.encodeComponent(group['key'] as String)}',
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

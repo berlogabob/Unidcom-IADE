@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
+import '../widgets/ds_page.dart';
 import '../widgets/panels.dart';
 import '../widgets/queue_list.dart';
 
@@ -26,22 +27,43 @@ class _StructureScreenState extends State<StructureScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: SegmentedButton<_Seg>(
-            segments: const [
-              ButtonSegment(value: _Seg.labs, label: Text('Labs')),
-              ButtonSegment(value: _Seg.clusters, label: Text('Clusters')),
-              ButtonSegment(value: _Seg.objectives, label: Text('Objectives')),
-            ],
-            selected: {_seg},
-            onSelectionChanged: (s) => setState(() => _seg = s.first),
+    return Material(
+      color: AppColors.pageBg,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                const DsTitleCard(
+                  title: 'Structure',
+                  subtitle: 'Clusters, labs and strategic objectives.',
+                ),
+                const SizedBox(height: dsGap),
+                SegmentedButton<_Seg>(
+                  segments: const [
+                    ButtonSegment(value: _Seg.labs, label: Text('Labs')),
+                    ButtonSegment(
+                      value: _Seg.clusters,
+                      label: Text('Clusters'),
+                    ),
+                    ButtonSegment(
+                      value: _Seg.objectives,
+                      label: Text('Objectives'),
+                    ),
+                  ],
+                  selected: {_seg},
+                  onSelectionChanged: (s) => setState(() => _seg = s.first),
+                ),
+                const SizedBox(height: dsGap),
+                Expanded(child: _body()),
+              ],
+            ),
           ),
         ),
-        Expanded(child: _body()),
-      ],
+      ),
     );
   }
 
@@ -109,15 +131,8 @@ class _StructureScreenState extends State<StructureScreen> {
       child: ListTile(
         tileColor: AppColors.cardBg,
         shape: const Border(bottom: BorderSide(color: AppColors.cardBorder)),
-        titleTextStyle: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-        subtitleTextStyle: const TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 12,
-        ),
+        titleTextStyle: Theme.of(context).textTheme.titleSmall,
+        subtitleTextStyle: Theme.of(context).textTheme.bodySmall,
         leading: code == null ? null : CodeAvatar(code: code, radius: 20),
         title: Text(name),
         subtitle: subtitle.isEmpty ? null : Text(subtitle),

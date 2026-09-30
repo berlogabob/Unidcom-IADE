@@ -28,7 +28,9 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
   bool _needsVerification = false;
   bool _hasOutputs = false;
   late Future<List<Map<String, dynamic>>> _people = fetchPeople();
-  late final Future<({Map<String, DateTime?> lastSignIn, Map<String, int> issues})>
+  late final Future<
+    ({Map<String, DateTime?> lastSignIn, Map<String, int> issues})
+  >
   _extras = fetchPeopleTableExtras();
 
   void _search(String value) {
@@ -61,205 +63,230 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: !v2 && isAdmin
-          ? const EdgeInsets.fromLTRB(24, 16, 24, 16)
-          : const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          if (!v2 && isAdmin) ...[
-            const DsTitleCard(
-              title: 'People',
-              subtitle:
-                  'Every researcher, their review state and whether their profile is on the website.',
-            ),
-            const SizedBox(height: dsGap),
-          ],
-          Row(
-            children: [
-              Expanded(child: SearchBarField(onChanged: _search)),
-              if (isAdmin) ...[
-                const SizedBox(width: 8),
-                FilledButton.icon(
-                  onPressed: _addPerson,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add person'),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 12),
-          _filters(),
-          const SizedBox(height: 12),
-          Expanded(
-            child: AsyncView<List<Map<String, dynamic>>>(
-              future: _people,
-              builder: (context, people) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Material(
+      color: AppColors.pageBg,
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              children: [
+                if (!v2 && isAdmin) ...[
+                  const DsTitleCard(
+                    title: 'People',
+                    subtitle:
+                        'Every researcher, their review state and whether their profile is on the website.',
+                  ),
+                  const SizedBox(height: dsGap),
+                ],
+                Row(
                   children: [
-                    Text(
-                      '${people.length} people',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: people.isEmpty
-                          ? const Center(child: Text('No people found'))
-                          : isAdmin
-                          ? FutureBuilder(
-                              future: _extras,
-                              builder: (context, snapshot) {
-                                final extras = snapshot.data ?? (
-                                  lastSignIn: <String, DateTime?>{},
-                                  issues: <String, int>{},
-                                );
-                                return Container(
-                                  clipBehavior: Clip.antiAlias,
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.cardBg,
-                                    border: Border.fromBorderSide(
-                                      BorderSide(color: AppColors.cardBorder),
-                                    ),
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(AppDims.radius),
-                                    ),
-                                    boxShadow: AppDims.shadowCard,
-                                  ),
-                                  child: SingleChildScrollView(
-                                    child: PeopleTable(
-                                      people: people,
-                                      lastSignIn: extras.lastSignIn,
-                                      issues: extras.issues,
-                                      onOpen: (id) => context.go('/people/$id'),
-                                    ),
-                                  ),
-                                );
-                              },
-                            )
-                          : Container(
-                              clipBehavior: Clip.antiAlias,
-                              decoration: const BoxDecoration(
-                                color: AppColors.cardBg,
-                                border: Border.fromBorderSide(
-                                  BorderSide(color: AppColors.cardBorder),
-                                ),
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(AppDims.radius),
-                                ),
-                                boxShadow: AppDims.shadowCard,
-                              ),
-                              child: ListView.builder(
-                                itemCount: people.length,
-                                itemBuilder: (context, index) {
-                                  final person = people[index];
-                                  final membershipType =
-                                      person['membership_type'] as String?;
-                                  final status = person['status'] as String?;
-                                  final email = person['email'] as String?;
-                                  return Material(
-                                    color: AppColors.cardBg,
-                                    child: InkWell(
-                                      onTap: () =>
-                                          context.go('/people/${person['id']}'),
-                                      hoverColor: AppColors.sandHover,
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                          vertical: 13,
-                                        ),
+                    Expanded(child: SearchBarField(onChanged: _search)),
+                    if (isAdmin) ...[
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        onPressed: _addPerson,
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add person'),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _filters(),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: AsyncView<List<Map<String, dynamic>>>(
+                    future: _people,
+                    builder: (context, people) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            '${people.length} people',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: people.isEmpty
+                                ? const Center(child: Text('No people found'))
+                                : isAdmin
+                                ? FutureBuilder(
+                                    future: _extras,
+                                    builder: (context, snapshot) {
+                                      final extras =
+                                          snapshot.data ??
+                                          (
+                                            lastSignIn: <String, DateTime?>{},
+                                            issues: <String, int>{},
+                                          );
+                                      return Container(
+                                        clipBehavior: Clip.antiAlias,
                                         decoration: const BoxDecoration(
-                                          border: Border(
-                                            bottom: BorderSide(
+                                          color: AppColors.cardBg,
+                                          border: Border.fromBorderSide(
+                                            BorderSide(
                                               color: AppColors.cardBorder,
                                             ),
                                           ),
+                                          borderRadius: BorderRadius.all(
+                                            Radius.circular(AppDims.radius),
+                                          ),
+                                          boxShadow: AppDims.shadowCard,
                                         ),
-                                        child: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    person['preferred_name']
-                                                            as String? ??
-                                                        'Unnamed',
-                                                    style: const TextStyle(
-                                                      color:
-                                                          AppColors.textPrimary,
-                                                      fontSize: 14,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                    ),
-                                                  ),
-                                                  if (email != null) ...[
-                                                    const SizedBox(height: 2),
-                                                    Text(
-                                                      email,
-                                                      style: const TextStyle(
-                                                        color:
-                                                            AppColors.textMuted,
-                                                        fontSize: 12,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ],
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            // Flexible + Wrap: on a phone the badges
-                                            // wrap instead of squeezing the name to one
-                                            // letter per line (seen 30 Sep at 390 px).
-                                            Flexible(
-                                              child: Wrap(
-                                                alignment: WrapAlignment.end,
-                                                spacing: 8,
-                                                runSpacing: 4,
-                                                children: [
-                                                  if (membershipType != null)
-                                                    TypeBadge(membershipType),
-                                                  if (status != null)
-                                                    StatusPill(
-                                                      queueStatusLabel(status),
-                                                      tone: switch (status) {
-                                                        'active' =>
-                                                          PillTone.teal,
-                                                        'a_confirmar' =>
-                                                          PillTone.amber,
-                                                        _ => PillTone.grey,
-                                                      },
-                                                    ),
-                                                  StatusPill(
-                                                    person['public_visibility'] ==
-                                                            true
-                                                        ? 'Website · Published'
-                                                        : 'Website · Not published',
-                                                    tone:
-                                                        person['public_visibility'] ==
-                                                            true
-                                                        ? PillTone.teal
-                                                        : PillTone.grey,
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
+                                        child: SingleChildScrollView(
+                                          child: PeopleTable(
+                                            people: people,
+                                            lastSignIn: extras.lastSignIn,
+                                            issues: extras.issues,
+                                            onOpen: (id) =>
+                                                context.go('/people/$id'),
+                                          ),
                                         ),
+                                      );
+                                    },
+                                  )
+                                : Container(
+                                    clipBehavior: Clip.antiAlias,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.cardBg,
+                                      border: Border.fromBorderSide(
+                                        BorderSide(color: AppColors.cardBorder),
                                       ),
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(AppDims.radius),
+                                      ),
+                                      boxShadow: AppDims.shadowCard,
                                     ),
-                                  );
-                                },
-                              ),
-                            ),
-                    ),
-                  ],
-                );
-              },
+                                    child: ListView.builder(
+                                      itemCount: people.length,
+                                      itemBuilder: (context, index) {
+                                        final person = people[index];
+                                        final membershipType =
+                                            person['membership_type']
+                                                as String?;
+                                        final status =
+                                            person['status'] as String?;
+                                        final email =
+                                            person['email'] as String?;
+                                        return Material(
+                                          color: AppColors.cardBg,
+                                          child: InkWell(
+                                            onTap: () => context.go(
+                                              '/people/${person['id']}',
+                                            ),
+                                            hoverColor: AppColors.sandHover,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 13,
+                                                  ),
+                                              decoration: const BoxDecoration(
+                                                border: Border(
+                                                  bottom: BorderSide(
+                                                    color: AppColors.cardBorder,
+                                                  ),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          person['preferred_name']
+                                                                  as String? ??
+                                                              'Unnamed',
+                                                          style:
+                                                              Theme.of(context)
+                                                                  .textTheme
+                                                                  .titleSmall,
+                                                        ),
+                                                        if (email != null) ...[
+                                                          const SizedBox(
+                                                            height: 2,
+                                                          ),
+                                                          Text(
+                                                            email,
+                                                            style:
+                                                                Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .textTheme
+                                                                    .bodySmall,
+                                                          ),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  // Flexible + Wrap: on a phone the badges
+                                                  // wrap instead of squeezing the name to one
+                                                  // letter per line (seen 30 Sep at 390 px).
+                                                  Flexible(
+                                                    child: Wrap(
+                                                      alignment:
+                                                          WrapAlignment.end,
+                                                      spacing: 8,
+                                                      runSpacing: 4,
+                                                      children: [
+                                                        if (membershipType !=
+                                                            null)
+                                                          TypeBadge(
+                                                            membershipType,
+                                                          ),
+                                                        if (status != null)
+                                                          StatusPill(
+                                                            queueStatusLabel(
+                                                              status,
+                                                            ),
+                                                            tone: switch (status) {
+                                                              'active' =>
+                                                                PillTone.teal,
+                                                              'a_confirmar' =>
+                                                                PillTone.amber,
+                                                              _ =>
+                                                                PillTone.grey,
+                                                            },
+                                                          ),
+                                                        StatusPill(
+                                                          person['public_visibility'] ==
+                                                                  true
+                                                              ? 'Website · Published'
+                                                              : 'Website · Not published',
+                                                          tone:
+                                                              person['public_visibility'] ==
+                                                                  true
+                                                              ? PillTone.teal
+                                                              : PillTone.grey,
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
