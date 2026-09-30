@@ -54,37 +54,44 @@ class Panel extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: _cardDecoration,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (title != null)
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title!,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+      // Transparent Material: ListTiles and ink in a block draw on the card,
+      // not on the page behind it (Flutter asserts otherwise).
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (title != null)
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: AppColors.cardBorder),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title!,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  if (trailing != null) ...[
-                    const SizedBox(width: 12),
-                    trailing!,
+                    if (trailing != null) ...[
+                      const SizedBox(width: 12),
+                      trailing!,
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          Padding(padding: padding ?? const EdgeInsets.all(16), child: child),
-        ],
+            Padding(padding: padding ?? const EdgeInsets.all(16), child: child),
+          ],
+        ),
       ),
     );
   }
