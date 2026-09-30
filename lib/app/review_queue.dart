@@ -59,41 +59,106 @@ Future<bool?> showRejectOutputDialog(
 }
 
 class ReviewQueueScreen extends StatefulWidget {
-  const ReviewQueueScreen({super.key});
+  const ReviewQueueScreen({super.key, this.initialTab});
+
+  /// `?tab=` from the URL (AD-2: each dashboard tile opens its own tab).
+  final String? initialTab;
 
   @override
   State<ReviewQueueScreen> createState() => _ReviewQueueScreenState();
 }
 
-class ReviewQueueTabs extends StatelessWidget {
-  const ReviewQueueTabs({super.key});
+/// Rui's v1.0 brief PA-2: Profiles and Outputs up front, the rest under More.
+/// Order = the order of the views in [_ReviewQueueScreenState.build].
+enum ReviewTab {
+  profiles('Profiles'),
+  profileList('Profiles to approve'),
+  outputs('Outputs'),
+  reverify('Needs re-verification'),
+  suggestions('Suggestions'),
+  activity('Activity'),
+  attention('Needs attention'),
+  orcidWorks('ORCID works');
+
+  const ReviewTab(this.label);
+  final String label;
+
+  static ReviewTab fromQuery(String? name) => ReviewTab.values.firstWhere(
+    (tab) => tab.name == name,
+    orElse: () => ReviewTab.profiles,
+  );
+}
+
+class ReviewTabsBar extends StatelessWidget {
+  const ReviewTabsBar({
+    super.key,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final ReviewTab selected;
+  final ValueChanged<ReviewTab> onSelect;
+
+  static const _main = [ReviewTab.profiles, ReviewTab.outputs];
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
-      color: AppColors.cardBg,
-      child: TabBar(
-        isScrollable: true,
-        labelColor: AppColors.textPrimary,
-        unselectedLabelColor: AppColors.textMuted,
-        indicatorColor: AppColors.teal,
-        dividerColor: AppColors.cardBorder,
-        tabs: [
-          Tab(text: 'Pipeline'),
-          Tab(text: 'Profiles to approve'),
-          Tab(text: 'Outputs to approve'),
-          Tab(text: 'Needs re-verification'),
-          Tab(text: 'Suggestions'),
-          Tab(text: 'Activity'),
-          Tab(text: 'Needs attention'),
-          Tab(text: 'ORCID works'),
-        ],
+    final inMore = !_main.contains(selected);
+    Widget tab(String label, bool active, VoidCallback? onTap) => InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: active ? AppColors.tealDark : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? AppColors.textPrimary : AppColors.textMuted,
+            fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+          ),
+        ),
+      ),
+    );
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.cardBg,
+        border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final t in _main)
+              tab(t.label, t == selected, () => onSelect(t)),
+            PopupMenuButton<ReviewTab>(
+              tooltip: 'More review lists',
+              onSelected: onSelect,
+              itemBuilder: (context) => [
+                for (final t in ReviewTab.values)
+                  if (!_main.contains(t))
+                    PopupMenuItem(value: t, child: Text(t.label)),
+              ],
+              child: tab(
+                inMore ? 'More · ${selected.label} ▾' : 'More ▾',
+                inMore,
+                null,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
+  late ReviewTab _tab = ReviewTab.fromQuery(widget.initialTab);
   late Future<List<Map<String, dynamic>>> _pendingPeople = fetchPendingPeople();
   late Future<List<Map<String, dynamic>>> _pendingOutputs =
       fetchPendingOutputs();
@@ -222,369 +287,355 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
   Widget build(BuildContext context) {
     if (!isAdmin) return const Center(child: Text('Admin access required'));
 
-    return DefaultTabController(
-      length: 8,
-      child: Column(
-        children: [
-          if (!v2) ...[
-            const Padding(
-              padding: EdgeInsets.fromLTRB(24, 16, 24, 0),
-              child: DsTitleCard(
-                title: 'Pending approval',
-                subtitle:
-                    'Review what researchers submitted, then publish to the website — two separate steps.',
-              ),
-            ),
-            const SizedBox(height: dsGap),
-          ],
-          const ReviewQueueTabs(),
-          Expanded(
-            child: ListTileTheme(
-              data: const ListTileThemeData(
-                tileColor: AppColors.cardBg,
-                shape: Border(bottom: BorderSide(color: AppColors.cardBorder)),
-                titleTextStyle: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-                subtitleTextStyle: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 12,
-                ),
-              ),
-              child: TabBarView(
-                children: [
-                  // Rui A1·8: stage pipeline; Publish is separate from Approve.
-                  FutureBuilder<List<Map<String, dynamic>>>(
-                    future: _pipeline,
-                    builder: (context, snap) => snap.hasData
-                        ? SingleChildScrollView(
-                            padding: const EdgeInsets.all(16),
-                            child: PipelineBoard(
-                              people: snap.data!,
-                              onStartReview: (id) async {
-                                await startReview(id);
-                                _refresh();
-                              },
-                              onApprove: (id) async {
-                                await approvePerson(id);
-                                _refresh();
-                              },
-                              onPublish: (id) async {
-                                await setPersonPublished(id, true);
-                                _refresh();
-                              },
-                              onUnpublish: (id) async {
-                                await setPersonPublished(id, false);
-                                _refresh();
-                              },
-                              onOpen: (id) => context.go('/people/$id'),
-                            ),
-                          )
-                        : const Center(child: CircularProgressIndicator()),
-                  ),
-                  QueueList(
-                    future: _pendingPeople,
-                    emptyText: 'No profiles waiting for approval',
-                    searchOf: (p) => p['preferred_name'] as String? ?? '',
-                    timeOf: (p) => p['created_at'] as String? ?? '',
-                    filters: [
-                      QueueFilter(
-                        label: 'Profile',
-                        valueOf: (p) => p['profile_status'] as String?,
-                      ),
-                    ],
-                    itemBuilder: (person) {
-                      final status = person['profile_status'] as String? ?? '';
-                      return ListTile(
-                        title: Text(
-                          person['preferred_name'] as String? ?? 'Unnamed',
-                        ),
-                        subtitle: status.isEmpty
-                            ? null
-                            : Align(
-                                alignment: Alignment.centerLeft,
-                                child: StatusPill(
-                                  queueStatusLabel(status),
-                                  tone: _statusTone(status),
-                                ),
-                              ),
-                        trailing: FilledButton(
-                          onPressed: () =>
-                              _approvePerson(person['id'] as String),
-                          child: const Text('Approve'),
-                        ),
-                      );
-                    },
-                  ),
-                  FutureBuilder<List<Map<String, dynamic>>>(
-                    future: _pendingOutputs,
-                    builder: (context, snapshot) {
-                      final count =
-                          snapshot.connectionState == ConnectionState.done
-                          ? snapshot.data?.length ?? 0
-                          : 0;
-                      return Column(
-                        children: [
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                              child: FilledButton(
-                                onPressed: count == 0
-                                    ? null
-                                    : () => _approveAllPendingOutputs(count),
-                                child: Text('Approve all pending ($count)'),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: QueueList(
-                              future: _pendingOutputs,
-                              emptyText: 'No outputs waiting for approval',
-                              searchOf: (o) => o['title'] as String? ?? '',
-                              timeOf: (o) => o['created_at'] as String? ?? '',
-                              filters: [
-                                QueueFilter(
-                                  label: 'Type',
-                                  valueOf: (o) => o['type'] as String?,
-                                ),
-                              ],
-                              itemBuilder: (output) => OutputRow(
-                                title: output['title'] as String? ?? 'Untitled',
-                                year: output['reporting_year'] as int?,
-                                type: output['type'] as String?,
-                                detail: output['approval_status'] as String?,
-                                trailing: Wrap(
-                                  spacing: 8,
-                                  children: [
-                                    TextButton(
-                                      onPressed: () => _rejectOutput(
-                                        output['id'] as String,
-                                        output['title'] as String? ??
-                                            'Untitled',
-                                      ),
-                                      child: const Text('Reject'),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () => _approveOutput(
-                                        output['id'] as String,
-                                      ),
-                                      child: const Text('Approve'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  QueueList(
-                    future: _stalePeople,
-                    emptyText: 'No profiles need re-verification',
-                    searchOf: (p) => p['preferred_name'] as String? ?? '',
-                    timeOf: (p) => p['last_verified_at'] as String? ?? '',
-                    filters: [
-                      QueueFilter(
-                        label: 'Membership',
-                        valueOf: (p) => p['membership_type'] as String?,
-                      ),
-                    ],
-                    // test mode: reminder emails intentionally disabled
-                    itemBuilder: (person) => ListTile(
-                      title: Text(
-                        person['preferred_name'] as String? ?? 'Unnamed',
-                      ),
-                      subtitle: Text(
-                        person['last_verified_at'] as String? ??
-                            'Never verified',
-                      ),
-                    ),
-                  ),
-                  QueueList(
-                    future: _pendingSuggestions,
-                    emptyText: 'No enrichment suggestions waiting for review',
-                    searchOf: (s) => s['subject_name'] as String? ?? '',
-                    timeOf: (s) => s['created_at'] as String? ?? '',
-                    confidenceOf: (s) => s['confidence'] == null
-                        ? null
-                        : num.parse(s['confidence'].toString()),
-                    filters: [
-                      QueueFilter(
-                        label: 'Source',
-                        valueOf: (s) => s['source'] as String?,
-                      ),
-                    ],
-                    groups: [
-                      QueueGroup(
-                        label: 'Person',
-                        keyOf: (s) => s['subject_name'] as String? ?? '—',
-                      ),
-                      QueueGroup(
-                        label: 'Field',
-                        keyOf: (s) => s['field'] as String? ?? '—',
-                      ),
-                    ],
-                    itemBuilder: (suggestion) {
-                      final isOutput = suggestion['subject_type'] == 'output';
-                      final displaySuggestion = isOutput
-                          ? {
-                              ...suggestion,
-                              'subject_name':
-                                  'Output · ${suggestion['subject_name']}',
-                            }
-                          : suggestion;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                            child: Row(
-                              children: [
-                                Text(suggestion['field'] as String? ?? '—'),
-                                if (suggestion['source'] == 'researcher') ...[
-                                  const SizedBox(width: 8),
-                                  const StatusPill(
-                                    'Proposed by researcher',
-                                    tone: PillTone.blue,
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          SuggestionTile(
-                            suggestion: displaySuggestion,
-                            onAccept: () =>
-                                _acceptSuggestion(suggestion['id'] as String),
-                            onReject: () =>
-                                _rejectSuggestion(suggestion['id'] as String),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                  QueueList(
-                    future: _changeLog,
-                    emptyText: 'No changes recorded yet',
-                    searchOf: (c) =>
-                        '${c['subject_name'] ?? ''} ${c['field'] ?? ''}',
-                    timeOf: (c) => c['changed_at'] as String? ?? '',
-                    filters: [
-                      QueueFilter(
-                        label: 'Source',
-                        valueOf: (c) => c['source'] as String?,
-                      ),
-                    ],
-                    groups: [
-                      QueueGroup(
-                        label: 'Person',
-                        keyOf: (c) => c['subject_name'] as String? ?? '—',
-                      ),
-                      QueueGroup(
-                        label: 'Source',
-                        keyOf: (c) => c['source'] as String? ?? '—',
-                      ),
-                    ],
-                    itemBuilder: _changeTile,
-                  ),
-                  QueueList(
-                    future: _flaggedOutputs,
-                    emptyText: 'No outputs need attention',
-                    searchOf: (o) => o['title'] as String? ?? '',
-                    timeOf: (o) => o['created_at'] as String? ?? '',
-                    filters: [
-                      QueueFilter(
-                        label: 'Type',
-                        valueOf: (o) => o['type'] as String?,
-                      ),
-                      QueueFilter(
-                        label: 'Issue',
-                        valuesOf: (o) =>
-                            (o['issue_codes'] as List<dynamic>? ?? [])
-                                .cast<String>(),
-                      ),
-                      QueueFilter(
-                        label: 'Severity',
-                        valueOf: (o) => (o['error_count'] as int? ?? 0) > 0
-                            ? 'Errors'
-                            : (o['warning_count'] as int? ?? 0) > 0
-                            ? 'Warnings'
-                            : null,
-                      ),
-                    ],
-                    groups: [
-                      QueueGroup(
-                        label: 'Issue',
-                        keyOf: (o) =>
-                            ((o['issue_codes'] as List<dynamic>? ?? [])
-                                .cast<String>()
-                                .firstOrNull) ??
-                            '—',
-                      ),
-                      QueueGroup(
-                        label: 'Type',
-                        keyOf: (o) => o['type'] as String? ?? '—',
-                      ),
-                    ],
-                    itemBuilder: (output) => OutputRow(
-                      title: output['title'] as String? ?? 'Untitled',
-                      year: output['reporting_year'] as int?,
-                      type: output['type'] as String?,
-                      issueCodes:
-                          (output['issue_codes'] as List<dynamic>? ?? [])
-                              .cast<String>(),
-                      errorCount: output['error_count'] as int? ?? 0,
-                      warningCount: output['warning_count'] as int? ?? 0,
-                      onTap: () => context.go('/outputs/${output['id']}'),
-                    ),
-                  ),
-                  QueueList(
-                    future: _candidates,
-                    emptyText: 'No ORCID works waiting for review',
-                    searchOf: (c) =>
-                        '${c['person_name'] ?? ''} ${c['title'] ?? ''}',
-                    timeOf: (c) => c['created_at'] as String? ?? '',
-                    confidenceOf: (c) =>
-                        num.parse(c['affiliation_score'].toString()),
-                    filters: [
-                      QueueFilter(
-                        label: 'Affiliation',
-                        valueOf: (c) => c['affiliation'] as String?,
-                      ),
-                      QueueFilter(
-                        label: 'Researcher',
-                        valueOf: (c) => c['person_name'] as String?,
-                      ),
-                    ],
-                    groups: [
-                      QueueGroup(
-                        label: 'Researcher',
-                        keyOf: (c) => c['person_name'] as String? ?? '—',
-                      ),
-                      QueueGroup(
-                        label: 'Affiliation',
-                        keyOf: (c) => c['affiliation'] as String? ?? '—',
-                      ),
-                    ],
-                    itemBuilder: (candidate) => CandidateTile(
-                      candidate: candidate,
-                      onImport: (affiliation) => _promoteCandidate(
-                        candidate['id'] as String,
-                        affiliation,
-                      ),
-                      onDismiss: () =>
-                          _rejectCandidate(candidate['id'] as String),
-                    ),
-                  ),
-                ],
-              ),
+    return Column(
+      children: [
+        if (!v2) ...[
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 16, 24, 0),
+            child: DsTitleCard(
+              title: 'Pending approval',
+              subtitle:
+                  'Review what researchers submitted, then publish to the website — two separate steps.',
             ),
           ),
+          const SizedBox(height: dsGap),
         ],
-      ),
+        ReviewTabsBar(
+          selected: _tab,
+          onSelect: (tab) => setState(() => _tab = tab),
+        ),
+        Expanded(
+          child: ListTileTheme(
+            data: const ListTileThemeData(
+              tileColor: AppColors.cardBg,
+              shape: Border(bottom: BorderSide(color: AppColors.cardBorder)),
+              titleTextStyle: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              subtitleTextStyle: TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 12,
+              ),
+            ),
+            child: [
+              // Rui A1·8: stage pipeline; Publish is separate from Approve.
+              FutureBuilder<List<Map<String, dynamic>>>(
+                future: _pipeline,
+                builder: (context, snap) => snap.hasData
+                    ? SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: PipelineBoard(
+                          people: snap.data!,
+                          onStartReview: (id) async {
+                            await startReview(id);
+                            _refresh();
+                          },
+                          onApprove: (id) async {
+                            await approvePerson(id);
+                            _refresh();
+                          },
+                          onPublish: (id) async {
+                            await setPersonPublished(id, true);
+                            _refresh();
+                          },
+                          onUnpublish: (id) async {
+                            await setPersonPublished(id, false);
+                            _refresh();
+                          },
+                          onOpen: (id) => context.go('/people/$id'),
+                        ),
+                      )
+                    : const Center(child: CircularProgressIndicator()),
+              ),
+              QueueList(
+                future: _pendingPeople,
+                emptyText: 'No profiles waiting for approval',
+                searchOf: (p) => p['preferred_name'] as String? ?? '',
+                timeOf: (p) => p['created_at'] as String? ?? '',
+                filters: [
+                  QueueFilter(
+                    label: 'Profile',
+                    valueOf: (p) => p['profile_status'] as String?,
+                  ),
+                ],
+                itemBuilder: (person) {
+                  final status = person['profile_status'] as String? ?? '';
+                  return ListTile(
+                    title: Text(
+                      person['preferred_name'] as String? ?? 'Unnamed',
+                    ),
+                    subtitle: status.isEmpty
+                        ? null
+                        : Align(
+                            alignment: Alignment.centerLeft,
+                            child: StatusPill(
+                              queueStatusLabel(status),
+                              tone: _statusTone(status),
+                            ),
+                          ),
+                    trailing: FilledButton(
+                      onPressed: () => _approvePerson(person['id'] as String),
+                      child: const Text('Approve'),
+                    ),
+                  );
+                },
+              ),
+              FutureBuilder<List<Map<String, dynamic>>>(
+                future: _pendingOutputs,
+                builder: (context, snapshot) {
+                  final count = snapshot.connectionState == ConnectionState.done
+                      ? snapshot.data?.length ?? 0
+                      : 0;
+                  return Column(
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                          child: FilledButton(
+                            onPressed: count == 0
+                                ? null
+                                : () => _approveAllPendingOutputs(count),
+                            child: Text('Approve all pending ($count)'),
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: QueueList(
+                          future: _pendingOutputs,
+                          emptyText: 'No outputs waiting for approval',
+                          searchOf: (o) => o['title'] as String? ?? '',
+                          timeOf: (o) => o['created_at'] as String? ?? '',
+                          filters: [
+                            QueueFilter(
+                              label: 'Type',
+                              valueOf: (o) => o['type'] as String?,
+                            ),
+                          ],
+                          itemBuilder: (output) => OutputRow(
+                            title: output['title'] as String? ?? 'Untitled',
+                            year: output['reporting_year'] as int?,
+                            type: output['type'] as String?,
+                            detail: output['approval_status'] as String?,
+                            trailing: Wrap(
+                              spacing: 8,
+                              children: [
+                                TextButton(
+                                  onPressed: () => _rejectOutput(
+                                    output['id'] as String,
+                                    output['title'] as String? ?? 'Untitled',
+                                  ),
+                                  child: const Text('Reject'),
+                                ),
+                                FilledButton(
+                                  onPressed: () =>
+                                      _approveOutput(output['id'] as String),
+                                  child: const Text('Approve'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              QueueList(
+                future: _stalePeople,
+                emptyText: 'No profiles need re-verification',
+                searchOf: (p) => p['preferred_name'] as String? ?? '',
+                timeOf: (p) => p['last_verified_at'] as String? ?? '',
+                filters: [
+                  QueueFilter(
+                    label: 'Membership',
+                    valueOf: (p) => p['membership_type'] as String?,
+                  ),
+                ],
+                // test mode: reminder emails intentionally disabled
+                itemBuilder: (person) => ListTile(
+                  title: Text(person['preferred_name'] as String? ?? 'Unnamed'),
+                  subtitle: Text(
+                    person['last_verified_at'] as String? ?? 'Never verified',
+                  ),
+                ),
+              ),
+              QueueList(
+                future: _pendingSuggestions,
+                emptyText: 'No enrichment suggestions waiting for review',
+                searchOf: (s) => s['subject_name'] as String? ?? '',
+                timeOf: (s) => s['created_at'] as String? ?? '',
+                confidenceOf: (s) => s['confidence'] == null
+                    ? null
+                    : num.parse(s['confidence'].toString()),
+                filters: [
+                  QueueFilter(
+                    label: 'Source',
+                    valueOf: (s) => s['source'] as String?,
+                  ),
+                ],
+                groups: [
+                  QueueGroup(
+                    label: 'Person',
+                    keyOf: (s) => s['subject_name'] as String? ?? '—',
+                  ),
+                  QueueGroup(
+                    label: 'Field',
+                    keyOf: (s) => s['field'] as String? ?? '—',
+                  ),
+                ],
+                itemBuilder: (suggestion) {
+                  final isOutput = suggestion['subject_type'] == 'output';
+                  final displaySuggestion = isOutput
+                      ? {
+                          ...suggestion,
+                          'subject_name':
+                              'Output · ${suggestion['subject_name']}',
+                        }
+                      : suggestion;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: Row(
+                          children: [
+                            Text(suggestion['field'] as String? ?? '—'),
+                            if (suggestion['source'] == 'researcher') ...[
+                              const SizedBox(width: 8),
+                              const StatusPill(
+                                'Proposed by researcher',
+                                tone: PillTone.blue,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      SuggestionTile(
+                        suggestion: displaySuggestion,
+                        onAccept: () =>
+                            _acceptSuggestion(suggestion['id'] as String),
+                        onReject: () =>
+                            _rejectSuggestion(suggestion['id'] as String),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              QueueList(
+                future: _changeLog,
+                emptyText: 'No changes recorded yet',
+                searchOf: (c) =>
+                    '${c['subject_name'] ?? ''} ${c['field'] ?? ''}',
+                timeOf: (c) => c['changed_at'] as String? ?? '',
+                filters: [
+                  QueueFilter(
+                    label: 'Source',
+                    valueOf: (c) => c['source'] as String?,
+                  ),
+                ],
+                groups: [
+                  QueueGroup(
+                    label: 'Person',
+                    keyOf: (c) => c['subject_name'] as String? ?? '—',
+                  ),
+                  QueueGroup(
+                    label: 'Source',
+                    keyOf: (c) => c['source'] as String? ?? '—',
+                  ),
+                ],
+                itemBuilder: _changeTile,
+              ),
+              QueueList(
+                future: _flaggedOutputs,
+                emptyText: 'No outputs need attention',
+                searchOf: (o) => o['title'] as String? ?? '',
+                timeOf: (o) => o['created_at'] as String? ?? '',
+                filters: [
+                  QueueFilter(
+                    label: 'Type',
+                    valueOf: (o) => o['type'] as String?,
+                  ),
+                  QueueFilter(
+                    label: 'Issue',
+                    valuesOf: (o) => (o['issue_codes'] as List<dynamic>? ?? [])
+                        .cast<String>(),
+                  ),
+                  QueueFilter(
+                    label: 'Severity',
+                    valueOf: (o) => (o['error_count'] as int? ?? 0) > 0
+                        ? 'Errors'
+                        : (o['warning_count'] as int? ?? 0) > 0
+                        ? 'Warnings'
+                        : null,
+                  ),
+                ],
+                groups: [
+                  QueueGroup(
+                    label: 'Issue',
+                    keyOf: (o) =>
+                        ((o['issue_codes'] as List<dynamic>? ?? [])
+                            .cast<String>()
+                            .firstOrNull) ??
+                        '—',
+                  ),
+                  QueueGroup(
+                    label: 'Type',
+                    keyOf: (o) => o['type'] as String? ?? '—',
+                  ),
+                ],
+                itemBuilder: (output) => OutputRow(
+                  title: output['title'] as String? ?? 'Untitled',
+                  year: output['reporting_year'] as int?,
+                  type: output['type'] as String?,
+                  issueCodes: (output['issue_codes'] as List<dynamic>? ?? [])
+                      .cast<String>(),
+                  errorCount: output['error_count'] as int? ?? 0,
+                  warningCount: output['warning_count'] as int? ?? 0,
+                  onTap: () => context.go('/outputs/${output['id']}'),
+                ),
+              ),
+              QueueList(
+                future: _candidates,
+                emptyText: 'No ORCID works waiting for review',
+                searchOf: (c) =>
+                    '${c['person_name'] ?? ''} ${c['title'] ?? ''}',
+                timeOf: (c) => c['created_at'] as String? ?? '',
+                confidenceOf: (c) =>
+                    num.parse(c['affiliation_score'].toString()),
+                filters: [
+                  QueueFilter(
+                    label: 'Affiliation',
+                    valueOf: (c) => c['affiliation'] as String?,
+                  ),
+                  QueueFilter(
+                    label: 'Researcher',
+                    valueOf: (c) => c['person_name'] as String?,
+                  ),
+                ],
+                groups: [
+                  QueueGroup(
+                    label: 'Researcher',
+                    keyOf: (c) => c['person_name'] as String? ?? '—',
+                  ),
+                  QueueGroup(
+                    label: 'Affiliation',
+                    keyOf: (c) => c['affiliation'] as String? ?? '—',
+                  ),
+                ],
+                itemBuilder: (candidate) => CandidateTile(
+                  candidate: candidate,
+                  onImport: (affiliation) =>
+                      _promoteCandidate(candidate['id'] as String, affiliation),
+                  onDismiss: () => _rejectCandidate(candidate['id'] as String),
+                ),
+              ),
+            ][_tab.index],
+          ),
+        ),
+      ],
     );
   }
 

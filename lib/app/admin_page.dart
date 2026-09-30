@@ -9,9 +9,10 @@ import 'review_queue.dart';
 const adminTools = ['reports', 'review', 'merge', 'data'];
 
 class AdminScreen extends StatelessWidget {
-  const AdminScreen({super.key, required this.tool});
+  const AdminScreen({super.key, required this.tool, this.tab});
 
   final String tool;
+  final String? tab;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +20,7 @@ class AdminScreen extends StatelessWidget {
       'reports' => const ReportsScreen(),
       'merge' => const MergeScreen(),
       'data' => const DataScreen(),
-      _ => const ReviewQueueScreen(),
+      _ => ReviewQueueScreen(initialTab: tab),
     };
   }
 }

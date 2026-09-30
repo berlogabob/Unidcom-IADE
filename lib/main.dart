@@ -196,28 +196,33 @@ String? anonymousRedirect(String location) {
   return needsAuth(location) ? '/login' : null;
 }
 
-Widget parameterizedRouteWidget(String path, String value) => switch (path) {
-  '/people/:id' => ResearcherView(key: ValueKey(value), id: value),
-  '/outputs/:id' => OutputPageScreen(key: ValueKey(value), id: value),
-  '/projects/:id' => ProjectPageScreen(key: ValueKey(value), id: value),
-  '/labs/:id' => LabPageScreen(key: ValueKey(value), id: value),
-  '/clusters/:id' => ClusterPageScreen(key: ValueKey(value), id: value),
-  '/objectives/:id' => ObjectivePageScreen(key: ValueKey(value), id: value),
-  '/conferences/:key' => ConferencePageScreen(
-    key: ValueKey(value),
-    confKey: value,
-  ),
-  '/app/requests/:id' => PortalShell(
-    key: ValueKey(value),
-    child: RequestFormPage(key: ValueKey(value), requestId: value),
-  ),
-  '/app/admin/:tool' => AdminScreen(key: ValueKey(value), tool: value),
-  '/app/welcome/:section' => PortalShell(
-    key: ValueKey(value),
-    child: WelcomePackPage(key: ValueKey(value), section: value),
-  ),
-  _ => throw ArgumentError.value(path, 'path'),
-};
+Widget parameterizedRouteWidget(String path, String value, {String? tab}) =>
+    switch (path) {
+      '/people/:id' => ResearcherView(key: ValueKey(value), id: value),
+      '/outputs/:id' => OutputPageScreen(key: ValueKey(value), id: value),
+      '/projects/:id' => ProjectPageScreen(key: ValueKey(value), id: value),
+      '/labs/:id' => LabPageScreen(key: ValueKey(value), id: value),
+      '/clusters/:id' => ClusterPageScreen(key: ValueKey(value), id: value),
+      '/objectives/:id' => ObjectivePageScreen(key: ValueKey(value), id: value),
+      '/conferences/:key' => ConferencePageScreen(
+        key: ValueKey(value),
+        confKey: value,
+      ),
+      '/app/requests/:id' => PortalShell(
+        key: ValueKey(value),
+        child: RequestFormPage(key: ValueKey(value), requestId: value),
+      ),
+      '/app/admin/:tool' => AdminScreen(
+        key: ValueKey('$value?$tab'),
+        tool: value,
+        tab: tab,
+      ),
+      '/app/welcome/:section' => PortalShell(
+        key: ValueKey(value),
+        child: WelcomePackPage(key: ValueKey(value), section: value),
+      ),
+      _ => throw ArgumentError.value(path, 'path'),
+    };
 
 /// Everything the centre-wide view owns: the directory, the admin screens and
 /// the dashboards. Researcher mode has no way to reach any of it, because a
@@ -429,6 +434,7 @@ final _router = GoRouter(
           builder: (_, state) => parameterizedRouteWidget(
             '/app/admin/:tool',
             state.pathParameters['tool']!,
+            tab: state.uri.queryParameters['tab'],
           ),
         ),
         GoRoute(
