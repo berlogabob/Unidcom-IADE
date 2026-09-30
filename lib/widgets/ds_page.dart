@@ -26,7 +26,8 @@ class DsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
+    // Material, not ColoredBox: ListTiles in blocks need a Material ancestor.
+    return Material(
       color: AppColors.pageBg,
       child: Align(
         alignment: Alignment.topCenter,
