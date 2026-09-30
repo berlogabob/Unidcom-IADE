@@ -23,7 +23,7 @@
 #title-block(
   "Rui's UI decisions — ready to check",
   subtitle: "What Rui asked on 25 Sep, what is live today, and how to confirm it in about an hour.",
-  meta-line: [Portal on `main` 0b2c26c, deployed 30 Sep · CI and deploy green · 333 automated tests pass · 6 of 7 browser flows pass · every number below read from the live system on 29–30 Sep.],
+  meta-line: [Portal on `main` 8550a56, deployed 30 Sep · CI and deploy green · 345 automated tests pass · 6 of 7 browser flows pass · every number below read from the live system on 29–30 Sep.],
   standfirst: [#pill("READY", tone: "ok") All 73 decisions in Rui's document were built. 70 are done exactly as asked. 3 are done differently or partly, each for a stated reason, and need Rui's yes or no. Nothing was deferred. The one step we did not do alone is putting a real profile on the public website: that needs a real person's record, and it is step C below.],
 )
 
@@ -31,7 +31,7 @@
   ("70", "Done as asked", "of 73 decisions"),
   ("3", "Need Rui's call", "done differently or partly"),
   ("0", "Deferred", ""),
-  ("333", "Automated tests", "all pass"),
+  ("345", "Automated tests", "all pass"),
 ))
 
 = Rui asked vs we have
@@ -95,8 +95,8 @@
   ([Hover the (i) next to ORCID, Ciência ID, Email and Lab / cluster, and next to *Import from ORCID* and *Upload photo*.], [One short sentence each — on fields and on actions.]),
   ([Click *Upload photo*, pick a JPG under 5 MB.], ["Photo sent for UNIDCOM review". The photo on the page does not change yet.]),
   ([Look for featured outputs.], [A read-only list "Featured outputs (N/5)" and "Manage in Scientific Outputs →". No checkboxes or stars here.]),
-  ([Click *Edit*, change the phone, click *Save draft*.], ["Draft saved — not sent to UNIDCOM yet".]),
-  ([Open *Edit* again, click in Bio.], [A counter "N / 300". Over 300 it turns amber and says the website shows the first 300. It never blocks typing.]),
+  ([In *Your details*, change the email; click *Save draft* (bottom right).], ["Draft saved — not sent to UNIDCOM yet".]),
+  ([Type in the *Biography* box.], [A counter "N / 300". Over 300 it turns amber and says the website shows the first 300. It never blocks typing.]),
   ([Click *Submit for UNIDCOM review* on the page; hover its (i).], [(i) says "Saved changes will be re-submitted for UNIDCOM review". The top line changes to "UNIDCOM: Submitted".]),
 ))
 
@@ -134,8 +134,8 @@ The whole path of one real change: Andrey edits his biography where Portuguese r
   ([*Ciência Vitae*: edit the summary (Resumo) and save.], [Saved in Ciência Vitae. RIMS is not connected to Ciência Vitae — we only learn here whether it passes the text on to ORCID.]),
   ([*ORCID* (orcid.org, signed in): open Biography.], [If Ciência Vitae passed it on, the new text is there. If not, paste the same text into Biography and save.]),
   ([*Portal*: sign out, then sign in with ORCID again.], [Overview opens.]),
-  ([*My Profile* → Biography.], [Two columns: *UNIDCOM* (old text) and *ORCID* (new text), and *Import bio from ORCID*. ORCID can take a few minutes to show a change to others.]),
-  ([Click *Import bio from ORCID*.], [The ORCID text becomes a proposal for UNIDCOM review. The UNIDCOM text does not change yet.]),
+  ([*My Profile* → *Biography* block.], [Your current text, and the link *Import bio from ORCID →* (it appears only when ORCID has different text; ORCID can take a few minutes to show a change).]),
+  ([Click *Import bio from ORCID →*, then *Submit for UNIDCOM review*.], [The ORCID text fills the box, then goes to UNIDCOM as a proposal. The published bio does not change yet.]),
   ([Switch to admin. Look at the dashboard.], [Tile *Proposals to review · 1*.]),
   ([Click the tile, then the tab *Suggestions*.], [At the top: a row "Proposed by researcher", field Bio, with the new text. The older rows below are machine suggestions from ORCID and Crossref.]),
   ([Click *Accept*.], [The row leaves the queue. Andrey's portal bio shows the new text.]),
