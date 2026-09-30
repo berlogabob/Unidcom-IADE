@@ -10,6 +10,10 @@ const forbidden = [
   "'Sync now'",
   "'ORCID Sync'",
   'sync automatically',
+  // Rui's v1.0 brief G-5: import only, never "Sync".
+  "'ORCID sync'",
+  'Push to ORCID',
+  'a sync would',
 ];
 
 void main() {

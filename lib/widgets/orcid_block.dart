@@ -25,7 +25,7 @@ class OrcidBlock extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: AppColors.tealTint,
         border: Border.all(color: AppColors.cardBorder),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -50,7 +50,7 @@ class OrcidBlock extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 const InfoTip(
-                  text: 'Copies your ORCID data into a proposal for UNIDCOM review. Nothing changes on ORCID.',
+                  text: 'Fills this form with your ORCID data. Nothing is sent until you submit for UNIDCOM review.',
                 ),
               ],
             ),

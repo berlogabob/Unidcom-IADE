@@ -14,10 +14,10 @@ class MyProfileView extends StatefulWidget {
     required this.person,
     required this.labs,
     required this.featured,
-    this.orcidBio,
+    this.orcid,
     required this.onSaveDraft,
     required this.onSubmit,
-    required this.onImportOrcid,
+    required this.onConnectOrcid,
     required this.onUploadPhoto,
     required this.onManageFeatured,
     this.readOnly = false,
@@ -26,10 +26,10 @@ class MyProfileView extends StatefulWidget {
   final Map<String, dynamic> person;
   final List<String> labs;
   final List<Map<String, dynamic>> featured;
-  final String? orcidBio;
+  final Map<String, String>? orcid;
   final Future<void> Function(Map<String, String>) onSaveDraft;
   final Future<void> Function(Map<String, String>) onSubmit;
-  final VoidCallback onImportOrcid;
+  final VoidCallback onConnectOrcid;
   final VoidCallback onUploadPhoto;
   final VoidCallback onManageFeatured;
   final bool readOnly;
@@ -80,6 +80,33 @@ class _MyProfileViewState extends State<MyProfileView> {
     }
   }
 
+  Future<void> _importOrcid() async {
+    var count = 0;
+    final fields = {
+      'preferred_name': _name,
+      'ciencia_id': _ciencia,
+      'email': _email,
+      'bio': _bio,
+    };
+    for (final MapEntry(:key, value: controller) in fields.entries) {
+      final value = widget.orcid?[key]?.trim() ?? '';
+      if (value.isEmpty || value == controller.text.trim()) continue;
+      controller.text = value;
+      count++;
+    }
+    setState(() {});
+    
+    final message = count == 0
+        ? 'Your profile already matches ORCID.'
+        : '$count ${count == 1 ? 'field' : 'fields'} filled in from ORCID — check them, then Submit for UNIDCOM review.';
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final orcid = _value('orcid').trim();
@@ -91,22 +118,52 @@ class _MyProfileViewState extends State<MyProfileView> {
     final photo = _value('photo_url').trim();
     final synced = DateTime.tryParse(_value('orcid_synced_at'));
     final bioDiffers =
-        widget.orcidBio != null && widget.orcidBio!.trim() != _bio.text.trim();
+        widget.orcid?['bio'] != null &&
+        widget.orcid!['bio']!.trim() != _bio.text.trim();
+
+    final action = widget.readOnly
+        ? null
+        : Wrap(
+            spacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              OutlinedButton(
+                onPressed: () => _save(
+                  widget.onSaveDraft,
+                  'Draft saved — not sent to UNIDCOM yet',
+                ),
+                child: const Text('Save draft'),
+              ),
+              const InfoTip(
+                text: 'Keeps your changes here without sending them to UNIDCOM.',
+              ),
+              FilledButton(
+                onPressed: () =>
+                    _save(widget.onSubmit, 'Sent for UNIDCOM review'),
+                child: const Text('Submit for UNIDCOM review'),
+              ),
+              const InfoTip(
+                text:
+                    'Saved changes will be re-submitted for UNIDCOM review.',
+              ),
+            ],
+          );
 
     return DsPage(
       title: 'My Profile',
       subtitle:
           'Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before publishing.',
+      action: action,
       children: [
         OrcidBlock(
           connected: orcid.isNotEmpty,
           lastImported: synced,
-          onImport: widget.onImportOrcid,
-          onConnect: widget.onImportOrcid,
+          onImport: _importOrcid,
+          onConnect: widget.onConnectOrcid,
         ),
         DsRow(
           left: Panel(
-            title: 'Your details',
+            title: 'Identity & bio',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -155,6 +212,53 @@ class _MyProfileViewState extends State<MyProfileView> {
                   _email,
                   'The contact email shown on your profile.',
                 ),
+                DsField(
+                  label: 'ORCID iD',
+                  info: 'Your ORCID identifier. It is set when you connect ORCID.',
+                  child: Text(orcid.isEmpty ? 'Not connected' : orcid),
+                ),
+                DsField(
+                  label: 'Bio',
+                  info: 'Shown on your public page. Changes go to UNIDCOM review.',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _bio,
+                        readOnly: widget.readOnly,
+                        minLines: 4,
+                        maxLines: null,
+                        maxLength: 300,
+                        maxLengthEnforcement: MaxLengthEnforcement.none,
+                        onChanged: (_) => setState(() {}),
+                        decoration: const InputDecoration(border: OutlineInputBorder()),
+                        buildCounter:
+                            (
+                              context, {
+                              required currentLength,
+                              required isFocused,
+                              maxLength,
+                            }) {
+                          final over = currentLength > 300;
+                          return Text(
+                            '$currentLength / 300${over ? ' · the website shows the first 300' : ''}',
+                            style: TextStyle(
+                              color: over ? AppColors.amberDark : null,
+                            ),
+                          );
+                        },
+                      ),
+                      if (bioDiffers)
+                        TextButton(
+                          onPressed: widget.readOnly
+                              ? null
+                              : () =>
+                                    setState(() => _bio.text = widget.orcid!['bio']!),
+                          child: const Text('Import bio from ORCID →'),
+                        ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -164,81 +268,6 @@ class _MyProfileViewState extends State<MyProfileView> {
               featured: widget.featured,
               showHeader: false,
               onManage: widget.onManageFeatured,
-            ),
-          ),
-        ),
-        Panel(
-          title: 'Biography',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _bio,
-                readOnly: widget.readOnly,
-                minLines: 4,
-                maxLines: null,
-                maxLength: 300,
-                maxLengthEnforcement: MaxLengthEnforcement.none,
-                onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(border: OutlineInputBorder()),
-                buildCounter:
-                    (
-                      context, {
-                      required currentLength,
-                      required isFocused,
-                      maxLength,
-                    }) {
-                      final over = currentLength > 300;
-                      return Text(
-                        '$currentLength / 300${over ? ' · the website shows the first 300' : ''}',
-                        style: TextStyle(
-                          color: over ? AppColors.amberDark : null,
-                        ),
-                      );
-                    },
-              ),
-              if (bioDiffers)
-                TextButton(
-                  onPressed: widget.readOnly
-                      ? null
-                      : () =>
-                            setState(() => _bio.text = widget.orcidBio!.trim()),
-                  child: const Text('Import bio from ORCID →'),
-                ),
-            ],
-          ),
-        ),
-        DsRow(
-          left: Panel(
-            title: 'ORCID iD',
-            trailing: const InfoTip(text: 'Your ORCID identifier.'),
-            child: Text(orcid.isEmpty ? 'Not connected' : orcid),
-          ),
-          right: Panel(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                if (!widget.readOnly) ...[
-                  OutlinedButton(
-                    onPressed: () => _save(
-                      widget.onSaveDraft,
-                      'Draft saved — not sent to UNIDCOM yet',
-                    ),
-                    child: const Text('Save draft'),
-                  ),
-                  FilledButton(
-                    onPressed: () =>
-                        _save(widget.onSubmit, 'Sent for UNIDCOM review'),
-                    child: const Text('Submit for UNIDCOM review'),
-                  ),
-                ],
-                const InfoTip(
-                  text:
-                      'Saved changes will be re-submitted for UNIDCOM review.',
-                ),
-              ],
             ),
           ),
         ),

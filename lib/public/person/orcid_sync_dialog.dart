@@ -8,10 +8,9 @@ Future<void> showOrcidSyncDialog(
   builder: (context) => _OrcidSyncDialog(status: status),
 );
 
-/// Read-only ORCID drift preview: shows whether the person lists an IADE
-/// affiliation on their public ORCID and how many works are on it — i.e. what a
-/// future sync would push. The actual push is gated on ORCID membership +
-/// per-researcher OAuth, so the push button is disabled with an explanation.
+/// Read-only ORCID check: does the person list an IADE affiliation on their
+/// public ORCID, and how many works are on it. v1.0 is import-only (Rui's brief
+/// G-5): no push, no sync button — two-way sync is v2.0.
 class _OrcidSyncDialog extends StatelessWidget {
   const _OrcidSyncDialog({required this.status});
 
@@ -41,7 +40,7 @@ class _OrcidSyncDialog extends StatelessWidget {
     );
 
     return AlertDialog(
-      title: const Text('ORCID sync'),
+      title: const Text('ORCID check'),
       content: SizedBox(
         width: 460,
         child: Column(
@@ -54,7 +53,7 @@ class _OrcidSyncDialog extends StatelessWidget {
               affiliation,
               affiliation
                   ? 'IADE / UNIDCOM affiliation is on their ORCID record.'
-                  : 'No IADE / UNIDCOM affiliation on ORCID — a sync would add it.',
+                  : 'No IADE / UNIDCOM affiliation on their ORCID record.',
             ),
             row(works > 0, 'Works on ORCID: $works'),
             if (orgs.isNotEmpty) ...[
@@ -62,20 +61,6 @@ class _OrcidSyncDialog extends StatelessWidget {
               Text('Employers on ORCID', style: theme.textTheme.labelMedium),
               Text(orgs.join(', '), style: theme.textTheme.bodySmall),
             ],
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                'Pushing to ORCID needs ORCID membership + the researcher to '
-                'connect their ORCID (OAuth). Bio/name are never writable — only '
-                'affiliation, works, funding and keywords. Not enabled yet.',
-                style: theme.textTheme.bodySmall,
-              ),
-            ),
           ],
         ),
       ),
@@ -83,11 +68,6 @@ class _OrcidSyncDialog extends StatelessWidget {
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Close'),
-        ),
-        const FilledButton(
-          onPressed:
-              null, // gated until ORCID membership + OAuth are configured
-          child: Text('Push to ORCID'),
         ),
       ],
     );

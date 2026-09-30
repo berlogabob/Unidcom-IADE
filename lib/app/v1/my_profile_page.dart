@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../csv_download.dart';
 import '../../data/enrich_client.dart';
 import '../../data/supabase.dart';
 import '../../public/person/featured_outputs.dart';
-import '../../public/person/orcid_sync_dialog.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/detail_scaffold.dart';
 import 'my_profile_view.dart';
@@ -60,18 +60,14 @@ class _MyProfilePageState extends State<MyProfilePage> {
               Map<String, dynamic>.from(author['outputs'] as Map),
     ];
     final orcid = await fetchOrcidValues(full['id'] as String);
-    return _ProfileData(full, labRows, outputs, orcid?['bio']);
+    return _ProfileData(full, labRows, outputs, orcid);
   }
 
-  Future<void> _checkOrcid(String id) async {
+  // G-5: ORCID is import-only; "Connect ORCID" links the account (orcid-auth).
+  Future<void> _connectOrcid() async {
     try {
-      final status = await fetchOrcidSyncStatus(id);
-      if (!mounted) return;
-      if (status == null) {
-        showSnack(context, 'No ORCID on this profile to check');
-        return;
-      }
-      await showOrcidSyncDialog(context, status);
+      final url = await startOrcidLink('${Uri.base.origin}${Uri.base.path}');
+      await launchUrl(Uri.parse(url), webOnlyWindowName: '_self');
     } catch (error) {
       if (mounted) showSnack(context, error.toString());
     }
@@ -97,7 +93,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
         person: data.person,
         labs: data.labs,
         featured: data.featured,
-        orcidBio: data.orcidBio,
+        orcid: data.orcid,
         readOnly: readOnly,
         onSaveDraft: (proposed) =>
             saveMyDraft(id, _current(data.person), proposed),
@@ -109,7 +105,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
             await submitMyProfileForReview(id);
           }
         },
-        onImportOrcid: () => _checkOrcid(id),
+        onConnectOrcid: _connectOrcid,
         onUploadPhoto: () async {
           final file = await pickImageFile();
           if (file == null) return;
@@ -134,10 +130,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
 }
 
 class _ProfileData {
-  const _ProfileData(this.person, this.labs, this.featured, this.orcidBio);
+  const _ProfileData(this.person, this.labs, this.featured, this.orcid);
 
   final Map<String, dynamic> person;
   final List<String> labs;
   final List<Map<String, dynamic>> featured;
-  final String? orcidBio;
+  final Map<String, String>? orcid;
 }

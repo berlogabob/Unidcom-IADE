@@ -197,14 +197,15 @@ with sync_playwright() as p:
          ("/app/requests", "r_deeplink_requests_v2", "v2 route: expected bounce"), ("/nope/404", "r_unknown_route", "unknown route")]
     for row in R:
         goto(page, row[0], row[1], "researcher", row[2] if len(row) > 2 else "")
-    # Edit profile dialog
-    page.goto(f"{BASE}/#/app/profile"); visible(page, "^Edit$", 20); click(page, "^Edit$"); page.wait_for_timeout(600)
-    capture(page, "r_profile_edit_dialog", "researcher", "/app/profile → Edit")
-    page.keyboard.press("Escape"); page.wait_for_timeout(400)
-    # Add output dialog
-    page.goto(f"{BASE}/#/app/outputs/add"); visible(page, "Add output", 20); click(page, "^Add output$"); page.wait_for_timeout(700)
-    capture(page, "r_add_output_dialog", "researcher", "/app/outputs/add → Add output")
-    page.keyboard.press("Escape"); page.wait_for_timeout(400)
+    # Dialogs come and go with redesigns (My Profile edits inline since 29 Sep): skip, don't abort.
+    for route, label, name, how in [("/app/profile", "^Edit$", "r_profile_edit_dialog", "/app/profile → Edit"),
+                                    ("/app/outputs", "Add output", "r_add_output_dialog", "/app/outputs → Add output")]:
+        try:
+            page.goto(f"{BASE}/#{route}"); visible(page, label, 20); click(page, label); page.wait_for_timeout(700)
+            capture(page, name, "researcher", how)
+            page.keyboard.press("Escape"); page.wait_for_timeout(400)
+        except Exception as e:
+            print(f"  {name} skipped:", e)
     # sidebar collapse
     page.goto(f"{BASE}/#/app/home"); settle(page)
     f = find(page, "^Overview$", clickable_only=False)
