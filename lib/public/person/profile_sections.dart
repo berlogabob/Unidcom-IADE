@@ -157,7 +157,7 @@ Widget personHeader(
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.sync),
-                label: Text(syncing ? 'Checking...' : 'Import from ORCID'),
+                label: Text(syncing ? 'Checking...' : 'Check ORCID record'),
               ),
             if (v2 && admin)
               FilledButton.icon(
@@ -270,7 +270,8 @@ List<Widget> personBioSection(
     if (onImportOrcid != null) ...[
       const SizedBox(height: 12),
       WithInfo(
-        info: 'Proposes the ORCID biography as your UNIDCOM biography; UNIDCOM reviews it.',
+        info:
+            'Proposes the ORCID biography as your UNIDCOM biography; UNIDCOM reviews it.',
         child: OutlinedButton.icon(
           onPressed: onImportOrcid,
           icon: const Icon(Icons.download_outlined),
@@ -300,7 +301,8 @@ List<Widget> personLabsSection(
             sectionHeader(context, 'Lab / cluster'),
             const SizedBox(width: 4),
             const InfoTip(
-              text: 'Your UNIDCOM research lab and cluster, shown on your website profile.',
+              text:
+                  'Your UNIDCOM research lab and cluster, shown on your website profile.',
             ),
           ],
         ),
@@ -507,7 +509,8 @@ String _initials(String name) {
 
 // Rui 25 Sep: one short sentence per field, shown on the (i) icon.
 const _fieldInfo = {
-  'ORCID': 'Your ORCID iD. RIMS imports from ORCID; editing here never changes your ORCID record.',
+  'ORCID':
+      'Your ORCID iD. RIMS imports from ORCID; editing here never changes your ORCID record.',
   'Last imported': 'When RIMS last imported your works from ORCID.',
   'Ciência ID': 'Your Ciência Vitae identifier, shown on your UNIDCOM profile.',
   'Email': 'The contact email shown on the UNIDCOM website.',

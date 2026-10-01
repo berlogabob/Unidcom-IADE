@@ -121,6 +121,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
           }
         },
         onManageFeatured: () => context.go('/app/outputs?view=featured'),
+        loadOpenChanges: readOnly ? null : () => fetchMyOpenSuggestions(id),
       );
     },
   );

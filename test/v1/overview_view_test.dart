@@ -78,10 +78,10 @@ void main() {
   testWidgets('summary counts per type, issues and featured; numbers open outputs filtered', (tester) async {
     final routes = await pump(tester);
     expect(find.text('4 outputs'), findsNothing); // total removed (user, 1 Oct)
-    expect(find.text('3 Livros'), findsOneWidget);
+    expect(find.text('3 Books'), findsOneWidget);
     expect(find.text('1 with issues'), findsOneWidget);
     expect(find.text('Featured 2/5'), findsOneWidget);
-    await tester.tap(find.text('3 Livros'));
+    await tester.tap(find.text('3 Books'));
     await tester.tap(find.text('1 with issues'));
     await tester.tap(find.text('Featured 2/5'));
     expect(routes, [

@@ -77,8 +77,8 @@ void main() {
     Map<String, dynamic>? edited;
     await pumpOutputs(tester, onEdit: (output) => edited = output);
 
-    // v1 opens on the Publications tab (Rui 25 Sep): 4 of the 6 fixtures.
-    expect(find.byTooltip('Edit output'), findsNWidgets(4));
+    // v1 opens on All (Rui 1 Oct): every fixture.
+    expect(find.byTooltip('Edit output'), findsNWidgets(6));
     await tester.tap(find.byTooltip('Edit output').first);
     expect(edited?['id'], '1');
 

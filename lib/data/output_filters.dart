@@ -21,6 +21,7 @@ class OutputFilter {
     this.featuredOnly = false,
     this.issuesOnly = false,
     this.kind,
+    this.affiliation,
     this.view = OutputView.all,
   });
 
@@ -33,6 +34,9 @@ class OutputFilter {
   final bool featuredOnly;
   final bool issuesOnly;
   final String? kind;
+
+  /// null = all, 'unidcom' = affiliated, 'external' = not affiliated.
+  final String? affiliation;
   final OutputView view;
 
   OutputFilter copyWith({
@@ -45,6 +49,7 @@ class OutputFilter {
     bool? featuredOnly,
     Object? issuesOnly = _unset,
     Object? kind = _unset,
+    Object? affiliation = _unset,
     OutputView? view,
   }) => OutputFilter(
     query: query ?? this.query,
@@ -62,6 +67,9 @@ class OutputFilter {
         ? this.issuesOnly
         : issuesOnly as bool,
     kind: identical(kind, _unset) ? this.kind : kind as String?,
+    affiliation: identical(affiliation, _unset)
+        ? this.affiliation
+        : affiliation as String?,
     view: view ?? this.view,
   );
 }
@@ -70,6 +78,41 @@ String? rootOf(Map<String, dynamic> output) {
   final path = output['category_path'];
   return categorySegments(path is String ? path : null).firstOrNull;
 }
+
+/// English display names for the PT taxonomy roots (Rui, 1 Oct: the UI is in
+/// English). Data and filter values stay PT; only the label changes.
+const rootLabelsEn = {
+  'Actividades de gestão e auxílio à UNIDCOM':
+      'UNIDCOM management and support activities',
+  'Artigos em revistas': 'Journal articles',
+  'Conferência em congressos (sem publicação)':
+      'Conference presentations (unpublished)',
+  'Formação avançada': 'Advanced training',
+  'Livros': 'Books',
+  'Missões de internacionalização no âmbito de projetos científicos':
+      'International missions in scientific projects',
+  'Organização de Seminários e Conferências':
+      'Seminar and conference organisation',
+  'Participação em projectos de investigação':
+      'Participation in research projects',
+  'Patentes e contratos industriais': 'Patents and industrial contracts',
+  'Reconhecimento pela comunidade científica':
+      'Recognition by the scientific community',
+  'Valorizações de atividades ou outros outputs no âmbito de projetos científicos':
+      'Valorisation of activities and outputs in scientific projects',
+};
+
+String rootLabel(String root) => rootLabelsEn[root] ?? root;
+
+/// Roots that are not scientific outputs (Rui, 1 Oct; DOC 2 §K): kept out of
+/// Scientific Outputs and the Overview counts.
+const hiddenRoots = {
+  'Actividades de gestão e auxílio à UNIDCOM',
+  'Missões de internacionalização no âmbito de projetos científicos',
+};
+
+bool isScientificOutput(Map<String, dynamic> output) =>
+    !hiddenRoots.contains(rootOf(output));
 
 /// ORCID work types that are publications in Rui's sense (journal articles,
 /// conference papers, books, book chapters).
@@ -125,6 +168,8 @@ List<Map<String, dynamic>> filterOutputs(
         (!filter.featuredOnly || featuredIds.contains(id)) &&
         (!filter.issuesOnly || hasIssues(output)) &&
         (filter.kind == null || kindOf(output, kindByRoot) == filter.kind) &&
+        (filter.affiliation == null ||
+            (output['affiliation'] ?? 'unidcom') == filter.affiliation) &&
         matchesView;
   }).toList();
 
@@ -246,7 +291,7 @@ String countsLine(List<Map<String, dynamic>> rows) {
   final parts = ['${rows.length} ${rows.length == 1 ? 'output' : 'outputs'}'];
   for (final entry in countByType(rows).entries) {
     final count = entry.value;
-    final label = entry.key;
+    final label = rootLabel(entry.key);
     parts.add('$count $label');
   }
   final n = rows.where(hasIssues).length;

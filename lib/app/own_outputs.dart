@@ -68,10 +68,10 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
   @override
   void initState() {
     super.initState();
-    if (!v2) _filter = const OutputFilter(kind: 'publication');
     for (final author in widget.authors) {
       final output = author['outputs'];
       if (output is! Map<String, dynamic>) continue;
+      if (!isScientificOutput(output)) continue;
       final id = output['id']?.toString();
       if (id == null) continue;
       _outputs.add(output);
@@ -294,6 +294,17 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
               Row(
                 children: [
                   ChoiceChip(
+                    label: const Text('All'),
+                    selected: _filter.kind == null,
+                    onSelected: (_) => setState(() {
+                      _filter = _filter.copyWith(
+                        kind: null,
+                        category: const <String>[],
+                      );
+                    }),
+                  ),
+                  const SizedBox(width: 8),
+                  ChoiceChip(
                     label: const Text('Publications'),
                     selected: _filter.kind == 'publication',
                     onSelected: (_) => setState(() {
@@ -332,7 +343,7 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                   ),
                   for (final node in roots)
                     ChoiceChip(
-                      label: Text(node.label),
+                      label: Text(rootLabel(node.label)),
                       selected: _filter.category.firstOrNull == node.label,
                       onSelected: (_) => setState(
                         () =>
@@ -401,6 +412,27 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                   ),
                 ],
               ),
+              if (_outputs.any((o) => o['affiliation'] == 'external')) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final (value, label) in const [
+                      (null, 'All affiliations'),
+                      ('unidcom', 'Affiliated'),
+                      ('external', 'Not affiliated'),
+                    ])
+                      ChoiceChip(
+                        label: Text(label),
+                        selected: _filter.affiliation == value,
+                        onSelected: (_) => setState(
+                          () => _filter = _filter.copyWith(affiliation: value),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 8),
               Text(countsLine(visibleRows)),
             ],
@@ -699,6 +731,17 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
               Row(
                 children: [
                   ChoiceChip(
+                    label: const Text('All'),
+                    selected: _filter.kind == null,
+                    onSelected: (_) => setState(() {
+                      _filter = _filter.copyWith(
+                        kind: null,
+                        category: const <String>[],
+                      );
+                    }),
+                  ),
+                  const SizedBox(width: 8),
+                  ChoiceChip(
                     label: const Text('Publications'),
                     selected: _filter.kind == 'publication',
                     onSelected: (_) => setState(() {
@@ -739,7 +782,7 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                   ),
                   for (final node in roots)
                     ChoiceChip(
-                      label: Text(node.label),
+                      label: Text(rootLabel(node.label)),
                       selected: _filter.category.firstOrNull == node.label,
                       onSelected: (_) => setState(
                         () =>
@@ -808,6 +851,27 @@ class _OwnOutputsSectionState extends State<OwnOutputsSection> {
                   ),
                 ],
               ),
+              if (_outputs.any((o) => o['affiliation'] == 'external')) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final (value, label) in const [
+                      (null, 'All affiliations'),
+                      ('unidcom', 'Affiliated'),
+                      ('external', 'Not affiliated'),
+                    ])
+                      ChoiceChip(
+                        label: Text(label),
+                        selected: _filter.affiliation == value,
+                        onSelected: (_) => setState(
+                          () => _filter = _filter.copyWith(affiliation: value),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 8),
               Text(countsLine(visibleRows)),
             ],

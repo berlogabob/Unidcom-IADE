@@ -61,6 +61,13 @@ class _OrcidSyncDialog extends StatelessWidget {
               Text('Employers on ORCID', style: theme.textTheme.labelMedium),
               Text(orgs.join(', '), style: theme.textTheme.bodySmall),
             ],
+            const SizedBox(height: 12),
+            Text(
+              'This only reads ORCID. New works appear under Import from ORCID '
+              'as candidates to add; profile fields found on ORCID appear as '
+              'suggestions for UNIDCOM.',
+              style: theme.textTheme.bodySmall,
+            ),
           ],
         ),
       ),

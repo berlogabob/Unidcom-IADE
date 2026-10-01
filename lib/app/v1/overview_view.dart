@@ -30,6 +30,7 @@ class OverviewView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final outputs = this.outputs.where(isScientificOutput).toList();
     final membership = switch (person['membership_type']) {
       'integrated' => 'Integrated researcher',
       'collaborator' => 'Collaborator',
@@ -164,7 +165,7 @@ class _Summary extends StatelessWidget {
     final links = [
       for (final entry in counts.entries)
         (
-          '${entry.value} ${entry.key}',
+          '${entry.value} ${rootLabel(entry.key)}',
           '/app/outputs?type=${Uri.encodeQueryComponent(entry.key)}',
         ),
       if (issueCount > 0) ('$issueCount with issues', '/app/outputs?issues=1'),
@@ -266,7 +267,10 @@ class _OutputCard extends StatelessWidget {
     final code = codes is List && codes.isNotEmpty
         ? codes.first.toString()
         : null;
-    final type = rootOf(output) ?? output['type']?.toString() ?? 'Unclassified';
+    final root = rootOf(output);
+    final type = root != null
+        ? rootLabel(root)
+        : output['type']?.toString() ?? 'Unclassified';
     final year = output['reporting_year']?.toString() ?? '—';
     return InkWell(
       onTap: onTap,

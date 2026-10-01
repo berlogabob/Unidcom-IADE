@@ -100,9 +100,9 @@ void main() {
 
   testWidgets('work outside UNIDCOM shows, tagged, and is never featured', (tester) async {
     await pumpRow(tester, author(source: 'orcid', affiliation: 'external'));
-    expect(find.text('Outside UNIDCOM'), findsOneWidget);
+    expect(find.text('Not affiliated'), findsOneWidget);
     expect(find.byIcon(Icons.star_border), findsNothing);
     await pumpRow(tester, author(source: 'orcid'));
-    expect(find.text('Outside UNIDCOM'), findsNothing);
+    expect(find.text('Not affiliated'), findsNothing);
   });
 }

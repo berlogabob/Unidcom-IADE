@@ -80,9 +80,12 @@ void main() {
     expect(find.byType(DropdownButtonFormField<String>), findsNothing);
   });
 
-  testWidgets('Publications tab by default; Other activities shows the rest', (tester) async {
+  testWidgets('All by default; Publications and Other activities split it', (tester) async {
     await pump(tester);
     expect(find.text('Book One'), findsOneWidget);
+    expect(find.text('Workshop'), findsOneWidget);
+    await tester.tap(find.text('Publications'));
+    await tester.pumpAndSettle();
     expect(find.text('Workshop'), findsNothing);
     await tester.tap(find.text('Other activities'));
     await tester.pumpAndSettle();
@@ -92,15 +95,15 @@ void main() {
 
   testWidgets('counters follow the filters', (tester) async {
     await pump(tester);
-    expect(find.text('3 outputs · 2 Livros · 1 Artigos em revistas · 1 with issues'), findsOneWidget);
+    expect(find.text('4 outputs · 2 Books · 1 Journal articles · 1 Advanced training · 1 with issues'), findsOneWidget);
     await tester.tap(find.widgetWithText(ChoiceChip, '2024'));
     await tester.pumpAndSettle();
-    expect(find.text('1 output · 1 Livros'), findsOneWidget);
+    expect(find.text('2 outputs · 1 Advanced training · 1 Books'), findsOneWidget);
   });
 
   testWidgets('a type chip opens its subtypes', (tester) async {
     await pump(tester);
-    await tester.tap(find.widgetWithText(ChoiceChip, 'Livros'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Books'));
     await tester.pumpAndSettle();
     expect(find.text('Paper'), findsNothing);
     await tester.tap(find.widgetWithText(ChoiceChip, 'Editor'));

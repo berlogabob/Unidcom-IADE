@@ -195,6 +195,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         _candidates.any(
           (row) => row['id'] == id && row['matched_output_id'] != null,
         );
+    final external = _candidates.any(
+      (row) => row['id'] == id && row['affiliation'] == 'external',
+    );
     try {
       if (promote) {
         await promoteCandidate(id);
@@ -202,22 +205,34 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         await rejectCandidate(id);
       }
       if (!mounted) return;
+      if (promote) {
+        // Rui, 1 Oct: "Publication added" didn't say where it went.
+        final route = widget.personId == null
+            ? '/app/outputs'
+            : '/people/${widget.personId}/outputs';
+        setState(() => _candidates.removeWhere((row) => row['id'] == id));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Added to Scientific Outputs — waiting for UNIDCOM review'
+              '${external ? ' · marked Not affiliated' : ''}',
+            ),
+            action: SnackBarAction(
+              label: 'Open',
+              onPressed: () => context.go(route),
+            ),
+          ),
+        );
+        return;
+      }
       setState(() {
-        if (promote) {
-          _candidates.removeWhere((row) => row['id'] == id);
-        } else {
-          for (final candidate in _candidates.where((row) => row['id'] == id)) {
-            candidate['status'] = 'rejected';
-          }
+        for (final candidate in _candidates.where((row) => row['id'] == id)) {
+          candidate['status'] = 'rejected';
         }
       });
       showSnack(
         context,
-        promote
-            ? 'Publication added'
-            : sameWork
-            ? 'Marked as the same work'
-            : 'Publication marked as not mine',
+        sameWork ? 'Marked as the same work' : 'Publication marked as not mine',
       );
     } catch (error) {
       if (mounted) showSnack(context, error.toString());
@@ -328,8 +343,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     await linkPersonToMe(person['id'] as String);
     if (!mounted) return;
     _refresh();
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Profile linked')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Profile linked')));
   }
 
   @override
@@ -398,7 +414,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                             ),
                             const SizedBox(width: 4),
                             const InfoTip(
-                              text: 'Your photo appears on the website after UNIDCOM reviews it. JPG, PNG or WebP, up to 5 MB.',
+                              text:
+                                  'Your photo appears on the website after UNIDCOM reviews it. JPG, PNG or WebP, up to 5 MB.',
                             ),
                           ],
                         ),
@@ -421,7 +438,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                           child: const Text('Submit for UNIDCOM review'),
                         ),
                         const InfoTip(
-                          text: 'Saved changes will be re-submitted for UNIDCOM review.',
+                          text:
+                              'Saved changes will be re-submitted for UNIDCOM review.',
                         ),
                       ],
                     ],

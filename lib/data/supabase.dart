@@ -1049,6 +1049,26 @@ Future<void> rejectSuggestion(String id) async {
   }
 }
 
+/// The researcher's own open changes (draft or sent), newest first — one per
+/// field since the supersede trigger (20261001150000).
+Future<List<Map<String, dynamic>>> fetchMyOpenSuggestions(
+  String personId,
+) async {
+  try {
+    final rows = await db
+        .from('enrichment_suggestions')
+        .select('field, status, created_at')
+        .eq('subject_type', 'person')
+        .eq('subject_id', personId)
+        .eq('source', 'researcher')
+        .inFilter('status', ['draft', 'pending'])
+        .order('created_at', ascending: false);
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 /// Pure, testable: one suggestion row per field whose trimmed value differs.
 List<Map<String, dynamic>> suggestionRows(
   String subjectType,

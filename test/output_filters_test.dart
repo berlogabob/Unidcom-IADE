@@ -290,7 +290,7 @@ void main() {
       ];
       expect(
         countsLine(rows),
-        '3 outputs · 2 Livros · 1 Artigos em revistas · 1 with issues',
+        '3 outputs · 2 Books · 1 Journal articles · 1 with issues',
       );
     });
     test('countsLine without issues omits the issues part', () {
@@ -298,7 +298,7 @@ void main() {
         countsLine(<Map<String, dynamic>>[
           {'category_path': 'Livros'},
         ]),
-        '1 output · 1 Livros',
+        '1 output · 1 Books',
       );
     });
   });
@@ -322,5 +322,33 @@ void main() {
     ).map((r) => r['id']).toList();
     expect(ids('publication'), ['a', 'b']);
     expect(ids('activity'), ['c', 'd']);
+  });
+
+  test('affiliation filter: null rows count as UNIDCOM', () {
+    final rows = [
+      {'id': 'a', 'affiliation': 'unidcom'},
+      {'id': 'b'},
+      {'id': 'c', 'affiliation': 'external'},
+    ];
+    List<Object?> ids(String? a) => filterOutputs(
+      rows,
+      OutputFilter(affiliation: a),
+    ).map((r) => r['id']).toList();
+    expect(ids(null), ['a', 'b', 'c']);
+    expect(ids('unidcom'), ['a', 'b']);
+    expect(ids('external'), ['c']);
+  });
+
+  test('management and missions are not scientific outputs', () {
+    expect(
+      isScientificOutput({
+        'category_path': 'Actividades de gestão e auxílio à UNIDCOM › X',
+      }),
+      isFalse,
+    );
+    expect(isScientificOutput({'category_path': 'Livros › Autor'}), isTrue);
+    expect(isScientificOutput({}), isTrue);
+    expect(rootLabel('Livros'), 'Books');
+    expect(rootLabel('Unclassified'), 'Unclassified');
   });
 }

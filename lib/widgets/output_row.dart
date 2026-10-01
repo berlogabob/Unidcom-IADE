@@ -79,7 +79,7 @@ class OutputRow extends StatelessWidget {
   final List<String>? issueCodes;
   final int errorCount;
   final int warningCount;
-  final List<(String, PillTone)> extraPills;
+  final List<(String, PillTone, IconData?)> extraPills;
   final bool showNoIssues;
 
   @override
@@ -193,8 +193,10 @@ class OutputRow extends StatelessWidget {
               ],
               if (statusTone != null || extraPills.isNotEmpty) ...[
                 const SizedBox(width: 12),
-                // Flexible so the pills wrap instead of overflowing the row.
-                Flexible(
+                // Capped, not Flexible: a flex slot took half the row and left
+                // it mostly empty (Rui, 1 Oct). Pills wrap within the cap.
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 240),
                   child: Wrap(
                     spacing: 8,
                     runSpacing: 4,
@@ -204,8 +206,8 @@ class OutputRow extends StatelessWidget {
                           reviewLabel(status ?? detail),
                           tone: statusTone,
                         ),
-                      for (final (label, tone) in extraPills)
-                        StatusPill(label, tone: tone),
+                      for (final (label, tone, icon) in extraPills)
+                        StatusPill(label, tone: tone, icon: icon),
                     ],
                   ),
                 ),

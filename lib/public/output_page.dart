@@ -292,10 +292,8 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
     final chips = [
       output['reporting_year']?.toString(),
       output['output_status'] as String?,
-      if (admin) output['approval_status'] as String?,
     ].whereType<String>().where((v) => v.isNotEmpty);
     final fctSelected = output['fct_selected'] as bool? ?? false;
-    final verified = output['verified_online'] as bool? ?? false;
 
     return EntityHeaderCard(
       title: output['title'] as String? ?? 'Untitled',
@@ -307,12 +305,6 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
             label: const Text('FCT selected'),
             visualDensity: VisualDensity.compact,
             backgroundColor: theme.colorScheme.primaryContainer,
-          ),
-        if (verified)
-          const Chip(
-            avatar: Icon(Icons.verified, size: 16),
-            label: Text('Verified online'),
-            visualDensity: VisualDensity.compact,
           ),
       ],
       extra: [
@@ -369,7 +361,8 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
           ),
       ],
       actions: [
-        if (link != null)
+        // Rui, 1 Oct: only a verified DOI earns the button.
+        if (link != null && doiStatus == 'ok')
           OutlinedButton.icon(
             onPressed: () => _open(context, link),
             icon: const Icon(Icons.open_in_new, size: 18),

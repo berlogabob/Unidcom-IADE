@@ -270,6 +270,7 @@ class _OutputsScreenState extends State<OutputsScreen> {
                 output['website_status'] == 'published'
                     ? PillTone.teal
                     : PillTone.grey,
+                null,
               ),
             ]
           : const [],

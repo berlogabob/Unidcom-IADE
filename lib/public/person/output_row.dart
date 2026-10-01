@@ -71,7 +71,7 @@ class PersonOutputRow extends StatelessWidget {
       warningCount: output['warning_count'] as int? ?? 0,
       showNoIssues: showStates,
       extraPills: external
-          ? const [('Outside UNIDCOM', PillTone.purple)]
+          ? const [('Not affiliated', PillTone.amber, Icons.link_off)]
           : const [],
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

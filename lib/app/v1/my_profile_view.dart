@@ -8,6 +8,7 @@ import '../../widgets/info_tip.dart';
 import '../../widgets/orcid_block.dart';
 import '../../widgets/panels.dart';
 import '../../widgets/status_line.dart';
+import '../../widgets/suggestion_tile.dart';
 
 class MyProfileView extends StatefulWidget {
   const MyProfileView({
@@ -21,6 +22,7 @@ class MyProfileView extends StatefulWidget {
     required this.onConnectOrcid,
     required this.onUploadPhoto,
     required this.onManageFeatured,
+    this.loadOpenChanges,
     this.readOnly = false,
   });
 
@@ -33,6 +35,9 @@ class MyProfileView extends StatefulWidget {
   final VoidCallback onConnectOrcid;
   final VoidCallback onUploadPhoto;
   final VoidCallback onManageFeatured;
+
+  /// The researcher's draft and sent changes; null hides the panel.
+  final Future<List<Map<String, dynamic>>> Function()? loadOpenChanges;
   final bool readOnly;
 
   @override
@@ -45,7 +50,26 @@ class _MyProfileViewState extends State<MyProfileView> {
   late final _email = TextEditingController(text: _value('email'));
   late final _bio = TextEditingController(text: _value('bio'));
 
+  List<Map<String, dynamic>> _openChanges = const [];
+
   String _value(String key) => widget.person[key] as String? ?? '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOpenChanges();
+  }
+
+  Future<void> _loadOpenChanges() async {
+    final load = widget.loadOpenChanges;
+    if (load == null) return;
+    try {
+      final rows = await load();
+      if (mounted) setState(() => _openChanges = rows);
+    } catch (_) {
+      // ponytail: informational panel; a failed load just hides it.
+    }
+  }
 
   @override
   void dispose() {
@@ -74,6 +98,7 @@ class _MyProfileViewState extends State<MyProfileView> {
     String message,
   ) async {
     await action(_changed());
+    await _loadOpenChanges();
     if (mounted) {
       ScaffoldMessenger.of(
         context,
@@ -154,6 +179,35 @@ class _MyProfileViewState extends State<MyProfileView> {
           'Your public researcher profile on the UNIDCOM website. UNIDCOM reviews before publishing.',
       action: action,
       children: [
+        if (_openChanges.isNotEmpty)
+          Panel(
+            title: 'Your changes',
+            trailing: const InfoTip(
+              text:
+                  'Sent changes wait for UNIDCOM review; drafts are not sent yet. A newer change to the same field replaces the older one.',
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final change in _openChanges)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(
+                      [
+                        suggestionFieldLabel(change['field']),
+                        change['status'] == 'pending'
+                            ? 'waiting for UNIDCOM review'
+                            : 'draft, not sent',
+                        ?switch (DateTime.tryParse('${change['created_at']}')) {
+                          final d? => dayLabel(d.toLocal()),
+                          null => null,
+                        },
+                      ].join(' · '),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         OrcidBlock(
           connected: orcid.isNotEmpty,
           lastImported: synced,

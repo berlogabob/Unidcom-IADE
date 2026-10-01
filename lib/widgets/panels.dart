@@ -169,10 +169,18 @@ class AccentStatCard extends StatelessWidget {
 }
 
 class StatusPill extends StatelessWidget {
-  const StatusPill(this.text, {super.key, this.tone = PillTone.grey});
+  const StatusPill(
+    this.text, {
+    super.key,
+    this.tone = PillTone.grey,
+    this.icon,
+  });
 
   final String text;
   final PillTone tone;
+
+  /// Replaces the dot, so the pill doesn't rely on colour alone.
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -186,14 +194,17 @@ class StatusPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: foreground,
-              shape: BoxShape.circle,
+          if (icon != null)
+            Icon(icon, size: 12, color: foreground)
+          else
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: foreground,
+                shape: BoxShape.circle,
+              ),
             ),
-          ),
           const SizedBox(width: 5),
           Flexible(
             child: Text(

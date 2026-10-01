@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/public/person/output_row.dart';
 import 'package:unidcom_iade/widgets/output_row.dart';
+import 'package:unidcom_iade/widgets/panels.dart';
 
 // The UNIDCOM taxonomy is Portuguese and verbose. Its longest label is 77
 // characters, and an unconstrained badge carrying one squeezed the Expanded
@@ -180,10 +181,7 @@ void main() {
     );
 
     expect(find.text('2025'), findsNothing);
-    expect(
-      find.text('Author · DOI 10.1234/example'),
-      findsOneWidget,
-    );
+    expect(find.text('Author · DOI 10.1234/example'), findsOneWidget);
   });
 
   testWidgets('showStates renders ORCID and website pills', (tester) async {
@@ -275,5 +273,30 @@ void main() {
     );
 
     expect(find.byTooltip('Edit output'), findsNothing);
+  });
+
+  testWidgets('pills sit at the right; the title gets the free width', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: OutputRow(
+            title: 'Short title',
+            year: 2025,
+            status: 'pending',
+            extraPills: [('Not affiliated', PillTone.amber, Icons.link_off)],
+            trailing: Icon(Icons.chevron_right),
+          ),
+        ),
+      ),
+    );
+    final pill = tester.getRect(find.text('Not affiliated'));
+    final chevron = tester.getRect(find.byIcon(Icons.chevron_right));
+    expect(pill.left, greaterThan(1200 / 2));
+    expect(chevron.left - pill.right, lessThan(60));
   });
 }
