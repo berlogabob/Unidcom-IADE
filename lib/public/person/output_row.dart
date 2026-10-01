@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../widgets/output_row.dart';
+import '../../widgets/panels.dart';
 
 class PersonOutputRow extends StatelessWidget {
   const PersonOutputRow({
@@ -40,12 +41,15 @@ class PersonOutputRow extends StatelessWidget {
             if (doi?.trim().isNotEmpty == true) 'DOI $doi',
           ].join(' · ');
 
+    // Prior-career work: listed, tagged, never featured (featured = website).
+    final external = output['affiliation'] == 'external';
+    final starrable = featurable && !external;
     // Brief SO-6: "Not on ORCID" is an issue for a publication, not a pill.
     final issueCodes = [
       ...(output['issue_codes'] as List<dynamic>? ?? const []).cast<String>(),
     ];
     if (showStates &&
-        featurable &&
+        starrable &&
         output['source'] != 'orcid' &&
         !issueCodes.contains('not_on_orcid')) {
       issueCodes.add('not_on_orcid');
@@ -66,7 +70,9 @@ class PersonOutputRow extends StatelessWidget {
       errorCount: output['error_count'] as int? ?? 0,
       warningCount: output['warning_count'] as int? ?? 0,
       showNoIssues: showStates,
-      extraPills: const [],
+      extraPills: external
+          ? const [('Outside UNIDCOM', PillTone.purple)]
+          : const [],
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -76,7 +82,7 @@ class PersonOutputRow extends StatelessWidget {
               icon: const Icon(Icons.edit_outlined, size: 20),
               onPressed: () => onEdit!(id),
             ),
-          if (onToggle != null && featurable)
+          if (onToggle != null && starrable)
             IconButton(
               // The tooltip doubles as the UI-test handle: it reaches the web
               // semantics tree as text, and encodes which state we're in.

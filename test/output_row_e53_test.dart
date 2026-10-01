@@ -9,6 +9,7 @@ Map<String, dynamic> author({
   String? subtype = 'Artigo',
   String source = 'manual',
   List<String> codes = const [],
+  String affiliation = 'unidcom',
 }) => {
   'role': 'Autor',
   'outputs': {
@@ -21,6 +22,7 @@ Map<String, dynamic> author({
     'approval_status': 'to_validate',
     'website_status': 'published',
     'issue_codes': codes,
+    'affiliation': affiliation,
     'error_count': 0,
     'warning_count': codes.length,
   },
@@ -94,5 +96,13 @@ void main() {
     expect(find.byIcon(Icons.star_border), findsNothing);
     await pumpRow(tester, author(), featurable: true);
     expect(find.byIcon(Icons.star_border), findsOneWidget);
+  });
+
+  testWidgets('work outside UNIDCOM shows, tagged, and is never featured', (tester) async {
+    await pumpRow(tester, author(source: 'orcid', affiliation: 'external'));
+    expect(find.text('Outside UNIDCOM'), findsOneWidget);
+    expect(find.byIcon(Icons.star_border), findsNothing);
+    await pumpRow(tester, author(source: 'orcid'));
+    expect(find.text('Outside UNIDCOM'), findsNothing);
   });
 }

@@ -254,7 +254,8 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
 
         if (widget.framed) {
           return OwnOutputsSection(
-            authors: ordered,
+            // Outside-UNIDCOM work is listed too, tagged by PersonOutputRow.
+            authors: [...ordered, ...external],
             featured: featured,
             framed: true,
             onToggleFeatured: (id) => _toggleFeatured(person, featured, id),
