@@ -162,7 +162,6 @@ class _Summary extends StatelessWidget {
         .where((o) => o['approval_status'] == 'pending')
         .length;
     final links = [
-      ('${outputs.length} outputs', '/app/outputs'),
       for (final entry in counts.entries)
         (
           '${entry.value} ${entry.key}',
