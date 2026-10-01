@@ -243,14 +243,10 @@ class _RecentOutputs extends StatelessWidget {
               children: [for (final output in cards) card(output)],
             );
           }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var i = 0; i < cards.length; i++) ...[
-                if (i > 0) const SizedBox(width: 12),
-                Expanded(child: card(cards[i])),
-              ],
-            ],
+          // Equal heights: the cards end on one line (DsGrid stretches them).
+          return DsGrid(
+            spacing: 12,
+            children: [for (final output in cards) card(output)],
           );
         },
       ),

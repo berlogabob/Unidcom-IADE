@@ -634,11 +634,7 @@ Widget _tags(List<String> tags) => Padding(
   ),
 );
 
-Widget _cardGrid(List<Widget> cards) => Wrap(
-  spacing: 14,
-  runSpacing: 14,
-  children: [for (final card in cards) SizedBox(width: 240, child: card)],
-);
+Widget _cardGrid(List<Widget> cards) => DsCardGrid(children: cards);
 
 Widget _infoCard({
   required String icon,

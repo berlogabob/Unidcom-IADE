@@ -239,3 +239,59 @@ class DsGrid extends StatelessWidget {
     );
   }
 }
+
+/// Cards in rows as wide as the page's title card: equal widths, equal heights
+/// per row. As many per row as fit at [minItemWidth]; when they don't all fit,
+/// later rows keep the same columns (empty slots pad the last row).
+class DsCardGrid extends StatelessWidget {
+  const DsCardGrid({
+    super.key,
+    required this.children,
+    this.minItemWidth = 180,
+    this.spacing = dsGap,
+  });
+
+  final List<Widget> children;
+  final double minItemWidth;
+  final double spacing;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fit =
+            ((constraints.maxWidth + spacing) / (minItemWidth + spacing))
+                .floor()
+                .clamp(1, children.isEmpty ? 1 : children.length);
+        final rows = <Widget>[];
+        for (var start = 0; start < children.length; start += fit) {
+          final row = children.skip(start).take(fit).toList();
+          rows.add(
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < fit; i++) ...[
+                    if (i > 0) SizedBox(width: spacing),
+                    Expanded(
+                      child: i < row.length ? row[i] : const SizedBox.shrink(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < rows.length; i++) ...[
+              if (i > 0) SizedBox(height: spacing),
+              rows[i],
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
