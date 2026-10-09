@@ -19,6 +19,8 @@ class AdminOverview extends StatelessWidget {
     required this.onOpenAlert,
     required this.onOpenProfilesToApprove,
     required this.onOpenOutputsToApprove,
+    this.toReview = 0,
+    this.readyToPublish = 0,
   });
 
   final AdminStats stats;
@@ -30,6 +32,8 @@ class AdminOverview extends StatelessWidget {
   final ValueChanged<String> onOpenAlert;
   final VoidCallback onOpenProfilesToApprove;
   final VoidCallback onOpenOutputsToApprove;
+  final int toReview;
+  final int readyToPublish;
 
   @override
   Widget build(BuildContext context) {
@@ -44,14 +48,14 @@ class AdminOverview extends StatelessWidget {
             _tile(context, 'Collaborators', stats.collaborators),
             _tile(
               context,
-              'Profiles to approve',
-              stats.profilesToApprove,
+              'To review',
+              toReview,
               onTap: onOpenProfilesToApprove,
             ),
             _tile(
               context,
-              'Outputs to approve',
-              stats.outputsToApprove,
+              'Ready to publish',
+              readyToPublish,
               onTap: onOpenOutputsToApprove,
             ),
           ],

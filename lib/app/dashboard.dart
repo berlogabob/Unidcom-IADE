@@ -24,6 +24,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late Future<_DashboardData> _data;
   late Future<_AdminOverviewData> _adminData;
   late Future<List<int>> _years;
+  // v1.1 AD-2: counts for the "To review" and "Ready to publish" cards.
+  final Future<List<int>> _reviewCounts = Future.wait([
+    fetchReviewQueue().then((rows) => rows.length),
+    fetchReadyToPublish().then((rows) => rows.length),
+  ]).catchError((_) => [0, 0]);
 
   @override
   void initState() {
@@ -76,13 +81,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
       if (subjectId == null || field == null || person == null) continue;
       if (!seenSuggestions.add('$subjectId:$field')) continue;
-      alerts.add(
-        (
-          text:
-              '${person['preferred_name']} proposed a ${fieldLabels[field] ?? field} change',
-          route: '/app/admin/review?tab=suggestions',
-        ),
-      );
+      alerts.add((
+        text:
+            '${person['preferred_name']} proposed a ${fieldLabels[field] ?? field} change',
+        route: '/app/admin/review?tab=suggestions',
+      ));
       if (alerts.length == 8) break;
     }
     if (alerts.length < 8) {
@@ -91,12 +94,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             !((person['orcid'] as String?)?.trim().isEmpty ?? true)) {
           continue;
         }
-        alerts.add(
-          (
-            text: '${person['preferred_name']} — no ORCID linked',
-            route: '/people/${person['id']}',
-          ),
-        );
+        alerts.add((
+          text: '${person['preferred_name']} — no ORCID linked',
+          route: '/people/${person['id']}',
+        ));
         if (alerts.length == 8) break;
       }
     }
@@ -220,18 +221,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
             subtitle:
                 'How many researchers are up to date, what is waiting for you, and what is already on the website.',
             children: [
-              AdminOverview(
-                stats: stats,
-                years: data.years,
-                year: _year,
-                onYear: _setYear,
-                activity: data.activity,
-                alerts: data.alerts,
-                onOpenAlert: (route) => context.go(route),
-                onOpenProfilesToApprove: () =>
-                    context.go('/app/admin/review?tab=toReview'),
-                onOpenOutputsToApprove: () =>
-                    context.go('/app/admin/review?tab=toReview'),
+              FutureBuilder<List<int>>(
+                future: _reviewCounts,
+                builder: (context, counts) => AdminOverview(
+                  toReview: counts.data?[0] ?? 0,
+                  readyToPublish: counts.data?[1] ?? 0,
+                  stats: stats,
+                  years: data.years,
+                  year: _year,
+                  onYear: _setYear,
+                  activity: data.activity,
+                  alerts: data.alerts,
+                  onOpenAlert: (route) => context.go(route),
+                  onOpenProfilesToApprove: () =>
+                      context.go('/app/admin/review?tab=toReview'),
+                  onOpenOutputsToApprove: () =>
+                      context.go('/app/admin/review?tab=readyToPublish'),
+                ),
               ),
             ],
           );

@@ -47,6 +47,8 @@ Future<List<String>> pump(
             onOpenAlert: opened.add,
             onOpenProfilesToApprove: () => opened.add('profiles'),
             onOpenOutputsToApprove: () => opened.add('outputs'),
+            toReview: 3,
+            readyToPublish: 7,
           ),
         ),
       ),
@@ -60,8 +62,13 @@ void main() {
     await pump(tester);
     expect(find.text('Integrated researchers'), findsOneWidget);
     expect(find.text('Collaborators'), findsOneWidget);
-    expect(find.text('Profiles to approve'), findsOneWidget);
-    expect(find.text('Outputs to approve'), findsOneWidget);
+    // v1.1 AD-2: two cards, "To review: N researchers" and "Ready to publish: N".
+    expect(find.text('To review'), findsOneWidget);
+    expect(find.text('Ready to publish'), findsOneWidget);
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('7'), findsOneWidget);
+    expect(find.text('Profiles to approve'), findsNothing);
+    expect(find.text('Outputs to approve'), findsNothing);
     expect(find.text('28'), findsWidgets);
     expect(find.text('14'), findsOneWidget);
     // Brief AD-2: exactly four tiles — proposals are alerts, not a tile.
@@ -70,8 +77,8 @@ void main() {
 
   testWidgets('each approve tile opens its own tab', (tester) async {
     final opened = await pump(tester);
-    await tester.tap(find.text('Profiles to approve'));
-    await tester.tap(find.text('Outputs to approve'));
+    await tester.tap(find.text('To review'));
+    await tester.tap(find.text('Ready to publish'));
     expect(opened, ['profiles', 'outputs']);
   });
 

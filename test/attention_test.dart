@@ -138,4 +138,31 @@ void main() {
       ('UNIDCOM asked for changes: Shorten the bio', '/app/profile'),
     ]);
   });
+
+  test('a change request shows its comment on the item (v1.1 RV-8)', () {
+    final items = attentionItems(
+      person: {'profile_status': 'approved'},
+      outputs: [
+        {
+          'approval_status': 'change_requested',
+          'title': 'Paper X',
+          'review_note': 'Please confirm the year',
+          'error_count': 0,
+        },
+      ],
+      candidates: const [],
+      suggestions: [
+        {
+          'status': 'change_requested',
+          'source': 'researcher',
+          'field': 'bio',
+          'review_comment': 'Shorten it',
+        },
+      ],
+    );
+    expect(items.map((item) => (item.text, item.route)), [
+      ('Change requested on "Paper X": Please confirm the year', '/app/outputs'),
+      ('Change requested on your bio: Shorten it', '/app/profile'),
+    ]);
+  });
 }

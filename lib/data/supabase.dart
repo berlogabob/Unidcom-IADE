@@ -234,7 +234,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           // category_path feeds the timeline's cascade filter — without it
           // every output reads as unclassified and any picked category
           // filters the list to zero. Caught on the deployed build.
-          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path,approval_status,rejection_reason,website_status,source,project_outputs(projects(id,title)))), '
+          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path,approval_status,rejection_reason,review_note,website_status,source,project_outputs(projects(id,title)))), '
           'lab_members(is_coordinator, year, labs(id, code, name)), '
           'person_tags(tags(name))',
         )
@@ -2494,7 +2494,7 @@ Future<List<Map<String, dynamic>>> fetchMySuggestions(String personId) async {
         .from('enrichment_suggestions')
         .select()
         .eq('source', 'researcher')
-        .inFilter('status', const ['pending', 'rejected'])
+        .inFilter('status', const ['pending', 'rejected', 'change_requested'])
         .order('created_at', ascending: false);
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {

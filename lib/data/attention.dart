@@ -80,6 +80,21 @@ List<AttentionItem> attentionItems({
         '$declined of your proposed ${plural(declined, 'change was', 'changes were')} declined',
         '/app/profile',
       ),
+    for (final output in outputs)
+      if (output['approval_status'] == 'change_requested' &&
+          (output['review_note'] as String?)?.isNotEmpty == true)
+        AttentionItem(
+          'Change requested on "${output['title']}": ${output['review_note']}',
+          '/app/outputs',
+        ),
+    for (final suggestion in suggestions)
+      if (suggestion['status'] == 'change_requested' &&
+          suggestion['source'] == 'researcher' &&
+          (suggestion['review_comment'] as String?)?.isNotEmpty == true)
+        AttentionItem(
+          'Change requested on your ${suggestion['field']}: ${suggestion['review_comment']}',
+          '/app/profile',
+        ),
   ];
 }
 
