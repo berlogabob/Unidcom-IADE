@@ -54,8 +54,9 @@ class _ToReviewTabState extends State<ToReviewTab> {
       future: _queue,
       builder: (context, snap) {
         if (snap.hasError) return Center(child: Text('${snap.error}'));
-        if (!snap.hasData)
+        if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final rows = snap.data!
             .where(
               (r) =>
@@ -301,8 +302,9 @@ class _ResearcherReviewState extends State<ResearcherReview> {
       future: _items,
       builder: (context, snap) {
         if (snap.hasError) return Center(child: Text('${snap.error}'));
-        if (!snap.hasData)
+        if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final s = _init(snap.data!);
         return ListView(
           padding: const EdgeInsets.only(top: 12),
@@ -391,8 +393,9 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
       future: _rows,
       builder: (context, snap) {
         if (snap.hasError) return Center(child: Text('${snap.error}'));
-        if (!snap.hasData)
+        if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final rows = snap.data!;
         final ids = [for (final r in rows) '${r['id']}'];
         final sel = (_selected ?? ids.toSet()).intersection(ids.toSet());
