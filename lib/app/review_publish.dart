@@ -380,6 +380,13 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
         _results['${r['id']}'] = r;
       }
       _rows = fetchReadyToPublish();
+      // Fast path: start the site sync now. Best effort — the site also syncs
+      // by itself every 10 minutes, so a missing token only costs a few minutes.
+      if (_results.values.any((r) => r['ok'] == true)) {
+        try {
+          await runWebsiteSync();
+        } catch (_) {}
+      }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -471,7 +478,7 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
                     Expanded(
                       child: Text(
                         '${_results.values.where((r) => r['ok'] == true).length} researchers published. '
-                        'The website shows them after the next sync (More → Website).',
+                        'The website updates by itself within about 15 minutes.',
                       ),
                     ),
                     OutlinedButton.icon(

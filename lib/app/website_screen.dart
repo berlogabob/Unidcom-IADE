@@ -15,12 +15,20 @@ class WebsiteScreen extends StatefulWidget {
 
 class _WebsiteScreenState extends State<WebsiteScreen> {
   late Future<
-    ({Map<String, dynamic>? last, int ready, List<Map<String, dynamic>> waiting})
+    ({
+      Map<String, dynamic>? last,
+      int ready,
+      List<Map<String, dynamic>> waiting,
+    })
   >
   _data = _load();
 
   static Future<
-    ({Map<String, dynamic>? last, int ready, List<Map<String, dynamic>> waiting})
+    ({
+      Map<String, dynamic>? last,
+      int ready,
+      List<Map<String, dynamic>> waiting,
+    })
   >
   _load() async {
     // The sync status needs the edge function + token; the lists must not wait on it.
@@ -41,12 +49,16 @@ class _WebsiteScreenState extends State<WebsiteScreen> {
       await runWebsiteSync();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sync started. The site updates in a few minutes.')),
+        const SnackBar(
+          content: Text('Sync started. The site updates in a few minutes.'),
+        ),
       );
       setState(() => _data = _load());
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
     }
   }
 
@@ -54,7 +66,8 @@ class _WebsiteScreenState extends State<WebsiteScreen> {
   Widget build(BuildContext context) {
     return DsPage(
       title: 'Website',
-      subtitle: 'What the next sync puts on the UNIDCOM website.',
+      subtitle:
+          'What the next sync puts on the UNIDCOM website. The site syncs by itself every 10 minutes; Publish also starts a sync.',
       children: [
         FutureBuilder(
           future: _data,
@@ -67,7 +80,8 @@ class _WebsiteScreenState extends State<WebsiteScreen> {
               readyCount: d.ready,
               waiting: d.waiting,
               onSync: _sync,
-              onOpenReady: () => context.go('/app/admin/review?tab=readyToPublish'),
+              onOpenReady: () =>
+                  context.go('/app/admin/review?tab=readyToPublish'),
             );
           },
         ),
