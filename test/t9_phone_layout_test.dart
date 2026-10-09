@@ -48,7 +48,7 @@ void main() {
     expect(dataQualityTone(1, 0), AccentTone.neutral);
   });
 
-  testWidgets('review queue tabs fit a phone width (PA-2: Profiles · Outputs · More)', (tester) async {
+  testWidgets('review queue tabs fit a phone width (v1.1: To review · Ready to publish · More)', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -57,17 +57,19 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: ReviewTabsBar(selected: ReviewTab.profiles, onSelect: picked.add),
+          body: ReviewTabsBar(selected: ReviewTab.toReview, onSelect: picked.add),
         ),
       ),
     );
 
-    expect(find.text('Profiles'), findsOneWidget);
-    expect(find.text('Outputs'), findsOneWidget);
+    expect(find.text('To review'), findsOneWidget);
+    expect(find.text('Ready to publish'), findsOneWidget);
     expect(find.text('Suggestions'), findsNothing);
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
     for (final label in [
+      'Profiles',
+      'Outputs',
       'Profiles to approve',
       'Needs re-verification',
       'Suggestions',
@@ -81,7 +83,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(picked, [ReviewTab.suggestions]);
     expect(ReviewTab.fromQuery('outputs'), ReviewTab.outputs);
-    expect(ReviewTab.fromQuery('nope'), ReviewTab.profiles);
+    expect(ReviewTab.fromQuery('nope'), ReviewTab.toReview);
     expect(tester.takeException(), isNull);
   });
 

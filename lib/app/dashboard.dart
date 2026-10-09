@@ -229,9 +229,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 alerts: data.alerts,
                 onOpenAlert: (route) => context.go(route),
                 onOpenProfilesToApprove: () =>
-                    context.go('/app/admin/review?tab=profileList'),
+                    context.go('/app/admin/review?tab=toReview'),
                 onOpenOutputsToApprove: () =>
-                    context.go('/app/admin/review?tab=outputs'),
+                    context.go('/app/admin/review?tab=toReview'),
               ),
             ],
           );

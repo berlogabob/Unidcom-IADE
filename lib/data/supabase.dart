@@ -2596,3 +2596,122 @@ Future<Map<String, dynamic>> setRequestStatus(
   if (adminNote != null) fields['admin_note'] = adminNote;
   return updateRequest(id, fields);
 }
+
+// ---- v1.1 Admin review & publish (migration 20261009100000) ----
+
+/// "To review": one row per researcher with a pending profile change or a
+/// pending output, oldest first.
+// ponytail: edits to existing outputs (suggestions with subject_type 'output')
+// are not listed here yet; finish_review already accepts them.
+Future<List<Map<String, dynamic>>> fetchReviewQueue() async {
+  try {
+    final since = <String, String>{};
+    void note(String? id, Object? at) {
+      final when = '$at';
+      if (id == null) return;
+      final old = since[id];
+      if (old == null || when.compareTo(old) < 0) since[id] = when;
+    }
+
+    final suggestions = await db
+        .from('enrichment_suggestions')
+        .select('subject_id, created_at')
+        .eq('status', 'pending')
+        .eq('source', 'researcher')
+        .eq('subject_type', 'person');
+    for (final row in suggestions) {
+      note(row['subject_id'] as String?, row['created_at']);
+    }
+    final outputs = await db
+        .from('outputs')
+        .select('created_at, output_authors(person_id)')
+        .eq('approval_status', 'pending');
+    for (final row in outputs) {
+      for (final author in (row['output_authors'] as List? ?? const [])) {
+        note(author['person_id'] as String?, row['created_at']);
+      }
+    }
+    if (since.isEmpty) return [];
+    final people = await db
+        .from('people')
+        .select('id, preferred_name')
+        .inFilter('id', since.keys.toList());
+    final rows = [
+      for (final p in people)
+        {
+          'person_id': p['id'],
+          'name': p['preferred_name'],
+          'submitted_at': since[p['id']],
+        },
+    ]..sort((a, b) => '${a['submitted_at']}'.compareTo('${b['submitted_at']}'));
+    return rows;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Open items of one researcher: `kind` is 'field' (suggestion) or 'output'.
+Future<List<Map<String, dynamic>>> fetchReviewItems(String personId) async {
+  try {
+    final fields = await db
+        .from('enrichment_suggestions')
+        .select()
+        .eq('status', 'pending')
+        .eq('source', 'researcher')
+        .eq('subject_type', 'person')
+        .eq('subject_id', personId)
+        .order('created_at');
+    final outputs = await db
+        .from('outputs')
+        .select('id, title, type, subtype, doi, reporting_year, created_at, output_authors!inner(person_id)')
+        .eq('approval_status', 'pending')
+        .eq('output_authors.person_id', personId)
+        .order('created_at');
+    return [
+      for (final f in fields) {...f, 'kind': 'field'},
+      for (final o in outputs) {...o, 'kind': 'output'},
+    ];
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> finishReview(
+  String personId,
+  List<Map<String, Object?>> decisions,
+) async {
+  try {
+    await db.rpc(
+      'finish_review',
+      params: {'p_person': personId, 'p_decisions': decisions},
+    );
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// "Ready to publish": researchers with accepted content not yet on the site.
+Future<List<Map<String, dynamic>>> fetchReadyToPublish() async {
+  try {
+    final rows = await db
+        .from('people')
+        .select('id, preferred_name, website_status, updated_at')
+        .inFilter('website_status', const ['ready', 'error'])
+        .order('updated_at');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Per-researcher result: `{id, ok, error?, published_at?}`.
+Future<List<Map<String, dynamic>>> publishResearchers(List<String> ids) async {
+  try {
+    final result = await db.rpc('publish_researchers', params: {'p_ids': ids});
+    return (result as List)
+        .map((row) => Map<String, dynamic>.from(row as Map))
+        .toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}

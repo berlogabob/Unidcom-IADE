@@ -11,6 +11,7 @@ import '../widgets/pipeline_board.dart';
 import '../widgets/panels.dart';
 import '../widgets/queue_list.dart';
 import '../widgets/suggestion_tile.dart';
+import 'review_publish.dart';
 
 PillTone _statusTone(String status) {
   final value = status.toLowerCase();
@@ -111,6 +112,8 @@ class ReviewQueueScreen extends StatefulWidget {
 /// Rui's v1.0 brief PA-2: Profiles and Outputs up front, the rest under More.
 /// Order = the order of the views in [_ReviewQueueScreenState.build].
 enum ReviewTab {
+  toReview('To review'),
+  readyToPublish('Ready to publish'),
   profiles('Profiles'),
   profileList('Profiles to approve'),
   outputs('Outputs'),
@@ -125,7 +128,7 @@ enum ReviewTab {
 
   static ReviewTab fromQuery(String? name) => ReviewTab.values.firstWhere(
     (tab) => tab.name == name,
-    orElse: () => ReviewTab.profiles,
+    orElse: () => ReviewTab.toReview,
   );
 }
 
@@ -139,7 +142,7 @@ class ReviewTabsBar extends StatelessWidget {
   final ReviewTab selected;
   final ValueChanged<ReviewTab> onSelect;
 
-  static const _main = [ReviewTab.profiles, ReviewTab.outputs];
+  static const _main = [ReviewTab.toReview, ReviewTab.readyToPublish];
 
   @override
   Widget build(BuildContext context) {
@@ -188,29 +191,26 @@ class ReviewTabsBar extends StatelessWidget {
         color: AppColors.cardBg,
         border: Border(bottom: BorderSide(color: AppColors.cardBorder)),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final t in _main)
-              tab(t.label, t == selected, () => onSelect(t)),
-            PopupMenuButton<ReviewTab>(
-              tooltip: 'More review lists',
-              onSelected: onSelect,
-              itemBuilder: (context) => [
-                for (final t in ReviewTab.values)
-                  if (!_main.contains(t))
-                    PopupMenuItem(value: t, child: Text(t.label)),
-              ],
-              child: tab(
-                inMore ? 'More · ${selected.label}' : 'More',
-                inMore,
-                null,
-                menu: true,
-              ),
+      // Wrap, not a sideways scroll: 'More' must stay on screen on a phone.
+      child: Wrap(
+        children: [
+          for (final t in _main) tab(t.label, t == selected, () => onSelect(t)),
+          PopupMenuButton<ReviewTab>(
+            tooltip: 'More review lists',
+            onSelected: onSelect,
+            itemBuilder: (context) => [
+              for (final t in ReviewTab.values)
+                if (!_main.contains(t))
+                  PopupMenuItem(value: t, child: Text(t.label)),
+            ],
+            child: tab(
+              inMore ? 'More · ${selected.label}' : 'More',
+              inMore,
+              null,
+              menu: true,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -379,6 +379,8 @@ class _ReviewQueueScreenState extends State<ReviewQueueScreen> {
                       subtitleTextStyle: Theme.of(context).textTheme.bodySmall,
                     ),
                     child: [
+                      const ToReviewTab(),
+                      const ReadyToPublishTab(),
                       // Rui A1·8: stage pipeline; Publish is separate from Approve.
                       FutureBuilder<List<Map<String, dynamic>>>(
                         future: _pipeline,
