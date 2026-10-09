@@ -5,7 +5,7 @@ String reviewLabel(String? status) => switch (status) {
   'pending' || 'pending_review' => 'Submitted',
   'under_review' => 'Under review',
   'approved' => 'Approved',
-  'rejected' => 'Changes requested',
+  'rejected' || 'change_requested' => 'Changes requested',
   null => '—',
   _ => status.replaceAll('_', ' '),
 };
@@ -13,6 +13,7 @@ String reviewLabel(String? status) => switch (status) {
 String websiteLabel(String? status) => switch (status) {
   null || 'not_published' => 'Not published',
   'pending' => 'Pending publication',
+  'ready' => 'Ready to publish',
   'published' => 'Published',
   'error' => 'Publication error',
   _ => status.replaceAll('_', ' '),

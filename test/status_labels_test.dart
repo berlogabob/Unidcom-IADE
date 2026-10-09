@@ -10,6 +10,8 @@ void main() {
     expect(reviewLabel('to_validate'), 'To be validated by you');
     expect(reviewLabel('approved'), 'Approved');
     expect(reviewLabel('rejected'), 'Changes requested');
+    expect(reviewLabel('change_requested'), 'Changes requested');
+    expect(websiteLabel('ready'), 'Ready to publish');
     expect(reviewLabel(null), '—');
     expect(reviewLabel('new_status'), 'new status');
   });

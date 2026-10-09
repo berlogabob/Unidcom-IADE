@@ -1057,11 +1057,11 @@ Future<List<Map<String, dynamic>>> fetchMyOpenSuggestions(
   try {
     final rows = await db
         .from('enrichment_suggestions')
-        .select('field, status, created_at')
+        .select('field, status, created_at, review_comment')
         .eq('subject_type', 'person')
         .eq('subject_id', personId)
         .eq('source', 'researcher')
-        .inFilter('status', ['draft', 'pending'])
+        .inFilter('status', ['draft', 'pending', 'ready', 'change_requested'])
         .order('created_at', ascending: false);
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   } catch (error) {

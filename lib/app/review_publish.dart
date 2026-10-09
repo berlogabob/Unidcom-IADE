@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../data/review_session.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
+import '../widgets/change_compare.dart';
 import '../widgets/info_tip.dart';
 import '../widgets/suggestion_tile.dart';
 
@@ -53,10 +54,12 @@ class _ToReviewTabState extends State<ToReviewTab> {
       future: _queue,
       builder: (context, snap) {
         if (snap.hasError) return Center(child: Text('${snap.error}'));
-        if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snap.hasData)
+          return const Center(child: CircularProgressIndicator());
         final rows = snap.data!
             .where(
-              (r) => '${r['name']}'.toLowerCase().contains(_search.toLowerCase()),
+              (r) =>
+                  '${r['name']}'.toLowerCase().contains(_search.toLowerCase()),
             )
             .toList();
         return ListView(
@@ -106,7 +109,11 @@ class _ToReviewTabState extends State<ToReviewTab> {
 
 /// One researcher's open items as Accept / Reject / Request change cards.
 class ResearcherReview extends StatefulWidget {
-  const ResearcherReview({super.key, required this.person, required this.onDone});
+  const ResearcherReview({
+    super.key,
+    required this.person,
+    required this.onDone,
+  });
 
   final Map<String, dynamic> person;
   final VoidCallback onDone;
@@ -165,16 +172,21 @@ class _ResearcherReviewState extends State<ResearcherReview> {
   Future<void> _finish() async {
     setState(() => _saving = true);
     try {
-      await finishReview('${widget.person['person_id']}', _session!.toPayload());
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Review saved.')),
+      await finishReview(
+        '${widget.person['person_id']}',
+        _session!.toPayload(),
       );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Review saved.')));
       widget.onDone();
     } catch (error) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
     }
   }
 
@@ -206,12 +218,24 @@ class _ResearcherReviewState extends State<ResearcherReview> {
     }
     final current = item['current_value'] as String?;
     Widget body() => isOutput
-        ? Text(
-            [
-              '${item['title']}',
-              if (item['reporting_year'] != null) '${item['reporting_year']}',
-              item['doi'] == null ? 'DOI: — · Missing DOI' : 'DOI: ${item['doi']}',
-            ].join(' · '),
+        ? Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              TextButton(
+                style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                onPressed: () => context.go('/outputs/$id'),
+                child: Text('${item['title']}'),
+              ),
+              Text(
+                [
+                  if (item['reporting_year'] != null)
+                    ' · ${item['reporting_year']}',
+                  item['doi'] == null
+                      ? ' · DOI: — · Missing DOI'
+                      : ' · DOI: ${item['doi']}',
+                ].join(),
+              ),
+            ],
           )
         : Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,15 +244,10 @@ class _ResearcherReviewState extends State<ResearcherReview> {
                 'Edited by researcher · ${_day(item['created_at'])}',
                 style: const TextStyle(color: AppColors.textMuted),
               ),
-              Text(
-                'Now: ${current?.trim().isNotEmpty == true ? current : 'empty'}',
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                'Proposed: ${item['suggested_value'] ?? ''}',
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
+              ChangeCompare(
+                field: '${item['field']}',
+                now: current,
+                proposed: '${item['suggested_value'] ?? ''}',
               ),
             ],
           );
@@ -282,7 +301,8 @@ class _ResearcherReviewState extends State<ResearcherReview> {
       future: _items,
       builder: (context, snap) {
         if (snap.hasError) return Center(child: Text('${snap.error}'));
-        if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snap.hasData)
+          return const Center(child: CircularProgressIndicator());
         final s = _init(snap.data!);
         return ListView(
           padding: const EdgeInsets.only(top: 12),
@@ -299,7 +319,8 @@ class _ResearcherReviewState extends State<ResearcherReview> {
                 ),
                 const SizedBox(width: 12),
                 TextButton(
-                  onPressed: () => context.go('/people/${widget.person['person_id']}'),
+                  onPressed: () =>
+                      context.go('/people/${widget.person['person_id']}'),
                   child: const Text('Open profile'),
                 ),
               ],
@@ -356,7 +377,9 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
       _rows = fetchReadyToPublish();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$error')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$error')));
       }
     }
     if (mounted) setState(() => _busy = false);
@@ -368,7 +391,8 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
       future: _rows,
       builder: (context, snap) {
         if (snap.hasError) return Center(child: Text('${snap.error}'));
-        if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snap.hasData)
+          return const Center(child: CircularProgressIndicator());
         final rows = snap.data!;
         final ids = [for (final r in rows) '${r['id']}'];
         final sel = (_selected ?? ids.toSet()).intersection(ids.toSet());
@@ -379,7 +403,9 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
               children: [
                 OutlinedButton(
                   onPressed: () => setState(
-                    () => _selected = sel.length == ids.length ? <String>{} : ids.toSet(),
+                    () => _selected = sel.length == ids.length
+                        ? <String>{}
+                        : ids.toSet(),
                   ),
                   child: const Text('Select all / none'),
                 ),
@@ -388,10 +414,11 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
               ],
             ),
             const SizedBox(height: 12),
-            if (rows.isEmpty) const Padding(
-              padding: EdgeInsets.all(24),
-              child: Text('Nothing ready to publish.'),
-            ),
+            if (rows.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('Nothing ready to publish.'),
+              ),
             for (final r in rows)
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -400,7 +427,9 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
                   value: sel.contains('${r['id']}'),
                   onChanged: (v) => setState(() {
                     final next = {...sel};
-                    v == true ? next.add('${r['id']}') : next.remove('${r['id']}');
+                    v == true
+                        ? next.add('${r['id']}')
+                        : next.remove('${r['id']}');
                     _selected = next;
                   }),
                   title: Text('${r['preferred_name']}'),
@@ -409,12 +438,16 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
                         ? 'Publication error · ${_results['${r['id']}']?['error'] ?? 'try again'}'
                         : 'approved ${_day(r['updated_at'])}',
                     style: TextStyle(
-                      color: r['website_status'] == 'error' ? AppColors.red : null,
+                      color: r['website_status'] == 'error'
+                          ? AppColors.red
+                          : null,
                     ),
                   ),
                   secondary: r['website_status'] == 'error'
                       ? TextButton(
-                          onPressed: _busy ? null : () => _publish(['${r['id']}']),
+                          onPressed: _busy
+                              ? null
+                              : () => _publish(['${r['id']}']),
                           child: const Text('Retry'),
                         )
                       : null,
@@ -450,7 +483,9 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton(
-                  onPressed: sel.isEmpty || _busy ? null : () => setState(() => _confirm = true),
+                  onPressed: sel.isEmpty || _busy
+                      ? null
+                      : () => setState(() => _confirm = true),
                   child: Text('Publish selected to website (${sel.length})'),
                 ),
               ),

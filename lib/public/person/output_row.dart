@@ -63,9 +63,11 @@ class PersonOutputRow extends StatelessWidget {
       status: output['approval_status'] == 'approved'
           ? null
           : output['approval_status'] as String?,
-      rejectionReason: output['approval_status'] == 'rejected'
-          ? output['rejection_reason'] as String?
-          : null,
+      rejectionReason: switch (output['approval_status']) {
+        'rejected' => output['rejection_reason'] as String?,
+        'change_requested' => output['review_note'] as String?,
+        _ => null,
+      },
       issueCodes: issueCodes,
       errorCount: output['error_count'] as int? ?? 0,
       warningCount: output['warning_count'] as int? ?? 0,

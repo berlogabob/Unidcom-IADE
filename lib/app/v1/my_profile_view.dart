@@ -195,9 +195,13 @@ class _MyProfileViewState extends State<MyProfileView> {
                     child: Text(
                       [
                         suggestionFieldLabel(change['field']),
-                        change['status'] == 'pending'
-                            ? 'waiting for UNIDCOM review'
-                            : 'draft, not sent',
+                        switch (change['status']) {
+                          'pending' => 'waiting for UNIDCOM review',
+                          'ready' => 'accepted, waiting to be published',
+                          'change_requested' =>
+                            'UNIDCOM asked for a change: ${change['review_comment']}',
+                          _ => 'draft, not sent',
+                        },
                         ?switch (DateTime.tryParse('${change['created_at']}')) {
                           final d? => dayLabel(d.toLocal()),
                           null => null,
