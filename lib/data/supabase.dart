@@ -2715,3 +2715,47 @@ Future<List<Map<String, dynamic>>> publishResearchers(List<String> ids) async {
     throw Exception(_error(error));
   }
 }
+
+// ---- Website sync (edge function website-sync) ----
+
+/// Last run of the site's sync workflow: `{status, conclusion, started_at,
+/// updated_at, url}`, or null if it never ran.
+Future<Map<String, dynamic>?> fetchWebsiteSyncStatus() async {
+  try {
+    final res = await db.functions.invoke(
+      'website-sync',
+      body: {'action': 'status'},
+    );
+    final last = (res.data as Map)['last'];
+    return last == null ? null : Map<String, dynamic>.from(last as Map);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> runWebsiteSync() async {
+  try {
+    await db.functions.invoke('website-sync', body: {'action': 'run'});
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Researchers published in the admin since [since] — what the next sync puts
+/// on the site. Null [since] = the last 30 days.
+Future<List<Map<String, dynamic>>> fetchPublishedSince(DateTime? since) async {
+  try {
+    final from = (since ?? DateTime.now().subtract(const Duration(days: 30)))
+        .toUtc()
+        .toIso8601String();
+    final rows = await db
+        .from('people')
+        .select('id, preferred_name, published_at')
+        .eq('website_status', 'published')
+        .gt('published_at', from)
+        .order('published_at', ascending: false);
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}

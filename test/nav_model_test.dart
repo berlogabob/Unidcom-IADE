@@ -16,6 +16,7 @@ void main() {
     '/app/admin/reports',
     '/app/admin/merge',
     '/app/admin/data',
+    '/app/admin/website',
     '/app/profile',
     '/app/profile/identifiers',
     '/app/profile/bio',

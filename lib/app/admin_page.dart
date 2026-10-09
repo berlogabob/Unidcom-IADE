@@ -4,9 +4,10 @@ import 'data_page.dart';
 import 'merge.dart';
 import 'reports.dart';
 import 'review_queue.dart';
+import 'website_screen.dart';
 
 /// The tools /app/admin/:tool can show. Anything else redirects to review.
-const adminTools = ['reports', 'review', 'merge', 'data'];
+const adminTools = ['reports', 'review', 'merge', 'data', 'website'];
 
 class AdminScreen extends StatelessWidget {
   const AdminScreen({super.key, required this.tool, this.tab});
@@ -20,6 +21,7 @@ class AdminScreen extends StatelessWidget {
       'reports' => const ReportsScreen(),
       'merge' => const MergeScreen(),
       'data' => const DataScreen(),
+      'website' => const WebsiteScreen(),
       _ => ReviewQueueScreen(initialTab: tab),
     };
   }

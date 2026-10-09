@@ -199,6 +199,7 @@ List<NavGroup> adminNav() => [
       icon: Icons.table_chart_outlined,
     ),
     NavItem('Merge duplicates', '/app/admin/merge', icon: Icons.merge_type),
+    NavItem('Website', '/app/admin/website', icon: Icons.public),
     NavItem('Settings', '/app/settings', icon: Icons.settings_outlined),
     if (v2)
       NavItem(
