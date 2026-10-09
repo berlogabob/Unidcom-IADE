@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/review_session.dart';
 import '../data/supabase.dart';
@@ -9,6 +10,8 @@ import '../widgets/info_tip.dart';
 import '../widgets/suggestion_tile.dart';
 
 // Rui v1.1 (8 Oct 2026): "To review" and "Ready to publish" tabs.
+
+const _siteUrl = 'https://berlogabob.github.io/unidcom-site/';
 
 String _day(Object? iso) {
   final d = DateTime.tryParse('$iso')?.toLocal();
@@ -456,9 +459,32 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
                       : null,
                 ),
               ),
-            for (final r in _results.values)
-              if (r['ok'] == true)
-                Text('Published ${_day(r['published_at'])} · ${r['id']}'),
+            if (_results.values.any((r) => r['ok'] == true))
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: _box(),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: AppColors.green),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${_results.values.where((r) => r['ok'] == true).length} researchers published. '
+                        'The website shows them after the next sync (More → Website).',
+                      ),
+                    ),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.open_in_new, size: 16),
+                      label: const Text('Check website'),
+                      onPressed: () => launchUrl(
+                        Uri.parse(_siteUrl),
+                        webOnlyWindowName: '_blank',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 8),
             if (_confirm)
               Container(
