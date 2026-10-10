@@ -2741,6 +2741,16 @@ Future<void> runWebsiteSync() async {
   }
 }
 
+/// Pushes every published profile to the Sanity TEST project; returns how many.
+Future<int> runSanityPush() async {
+  try {
+    final res = await db.functions.invoke('sanity-push', body: {});
+    return (res.data as Map)['pushed'] as int;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 /// Researchers published in the admin since [since] — what the next sync puts
 /// on the site. Null [since] = the last 30 days.
 Future<List<Map<String, dynamic>>> fetchPublishedSince(DateTime? since) async {

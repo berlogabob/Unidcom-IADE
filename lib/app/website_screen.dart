@@ -62,6 +62,23 @@ class _WebsiteScreenState extends State<WebsiteScreen> {
     }
   }
 
+  Future<void> _sanity() async {
+    try {
+      final n = await runSanityPush();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$n profiles pushed to the Sanity test project.'),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('$error')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DsPage(
@@ -84,6 +101,14 @@ class _WebsiteScreenState extends State<WebsiteScreen> {
                   context.go('/app/admin/review?tab=readyToPublish'),
             );
           },
+        ),
+        const SizedBox(height: 16),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton(
+            onPressed: _sanity,
+            child: const Text('Sync to test Sanity'),
+          ),
         ),
       ],
     );
