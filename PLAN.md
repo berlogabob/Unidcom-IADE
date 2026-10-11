@@ -873,3 +873,16 @@ an output date). Every signed-in page on the DsPage frame. DB: `people.review_no
 Executors: Codex CLI (PA-1, PE-1, AD, OV-2, admin/list frames, report), Studio Qwen-30B (My Profile;
 SO-6 started, finished by orch), orch (specs/tests, small edits, review).
 
+
+### Phase G — Rui's v1.1 brief: Admin review & publish (8 Oct → 11 Oct)
+
+Brief `RIMS_v1.1_Admin_Review_Publish.pdf`. Plan: `~/.claude/plans/jaunty-sprouting-jellyfish.md`. Docs: ARCHITECTURE.md "Review and publish (v1.1)", OPERATIONS.md (2 troubleshooting rows), DEMO.md step 4.
+- [x] Migration `20261009100000_review_publish.sql` (applied live): `finish_review`, `publish_researchers`, states `ready` / `change_requested`; self-rolling-back test `supabase/tests/review_publish.sql`. Accept = `ready`, value NOT applied until publish (site keeps the published version).
+- [x] App: tabs To review / Ready to publish, per-item review with Undo / Accept all / Finish, dashboard cards, researcher notices, ChangeCompare, Website page (More > Website). `ReviewSession` + widget tests green.
+- [x] Edge functions deployed (admin-only, verify_jwt): `website-sync` (dispatches unidcom-site `sync.yml`), `sanity-push` (test project `ld5jhf23` only, matches members by slug, never writes `vj0axykv`). Site sync cron now every 10 min; Publish also triggers it best-effort. Commit d048b58.
+- [ ] **Secret `GITHUB_SYNC_TOKEN`** not confirmed (in-app "Sync to website" returns 501 until set; cron still works).
+- [ ] **Secret `SANITY_TOKEN`** not set (MCP secret tool failed; set in Supabase dashboard > Edge Functions > Secrets, project nmghxkhstlnxypmfmfhk). "Sync to test Sanity" returns 501 until set.
+- [ ] Sanity CLI login is `berloga.bob@gmail.com`, which is not a member of `ld5jhf23`. Re-login with the owning account (`npx sanity logout && npx sanity login`) or invite it as Editor, then read back Andrey's member doc.
+- [ ] Untested: change-request → resubmit path, publish error + Retry path, real UI click-through (Chrome extension was unavailable; E2E was RPC + sync level only).
+- [ ] Decide: restore Andrey's test bio edit; add Sanity push to the 10-min sync (test project only).
+- Housekeeping: user's own timeline tests (`timeline_bar_test`, `timeline_status_test`) fail against their uncommitted `timeline.dart`; doc edits in ARCHITECTURE/OPERATIONS/DEMO sit uncommitted beside the user's own README/ONBOARDING changes.
