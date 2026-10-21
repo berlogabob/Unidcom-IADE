@@ -17,7 +17,7 @@ import {
   withNonce,
 } from "./state.ts";
 
-const PROD = "https://nmghxkhstlnxypmfmfhk.supabase.co";
+const PROD = "https://sbswpbsibvvfgnmdyxrg.supabase.co";
 const LOCAL = "http://localhost:54321";
 const APP = "https://berlogabob.github.io/Unidcom-IADE/";
 

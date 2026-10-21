@@ -16,7 +16,12 @@ revoke execute on function public.promote_output_candidate(uuid, text) from publ
 -- 3. Trigger-only helpers are not an API: nobody calls these over PostgREST.
 --    (Triggers keep firing — trigger execution rides on the owner, not these grants.)
 revoke execute on function public.log_status_change() from public, anon, authenticated;
-revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+-- rls_auto_enable() is a dashboard-created helper: absent on a fresh project, so guard it.
+do $$ begin
+  if to_regproc('public.rls_auto_enable') is not null then
+    revoke execute on function public.rls_auto_enable() from public, anon, authenticated;
+  end if;
+end $$;
 
 -- Not fixed, recorded in PLAN.md: pg_trgm/unaccent live in schema public
 -- (moving breaks index/generated-column deps for zero practical gain here);

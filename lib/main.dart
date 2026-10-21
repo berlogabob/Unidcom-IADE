@@ -46,11 +46,11 @@ import 'widgets/portal_shell.dart';
 
 const _supabaseUrl = String.fromEnvironment(
   'SUPABASE_URL',
-  defaultValue: 'https://nmghxkhstlnxypmfmfhk.supabase.co',
+  defaultValue: 'https://sbswpbsibvvfgnmdyxrg.supabase.co',
 );
 const _supabaseAnonKey = String.fromEnvironment(
   'SUPABASE_ANON_KEY',
-  defaultValue: 'sb_publishable_uCvM2dlnxkS3gqCsyaANVQ_RswEP6Zm',
+  defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNic3dwYnNpYnZ2ZmdubWR5eHJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1ODczMzcsImV4cCI6MjEwODE2MzMzN30.7EA6rQryYn4LSgIwOW_ZIT4CYQ2Y0LoGkOWrqkedtVg',
 );
 // ORCID client IDs are public, like the anon key above.
 const _orcidClientId = String.fromEnvironment(

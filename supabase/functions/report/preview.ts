@@ -11,7 +11,7 @@ import type { Kind, Row } from "./shape.ts";
 import { FONT_BASE, FONT_FILES } from "./assets.ts";
 import { buildTemplates } from "./build-templates.ts";
 
-const URL_BASE = "https://nmghxkhstlnxypmfmfhk.supabase.co";
+const URL_BASE = "https://sbswpbsibvvfgnmdyxrg.supabase.co";
 const ANON = "sb_publishable_uCvM2dlnxkS3gqCsyaANVQ_RswEP6Zm";
 
 const here = new URL(".", import.meta.url).pathname;
