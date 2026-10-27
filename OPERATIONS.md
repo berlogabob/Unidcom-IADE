@@ -39,6 +39,7 @@ Fill in the holders and add the seconds. This table is the point of the file.
 |---|---|---|---|
 | `SUPABASE_SERVICE_KEY` | GitHub Actions secrets, **both repos**; local `scripts/.env` | nightly sync, `orcid-sync.yml`, `doi-check.yml`, all `scripts/*.py` | |
 | `SUPABASE_URL` | GitHub Actions secrets, both repos | same | n/a |
+| `SANITY_TOKEN` | Supabase Edge Function secrets | `sanity-push` — an Editor token for the **test** project `ld5jhf23` (optional overrides: `SANITY_PROJECT`, `SANITY_DATASET`; `ALLOW_PROD=true` is the only way to target `vj0axykv`) | |
 | ORCID client id + secret | Supabase Vault, read by `orcid_credentials()` (service-role only); overridable via `supabase secrets set` | the `orcid-auth` edge function | |
 | `FTP_USER` / `FTP_PASS` | nowhere — typed by hand at deploy time | `scripts/deploy_pixelframes.sh` | |
 | `MAESTRO_EMAIL` / `MAESTRO_PASSWORD` | local `.maestro/.env`, gitignored | E2E flows | |
@@ -60,13 +61,24 @@ anyone leaving.
 
 ### What exists
 
+`scripts/backup_all.py` supersedes `export.py` for full API backups:
+`uv run --project scripts scripts/backup_all.py`. It writes private data and a
+count-verified SHA-256 manifest to `~/Backups/unidcom/<UTC timestamp>/`, outside
+Git; never copy backups into this public repo. It includes public tables,
+auth users, storage listings, small `site-images`, OpenAPI, migrations and
+Sanity documents (anonymous access covers public documents only; test Sanity
+is skipped without `SANITY_TOKEN`). Still manual; scheduling is next.
+
 `scripts/export.py` writes JSON to `scripts/out/`; `scripts/restore.py` reads
 it back. `PLAN.md` describes running the export weekly, by hand, on a laptop.
 
 Not uploading exports as CI artifacts is a **correct** decision — the repo is
 public and `people` carries emails. Do not "fix" it that way.
 
-### What is wrong with it
+### What is wrong with the legacy export/restore
+
+0. New website tables `funders`, `articles`, `events` are in the in-app export
+   (`dbTables`) but **not** in `export.py`'s `TABLES`, like the other post-July tables.
 
 1. **The backup covers 9 of 27 tables.** `TABLES` in `export.py` has not been
    updated across eleven table-adding migrations. Not backed up: `person_roles`
@@ -88,7 +100,8 @@ public and `people` carries emails. Do not "fix" it that way.
 Replace both scripts with a nightly `pg_dump` to encrypted object storage
 outside the public repo, keep 30 dailies, and add a weekly job that restores the
 newest dump into a Supabase preview branch and asserts row counts. Until that
-exists, treat the current backup as partial and say so out loud.
+exists, treat API backups as having the scope above; database roles, grants,
+unexposed schemas and large storage binaries still need a separate backup.
 
 Also confirm the Supabase plan's PITR: on the free tier there is none, so a
 `drop table` or a bad `--wipe` is **permanent loss of 184 researchers'
@@ -151,6 +164,12 @@ list has a "Missing ORCID" filter — then the researcher signs in again.
 | "My profile isn't on the website" | `public_visibility` is false, or it changed after the last sync | check `profile_status` + `public_visibility`; use **Publish to website** after approval, then run the site sync or wait for 04:00 UTC |
 | "My output isn't on the website" | `website_status` is not `published`, it is rejected, or it changed after the last sync | publish it in the portal, then run the site sync or wait for 04:00 UTC |
 | "My role is wrong on the website" | the profile has not been explicitly published, or the last sync has not run | check `public_visibility`, publish if needed, then sync |
+| "I added works from ORCID and they don't show up" | they are in Scientific Outputs, `approval_status='pending'`; reports/other types sit under Other activities; pre-UNIDCOM work is `affiliation='external'` (Not affiliated); nothing pending is on the website | point them to the **All** view; correct `affiliation` per output if the ORCID check got it wrong; approve, then publish |
+| Same profile change listed twice for review | before 1 Oct, Save draft + Submit inserted two rows | fixed by the `enrichment_suggestions_supersede` trigger (20261001150000); older rows are `superseded` |
+| "Publish selected" shows Publication error for a researcher | `publish_researchers` could not apply one accepted value (e.g. a protected or unknown field); the researcher's `website_status` is `error` and the reason is in `change_log` | fix or reject the item, then **Retry** on the Ready to publish row |
+| "Sync to test Sanity" says SANITY_TOKEN is not set | the edge function has no Sanity token | create an Editor token on `ld5jhf23` and `supabase secrets set SANITY_TOKEN=<token>` |
+| "Sync to test Sanity" returns `Sanity 4xx on <type>` | a document failed Sanity validation or a referenced document is missing | the message names the type; fix the field in the portal (e.g. a required `citation`, a missing funder) and sync that type again from the chips |
+| "Sync to website" says GITHUB_SYNC_TOKEN is not set | the edge function has no GitHub token | `supabase secrets set GITHUB_SYNC_TOKEN=<fine-grained PAT, unidcom-site, Actions read+write>` |
 | Report generation fails first time | the Typst function cold-starts (~28 MB wasm) and can hit a resource limit | retry; warm it before any demonstration |
 
 For the Phase E permission check, run `audit/tools/perm_check.py` with
@@ -169,10 +188,10 @@ researchers which it is.
 
 | When | What |
 |---|---|
-| Nightly 04:00 UTC | site sync (`unidcom-site`), auto-commits and deploys; also available through **Sync content from Supabase** |
+| Every 10 min | site sync (`unidcom-site`), auto-commits and deploys; Publish and **More → Website → Sync to website** also start one (the schedule lives in the `unidcom-site` repo's `sync.yml`) |
 | Mondays 05:00 UTC | ORCID works staged into `output_candidates` |
 | Mondays 06:00 UTC | DOI liveness check |
-| Weekly, manual | database export — **see §3, it is partial** |
+| Weekly, manual | full API backup with `scripts/backup_all.py` — **see §3 for scope and restore gaps** |
 | Before any demo | warm the report function; re-check the numbers in `DEMO.md` |
 | Annually / on departure | rotate every secret in §2 |
 

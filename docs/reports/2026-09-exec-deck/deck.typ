@@ -98,7 +98,7 @@
   config-info(
     title: [UNIDCOM RIMS — Researcher Portal],
     subtitle: [What was built, how it works, what it changes],
-    author: [Rui Ramos · idea manager \ Andrey Dyakov · backend and business logic],
+    author: [Rui Ramos \ Andrey Dyakov ],
     date: [18 September 2026],
     institution: [UNIDCOM / IADE],
   ),
@@ -135,7 +135,7 @@
 #slide(title: [What was built], align: top)[
   #v(0.3em)
   UNIDCOM's record used to live in Notion exports and a publications spreadsheet.
-  It is now one database that the public website is generated from — and the only
+  It is now one database that the pilot website is generated from — and the only
   way anything reaches it is a reviewed, attributable edit.
 
   #v(0.5em)

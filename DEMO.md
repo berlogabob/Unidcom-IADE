@@ -20,7 +20,7 @@ The portal is gated — `/login` and the Welcome Pack are its only anonymous scr
 ### 1. Researcher: Overview (3 min)
 
 1. Click **Overview** at `/app/home`; say: “This is where login lands: ‘UNIDCOM: To be validated by you · Website: Published’ stays at the top, and the calm banner links directly to what needs attention.”
-2. Click a banner action and the timeline; say: “The record is dated from Draft to Submitted, Under review and Published, so the current state is explicit.”
+2. Click a banner action and point at **Your record**; say: “The first line is what is live on the website and since when; the second is only the current round of changes, dated from when it started. Blue means it is UNIDCOM's turn, amber yours.”
 3. Click **Edit bio**, a summary tile, and a recent output issue; say: “The overview gives the bio’s first lines, type totals, Featured N/5, and the exact issue such as ‘Missing DOI’.”
 
 ### 2. Researcher: My Profile (3 min)
@@ -32,13 +32,13 @@ The portal is gated — `/login` and the Welcome Pack are its only anonymous scr
 ### 3. Researcher: Scientific Outputs (3 min)
 
 1. Click **Scientific Outputs** and **N new publications in ORCID → Review**; say: “New ORCID publications are a review queue, not automatic publication.”
-2. Click **Publications**, **Other activities**, a type/subtype chip, a year chip, and **Issues only**; say: “The filtered counters, full issue text, and On ORCID / Not on ORCID labels explain exactly what is being reviewed.”
+2. Click **All**, **Publications**, **Other activities**, a type/subtype chip, a year chip, **Issues only** and **Not affiliated**; say: “The filtered counters, full issue text, and the Not affiliated pill on work from before UNIDCOM explain exactly what is being reviewed.”
 3. Click a publication star and **Submit for UNIDCOM review (N)**; say: “Only publications can be featured, with a maximum of five, and imported outputs remain ‘To be validated by you’ until submitted.”
 
 ### 4. Admin: Approval pipeline (3 min)
 
 1. Click **Admin** and show the dashboard; say: “Admin sees numbers only for integrated researchers, collaborators, profiles to approve, outputs to approve, ORCID and Website sync lines, researcher activity, issues, outputs by type with year chips, and critical alerts that open the researcher.”
-2. Click **People**, then **Pending approval → Pipeline**; say: “People carry a Website pill, and the pipeline separates To validate, Submitted, Approved, not published, and Published.”
+2. Click **Pending approval**: **To review** lists who is waiting; open a researcher, decide each card (Accept / Reject / Request change) and click **Finish review**. Then **Ready to publish**: select researchers, **Publish selected to website**; finally **More → Website → Sync to website**. Say: “Accepting never publishes; publishing is a separate batch.” Older path: click **People**, then **Pending approval → More → Profiles**; say: “People carry a Website pill, and the pipeline separates To validate, Submitted, Approved, not published, and Published.”
 3. Click **Approve**, then later **Publish to website** for one real profile; say: “Approval and website publication are deliberately two separate decisions.”
 
 ### 5. Website: Publish one profile (3 min)

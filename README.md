@@ -155,7 +155,8 @@ Supabase** workflow.
 `supabase/migrations/` holds the schema, row-level security, RPCs and audit
 triggers that write status changes to `change_log`; visibility changes are
 logged too. The Phase E RPCs include `submit_my_outputs`,
-`my_profile_timeline` (the researcher's own timeline), and
+`my_profile_timeline` (the researcher's own timeline; `round_started_at` dates
+the current round of changes), and
 `admin_last_sign_ins` (admin-only). No `SECURITY DEFINER` function is callable
 by `anon`; the Sanity bridge is service-role/admin-only. Two edge
 functions live in `supabase/functions/` — `orcid-auth` (the sign-in broker) and
