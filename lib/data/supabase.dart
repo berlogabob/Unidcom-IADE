@@ -2757,6 +2757,25 @@ Future<void> runWebsiteSync() async {
   }
 }
 
+/// Read-only comparison with the agency website; neither system is updated.
+Future<Map<String, dynamic>> runSanityPull() async {
+  try {
+    final res = await db.functions.invoke('sanity-pull', body: {});
+    final result = Map<String, dynamic>.from(res.data as Map);
+    if (result['error'] != null) throw Exception(result['error']);
+    return result;
+  } on FunctionException catch (error) {
+    final details = error.details;
+    throw Exception(
+      details is Map
+          ? details['error'] ?? details
+          : details ?? error.reasonPhrase,
+    );
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
 /// Sanity document groups the bridge can push, in push order (sanity-push ORDER).
 const sanityTypes = [
   'funders',

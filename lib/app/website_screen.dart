@@ -101,6 +101,13 @@ class _WebsiteScreenState extends State<WebsiteScreen> {
       subtitle:
           'What the next sync puts on the UNIDCOM website. The site syncs by itself every 10 minutes; Publish also starts a sync.',
       children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton(
+            onPressed: () => context.go('/app/admin/website-differences'),
+            child: const Text('Website differences'),
+          ),
+        ),
         FutureBuilder(
           future: _data,
           builder: (context, snap) {
