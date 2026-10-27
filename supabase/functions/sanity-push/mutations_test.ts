@@ -1,20 +1,227 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { mutations, published, Row } from "./mutations.ts";
+import { clusterMutations, flexibleDate, mutations, Output, outputMutations, outputType, portable, projectMutations, published, Row, singleEntityMutations } from "./mutations.ts";
 
 const row: Row = {
   id: "u1", preferred_name: "Zé Árvore", bio: "b", orcid: null, ciencia_id: null,
   membership_type: "integrated", public_visibility: true, merged_into: null, sanity_id: null,
 };
 
-Deno.test("same output as sanity_push.py self-check", () => {
+const output: Output = {
+  id: "o1", sanity_id: null, title: "Output", reporting_year: 2026, type: "journal-article",
+  full_reference: null, url: null, doi: "10.1/example", keywords: [], members: ["rims-u1", "member-2"],
+};
+
+Deno.test("output mapping includes keyed member references", () => {
+  const [create, patch] = outputMutations(output) as any[];
+  assertEquals(create.createIfNotExists, { _id: "rims-o1", _type: "researchOutput", title: "Output", migrated: true });
+  assertEquals(patch.patch.set.members, [
+    { _type: "reference", _ref: "rims-u1", _key: "m0" },
+    { _type: "reference", _ref: "member-2", _key: "m1" },
+  ]);
+  assertEquals(patch.patch.set.link, "https://doi.org/10.1/example");
+});
+
+Deno.test("selected outputs precede members and all relation patches", () => {
+  const outputs = [output, { ...output, id: "o2", sanity_id: "existing-output", members: [] }];
+  const members = [mutations(row), mutations({ ...row, id: "u2", sanity_id: "member-2" })];
+  const all = singleEntityMutations(outputs, members) as any[];
+  assertEquals(all.slice(0, 4), outputs.flatMap((o) => outputMutations(o, false)));
+  for (const m of [all[1], all[3]]) {
+    assertEquals("members" in m.patch.set, false);
+    assertEquals(m.patch.unset.includes("members"), false);
+  }
+  assertEquals(all.slice(4, 8), members.flat());
+  assertEquals(all.slice(8), [
+    { patch: { id: "rims-o1", set: { members: (outputMutations(output)[1] as any).patch.set.members } } },
+    { patch: { id: "existing-output", set: { members: [] } } },
+  ]);
+  assertEquals(singleEntityMutations([], [mutations(row)]), mutations(row));
+});
+
+Deno.test("selected push bypasses publication gates and dry run performs no writes", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = Deno.env.get;
+  const originalServe = Deno.serve;
+  let handler: (req: Request) => Promise<Response> = undefined!;
+  const writes: { url: string; body: any }[] = [];
+  const reads: string[] = [];
+  let lookupFails = false;
+  let lookupResult: string | null = "collaborator-id";
+  try {
+    Deno.env.get = (name) => ({ SANITY_TOKEN: "test", SUPABASE_URL: "https://db.test" })[name];
+    Deno.serve = ((fn: typeof handler) => { handler = fn; }) as any;
+    globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      if (init?.method === "POST" || init?.method === "PATCH") {
+        writes.push({ url, body: JSON.parse(String(init.body)) });
+        return Promise.resolve(Response.json({}));
+      }
+      reads.push(url);
+      if (url === "https://photo.test") return Promise.resolve(new Response(null, { status: 404 }));
+      let data: unknown;
+      if (url.endsWith("/auth/v1/user")) data = { app_metadata: { role: "admin" } };
+      else if (url.includes("/people?")) data = [
+        { ...row, public_visibility: false, photo_url: "https://photo.test" },
+        { ...row, id: "u2", public_visibility: false, sanity_id: "member-2", membership_type: "collaborator" },
+        { ...row, id: "unrelated" },
+      ];
+      else if (url.includes("/outputs?")) {
+        assertEquals(url.includes("website_status=eq.published"), !url.includes("id=in."));
+        assertEquals(url.includes("merged_into=is.null"), true);
+        data = [{ ...output,
+          project_outputs: [{ projects: { project_clusters: [
+            { clusters: { sanity_id: "cluster-existing" } }, { clusters: { sanity_id: null } },
+          ] } }],
+          scientific_areas: [{ sanity_id: "science-existing" }, { sanity_id: null }], website_status: "draft", output_authors: [{ person_id: "u1" }, { person_id: "missing" }] }];
+      } else if (url.includes("/data/query/")) {
+        const query = new URL(url).searchParams;
+        if (query.get("query")?.includes('"memberType"')) {
+          assertEquals(query.get("$title"), JSON.stringify("collaborator"));
+          if (lookupFails) return Promise.resolve(new Response(null, { status: 503 }));
+          data = { result: lookupResult };
+        } else data = { result: [] };
+      }
+      else if (["clusters", "funders", "projects"].some((table) => url.includes(`/${table}?`))) data = [];
+      else throw new Error(`unexpected fetch ${url}`);
+      return Promise.resolve(Response.json(data));
+    }) as typeof fetch;
+    await import("./index.ts");
+    const request = (body: unknown) => new Request("https://edge.test", {
+      method: "POST", headers: { Authorization: "Bearer admin" }, body: JSON.stringify(body),
+    });
+    const response = await handler(request({ personId: "u2", outputIds: ["o1"], dryRun: true }));
+    assertEquals(response.status, 200);
+    const result = await response.json();
+    assertEquals(result.counts, { outputs: 1, members: 2 });
+    assertEquals(result.warnings, []);
+    assertEquals(result.mutations[1].patch.set.type, "journalArticle");
+    assertEquals(result.mutations[1].patch.set.migrated, true);
+    assertEquals(result.mutations[1].patch.set.clusters, [{ _type: "reference", _ref: "cluster-existing", _key: "c0" }]);
+    assertEquals(result.mutations[1].patch.set.scientificAreas, [{ _type: "reference", _ref: "science-existing", _key: "s0" }]);
+    assertEquals(result.mutations[5].patch.set.type, { _type: "reference", _ref: "collaborator-id" });
+    assertEquals(result.dropped, [{ outputId: "o1", personId: "missing" }]);
+    assertEquals(writes, []);
+    assertEquals(reads.some((url) => url.includes("photo.test")), false);
+    assertEquals(result.mutations.at(-1).patch.set.members, [{ _type: "reference", _ref: "rims-u1", _key: "m0" }]);
+    // The same plan is sent in order, then ids are persisted.
+    const live = await handler(request({ personId: "u2", outputIds: ["o1"] }));
+    assertEquals(live.status, 200);
+    assertEquals(writes[0].body.mutations, result.mutations);
+    assertEquals(writes.slice(1).map((w) => w.body.sanity_id), ["rims-o1", "rims-u1"]);
+    const personOnly = await handler(request({ personId: "u2", dryRun: true }));
+    assertEquals((await personOnly.json()).counts, { outputs: 0, members: 1 });
+    lookupFails = true;
+    const unresolved = await handler(request({ personId: "u2", dryRun: true }));
+    assertEquals(unresolved.status, 200);
+    const unresolvedResult = await unresolved.json();
+    assertEquals(unresolvedResult.warnings.length, 2);
+    assertEquals(unresolvedResult.warnings[1].includes("cannot resolve memberType for collaborator"), true);
+    assertEquals("type" in unresolvedResult.mutations[1].patch.set, false);
+    assertEquals(unresolvedResult.mutations[1].patch.unset.includes("type"), false);
+    lookupFails = false;
+    lookupResult = null;
+    const missingType = await handler(request({ personId: "u2", dryRun: true }));
+    const missingTypeResult = await missingType.json();
+    assertEquals(missingTypeResult.warnings, ["Member u2: cannot resolve memberType for collaborator"]);
+    lookupResult = "collaborator-id";
+    const empty = await handler(request({ outputIds: [], dryRun: true }));
+    assertEquals((await empty.json()).mutations, []);
+    writes.length = 0;
+    const bulk = await handler(request({ types: ["members", "outputs"], dryRun: true }));
+    const bulkResult = await bulk.json();
+    assertEquals(bulkResult.counts, { members: 1, outputs: 1 });
+    assertEquals(bulkResult.mutations[0].createIfNotExists._type, "member");
+    assertEquals(bulkResult.mutations[2].createIfNotExists._type, "researchOutput");
+    assertEquals(bulkResult.mutations[3].patch.unset.includes("members"), true);
+    assertEquals(writes, []);
+    Deno.env.get = (name) => ({ SANITY_PROJECT: "vj0axykv", SANITY_TOKEN: "test", SUPABASE_URL: "https://db.test" })[name];
+    await import("./index.ts?agency-guard");
+    const guarded = await handler(request({ personId: "u2" }));
+    assertEquals(guarded.status, 400);
+    assertEquals(await guarded.json(), { error: "refusing the agency project" });
+    assertEquals(writes, []);
+  } finally {
+    globalThis.fetch = originalFetch;
+    Deno.env.get = originalEnv;
+    Deno.serve = originalServe;
+  }
+});
+
+Deno.test("member mapping patches required fields on existing documents", () => {
   const [create, patch] = mutations(row) as any[];
   assertEquals(create.createIfNotExists._id, "rims-u1");
   assertEquals(create.createIfNotExists.slug.current, "ze-arvore");
-  assertEquals(patch.patch.set, { name: "Zé Árvore", shortBio: "b" });
-  assertEquals(patch.patch.unset, ["orcid", "cienciaId"]);
+  assertEquals(patch.patch.set, {
+    name: "Zé Árvore", shortBio: "b", type: { _type: "reference", _ref: "bc4e4611-3a0b-4480-8f76-d85fb8eefa9d" },
+  });
+  assertEquals(patch.patch.setIfMissing.slug, { _type: "slug", current: "ze-arvore" });
+  const updated = (mutations({ ...row, sanity_id: "existing", board_role: ["scientificDirector"] }, undefined, "resolved-id")[1] as any).patch;
+  assertEquals(updated.set.type, { _type: "reference", _ref: "resolved-id" });
+  assertEquals(updated.set.boardRole, "scientificDirector");
+  assertEquals(patch.patch.unset, ["orcid", "cienciaId", "researchInterests", "boardRole"]);
   assertEquals((mutations({ ...row, sanity_id: "abc" })[0] as any).createIfNotExists._id, "abc");
   assertEquals((mutations(row, "member-1")[0] as any).createIfNotExists._id, "member-1");
   assertEquals(published(row), true);
   assertEquals(published({ ...row, public_visibility: false }), false);
   assertEquals(published({ ...row, merged_into: "x" }), false);
+});
+
+Deno.test("project mapping", () => {
+  const [create, patch] = projectMutations({
+    id: "p1", sanity_id: null, title: "Proj A", slug: null, description: "d", status: "active",
+    start_date: "2024-03-05", end_date: null, start_precision: "month", end_precision: null, total_budget: 10,
+    keywords: [], location: null, reference_number: null, website: null, partners: null, results: "a\n\nb",
+    funder: "f1", clusters: ["c1"], team: { pi: ["m1"], coPi: [] },
+  }) as any[];
+  assertEquals(create.createIfNotExists._id, "rims-p1");
+  assertEquals(patch.patch.set.status, "ongoing");
+  assertEquals(patch.patch.set.startingDate, { precision: "month", month: "2024-03" });
+  assertEquals(patch.patch.set.team.pi[0]._ref, "m1");
+  assertEquals(patch.patch.set.results.length, 2);
+  assertEquals(patch.patch.unset.includes("keywords"), true);
+  assertEquals(patch.patch.unset.includes("endingDate"), true);
+});
+
+Deno.test("cluster has no slug; helpers", () => {
+  const [create] = clusterMutations({ id: "c", sanity_id: null, code: "C1", name: "N", concern: null, description: null }) as any[];
+  assertEquals("slug" in create.createIfNotExists, false);
+  assertEquals(flexibleDate("2024-03-05", "year"), { precision: "year", month: "2024" });
+  assertEquals(portable(" x "). length, 1);
+});
+
+Deno.test("output kinds map ORCID and reporting taxonomy without inventing types", () => {
+  for (const [kind, expected] of Object.entries({
+    book: "book", "book-chapter": "book", "journal-article": "journalArticle",
+    "conference-paper": "conferencePaper", "conference-abstract": "abstract", patent: "patentModels", exhibition: "exhibition",
+    journalArticle: "journalArticle", conferencePaper: "conferencePaper", patentModels: "patentModels",
+    Livros: "book", "Artigos em revistas": "journalArticle", "Exposições": "exhibition", Patentes: "patentModels",
+  })) assertEquals(outputType({ ...output, type: kind }), expected, kind);
+  assertEquals(outputType({ ...output, type: null, category_path: "Livros › Capítulos de livros › Atas de congressos não indexados" }), "conferencePaper");
+  assertEquals(outputType({ ...output, type: "unmapped", macro_type: "Artigos em revistas" }), "journalArticle");
+  assertEquals(outputType({ ...output, type: "workshop" }), undefined);
+});
+
+Deno.test("outputs require citation, cap keywords, and only reference stored Sanity ids", () => {
+  const patch = (outputMutations({
+    ...output, full_reference: "  APA citation  ", url: "https://example.org/paper", keywords: ["1", "2", "3", "4", "5", "6", "7"],
+    clusters: [{ sanity_id: "c1" }, { sanity_id: null }, { sanity_id: "c1" }],
+    scientific_areas: [{ sanity_id: "s1" }, { sanity_id: null }],
+  })[1] as any).patch;
+  assertEquals(patch.set.citation, "APA citation");
+  assertEquals(patch.set.link, "https://example.org/paper");
+  assertEquals(patch.set.keywords.length, 6);
+  assertEquals(patch.set.clusters, [{ _type: "reference", _ref: "c1", _key: "c0" }]);
+  assertEquals(patch.set.scientificAreas, [{ _type: "reference", _ref: "s1", _key: "s0" }]);
+  for (const key of ["authorRole", "bookCategory", "journalArticleCategory"]) {
+    assertEquals(key in patch.set, false);
+    assertEquals(patch.unset.includes(key), false);
+  }
+  assertEquals((outputMutations({ ...output, full_reference: "  " })[1] as any).patch.set.citation, "Output");
+  const sparse = (outputMutations({ ...output, title: " ", clusters: [], scientific_areas: [] })[1] as any).patch;
+  assertEquals(sparse.set.citation, "Untitled output");
+  assertEquals(sparse.unset.includes("clusters"), true);
+  assertEquals(sparse.unset.includes("scientificAreas"), true);
+  const absent = (outputMutations(output)[1] as any).patch;
+  assertEquals(absent.unset.includes("clusters"), false);
+  assertEquals(absent.unset.includes("scientificAreas"), false);
 });
