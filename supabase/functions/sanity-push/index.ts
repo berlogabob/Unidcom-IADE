@@ -4,7 +4,7 @@
 // on mapped fields only). Default target is the TEST project ld5jhf23; the agency's vj0axykv is refused
 // unless ALLOW_PROD=true. Secret: SANITY_TOKEN. Like scripts/sanity_push.py for members.
 import {
-  articleMutations, clusterMutations, eventMutations, funderMutations, labMutations, mutations, outputMutations,
+  articleMutations, articleReferences, clusterMutations, eventMutations, funderMutations, labMutations, mutations, outputMutations,
   outputType, projectMutations, published, Row, singleEntityMutations,
 } from "./mutations.ts";
 
@@ -242,7 +242,7 @@ Deno.serve(async (req) => {
       }
     }
     if (want.includes("articles")) {
-      for (const a of await rows<any>("articles?select=*&published=eq.true")) add("articles", "articles", a, await withImage(articleMutations(a), "image", a.image_url));
+      for (const a of await rows<any>("articles?select=*&published=eq.true")) add("articles", "articles", a, await withImage(articleMutations(a, await articleReferences(a, query, warnings)), "image", a.image_url));
     }
     if (want.includes("events")) {
       for (const e of await rows<any>("events?select=*&published=eq.true")) add("events", "events", e, await withImage(eventMutations(e), "coverImage", e.cover_image_url));

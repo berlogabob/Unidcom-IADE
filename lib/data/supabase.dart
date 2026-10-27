@@ -5,6 +5,7 @@ import '../csv_download.dart';
 import '../view_mode_store.dart';
 import 'attention.dart';
 import 'taxonomy.dart';
+import 'news_template.dart';
 
 final db = Supabase.instance.client;
 
@@ -2964,4 +2965,44 @@ Future<List<Map<String, dynamic>>> fetchPublishedSince(DateTime? since) async {
   } catch (error) {
     throw Exception(_error(error));
   }
+}
+
+/// Paginate explicitly: PostgREST's default row cap must not hide slug clashes.
+Future<Set<String>> fetchArticleSlugs() async {
+  final slugs = <String>{};
+  const pageSize = 1000;
+  for (var offset = 0; ; offset += pageSize) {
+    final page = await db
+        .from('articles')
+        .select('slug')
+        .order('id')
+        .range(offset, offset + pageSize - 1);
+    slugs.addAll(page.map((row) => row['slug'] as String));
+    if (page.length < pageSize) return slugs;
+  }
+}
+
+/// Each batch is atomic; earlier batches remain if a later batch fails.
+/// Inserts only: a racing slug collision fails rather than overwriting news.
+Future<int> importNewsDrafts(List<NewsImportRow> rows) async {
+  if (rows.any((row) => row.errors.isNotEmpty)) {
+    throw ArgumentError('Correct row errors before importing news');
+  }
+  var inserted = 0;
+  const batchSize = 100;
+  while (inserted < rows.length) {
+    final end = (inserted + batchSize).clamp(0, rows.length);
+    try {
+      await db.from('articles').insert([
+        for (final row in rows.sublist(inserted, end))
+          {...row.data, 'published': false},
+      ]);
+    } catch (error) {
+      throw Exception(
+        'News import stopped after $inserted drafts: ${_error(error)}',
+      );
+    }
+    inserted = end;
+  }
+  return inserted;
 }

@@ -67,6 +67,11 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
         { ...row, id: "u2", public_visibility: false, sanity_id: "member-2", membership_type: "collaborator" },
         { ...row, id: "unrelated" },
       ];
+      else if (url.includes("/articles?")) {
+        assertEquals(url.includes("published=eq.true"), true);
+        data = [{ id: "a1", sanity_id: null, title: "News", slug: "news", date: "2025-01-01",
+          news_type: "[Events] conference", scientific_areas: ["Design"], excerpt: null, body: null }];
+      }
       else if (url.includes("/outputs?")) {
         assertEquals(url.includes("website_status=eq.published"), !url.includes("id=in."));
         assertEquals(url.includes("merged_into=is.null"), true);
@@ -77,7 +82,13 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
           scientific_areas: [{ sanity_id: "science-existing" }, { sanity_id: null }], website_status: "draft", output_authors: [{ person_id: "u1" }, { person_id: "missing" }] }];
       } else if (url.includes("/data/query/")) {
         const query = new URL(url).searchParams;
-        if (query.get("query")?.includes('"memberType"')) {
+        if (query.get("query")?.includes('"articleCategory"')) {
+          assertEquals(query.get("$value"), JSON.stringify("[events] conference"));
+          data = { result: ["conference-id"] };
+        } else if (query.get("query")?.includes('"scientificArea"')) {
+          assertEquals(query.get("$value"), JSON.stringify("design"));
+          data = { result: ["design-id"] };
+        } else if (query.get("query")?.includes('"memberType"')) {
           assertEquals(query.get("$title"), JSON.stringify("non-doctorate researcher"));
           if (lookupFails) return Promise.resolve(new Response(null, { status: 503 }));
           data = { result: lookupResult };
@@ -138,6 +149,15 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
     assertEquals(writes, []);
     const outputsOnly = await handler(request({ types: ["outputs"], dryRun: true }));
     assertEquals((await outputsOnly.json()).wouldCreate, [{ portal: "o1", sanity: "rims-o1" }]);
+    const articleDryRun = await handler(request({ types: ["articles"], dryRun: true }));
+    assertEquals(articleDryRun.status, 200);
+    const articlePlan = await articleDryRun.json();
+    assertEquals(articlePlan.warnings, []);
+    assertEquals(articlePlan.counts, { articles: 1 });
+    assertEquals(articlePlan.mutations[1].patch.set.category._ref, "conference-id");
+    assertEquals(articlePlan.mutations[1].patch.set.scientificAreas[0]._ref, "design-id");
+    assertEquals(articlePlan.mutations[1].patch.set.date, "2025-01-01");
+    assertEquals(writes, []);
     // Matched documents must flow through both push paths, relation patches and saved ids.
     memberResults = [{ _id: "matched-member", slug: "ze-arvore" }];
     outputResults = [{ _id: "matched-output", title: "OUTPUT!", year: 2026 }];
@@ -263,4 +283,54 @@ Deno.test("outputs require citation, cap keywords, and only reference stored San
   const absent = (outputMutations(output)[1] as any).patch;
   assertEquals(absent.unset.includes("clusters"), false);
   assertEquals(absent.unset.includes("scientificAreas"), false);
+});
+
+Deno.test("article refs resolve target category name and scientific area titles", async () => {
+  const { articleMutations, articleReferences } = await import("./mutations.ts");
+  const article = { id: "a1", sanity_id: null, title: "News", slug: "news", date: "2025-01-01",
+    excerpt: null, body: null, news_type: "[Events] conference", scientific_areas: ["Design", "Science", "Design"] };
+  const queries: string[] = [];
+  const warnings: string[] = [];
+  const resolved = await articleReferences(article, (groq, params) => {
+    queries.push(groq);
+    return Promise.resolve([params.value === "[events] conference" ? "category-id" : `${params.value}-id`]);
+  }, warnings);
+  assertEquals(warnings, []);
+  assertEquals(queries[0].includes('lower(name)'), true);
+  assertEquals(queries[1].includes('lower(title)'), true);
+  assertEquals(queries.every((q) => q.includes('path("drafts.**")')), true);
+  const patch = (articleMutations(article, resolved)[1] as any).patch;
+  assertEquals(patch.set.category, { _type: "reference", _ref: "category-id" });
+  assertEquals(patch.set.scientificAreas, [
+    { _type: "reference", _ref: "design-id", _key: "s0" },
+    { _type: "reference", _ref: "science-id", _key: "s1" },
+  ]);
+  assertEquals(patch.set.date, "2025-01-01");
+  for (const field of ["year", "date_precision", "news_type", "lab", "member_types", "source", "import_note"]) {
+    assertEquals(field in patch.set, false);
+    assertEquals(patch.unset.includes(field), false);
+  }
+});
+
+Deno.test("article missing/ambiguous/failed lookups warn and preserve existing references", async () => {
+  const { articleMutations, articleReferences } = await import("./mutations.ts");
+  const article = { id: "a", sanity_id: "existing", title: "T", slug: "t", date: "2026-01-01",
+    excerpt: null, body: "Text", category: "Legacy", scientific_areas: ["Design"] };
+  for (const result of [[], ["one", "two"], null, "bad", new Error("offline")]) {
+    const warnings: string[] = [];
+    const refs = await articleReferences(article, () => {
+      if (result instanceof Error) throw result;
+      return Promise.resolve(result);
+    }, warnings);
+    assertEquals(warnings.length >= 2, true);
+    const patch = (articleMutations(article, refs)[1] as any).patch;
+    for (const field of ["category", "scientificAreas"]) {
+      assertEquals(field in patch.set, false);
+      assertEquals(patch.unset.includes(field), false);
+    }
+  }
+  const warnings: string[] = [];
+  const cleared = await articleReferences({ ...article, scientific_areas: [] }, () => Promise.resolve(["legacy-id"]), warnings);
+  assertEquals(warnings, []);
+  assertEquals((articleMutations(article, cleared)[1] as any).patch.unset.includes("scientificAreas"), true);
 });

@@ -211,11 +211,47 @@ export type Funder = { id: string; sanity_id: string | null; title: string };
 export const funderMutations = (f: Funder) =>
   build(f.sanity_id || `rims-${f.id}`, "funder", f.title, { title: f.title });
 
-export type Article = { id: string; sanity_id: string | null; title: string; slug: string; date: string; excerpt: string | null; body: string | null };
-export function articleMutations(a: Article) {
+export type Article = {
+  id: string; sanity_id: string | null; title: string; slug: string; date: string;
+  excerpt: string | null; body: string | null; category?: string | null;
+  news_type?: string | null; scientific_areas?: string[] | null;
+};
+
+// Resolve in the target dataset, never send portal taxonomy strings as references.
+// Missing/ambiguous values warn and preserve the existing Sanity field.
+export async function articleReferences(
+  a: Article,
+  query: (groq: string, params: Record<string, string>) => Promise<unknown>,
+  warnings: string[],
+): Promise<{ category?: string; scientificAreas?: string[] }> {
+  async function lookup(type: string, field: string, value: string) {
+    try {
+      const ids = await query(`*[_type == "${type}" && !(_id in path("drafts.**")) && lower(${field}) == $value]._id`, { value: value.trim().toLowerCase() });
+      if (Array.isArray(ids) && ids.length === 1 && typeof ids[0] === "string") return ids[0];
+    } catch (error) {
+      warnings.push(`Article ${a.id}: ${type} lookup failed: ${String(error)}`);
+    }
+    warnings.push(`Article ${a.id}: cannot resolve ${type} (${value || "missing"})`);
+    return undefined;
+  }
+  const category = await lookup("articleCategory", "name", a.news_type?.trim() || a.category || "");
+  let scientificAreas: string[] | undefined;
+  if (a.scientific_areas != null) {
+    const ids = await Promise.all(a.scientific_areas.map((title) => lookup("scientificArea", "title", title)));
+    // An unresolved selection must not silently erase existing associations.
+    if (ids.every((id) => id !== undefined)) scientificAreas = [...new Set(ids as string[])];
+  }
+  return { category, scientificAreas };
+}
+
+export function articleMutations(a: Article, resolved: { category?: string; scientificAreas?: string[] } = {}) {
   return build(a.sanity_id || `rims-${a.id}`, "article", a.slug, {
     title: a.title, slug: { _type: "slug", current: a.slug }, date: a.date, excerpt: a.excerpt,
     body: a.body ? portable(a.body) : null,
+    ...(resolved.category && { category: ref(resolved.category) }),
+    ...(resolved.scientificAreas !== undefined && {
+      scientificAreas: resolved.scientificAreas.map((id, i) => ({ ...ref(id), _key: `s${i}` })),
+    }),
   }, { title: a.title });
 }
 
