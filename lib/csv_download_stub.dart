@@ -7,3 +7,5 @@ Future<String?> pickTextFile() async => null;
 
 /// Opens the browser picker for a JPEG/PNG/WebP photo; null on no selection.
 Future<({Uint8List bytes, String name, String mime})?> pickImageFile() async => null;
+
+Future<({Uint8List bytes, String name})?> pickNewsFile() async => null;

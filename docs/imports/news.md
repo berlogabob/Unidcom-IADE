@@ -14,7 +14,7 @@ each row's `warnings`. The errors map uses spreadsheet row numbers (CSV record
 numbers, including blank records); file-level errors use 1. Duplicate title+year
 rows are omitted and reported. Pass corrected/selected `NewsImportRow` objects
 to `importNewsDrafts(rows)`; it rejects rows with blocking errors and forces
-published=false. No UI is implemented in Task A.
+published=false. Task B supplies the UI described below.
 
 Assumptions:
 
@@ -54,3 +54,36 @@ uv run python -m unittest discover -s . -p 'test_*.py'
 
 The default output directory is ~/Backups/unidcom; `--output-dir` overrides it.
 The 181-row normalized CSV is saved in test/fixtures for portable regression tests.
+
+## News publishing UI (Task B)
+
+Admin → Website → articles provides New news item (wizard), Download template,
+and Import filled template. Opening an existing article uses the same wizard.
+`canPublishNews` in `lib/app/news_wizard.dart` is the single news permission
+policy and currently follows `isAdmin` (including admin view mode).
+
+The wizard follows the existing output dialog/vertical Stepper. Title, a real
+date at the selected precision, and a type are required; Unclassified is allowed
+with a warning. Taxonomy associations, excerpt, body and image are optional;
+missing lab warns. Excerpts allow at most 150 Unicode characters. Partial dates
+are entered as YYYY or YYYY-MM and stored with January 1 / day 1 respectively.
+Changing precision requires the date text to match the new precision. New slugs
+use the import normalizer, refresh existing slugs before saving, and suffix
+collisions; edits retain the existing website address. Database uniqueness still
+handles concurrent writes. Publish attempts the articles-only Sanity push after
+saving; a bridge failure does not undo the saved publication.
+
+The import preview counts all parsed rows, including skipped ones, in mutually
+exclusive OK / warnings / errors groups; duplicate rows are shown separately.
+Unclassified type and missing lab can be corrected inline. Other blocking errors
+require skipping the row or correcting and reopening the file. Original
+import_note provenance remains after inline corrections. Confirmation imports
+only selected valid rows, always unpublished, in batches of 100 with progress.
+A failed batch ends the preview with the inserted count and partial-import
+message; reopen the import to refresh slugs before retrying. File selection and
+download use the existing web-only helper pattern.
+
+Widget tests inject loaders, saves, image selection, push and import callbacks;
+no network or database writes are needed. The Task A migration must already be
+applied to the target database before using these fields. Task B does not apply
+migrations or deploy anything.

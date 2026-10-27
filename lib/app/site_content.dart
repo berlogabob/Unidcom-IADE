@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../csv_download.dart';
+import '../data/news_template.dart';
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
+import 'news_import.dart';
+import 'news_wizard.dart';
 
 /// One kind of website content that has no other home in the portal.
 class SiteContentKind {
@@ -92,6 +96,11 @@ class _SiteContentPanelState extends State<SiteContentPanel> {
 
   Future<void> _edit(Map<String, dynamic>? row) async {
     final k = _k;
+    if (k.table == 'articles') {
+      final saved = await showNewsWizard(context, article: row);
+      if (saved == true && mounted) _refresh();
+      return;
+    }
     final hasSlug = k.fields.any((f) => f.key == 'slug');
     final saved = await showEntityEditor(
       context,
@@ -154,11 +163,14 @@ class _SiteContentPanelState extends State<SiteContentPanel> {
 
   @override
   Widget build(BuildContext context) {
+    if (!isAdmin) return const Center(child: Text('Admin access required'));
     return Panel(
       title: 'Website content',
       trailing: FilledButton(
         onPressed: () => _edit(null),
-        child: Text('Add ${_k.label}'),
+        child: Text(
+          _k.table == 'articles' ? 'New news item (wizard)' : 'Add ${_k.label}',
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -181,6 +193,34 @@ class _SiteContentPanelState extends State<SiteContentPanel> {
               }),
             ),
             const SizedBox(height: 8),
+            if (_k.table == 'articles' && canPublishNews())
+              Wrap(
+                spacing: 8,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      if (!downloadBytes(
+                        'news-template.xlsx',
+                        buildNewsTemplate(),
+                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                      )) {
+                        showSnack(
+                          context,
+                          'Downloads are available in the web portal.',
+                        );
+                      }
+                    },
+                    child: const Text('Download template'),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      final imported = await showNewsImport(context);
+                      if (imported == true && mounted) _refresh();
+                    },
+                    child: const Text('Import filled template'),
+                  ),
+                ],
+              ),
             FutureBuilder(
               future: _rows,
               builder: (context, snap) {

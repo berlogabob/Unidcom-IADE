@@ -70,3 +70,32 @@ Future<({Uint8List bytes, String name, String mime})?> pickImageFile() {
   input.click();
   return completer.future;
 }
+
+/// News templates use the same browser file input as the existing upload helpers.
+Future<({Uint8List bytes, String name})?> pickNewsFile() {
+  final completer = Completer<({Uint8List bytes, String name})?>();
+  final input = html.FileUploadInputElement()..accept = '.xlsx,.csv';
+  input.on['cancel'].listen((_) {
+    if (!completer.isCompleted) completer.complete(null);
+  });
+  input.onChange.listen((_) {
+    final file = input.files?.firstOrNull;
+    if (file == null) {
+      if (!completer.isCompleted) completer.complete(null);
+      return;
+    }
+    final reader = html.FileReader();
+    reader.onLoad.listen(
+      (_) => completer.complete((
+        bytes: reader.result as Uint8List,
+        name: file.name,
+      )),
+    );
+    reader.onError.listen(
+      (_) => completer.completeError('Could not read file'),
+    );
+    reader.readAsArrayBuffer(file);
+  });
+  input.click();
+  return completer.future;
+}

@@ -63,7 +63,8 @@ String? _match(String value, List<String> allowed) {
   return null;
 }
 
-String _slug(String title, Set<String> used) {
+/// Allocate a unique slug, reserving it in [used] for subsequent news rows.
+String newsSlug(String title, Set<String> used) {
   final ascii = unicode.nfkd(title).replaceAll(RegExp(r'[^\x00-\x7F]'), '');
   var base = ascii.toLowerCase().replaceAll(RegExp('[^a-z0-9]+'), '-');
   base = base.replaceAll(RegExp(r'^-+|-+$'), '');
@@ -194,7 +195,7 @@ NewsParseResult parseNewsFile(
     if (title.runes.length > 150) {
       notes.add('title > 150 chars; excerpt truncated');
     }
-    final slug = _slug(title, used);
+    final slug = newsSlug(title, used);
     final key = jsonEncode([title, year ?? rawYear]);
     if (!seen.add(key)) {
       errors[i + 1] = ['duplicate title+year'];
