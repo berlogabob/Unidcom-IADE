@@ -3,7 +3,7 @@ import { clusterMutations, flexibleDate, mutations, Output, outputMutations, out
 
 const row: Row = {
   id: "u1", preferred_name: "Zé Árvore", bio: "b", orcid: null, ciencia_id: null,
-  membership_type: "integrated", public_visibility: true, merged_into: null, sanity_id: null,
+  membership_type: "integrated", phd: false, public_visibility: true, merged_into: null, sanity_id: null,
 };
 
 const output: Output = {
@@ -45,8 +45,10 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
   let handler: (req: Request) => Promise<Response> = undefined!;
   const writes: { url: string; body: any }[] = [];
   const reads: string[] = [];
+  let memberResults: any[] = [];
+  let outputResults: any[] = [];
   let lookupFails = false;
-  let lookupResult: string | null = "collaborator-id";
+  let lookupResult: string[] = ["non-doctorate-id"];
   try {
     Deno.env.get = (name) => ({ SANITY_TOKEN: "test", SUPABASE_URL: "https://db.test" })[name];
     Deno.serve = ((fn: typeof handler) => { handler = fn; }) as any;
@@ -76,10 +78,10 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
       } else if (url.includes("/data/query/")) {
         const query = new URL(url).searchParams;
         if (query.get("query")?.includes('"memberType"')) {
-          assertEquals(query.get("$title"), JSON.stringify("collaborator"));
+          assertEquals(query.get("$title"), JSON.stringify("non-doctorate researcher"));
           if (lookupFails) return Promise.resolve(new Response(null, { status: 503 }));
           data = { result: lookupResult };
-        } else data = { result: [] };
+        } else data = { result: query.get("query")?.includes('"researchOutput"') ? outputResults : memberResults };
       }
       else if (["clusters", "funders", "projects"].some((table) => url.includes(`/${table}?`))) data = [];
       else throw new Error(`unexpected fetch ${url}`);
@@ -98,7 +100,7 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
     assertEquals(result.mutations[1].patch.set.migrated, true);
     assertEquals(result.mutations[1].patch.set.clusters, [{ _type: "reference", _ref: "cluster-existing", _key: "c0" }]);
     assertEquals(result.mutations[1].patch.set.scientificAreas, [{ _type: "reference", _ref: "science-existing", _key: "s0" }]);
-    assertEquals(result.mutations[5].patch.set.type, { _type: "reference", _ref: "collaborator-id" });
+    assertEquals("type" in result.mutations[5].patch.set, false);
     assertEquals(result.dropped, [{ outputId: "o1", personId: "missing" }]);
     assertEquals(writes, []);
     assertEquals(reads.some((url) => url.includes("photo.test")), false);
@@ -111,19 +113,19 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
     const personOnly = await handler(request({ personId: "u2", dryRun: true }));
     assertEquals((await personOnly.json()).counts, { outputs: 0, members: 1 });
     lookupFails = true;
-    const unresolved = await handler(request({ personId: "u2", dryRun: true }));
+    const unresolved = await handler(request({ personId: "u1", dryRun: true }));
     assertEquals(unresolved.status, 200);
     const unresolvedResult = await unresolved.json();
     assertEquals(unresolvedResult.warnings.length, 2);
-    assertEquals(unresolvedResult.warnings[1].includes("cannot resolve memberType for collaborator"), true);
+    assertEquals(unresolvedResult.warnings[1].includes("cannot resolve memberType for integrated"), true);
     assertEquals("type" in unresolvedResult.mutations[1].patch.set, false);
     assertEquals(unresolvedResult.mutations[1].patch.unset.includes("type"), false);
     lookupFails = false;
-    lookupResult = null;
-    const missingType = await handler(request({ personId: "u2", dryRun: true }));
+    lookupResult = [];
+    const missingType = await handler(request({ personId: "u1", dryRun: true }));
     const missingTypeResult = await missingType.json();
-    assertEquals(missingTypeResult.warnings, ["Member u2: cannot resolve memberType for collaborator"]);
-    lookupResult = "collaborator-id";
+    assertEquals(missingTypeResult.warnings, ["Member u1: cannot resolve memberType for integrated (Non-Doctorate Researcher)"]);
+    lookupResult = ["non-doctorate-id"];
     const empty = await handler(request({ outputIds: [], dryRun: true }));
     assertEquals((await empty.json()).mutations, []);
     writes.length = 0;
@@ -133,6 +135,43 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
     assertEquals(bulkResult.mutations[0].createIfNotExists._type, "member");
     assertEquals(bulkResult.mutations[2].createIfNotExists._type, "researchOutput");
     assertEquals(bulkResult.mutations[3].patch.unset.includes("members"), true);
+    assertEquals(writes, []);
+    const outputsOnly = await handler(request({ types: ["outputs"], dryRun: true }));
+    assertEquals((await outputsOnly.json()).wouldCreate, [{ portal: "o1", sanity: "rims-o1" }]);
+    // Matched documents must flow through both push paths, relation patches and saved ids.
+    memberResults = [{ _id: "matched-member", slug: "ze-arvore" }];
+    outputResults = [{ _id: "matched-output", title: "OUTPUT!", year: 2026 }];
+    const matchedDryRun = await handler(request({ outputIds: ["o1"], dryRun: true }));
+    const matchedPlan = await matchedDryRun.json();
+    assertEquals(matchedPlan.matched, [
+      { portal: "u1", sanity: "matched-member", by: "slug" },
+      { portal: "o1", sanity: "matched-output", by: "title+year" },
+    ]);
+    assertEquals(matchedPlan.wouldCreate, []);
+    assertEquals(matchedPlan.warnings, []);
+    assertEquals(matchedPlan.mutations[0].createIfNotExists._id, "matched-output");
+    assertEquals(matchedPlan.mutations[2].createIfNotExists._id, "matched-member");
+    assertEquals(matchedPlan.mutations.at(-1).patch.id, "matched-output");
+    assertEquals(matchedPlan.mutations.at(-1).patch.set.members[0]._ref, "matched-member");
+    for (const index of [1, 3]) {
+      assertEquals("type" in matchedPlan.mutations[index].patch.set, false);
+      assertEquals(matchedPlan.mutations[index].patch.unset.includes("type"), false);
+    }
+    assertEquals(writes, []);
+    const matchedLive = await handler(request({ outputIds: ["o1"] }));
+    assertEquals(matchedLive.status, 200);
+    assertEquals(writes[0].body.mutations, matchedPlan.mutations);
+    assertEquals(writes.slice(1).map((w) => w.body.sanity_id), ["matched-output", "matched-member"]);
+    writes.length = 0;
+    const matchedBulk = await handler(request({ types: ["members", "outputs"] }));
+    assertEquals(matchedBulk.status, 200);
+    assertEquals((await matchedBulk.json()).wouldCreate, []);
+    assertEquals(writes.map((w) => w.body.sanity_id).filter(Boolean), ["matched-member", "matched-output"]);
+    assertEquals(writes[2].body.mutations[1].patch.set.members, undefined);
+    writes.length = 0;
+    memberResults.push({ _id: "duplicate", slug: "ze-arvore" });
+    const ambiguous = await handler(request({ outputIds: ["o1"] }));
+    assertEquals(ambiguous.status, 502);
     assertEquals(writes, []);
     Deno.env.get = (name) => ({ SANITY_PROJECT: "vj0axykv", SANITY_TOKEN: "test", SUPABASE_URL: "https://db.test" })[name];
     await import("./index.ts?agency-guard");
@@ -152,11 +191,11 @@ Deno.test("member mapping patches required fields on existing documents", () => 
   assertEquals(create.createIfNotExists._id, "rims-u1");
   assertEquals(create.createIfNotExists.slug.current, "ze-arvore");
   assertEquals(patch.patch.set, {
-    name: "Zé Árvore", shortBio: "b", type: { _type: "reference", _ref: "bc4e4611-3a0b-4480-8f76-d85fb8eefa9d" },
+    name: "Zé Árvore", shortBio: "b",
   });
   assertEquals(patch.patch.setIfMissing.slug, { _type: "slug", current: "ze-arvore" });
   const updated = (mutations({ ...row, sanity_id: "existing", board_role: ["scientificDirector"] }, undefined, "resolved-id")[1] as any).patch;
-  assertEquals(updated.set.type, { _type: "reference", _ref: "resolved-id" });
+  assertEquals("type" in updated.set, false);
   assertEquals(updated.set.boardRole, "scientificDirector");
   assertEquals(patch.patch.unset, ["orcid", "cienciaId", "researchInterests", "boardRole"]);
   assertEquals((mutations({ ...row, sanity_id: "abc" })[0] as any).createIfNotExists._id, "abc");

@@ -14,9 +14,11 @@ export type Row = {
   research_interests?: string | null;
   board_role?: string[] | null;
   photo_url?: string | null;
+  email?: string | null;
+  phd?: boolean | string | null;
 };
 
-// memberType documents in the dump; collaborator/external have no counterpart.
+// Legacy Integrated id used by sanity-pull comparisons; push resolves titles in its target.
 export const MEMBER_TYPES: Record<string, string> = { integrated: "bc4e4611-3a0b-4480-8f76-d85fb8eefa9d" };
 
 export const slugify = (v: string) =>
@@ -58,9 +60,9 @@ export function flexibleDate(d: string | null, precision: string | null) {
   return p === "day" ? { precision: p, date: d } : { precision: p, month: d.slice(0, p === "year" ? 4 : 7) };
 }
 
-// `existing`: the Sanity member with the same slug, so a profile updates its document
-// instead of creating a duplicate beside it (people.sanity_id is not filled in yet).
-export function mutations(r: Row, existing?: string, memberType = MEMBER_TYPES[r.membership_type ?? ""]) {
+// Existing members own their Sanity type, regardless of the portal membership label.
+export function mutations(r: Row, existing?: string, memberType?: string) {
+  if (r.sanity_id || existing) memberType = undefined;
   const id = r.sanity_id || existing || `rims-${r.id}`;
   const extra: Fields = { name: r.preferred_name };
   if (memberType) extra.type = ref(memberType);
@@ -181,7 +183,7 @@ export function outputMutations(o: Output, includeMembers = true) {
   const id = o.sanity_id || `rims-${o.id}`;
   return build(id, "researchOutput", o.title, {
     title: o.title,
-    type: outputType(o),
+    ...(!o.sanity_id && { type: outputType(o) }),
     migrated: true,
     year: o.reporting_year,
     citation: o.full_reference?.trim() || o.title.trim() || "Untitled output",

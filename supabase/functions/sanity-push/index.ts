@@ -5,8 +5,10 @@
 // unless ALLOW_PROD=true. Secret: SANITY_TOKEN. Like scripts/sanity_push.py for members.
 import {
   articleMutations, clusterMutations, eventMutations, funderMutations, labMutations, mutations, outputMutations,
-  MEMBER_TYPES, outputType, projectMutations, published, Row, singleEntityMutations, slugify,
+  outputType, projectMutations, published, Row, singleEntityMutations,
 } from "./mutations.ts";
+
+import { memberTypeTitle, resolver } from "./resolution.ts";
 
 const AGENCY = "vj0axykv";
 const PROJECT = Deno.env.get("SANITY_PROJECT") ?? "ld5jhf23";
@@ -84,30 +86,37 @@ Deno.serve(async (req) => {
   }
 
   const warnings: string[] = [];
-  const memberTypes = new Map<string, string | undefined>(Object.entries(MEMBER_TYPES));
-  async function memberMutation(p: Row) {
-    const kind = p.membership_type;
-    if (kind && !memberTypes.has(kind)) {
-      const title = kind.replace(/_/g, " ").toLowerCase();
-      const query = '*[_type == "memberType" && !(_id in path("drafts.**")) && lower(title) == $title][0]._id';
-      try {
-        const response = await fetch(
-          `${API}/data/query/${DATASET}?query=${encodeURIComponent(query)}&$title=${encodeURIComponent(JSON.stringify(title))}`,
-          { headers: auth },
-        );
-        if (!response.ok) throw new Error(`Sanity ${response.status}`);
-        const result = (await response.json()).result;
-        memberTypes.set(kind, typeof result === "string" && result ? result : undefined);
-      } catch (e) {
-        memberTypes.set(kind, undefined);
-        warnings.push(`memberType lookup failed for ${kind}: ${String(e)}`);
-      }
-    }
-    const type = kind ? memberTypes.get(kind) : undefined;
-    if (!type) warnings.push(`Member ${p.id}: cannot resolve memberType for ${kind ?? "missing membership_type"}`);
-    return withImage(mutations(p, bySlug.get(slugify(p.preferred_name)), type), "photo", p.photo_url);
+  async function query(groq: string, params: Record<string, string> = {}) {
+    const search = new URLSearchParams({ query: groq });
+    for (const [k, v] of Object.entries(params)) search.set(`$${k}`, JSON.stringify(v));
+    const response = await fetch(`${API}/data/query/${DATASET}?${search}`, { headers: auth });
+    if (!response.ok) throw new Error(`Sanity ${response.status}`);
+    const body = await response.json();
+    if (!("result" in body)) throw new Error("Sanity query returned no result");
+    return body.result;
   }
-  let bySlug: Map<string, string>;
+  const resolve = resolver(query);
+  const { matched, wouldCreate } = resolve;
+  const memberTypes = new Map<string, string | undefined>();
+  async function memberMutation(p: Row) {
+    const found = await resolve.member(p);
+    let type: string | undefined;
+    if (!found.existing) {
+      const title = memberTypeTitle(p);
+      if (title && !memberTypes.has(title)) {
+        try {
+          const ids: string[] = await query('*[_type == "memberType" && !(_id in path("drafts.**")) && lower(title) == $title]._id', { title: title.toLowerCase() });
+          memberTypes.set(title, ids.length === 1 ? ids[0] : undefined);
+        } catch (e) {
+          memberTypes.set(title, undefined);
+          warnings.push(`Member ${p.id}: memberType lookup failed: ${String(e)}`);
+        }
+      }
+      type = title ? memberTypes.get(title) : undefined;
+      if (!type) warnings.push(`Member ${p.id}: cannot resolve memberType for ${p.membership_type ?? "missing membership_type"}${title ? ` (${title})` : "; no certain mapping (phd must be explicitly true/false for integrated members)"}`);
+    }
+    return withImage(mutations(p, found.existing ? found.id : undefined, type), "photo", p.photo_url);
+  }
   async function outputsWhere(filter: string) {
     const outputs = await rows<any>(
       `outputs?select=*,output_authors(person_id),project_outputs(projects(project_clusters(clusters(sanity_id))))&${filter}&merged_into=is.null`,
@@ -123,16 +132,10 @@ Deno.serve(async (req) => {
 
   try {
     const people = await rows<Row & { id: string }>(
-      "people?select=id,preferred_name,bio,orcid,ciencia_id,membership_type,public_visibility,merged_into,sanity_id,research_interests,board_role,photo_url&merged_into=is.null",
+      "people?select=id,preferred_name,bio,orcid,email,phd,ciencia_id,membership_type,public_visibility,merged_into,sanity_id,research_interests,board_role,photo_url&merged_into=is.null",
     );
     const pubPeople = people.filter(published);
 
-    const found = await fetch(
-      `${API}/data/query/${DATASET}?query=${encodeURIComponent('*[_type=="member" && defined(slug.current)]{_id, "slug": slug.current}')}`,
-      { headers: auth },
-    );
-    if (!found.ok) return json({ error: `Sanity ${found.status}` }, 502);
-    bySlug = new Map<string, string>(((await found.json()).result as any[]).map((m) => [m.slug, m._id]));
     if (selected) {
       const ids = [...new Set<string>(body.outputIds ?? [])];
       const outputs = ids.length ? await outputsWhere(
@@ -146,34 +149,43 @@ Deno.serve(async (req) => {
       for (const p of members) memberMutations.push(await memberMutation(p));
       const memberIds = new Map(members.map((p, i) => [p.id, memberMutations[i][0].createIfNotExists._id as string]));
       const dropped: { outputId: string; personId: string | null }[] = [];
-      const mappedOutputs = outputs.map((o) => ({ ...o, members: o.output_authors.flatMap((a: any) => {
-        const id = memberIds.get(a.person_id);
-        if (id) return [id];
-        dropped.push({ outputId: o.id, personId: a.person_id ?? null });
-        return [];
-      }) }));
+      const mappedOutputs: any[] = [];
+      for (const o of outputs) {
+        const found = await resolve.output(o);
+        mappedOutputs.push({ ...o, sanity_id: found.existing ? found.id : null,
+          members: o.output_authors.flatMap((a: any) => {
+            const id = memberIds.get(a.person_id);
+            if (id) return [id];
+            dropped.push({ outputId: o.id, personId: a.person_id ?? null });
+            return [];
+          }),
+        });
+      }
       const all = singleEntityMutations(mappedOutputs, memberMutations);
       const counts = { outputs: outputs.length, members: members.length };
-      if (dryRun) return json({ project: PROJECT, counts, dropped, warnings, mutations: all });
+      if (dryRun) return json({ project: PROJECT, counts, dropped, warnings, matched, wouldCreate, mutations: all });
       for (let i = 0; i < all.length; i += 100) {
         const r = await fetch(`${API}/data/mutate/${DATASET}`, {
           method: "POST", headers: { ...auth, "Content-Type": "application/json" },
           body: JSON.stringify({ mutations: all.slice(i, i + 100) }),
         });
-        if (!r.ok) return json({ error: `Sanity ${r.status}: ${(await r.text()).slice(0, 300)}`, dropped, warnings }, 502);
+        if (!r.ok) return json({ error: `Sanity ${r.status}: ${(await r.text()).slice(0, 300)}`, dropped, warnings, matched, wouldCreate }, 502);
       }
       for (const [table, items] of [["outputs", outputs], ["people", members]] as const) {
         await Promise.all(items.filter((r) => !r.sanity_id).map((r) =>
           fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/${table}?id=eq.${r.id}`, {
             method: "PATCH", headers: { ...dbHeaders(), "Content-Type": "application/json" },
-            body: JSON.stringify({ sanity_id: table === "people" ? memberIds.get(r.id) : idOf(r) }),
+            body: JSON.stringify({ sanity_id: table === "people" ? memberIds.get(r.id) : mappedOutputs.find((o) => o.id === r.id)?.sanity_id || idOf(r) }),
           })
         ));
       }
-      return json({ project: PROJECT, counts, dropped, warnings });
+      return json({ project: PROJECT, counts, dropped, warnings, matched, wouldCreate });
     }
     // sanity id each published person will have, for references from projects/labs/outputs
-    const personId = new Map(pubPeople.map((p) => [p.id, p.sanity_id || bySlug.get(slugify(p.preferred_name)) || `rims-${p.id}`]));
+    const personId = new Map<string, string>();
+    if (want.some((t) => ["members", "outputs", "projects", "labs"].includes(t))) {
+      for (const p of pubPeople) personId.set(p.id, (await resolve.member(p)).id);
+    }
     const refs = (ids: (string | null)[]) => ids.filter((x): x is string => !!x && personId.has(x)).map((x) => personId.get(x)!);
 
     const built: Record<string, { table: string; items: { row: any; m: Mut[] }[] }> = {};
@@ -196,7 +208,8 @@ Deno.serve(async (req) => {
     if (want.includes("outputs")) {
       const outs = await outputsWhere("website_status=eq.published");
       for (const o of outs) {
-        add("outputs", "outputs", o, outputMutations({ ...o, members: refs(o.output_authors.map((a: any) => a.person_id)) }));
+        const found = await resolve.output(o);
+        add("outputs", "outputs", o, outputMutations({ ...o, sanity_id: found.existing ? found.id : null, members: refs(o.output_authors.map((a: any) => a.person_id)) }));
       }
     }
     // Sanity ids of the pushed (or existing) projects/labs, for lab.projects.
@@ -235,10 +248,13 @@ Deno.serve(async (req) => {
       for (const e of await rows<any>("events?select=*&published=eq.true")) add("events", "events", e, await withImage(eventMutations(e), "coverImage", e.cover_image_url));
     }
 
+    // References can resolve members even when this request does not push them.
+    const plannedIds = new Set(Object.values(built).flatMap((group) => group.items.map((i) => i.m[0].createIfNotExists._id)));
+    wouldCreate.splice(0, wouldCreate.length, ...wouldCreate.filter((r) => plannedIds.has(r.sanity)));
     const counts: Record<string, number> = {};
     if (dryRun) {
       for (const type of ORDER) if (built[type]) counts[type] = built[type].items.length;
-      return json({ project: PROJECT, counts, warnings, mutations: ORDER.flatMap((type) => built[type]?.items.flatMap((i) => i.m) ?? []) });
+      return json({ project: PROJECT, counts, warnings, matched, wouldCreate, mutations: ORDER.flatMap((type) => built[type]?.items.flatMap((i) => i.m) ?? []) });
     }
     for (const type of ORDER) {
       const group = built[type];
@@ -250,7 +266,7 @@ Deno.serve(async (req) => {
           headers: { ...auth, "Content-Type": "application/json" },
           body: JSON.stringify({ mutations: all.slice(i, i + 100) }),
         });
-        if (!r.ok) return json({ error: `Sanity ${r.status} on ${type}: ${(await r.text()).slice(0, 300)}`, counts, warnings }, 502);
+        if (!r.ok) return json({ error: `Sanity ${r.status} on ${type}: ${(await r.text()).slice(0, 300)}`, counts, warnings, matched, wouldCreate }, 502);
       }
       counts[type] = group.items.length;
       // remember the document id so the next push updates the same document
@@ -262,8 +278,8 @@ Deno.serve(async (req) => {
         })
       ));
     }
-    return json({ project: PROJECT, counts, warnings });
+    return json({ project: PROJECT, counts, warnings, matched, wouldCreate });
   } catch (e) {
-    return json({ error: String(e), warnings }, 502);
+    return json({ error: String(e), warnings, matched, wouldCreate }, 502);
   }
 });
