@@ -2722,14 +2722,58 @@ Future<List<Map<String, dynamic>>> fetchReadyToPublish() async {
 
 /// Per-researcher result: `{id, ok, error?, published_at?}`.
 Future<List<Map<String, dynamic>>> publishResearchers(List<String> ids) async {
+  // Capture before publishing changes the flags; exclude older published work.
+  final outputIds = <String, List<String>>{};
+  for (final id in ids) {
+    try {
+      outputIds[id] = await _fetchPublishOutputIds(id);
+    } catch (_) {} // A failed sync lookup must never prevent publishing.
+  }
+  final List<Map<String, dynamic>> results;
   try {
     final result = await db.rpc('publish_researchers', params: {'p_ids': ids});
-    return (result as List)
+    results = (result as List)
         .map((row) => Map<String, dynamic>.from(row as Map))
         .toList();
   } catch (error) {
     throw Exception(_error(error));
   }
+  for (final result in results.where((r) => r['ok'] == true)) {
+    try {
+      await runPersonSanityPush(
+        personId: result['id'] as String,
+        outputIds: outputIds[result['id']] ?? [],
+        dryRun: false,
+      );
+    } catch (_) {} // Sanity is best effort, just like website-sync.
+  }
+  return results;
+}
+
+Future<List<String>> _fetchPublishOutputIds(String personId) async {
+  final linked = await db
+      .from('output_authors')
+      .select('output_id, outputs!inner(website_status, approval_status)')
+      .eq('person_id', personId);
+  if (linked.isEmpty) return [];
+  final edits = await db
+      .from('enrichment_suggestions')
+      .select('subject_id')
+      .eq('source', 'researcher')
+      .eq('status', 'ready')
+      .eq('subject_type', 'output')
+      .inFilter('subject_id', linked.map((r) => r['output_id']).toList());
+  final editedIds = edits.map((r) => r['subject_id']).toSet();
+  return {
+    for (final row in linked)
+      if (editedIds.contains(row['output_id']) ||
+          (row['outputs']['approval_status'] == 'approved' &&
+              const [
+                'ready',
+                'error',
+              ].contains(row['outputs']['website_status'])))
+        row['output_id'] as String,
+  }.toList();
 }
 
 // ---- Website sync (edge function website-sync) ----
