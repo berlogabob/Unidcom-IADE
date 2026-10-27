@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 
 import '../data/supabase.dart';
 import '../widgets/ds_page.dart';
+import '../widgets/panels.dart';
+import 'site_content.dart';
 import 'website_sync.dart';
 
 /// Admin → More → Website: what the next sync will publish, and the button.
@@ -62,20 +64,33 @@ class _WebsiteScreenState extends State<WebsiteScreen> {
     }
   }
 
+  final _types = {...sanityTypes};
+  bool _pushing = false;
+
   Future<void> _sanity() async {
+    if (_pushing || _types.isEmpty) return;
+    setState(() => _pushing = true);
     try {
-      final n = await runSanityPush();
+      final counts = await runSanityPush(
+        types: [
+          for (final t in sanityTypes)
+            if (_types.contains(t)) t,
+        ],
+      );
       if (!mounted) return;
+      final summary = counts.entries
+          .map((e) => '${e.value} ${e.key}')
+          .join(', ');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$n profiles pushed to the Sanity test project.'),
-        ),
+        SnackBar(content: Text('Pushed to the Sanity test project: $summary.')),
       );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('$error')));
+    } finally {
+      if (mounted) setState(() => _pushing = false);
     }
   }
 
@@ -102,12 +117,38 @@ class _WebsiteScreenState extends State<WebsiteScreen> {
             );
           },
         ),
-        const SizedBox(height: 16),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: OutlinedButton(
-            onPressed: _sanity,
-            child: const Text('Sync to test Sanity'),
+        const SiteContentPanel(),
+        Panel(
+          title: 'Sync to Sanity (test project)',
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Sends the portal\'s website content to Sanity. The portal wins on the fields it holds; everything else in Sanity is left alone.',
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final t in sanityTypes)
+                      FilterChip(
+                        label: Text(t),
+                        selected: _types.contains(t),
+                        onSelected: (on) => setState(
+                          () => on ? _types.add(t) : _types.remove(t),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton(
+                  onPressed: _pushing || _types.isEmpty ? null : _sanity,
+                  child: Text(_pushing ? 'Syncing...' : 'Sync to test Sanity'),
+                ),
+              ],
+            ),
           ),
         ),
       ],

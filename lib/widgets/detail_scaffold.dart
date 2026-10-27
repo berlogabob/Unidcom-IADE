@@ -485,9 +485,8 @@ Widget sectionHeader(
 
 Widget mutedText(BuildContext context, String text) => Text(
   text,
-  style: Theme.of(
-    context,
-  ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+  style: Theme.of(context).textTheme.bodyMedium
+      ?.copyWith(color: AppColors.textMuted),
 );
 
 /// Pulls the embedded child rows out of a PostgREST join list
@@ -557,9 +556,8 @@ Widget linkChipsSection(
                             minWidth: 24,
                             minHeight: 24,
                           ),
-                          tooltip: MaterialLocalizations.of(
-                            context,
-                          ).deleteButtonTooltip,
+                          tooltip: MaterialLocalizations.of(context)
+                              .deleteButtonTooltip,
                         ),
                     ],
                   );
@@ -571,16 +569,51 @@ Widget linkChipsSection(
   );
 }
 
+enum EntityKind {
+  /// Plain text (the default).
+  text,
+
+  /// Comma- or newline-separated values saved as a text[] column.
+  list,
+
+  /// A public image URL; the dialog offers Upload when `pickImage` is given.
+  image,
+
+  /// One of [EntityField.options], or none.
+  choice,
+}
+
 class EntityField {
-  const EntityField(this.key, this.label, {this.maxLines = 1});
+  const EntityField(
+    this.key,
+    this.label, {
+    this.maxLines = 1,
+    this.kind = EntityKind.text,
+    this.options = const [],
+    this.limit,
+  });
 
   final String key;
   final String label;
   final int maxLines;
+  final EntityKind kind;
+  final List<String> options; // for EntityKind.choice
+  final int? limit; // hard character limit, mirrors a DB check
 }
 
-/// Generic add/edit dialog for a flat entity (labs, clusters, objectives).
-/// Requires a non-empty 'name'. Returns true when saved.
+/// 'a, b\nc' -> ['a','b','c']; empty -> null (the column is cleared).
+List<String>? parseList(String text) {
+  final items = text
+      .split(RegExp(r'[,\n]'))
+      .map((v) => v.trim())
+      .where((v) => v.isNotEmpty)
+      .toList();
+  return items.isEmpty ? null : items;
+}
+
+/// Generic add/edit dialog for a flat entity (labs, clusters, objectives,
+/// funders, articles, events). Requires a non-empty [requiredKey]. Returns true
+/// when saved. [pickImage] uploads a picked image and returns its URL.
 Future<bool> showEntityEditor(
   BuildContext context, {
   required String title,
@@ -588,6 +621,8 @@ Future<bool> showEntityEditor(
   required List<EntityField> fields,
   required Future<String> Function(Map<String, dynamic>) create,
   required Future<void> Function(String id, Map<String, dynamic>) update,
+  String requiredKey = 'name',
+  Future<String?> Function()? pickImage,
 }) async {
   return await showDialog<bool>(
         context: context,
@@ -597,6 +632,8 @@ Future<bool> showEntityEditor(
           fields: fields,
           create: create,
           update: update,
+          requiredKey: requiredKey,
+          pickImage: pickImage,
         ),
       ) ??
       false;
@@ -609,6 +646,8 @@ class _EntityEditDialog extends StatefulWidget {
     required this.fields,
     required this.create,
     required this.update,
+    required this.requiredKey,
+    required this.pickImage,
   });
 
   final String title;
@@ -616,6 +655,8 @@ class _EntityEditDialog extends StatefulWidget {
   final List<EntityField> fields;
   final Future<String> Function(Map<String, dynamic>) create;
   final Future<void> Function(String id, Map<String, dynamic>) update;
+  final String requiredKey;
+  final Future<String?> Function()? pickImage;
 
   @override
   State<_EntityEditDialog> createState() => _EntityEditDialogState();
@@ -624,13 +665,17 @@ class _EntityEditDialog extends StatefulWidget {
 class _EntityEditDialogState extends State<_EntityEditDialog> {
   late final Map<String, TextEditingController> _controllers = {
     for (final f in widget.fields)
-      f.key: TextEditingController(
-        text: widget.entity?[f.key]?.toString() ?? '',
-      ),
+      f.key: TextEditingController(text: _initial(f)),
   };
   bool _saving = false;
 
   bool get _creating => widget.entity?['id'] == null;
+
+  String _initial(EntityField f) {
+    final v = widget.entity?[f.key];
+    if (v is List) return v.join(', ');
+    return v?.toString() ?? '';
+  }
 
   @override
   void dispose() {
@@ -640,20 +685,30 @@ class _EntityEditDialogState extends State<_EntityEditDialog> {
     super.dispose();
   }
 
+  dynamic _value(EntityField f) {
+    final text = _controllers[f.key]!.text.trim();
+    if (f.kind == EntityKind.list) return parseList(text);
+    return text.isEmpty ? null : text;
+  }
+
   Future<void> _save() async {
-    final name = _controllers['name']?.text.trim() ?? '';
-    if (name.isEmpty) {
-      showSnack(context, 'Name is required');
+    final label = widget.fields
+        .firstWhere((f) => f.key == widget.requiredKey)
+        .label;
+    if ((_controllers[widget.requiredKey]?.text.trim() ?? '').isEmpty) {
+      showSnack(context, '$label is required');
       return;
+    }
+    for (final f in widget.fields) {
+      final limit = f.limit;
+      if (limit != null && _controllers[f.key]!.text.trim().length > limit) {
+        showSnack(context, '${f.label} must be $limit characters or fewer');
+        return;
+      }
     }
     setState(() => _saving = true);
     try {
-      final data = {
-        for (final f in widget.fields)
-          f.key: _controllers[f.key]!.text.trim().isEmpty
-              ? null
-              : _controllers[f.key]!.text.trim(),
-      };
+      final data = {for (final f in widget.fields) f.key: _value(f)};
       if (_creating) {
         await widget.create(data);
       } else {
@@ -667,6 +722,77 @@ class _EntityEditDialogState extends State<_EntityEditDialog> {
     }
   }
 
+  Future<void> _upload(TextEditingController c) async {
+    try {
+      final url = await widget.pickImage!();
+      if (url != null) setState(() => c.text = url);
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
+    }
+  }
+
+  Widget _field(EntityField f) {
+    final c = _controllers[f.key]!;
+    switch (f.kind) {
+      case EntityKind.choice:
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: DropdownButtonFormField<String?>(
+            initialValue: f.options.contains(c.text) ? c.text : null,
+            decoration: InputDecoration(
+              labelText: f.label,
+              border: const OutlineInputBorder(
+                borderSide: BorderSide(color: AppColors.cardBorder),
+              ),
+            ),
+            items: [
+              const DropdownMenuItem(value: null, child: Text('None')),
+              for (final o in f.options)
+                DropdownMenuItem(value: o, child: Text(o)),
+            ],
+            onChanged: (v) => c.text = v ?? '',
+          ),
+        );
+      case EntityKind.image:
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (c.text.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Image.network(
+                    c.text,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const SizedBox(width: 56),
+                  ),
+                ),
+              Expanded(child: editField(c, '${f.label} (URL)')),
+              if (widget.pickImage != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8, top: 8),
+                  child: OutlinedButton(
+                    onPressed: _saving ? null : () => _upload(c),
+                    child: const Text('Upload'),
+                  ),
+                ),
+            ],
+          ),
+        );
+      case EntityKind.list:
+        return editField(
+          c,
+          '${f.label} (comma-separated)',
+          maxLines: f.maxLines,
+        );
+      case EntityKind.text:
+        return editField(c, f.label, maxLines: f.maxLines);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -676,10 +802,7 @@ class _EntityEditDialogState extends State<_EntityEditDialog> {
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final f in widget.fields)
-                editField(_controllers[f.key]!, f.label, maxLines: f.maxLines),
-            ],
+            children: [for (final f in widget.fields) _field(f)],
           ),
         ),
       ),

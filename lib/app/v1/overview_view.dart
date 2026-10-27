@@ -23,7 +23,7 @@ class OverviewView extends StatelessWidget {
 
   final Map<String, dynamic> person;
   final List<AttentionItem> alerts;
-  final List<TimelineStep>? timeline;
+  final ProfileRecord? timeline;
   final List<Map<String, dynamic>> outputs;
   final int featuredCount;
   final ValueChanged<String> onNavigate;
@@ -49,9 +49,9 @@ class OverviewView extends StatelessWidget {
             title: 'Your record',
             trailing: const InfoTip(
               text:
-                  'Where your public profile is: from draft to the UNIDCOM website.',
+                  'What is on the website now, and where your latest changes are.',
             ),
-            child: TimelineBar(steps: timeline!),
+            child: TimelineBar(record: timeline!),
           ),
         DsRow(
           left: _Bio(bio: person['bio'] as String?, onNavigate: onNavigate),

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../csv_download.dart';
 import '../view_mode_store.dart';
 import 'attention.dart';
 import 'taxonomy.dart';
@@ -106,6 +107,7 @@ const dbTables = [
   // base entities
   'people',
   'outputs',
+  'funders', // before projects (projects.funder_id)
   'projects',
   'clusters',
   'labs',
@@ -113,6 +115,8 @@ const dbTables = [
   'collaborations',
   'tags',
   'output_taxonomy',
+  'articles',
+  'events',
   // link tables (FK into the above)
   'output_authors',
   'project_members',
@@ -230,7 +234,7 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, job_title, phone, '
           'orcid, ciencia_id, profile_status, review_note, public_visibility, last_verified_at, '
           'join_date, exit_date, phd, notes, integration_year, auth_user_id, updated_at, '
-          'orcid_synced_at, featured_outputs, '
+          'orcid_synced_at, featured_outputs, research_interests, board_role, '
           // category_path feeds the timeline's cascade filter — without it
           // every output reads as unclassified and any picked category
           // filters the list to zero. Caught on the deployed build.
@@ -432,6 +436,15 @@ Future<List<Map<String, dynamic>>> fetchOutputCluster(String outputId) async {
     if (group.any((output) => output['id'] == outputId)) return group;
   }
   return [];
+}
+
+/// Website address from a title: 'Zé Árvore' -> 'ze-arvore' (same result as
+/// sanity-push's slugify for Latin text, 80 chars max).
+String slugify(String value) {
+  final slug = _normalizeName(value).replaceAll(' ', '-');
+  return slug.length > 80
+      ? slug.substring(0, 80).replaceAll(RegExp(r'-+$'), '')
+      : slug;
 }
 
 String _normalizeName(String? value) {
@@ -1663,7 +1676,7 @@ Future<Map<String, dynamic>> fetchOutput(String id) async {
         .select(
           'id, title, reporting_year, type, subtype, category_path, doi, url, approval_status, '
           'full_reference, fct_selected, verified_online, macro_type, output_status, source, '
-          'doi_status, doi_checked_at, '
+          'doi_status, doi_checked_at, keywords, '
           'output_authors(role, author_position, people(id, preferred_name, membership_type, status)), '
           'project_outputs(projects(id, title, status))',
         )
@@ -1772,7 +1785,8 @@ Future<Map<String, dynamic>> fetchProject(String id) async {
         .select(
           'id, title, acronym, description, total_budget, currency, '
           'start_date, end_date, status, funding, category, notes, risk, '
-          'public_visibility, approval_status, '
+          'public_visibility, approval_status, slug, cover_image_url, keywords, location, '
+          'reference_number, website, start_precision, end_precision, partners, results, funder_id, '
           'project_members(role, people(id, preferred_name, membership_type, status)), '
           'project_outputs(outputs(id, title, reporting_year, type, doi, url)), '
           'project_clusters(clusters(id, code, name)), '
@@ -1913,7 +1927,7 @@ Future<Map<String, dynamic>> fetchLab(String id) async {
     final row = await db
         .from('labs')
         .select(
-          'id, code, name, overview, notes, '
+          'id, code, name, overview, notes, slug, short_intro, logo_url, cover_image_url, website, '
           'lab_members(is_coordinator, year, people(id, preferred_name, membership_type, status)), '
           'lab_objectives(objectives(id, code, name)), '
           'project_labs(projects(id, title, status)), '
@@ -1994,7 +2008,7 @@ Future<Map<String, dynamic>> fetchCluster(String id) async {
     final row = await db
         .from('clusters')
         .select(
-          'id, code, name, concern, notes, '
+          'id, code, name, concern, notes, description, '
           'objective_clusters(objectives(id, code, name)), '
           'project_clusters(projects(id, title, status, start_date))',
         )
@@ -2663,7 +2677,9 @@ Future<List<Map<String, dynamic>>> fetchReviewItems(String personId) async {
         .order('created_at');
     final outputs = await db
         .from('outputs')
-        .select('id, title, type, subtype, doi, reporting_year, created_at, output_authors!inner(person_id)')
+        .select(
+          'id, title, type, subtype, doi, reporting_year, created_at, output_authors!inner(person_id)',
+        )
         .eq('approval_status', 'pending')
         .eq('output_authors.person_id', personId)
         .order('created_at');
@@ -2741,11 +2757,128 @@ Future<void> runWebsiteSync() async {
   }
 }
 
-/// Pushes every published profile to the Sanity TEST project; returns how many.
-Future<int> runSanityPush() async {
+/// Sanity document groups the bridge can push, in push order (sanity-push ORDER).
+const sanityTypes = [
+  'funders',
+  'members',
+  'clusters',
+  'outputs',
+  'projects',
+  'labs',
+  'articles',
+  'events',
+];
+
+/// Pushes website content to the Sanity project the edge function targets
+/// (the test project by default). Null [types] = all. Returns type -> count.
+Future<Map<String, int>> runSanityPush({List<String>? types}) async {
+  final result = await _invokeSanityPush({'types': ?types});
+  final counts = result['counts'] as Map;
+  return {for (final e in counts.entries) '${e.key}': e.value as int};
+}
+
+/// Selected researcher and all linked outputs, including their coauthors.
+/// Preview by default; callers must explicitly confirm before a real push.
+Future<Map<String, dynamic>> runPersonSanityPush({
+  required String personId,
+  required List<String> outputIds,
+  bool dryRun = true,
+}) => _invokeSanityPush({
+  'personId': personId,
+  'outputIds': outputIds,
+  'dryRun': dryRun,
+});
+
+Future<Map<String, dynamic>> _invokeSanityPush(
+  Map<String, dynamic> body,
+) async {
   try {
-    final res = await db.functions.invoke('sanity-push', body: {});
-    return (res.data as Map)['pushed'] as int;
+    final res = await db.functions.invoke('sanity-push', body: body);
+    final result = Map<String, dynamic>.from(res.data as Map);
+    if (result['error'] != null) throw Exception(result['error']);
+    return result;
+  } on FunctionException catch (error) {
+    final details = error.details;
+    throw Exception(
+      details is Map
+          ? details['error'] ?? details
+          : details ?? error.reasonPhrase,
+    );
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Uploads a logo/cover to the public `site-images` bucket (admins only, 5 MB)
+/// and returns its URL; sanity-push fetches it from there.
+Future<String> uploadSiteImage(
+  ({Uint8List bytes, String name, String mime}) file,
+) async {
+  if (file.bytes.length > 5 * 1024 * 1024) {
+    throw Exception('Image must be 5 MB or smaller');
+  }
+  final ext = file.name.contains('.')
+      ? file.name.split('.').last.toLowerCase()
+      : 'jpg';
+  final path = '${DateTime.now().millisecondsSinceEpoch}.$ext';
+  try {
+    final bucket = db.storage.from('site-images');
+    await bucket.uploadBinary(
+      path,
+      file.bytes,
+      fileOptions: FileOptions(contentType: file.mime),
+    );
+    return bucket.getPublicUrl(path);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+/// Pick an image and upload it; null when the picker is cancelled (or on
+/// platforms without a picker).
+Future<String?> pickAndUploadSiteImage() async {
+  final file = await pickImageFile();
+  return file == null ? null : uploadSiteImage(file);
+}
+
+// Website content with no other home in the portal: funders, articles, events.
+// [table] is one of those three; callers pass a literal.
+Future<List<Map<String, dynamic>>> fetchSiteRows(
+  String table, {
+  String order = 'title',
+}) async {
+  try {
+    final rows = await db.from(table).select().order(order);
+    return rows.map((r) => Map<String, dynamic>.from(r)).toList();
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<String> createSiteRow(String table, Map<String, dynamic> fields) async {
+  try {
+    final row = await db.from(table).insert(fields).select('id').single();
+    return row['id'] as String;
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> updateSiteRow(
+  String table,
+  String id,
+  Map<String, dynamic> fields,
+) async {
+  try {
+    await db.from(table).update(fields).eq('id', id);
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+}
+
+Future<void> deleteSiteRow(String table, String id) async {
+  try {
+    await db.from(table).delete().eq('id', id);
   } catch (error) {
     throw Exception(_error(error));
   }

@@ -99,6 +99,10 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
   late final _email = _controller('email');
   late final _orcid = _controller('orcid');
   late final _cienciaId = _controller('ciencia_id');
+  late final _researchInterests = _controller('research_interests');
+  late final _boardRole = TextEditingController(
+    text: (widget.person?['board_role'] as List?)?.join(', ') ?? '',
+  );
   late final _phd = _controller('phd');
   late final _joinDate = _controller('join_date');
   late final _exitDate = _controller('exit_date');
@@ -128,6 +132,8 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
       _email,
       _orcid,
       _cienciaId,
+      _researchInterests,
+      _boardRole,
       _phd,
       _joinDate,
       _exitDate,
@@ -159,6 +165,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
           'phone',
           'orcid',
           'ciencia_id',
+          'research_interests',
         ];
         final current = <String, String?>{
           for (final key in keys) key: widget.person![key]?.toString(),
@@ -173,6 +180,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
           'phone': _phone.text.trim(),
           'orcid': _orcid.text.trim(),
           'ciencia_id': _cienciaId.text.trim(),
+          'research_interests': _researchInterests.text.trim(),
         };
         final count = await widget.stage(
           widget.person!['id'] as String,
@@ -200,6 +208,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
         'phone': _text(_phone),
         'orcid': _text(_orcid),
         'ciencia_id': _text(_cienciaId),
+        'research_interests': _text(_researchInterests),
         'phd': _text(_phd),
         'join_date': _text(_joinDate),
         'exit_date': _text(_exitDate),
@@ -211,6 +220,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
           'status': _status,
           'profile_status': _profileStatus,
           'public_visibility': _publicVisibility,
+          'board_role': parseList(_boardRole.text),
         });
       }
       if (_creating) {
@@ -246,6 +256,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
         'phone',
         'orcid',
         'ciencia_id',
+        'research_interests',
       ];
       final current = <String, String?>{
         for (final key in keys) key: widget.person![key]?.toString(),
@@ -260,6 +271,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
         'phone': _phone.text.trim(),
         'orcid': _orcid.text.trim(),
         'ciencia_id': _cienciaId.text.trim(),
+        'research_interests': _researchInterests.text.trim(),
       };
       final count = await widget.stageDraft!(
         widget.person!['id'] as String,
@@ -322,6 +334,11 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
               editField(_phone, 'Phone'),
               editField(_orcid, 'ORCID'),
               editField(_cienciaId, 'Ciencia ID'),
+              editField(
+                _researchInterests,
+                'Research interests (website)',
+                maxLines: 3,
+              ),
               if (!_ownerMode) ...[
                 editField(_phd, 'PhD'),
                 // ponytail: ISO text fields; swap to showDatePicker if typos bite.
@@ -348,6 +365,7 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
                   _profileStatuses,
                   (value) => setState(() => _profileStatus = value!),
                 ),
+                editField(_boardRole, 'Board roles (website, comma-separated)'),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Public visibility'),
@@ -375,7 +393,8 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
         ),
         if (widget.stageDraft != null)
           WithInfo(
-            info: 'Keeps your changes private; UNIDCOM does not see them until you submit.',
+            info:
+                'Keeps your changes private; UNIDCOM does not see them until you submit.',
             child: TextButton(
               onPressed: _saving ? null : _saveDraft,
               child: const Text('Save draft'),

@@ -603,6 +603,9 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
   late final _doi = _controller('doi');
   late final _url = _controller('url');
   late final _fullReference = _controller('full_reference');
+  late final _keywords = TextEditingController(
+    text: (widget.output?['keywords'] as List?)?.join(', ') ?? '',
+  );
   late final _reportingYear = _controller('reporting_year');
   late final _outputStatus = _controller('output_status');
   late List<String> _category = categorySegments(
@@ -623,6 +626,7 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
 
   bool get _creating => widget.output?['id'] == null;
   bool get _staged => !_creating && widget.asResearcher && widget.stage != null;
+  bool get _showKeywords => !_creating && !widget.asResearcher;
 
   TextEditingController _controller(String key) =>
       TextEditingController(text: widget.output?[key]?.toString() ?? '');
@@ -635,6 +639,7 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
       _doi,
       _url,
       _fullReference,
+      _keywords,
       _reportingYear,
       _outputStatus,
     ]) {
@@ -710,6 +715,10 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
     // Catching it here means a typo costs a glance, not a round trip.
     if (_text(_title) == null) {
       setState(() => _titleError = 'A title is required');
+      return;
+    }
+    if (_showKeywords && (parseList(_keywords.text)?.length ?? 0) > 6) {
+      showSnack(context, 'At most 6 keywords');
       return;
     }
     setState(() {
@@ -812,6 +821,9 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
             : int.tryParse(_reportingYear.text.trim()),
         'output_status': _text(_outputStatus),
         if (!widget.asResearcher) 'verified_online': _verifiedOnline,
+        // Website keywords (max 6): admin edits of existing outputs only; the
+        // researcher/staged paths carry text, not arrays.
+        if (_showKeywords) 'keywords': parseList(_keywords.text),
       };
       if (!_creating) {
         await updateOutput(widget.output!['id'] as String, fields);
@@ -914,6 +926,11 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
               if (!_creating) editField(_doi, 'DOI'),
               if (_staged) editField(_url, 'URL'),
               editField(_fullReference, 'Full reference', maxLines: 4),
+              if (_showKeywords)
+                editField(
+                  _keywords,
+                  'Keywords (website, up to 6, comma-separated)',
+                ),
               const SizedBox(height: 4),
               FutureBuilder<List<TaxonomyNode>>(
                 future: _taxonomy,

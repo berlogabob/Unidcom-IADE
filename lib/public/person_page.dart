@@ -16,6 +16,7 @@ import 'person/orcid_sync_dialog.dart';
 import 'person/output_row.dart';
 import 'person/person_dialogs.dart';
 import 'person/profile_sections.dart';
+import 'person/sanity_push.dart';
 import 'person/timeline.dart';
 
 export 'person/featured_outputs.dart'
@@ -284,6 +285,15 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                 onCheckOrcidSync: _checkOrcidSync,
                 onApprove: _approve,
               ),
+              if (admin)
+                PersonSanityPushButton(
+                  personId: widget.id,
+                  outputIds: outputAuthors
+                      .map(outputIdOf)
+                      .whereType<String>()
+                      .toSet()
+                      .toList(),
+                ),
               if (admin) _suggestionsSection(),
               ...personLabsSection(
                 context,

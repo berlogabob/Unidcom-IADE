@@ -57,10 +57,8 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
       title: 'Link output',
       search: (q) => fetchOutputs(query: q),
       label: (o) => o['title'] as String? ?? 'Untitled',
-      subtitle: (o) => [
-        o['reporting_year'],
-        o['type'],
-      ].where((v) => v != null).join(' · '),
+      subtitle: (o) =>
+          [o['reporting_year'], o['type']].where((v) => v != null).join(' · '),
     );
     if (output == null) return;
     await linkProjectOutput(widget.id, output['id'] as String);
@@ -80,7 +78,10 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
         if (q.trim().isEmpty) return all;
         final needle = q.toLowerCase();
         return all
-            .where((e) => (e['name'] as String? ?? '').toLowerCase().contains(needle))
+            .where(
+              (e) =>
+                  (e['name'] as String? ?? '').toLowerCase().contains(needle),
+            )
             .toList();
       },
       label: (e) => e['name'] as String? ?? e['code'] as String? ?? 'Unnamed',
@@ -103,7 +104,11 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
             .cast<Map<String, dynamic>>();
         final clusters = embedded(project, 'project_clusters', 'clusters');
         final labs = embedded(project, 'project_labs', 'labs');
-        final objectives = embedded(project, 'project_objectives', 'objectives');
+        final objectives = embedded(
+          project,
+          'project_objectives',
+          'objectives',
+        );
 
         return DetailBody(
           children: [
@@ -292,7 +297,6 @@ class _ProjectPageScreenState extends State<ProjectPageScreen> {
       ],
     );
   }
-
 }
 
 class _ProjectEditDialog extends StatefulWidget {
@@ -307,6 +311,7 @@ class _ProjectEditDialog extends StatefulWidget {
 class _ProjectEditDialogState extends State<_ProjectEditDialog> {
   static const _statuses = ['planned', 'active', 'completed', 'cancelled'];
   static const _approvalStatuses = ['pending', 'approved', 'rejected'];
+  static const _precisions = ['day', 'month', 'year'];
   static const _categories = [
     'Labs',
     'Operação',
@@ -324,6 +329,28 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
   late final _endDate = _controller('end_date');
   late final _budget = _controller('total_budget');
   late final _funding = _controller('funding');
+  late final _slug = _controller('slug');
+  late final _keywords = TextEditingController(
+    text: (widget.project?['keywords'] as List?)?.join(', ') ?? '',
+  );
+  late final _referenceNumber = _controller('reference_number');
+  late final _website = _controller('website');
+  late final _results = _controller('results');
+  late final _coverImage = _controller('cover_image_url');
+  // One partner name per line; entries whose name is unchanged keep their other keys (logo).
+  late final _partners = TextEditingController(
+    text: [
+      for (final p in widget.project?['partners'] as List? ?? const [])
+        (p as Map)['name'] ?? '',
+    ].join('\n'),
+  );
+  late String? _location = widget.project?['location'] as String?;
+  late String _startPrecision =
+      widget.project?['start_precision'] as String? ?? 'day';
+  late String _endPrecision =
+      widget.project?['end_precision'] as String? ?? 'day';
+  late String? _funderId = widget.project?['funder_id'] as String?;
+  List<Map<String, dynamic>> _funders = const [];
   late String? _category = widget.project?['category'] as String?;
   late final _currency = TextEditingController(
     text: widget.project?['currency'] as String? ?? 'EUR',
@@ -336,9 +363,32 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
       widget.project?['public_visibility'] as bool? ?? false;
   bool _saving = false;
 
-  TextEditingController _controller(String key) => TextEditingController(
-    text: widget.project?[key]?.toString() ?? '',
-  );
+  TextEditingController _controller(String key) =>
+      TextEditingController(text: widget.project?[key]?.toString() ?? '');
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSiteRows('funders')
+        .then((rows) {
+          if (mounted) setState(() => _funders = rows);
+        })
+        .catchError((_) {}); // the funder picker just stays empty
+  }
+
+  List<Map<String, dynamic>> _partnerList() {
+    final old = {
+      for (final p in widget.project?['partners'] as List? ?? const [])
+        (p as Map)['name']: Map<String, dynamic>.from(p),
+    };
+    final names = _partners.text
+        .split('\n')
+        .map((n) => n.trim())
+        .where((n) => n.isNotEmpty);
+    return [
+      for (final n in names) old[n] ?? {'name': n},
+    ];
+  }
 
   @override
   void dispose() {
@@ -351,6 +401,13 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
       _budget,
       _currency,
       _funding,
+      _slug,
+      _keywords,
+      _referenceNumber,
+      _website,
+      _results,
+      _coverImage,
+      _partners,
     ]) {
       c.dispose();
     }
@@ -384,6 +441,17 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
         'status': _status,
         'approval_status': _approvalStatus,
         'public_visibility': _publicVisibility,
+        'slug': _text(_slug),
+        'keywords': parseList(_keywords.text),
+        'location': _location,
+        'reference_number': _text(_referenceNumber),
+        'website': _text(_website),
+        'start_precision': _startPrecision,
+        'end_precision': _endPrecision,
+        'results': _text(_results),
+        'cover_image_url': _text(_coverImage),
+        'partners': _partnerList(),
+        'funder_id': _funderId,
       };
       if (_creating) {
         await createProject(fields);
@@ -427,6 +495,95 @@ class _ProjectEditDialogState extends State<_ProjectEditDialog> {
                 ],
               ),
               editField(_funding, 'Funding (e.g. FCT, Interno, Outro)'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DropdownButtonFormField<String?>(
+                  initialValue: _funders.any((f) => f['id'] == _funderId)
+                      ? _funderId
+                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Funder (website)',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('None')),
+                    for (final f in _funders)
+                      DropdownMenuItem(
+                        value: f['id'] as String,
+                        child: Text(f['title'] as String? ?? ''),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _funderId = v),
+                ),
+              ),
+              editField(_referenceNumber, 'Reference number'),
+              editField(_website, 'Project website'),
+              editField(_slug, 'Slug (website address)'),
+              editField(_keywords, 'Keywords (comma-separated)'),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: DropdownButtonFormField<String?>(
+                  initialValue: _location,
+                  decoration: const InputDecoration(
+                    labelText: 'Location',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: null, child: Text('None')),
+                    DropdownMenuItem(
+                      value: 'national',
+                      child: Text('national'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'international',
+                      child: Text('international'),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => _location = v),
+                ),
+              ),
+              editDropdown(
+                'Start date shown as',
+                _startPrecision,
+                _precisions,
+                (v) => setState(() => _startPrecision = v!),
+              ),
+              editDropdown(
+                'End date shown as',
+                _endPrecision,
+                _precisions,
+                (v) => setState(() => _endPrecision = v!),
+              ),
+              editField(
+                _results,
+                'Results (website; blank line = new paragraph)',
+                maxLines: 5,
+              ),
+              editField(_partners, 'Partners (one per line)', maxLines: 3),
+              Row(
+                children: [
+                  Expanded(child: editField(_coverImage, 'Cover image URL')),
+                  const SizedBox(width: 8),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: OutlinedButton(
+                      onPressed: _saving
+                          ? null
+                          : () async {
+                              try {
+                                final url = await pickAndUploadSiteImage();
+                                if (url != null) {
+                                  setState(() => _coverImage.text = url);
+                                }
+                              } catch (error) {
+                                if (context.mounted) showSnack(context, '$error');
+                              }
+                            },
+                      child: const Text('Upload'),
+                    ),
+                  ),
+                ],
+              ),
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: DropdownButtonFormField<String?>(

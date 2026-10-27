@@ -30,11 +30,17 @@ class _LabPageScreenState extends State<LabPageScreen> {
       fields: const [
         EntityField('code', 'Code'),
         EntityField('name', 'Name'),
+        EntityField('slug', 'Slug (website address)'),
+        EntityField('short_intro', 'Short intro', maxLines: 3, limit: 300),
         EntityField('overview', 'Overview', maxLines: 4),
-        EntityField('notes', 'Notes', maxLines: 3),
+        EntityField('website', 'Website'),
+        EntityField('logo_url', 'Logo', kind: EntityKind.image),
+        EntityField('cover_image_url', 'Cover image', kind: EntityKind.image),
+        EntityField('notes', 'Notes (internal)', maxLines: 3),
       ],
       create: createLab,
       update: updateLab,
+      pickImage: pickAndUploadSiteImage,
     )) {
       _refresh();
     }
@@ -62,7 +68,10 @@ class _LabPageScreenState extends State<LabPageScreen> {
         if (q.trim().isEmpty) return all;
         final needle = q.toLowerCase();
         return all
-            .where((o) => (o['name'] as String? ?? '').toLowerCase().contains(needle))
+            .where(
+              (o) =>
+                  (o['name'] as String? ?? '').toLowerCase().contains(needle),
+            )
             .toList();
       },
       label: (o) => o['name'] as String? ?? o['code'] as String? ?? 'Unnamed',
@@ -80,10 +89,10 @@ class _LabPageScreenState extends State<LabPageScreen> {
         final admin = isAdmin;
         final allMembers = (lab['lab_members'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
-        final years =
-            {_year, ...allMembers.map((m) => m['year'] as int? ?? _year)}
-                .toList()
-              ..sort((a, b) => b.compareTo(a));
+        final years = {
+          _year,
+          ...allMembers.map((m) => m['year'] as int? ?? _year),
+        }.toList()..sort((a, b) => b.compareTo(a));
         final objectives = embedded(lab, 'lab_objectives', 'objectives');
         final projects = embedded(lab, 'project_labs', 'projects');
 
@@ -164,9 +173,7 @@ class _LabPageScreenState extends State<LabPageScreen> {
           child: PersonCard(
             name: person['preferred_name'] as String? ?? 'Unnamed',
             membershipType: person['membership_type'] as String?,
-            status: isCoordinator
-                ? 'Coordinator'
-                : person['status'] as String?,
+            status: isCoordinator ? 'Coordinator' : person['status'] as String?,
             onTap: () => context.go('/people/$personId'),
           ),
         ),

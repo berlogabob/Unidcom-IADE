@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' hide StepState;
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/app/v1/overview_view.dart';
 import 'package:unidcom_iade/data/attention.dart';
@@ -7,7 +7,13 @@ import 'package:unidcom_iade/data/timeline.dart';
 // Rui 25 Sep, Overview TARGET LAYOUT (B2 + A2·6, A2·9, A3·8): title card
 // (name · researcher type) · yellow "Needs your attention" · dated timeline ·
 // [Bio | Summary] · three recent-output cards naming the issue.
-Map<String, dynamic> out(String id, String title, String path, int year, {List<String> codes = const []}) => {
+Map<String, dynamic> out(
+  String id,
+  String title,
+  String path,
+  int year, {
+  List<String> codes = const [],
+}) => {
   'id': id,
   'title': title,
   'category_path': path,
@@ -34,15 +40,22 @@ Future<List<String>> pump(WidgetTester tester) async {
             'membership_type': 'integrated',
             'bio': 'Researcher in interaction design and HCI.',
           },
-          alerts: const [AttentionItem('3 outputs have issues → Review', '/app/outputs')],
-          timeline: [
-            TimelineStep('Draft', StepState.done, DateTime.utc(2026, 8, 4)),
-            const TimelineStep('Submitted', StepState.current),
-            const TimelineStep('Under review', StepState.todo),
-            const TimelineStep('Published', StepState.todo),
+          alerts: const [
+            AttentionItem('3 outputs have issues → Review', '/app/outputs'),
           ],
+          timeline: profileRecord(const {
+            'profile_status': 'pending_review',
+            'round_started_at': '2026-08-04T10:00:00Z',
+            'submitted_at': '2026-08-05T10:00:00Z',
+          }),
           outputs: [
-            out('1', 'Accessibility in Co-Design', 'Artigos em revistas', 2025, codes: ['missing_doi']),
+            out(
+              '1',
+              'Accessibility in Co-Design',
+              'Artigos em revistas',
+              2025,
+              codes: ['missing_doi'],
+            ),
             out('2', 'Participatory Design', 'Livros › Autor', 2024),
             out('3', 'Service Design', 'Livros › Autor', 2023),
             out('4', 'Older Work', 'Livros', 2020),
@@ -71,25 +84,35 @@ void main() {
     final summary = top(tester, find.text('Summary'));
     final recent = top(tester, find.text('Recent outputs'));
     expect(title < banner && banner < timeline && timeline < bio, isTrue);
-    expect((bio - summary).abs() < 4, isTrue, reason: 'Bio and Summary share a row');
+    expect(
+      (bio - summary).abs() < 4,
+      isTrue,
+      reason: 'Bio and Summary share a row',
+    );
     expect(bio < recent, isTrue);
   });
 
-  testWidgets('summary counts per type, issues and featured; numbers open outputs filtered', (tester) async {
-    final routes = await pump(tester);
-    expect(find.text('4 outputs'), findsNothing); // total removed (user, 1 Oct)
-    expect(find.text('3 Books'), findsOneWidget);
-    expect(find.text('1 with issues'), findsOneWidget);
-    expect(find.text('Featured 2/5'), findsOneWidget);
-    await tester.tap(find.text('3 Books'));
-    await tester.tap(find.text('1 with issues'));
-    await tester.tap(find.text('Featured 2/5'));
-    expect(routes, [
-      '/app/outputs?type=Livros',
-      '/app/outputs?issues=1',
-      '/app/outputs?view=featured',
-    ]);
-  });
+  testWidgets(
+    'summary counts per type, issues and featured; numbers open outputs filtered',
+    (tester) async {
+      final routes = await pump(tester);
+      expect(
+        find.text('4 outputs'),
+        findsNothing,
+      ); // total removed (user, 1 Oct)
+      expect(find.text('3 Books'), findsOneWidget);
+      expect(find.text('1 with issues'), findsOneWidget);
+      expect(find.text('Featured 2/5'), findsOneWidget);
+      await tester.tap(find.text('3 Books'));
+      await tester.tap(find.text('1 with issues'));
+      await tester.tap(find.text('Featured 2/5'));
+      expect(routes, [
+        '/app/outputs?type=Livros',
+        '/app/outputs?issues=1',
+        '/app/outputs?view=featured',
+      ]);
+    },
+  );
 
   testWidgets('three recent outputs, issue named in full', (tester) async {
     await pump(tester);
@@ -100,9 +123,14 @@ void main() {
     expect(find.text('No issues'), findsNWidgets(2));
   });
 
-  testWidgets('bio shows first lines and Edit bio opens My Profile', (tester) async {
+  testWidgets('bio shows first lines and Edit bio opens My Profile', (
+    tester,
+  ) async {
     final routes = await pump(tester);
-    expect(find.text('Researcher in interaction design and HCI.'), findsOneWidget);
+    expect(
+      find.text('Researcher in interaction design and HCI.'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Edit bio →'));
     expect(routes, ['/app/profile']);
   });

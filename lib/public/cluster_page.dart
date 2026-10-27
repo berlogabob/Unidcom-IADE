@@ -27,7 +27,8 @@ class _ClusterPageScreenState extends State<ClusterPageScreen> {
         EntityField('code', 'Code'),
         EntityField('name', 'Name'),
         EntityField('concern', 'Concern', maxLines: 2),
-        EntityField('notes', 'Notes', maxLines: 4),
+        EntityField('description', 'Description (website)', maxLines: 4),
+        EntityField('notes', 'Notes (internal)', maxLines: 4),
       ],
       create: createCluster,
       update: updateCluster,
@@ -42,8 +43,11 @@ class _ClusterPageScreenState extends State<ClusterPageScreen> {
       future: _cluster,
       builder: (context, cluster) {
         final admin = isAdmin;
-        final objectives =
-            embedded(cluster, 'objective_clusters', 'objectives');
+        final objectives = embedded(
+          cluster,
+          'objective_clusters',
+          'objectives',
+        );
         final projects = embedded(cluster, 'project_clusters', 'projects');
 
         return DetailBody(

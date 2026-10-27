@@ -126,7 +126,7 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
               ),
               timeline: snapshot.data == null
                   ? null
-                  : profileTimeline({
+                  : profileRecord({
                       ...snapshot.data!,
                       'review_note': person['review_note'],
                     }),
@@ -180,7 +180,7 @@ class _ResearcherHomePageState extends State<ResearcherHomePage> {
                                 : Padding(
                                     padding: const EdgeInsets.only(bottom: 16),
                                     child: TimelineBar(
-                                      steps: profileTimeline({
+                                      record: profileRecord({
                                         ...snap.data!,
                                         'review_note': person['review_note'],
                                       }),
