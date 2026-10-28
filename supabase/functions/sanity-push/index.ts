@@ -100,21 +100,18 @@ Deno.serve(async (req) => {
   const memberTypes = new Map<string, string | undefined>();
   async function memberMutation(p: Row) {
     const found = await resolve.member(p);
-    let type: string | undefined;
-    if (!found.existing) {
-      const title = memberTypeTitle(p);
-      if (title && !memberTypes.has(title)) {
-        try {
-          const ids: string[] = await query('*[_type == "memberType" && !(_id in path("drafts.**")) && lower(title) == $title]._id', { title: title.toLowerCase() });
-          memberTypes.set(title, ids.length === 1 ? ids[0] : undefined);
-        } catch (e) {
-          memberTypes.set(title, undefined);
-          warnings.push(`Member ${p.id}: memberType lookup failed: ${String(e)}`);
-        }
+    const title = memberTypeTitle(p);
+    if (title && !memberTypes.has(title)) {
+      try {
+        const ids: string[] = await query('*[_type == "memberType" && !(_id in path("drafts.**")) && lower(title) == $title]._id', { title: title.toLowerCase() });
+        memberTypes.set(title, ids.length === 1 ? ids[0] : undefined);
+      } catch (e) {
+        memberTypes.set(title, undefined);
+        warnings.push(`Member ${p.id}: memberType lookup failed: ${String(e)}`);
       }
-      type = title ? memberTypes.get(title) : undefined;
-      if (!type) warnings.push(`Member ${p.id}: cannot resolve memberType for ${p.membership_type ?? "missing membership_type"}${title ? ` (${title})` : "; no certain mapping (phd must be explicitly true/false for integrated members)"}`);
     }
+    const type = title ? memberTypes.get(title) : undefined;
+    if (!type && (!found.existing || title)) warnings.push(`Member ${p.id}: cannot resolve memberType for ${p.membership_type ?? "missing membership_type"}${title ? ` (${title})` : "; no certain mapping (phd must be explicitly true/false for integrated members)"}`);
     return withImage(mutations(p, found.existing ? found.id : undefined, type), "photo", p.photo_url);
   }
   async function outputsWhere(filter: string) {

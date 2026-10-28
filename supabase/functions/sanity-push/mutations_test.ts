@@ -49,6 +49,7 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
   let outputResults: any[] = [];
   let lookupFails = false;
   let lookupResult: string[] = ["non-doctorate-id"];
+  let storedMembership = "collaborator";
   try {
     Deno.env.get = (name) => ({ SANITY_TOKEN: "test", SUPABASE_URL: "https://db.test" })[name];
     Deno.serve = ((fn: typeof handler) => { handler = fn; }) as any;
@@ -64,7 +65,7 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
       if (url.endsWith("/auth/v1/user")) data = { app_metadata: { role: "admin" } };
       else if (url.includes("/people?")) data = [
         { ...row, public_visibility: false, photo_url: "https://photo.test" },
-        { ...row, id: "u2", public_visibility: false, sanity_id: "member-2", membership_type: "collaborator" },
+        { ...row, id: "u2", public_visibility: false, sanity_id: "member-2", membership_type: storedMembership },
         { ...row, id: "unrelated" },
       ];
       else if (url.includes("/articles?")) {
@@ -123,6 +124,15 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
     assertEquals(writes.slice(1).map((w) => w.body.sanity_id), ["rims-o1", "rims-u1"]);
     const personOnly = await handler(request({ personId: "u2", dryRun: true }));
     assertEquals((await personOnly.json()).counts, { outputs: 0, members: 1 });
+    storedMembership = "integrated";
+    const storedMember = await handler(request({ personId: "u2", dryRun: true }));
+    const storedPlan = await storedMember.json();
+    assertEquals(storedPlan.warnings, []);
+    assertEquals(storedPlan.mutations[1].patch.id, "member-2");
+    assertEquals(storedPlan.mutations[1].patch.setIfMissing.type, { _type: "reference", _ref: "non-doctorate-id" });
+    assertEquals("type" in storedPlan.mutations[1].patch.set, false);
+    assertEquals(storedPlan.mutations[1].patch.unset.includes("type"), false);
+    storedMembership = "collaborator";
     lookupFails = true;
     const unresolved = await handler(request({ personId: "u1", dryRun: true }));
     assertEquals(unresolved.status, 200);
@@ -171,6 +181,7 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
     assertEquals(matchedPlan.warnings, []);
     assertEquals(matchedPlan.mutations[0].createIfNotExists._id, "matched-output");
     assertEquals(matchedPlan.mutations[2].createIfNotExists._id, "matched-member");
+    assertEquals(matchedPlan.mutations[3].patch.setIfMissing.type, { _type: "reference", _ref: "non-doctorate-id" });
     assertEquals(matchedPlan.mutations.at(-1).patch.id, "matched-output");
     assertEquals(matchedPlan.mutations.at(-1).patch.set.members[0]._ref, "matched-member");
     for (const index of [1, 3]) {
@@ -216,6 +227,7 @@ Deno.test("member mapping patches required fields on existing documents", () => 
   assertEquals(patch.patch.setIfMissing.slug, { _type: "slug", current: "ze-arvore" });
   const updated = (mutations({ ...row, sanity_id: "existing", board_role: ["scientificDirector"] }, undefined, "resolved-id")[1] as any).patch;
   assertEquals("type" in updated.set, false);
+  assertEquals(updated.setIfMissing.type, { _type: "reference", _ref: "resolved-id" });
   assertEquals(updated.set.boardRole, "scientificDirector");
   assertEquals(patch.patch.unset, ["orcid", "cienciaId", "researchInterests", "boardRole"]);
   assertEquals((mutations({ ...row, sanity_id: "abc" })[0] as any).createIfNotExists._id, "abc");
@@ -223,6 +235,24 @@ Deno.test("member mapping patches required fields on existing documents", () => 
   assertEquals(published(row), true);
   assertEquals(published({ ...row, public_visibility: false }), false);
   assertEquals(published({ ...row, merged_into: "x" }), false);
+});
+
+Deno.test("existing members fill missing types without setting or unsetting an existing type", () => {
+  for (const [member, existing] of [[{ ...row, sanity_id: "stored" }, undefined], [row, "resolved"]] as const) {
+    const [create, patch] = mutations(member, existing, "member-type-id") as any[];
+    assertEquals("type" in create.createIfNotExists, false);
+    assertEquals(patch.patch.setIfMissing.type, { _type: "reference", _ref: "member-type-id" });
+    assertEquals("type" in patch.patch.set, false);
+    assertEquals(patch.patch.unset.includes("type"), false);
+    const unresolved = (mutations(member, existing)[1] as any).patch;
+    assertEquals("type" in unresolved.setIfMissing, false);
+    assertEquals("type" in unresolved.set, false);
+    assertEquals(unresolved.unset.includes("type"), false);
+  }
+  const [create, patch] = mutations(row, undefined, "member-type-id") as any[];
+  assertEquals(create.createIfNotExists.type, { _type: "reference", _ref: "member-type-id" });
+  assertEquals(patch.patch.set.type, create.createIfNotExists.type);
+  assertEquals("type" in patch.patch.setIfMissing, false);
 });
 
 Deno.test("project mapping", () => {

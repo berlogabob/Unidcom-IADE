@@ -26,6 +26,7 @@ Deno.test("mock GROQ resolves Verónica by email despite different slug, preserv
   assertEquals(pair[0].createIfNotExists._id, found.id);
   assertEquals("type" in pair[0].createIfNotExists, false);
   assertEquals("type" in pair[1].patch.set, false);
+  assertEquals(pair[1].patch.setIfMissing.type, { _type: "reference", _ref: "must-not-overwrite" });
   assertEquals(pair[1].patch.unset.includes("type"), false);
 });
 
@@ -81,7 +82,7 @@ Deno.test("outputs resolve by normalized DOI/link then normalized title and year
   await assertRejects(() => ambiguous.output({ ...output, doi: null }), Error, "Ambiguous researchOutput");
 });
 
-Deno.test("only explicit new-member mappings choose a memberType title", () => {
+Deno.test("explicit mappings choose a memberType title for new and existing members", () => {
   assertEquals(memberTypeTitle({ ...person, membership_type: "integrated", phd: false }), "Non-Doctorate Researcher");
   assertEquals(memberTypeTitle({ ...person, membership_type: "integrated", phd: true }), "Doctorate Researcher");
   for (const phd of [undefined, null, "Design", "false"]) {
@@ -90,6 +91,9 @@ Deno.test("only explicit new-member mappings choose a memberType title", () => {
   assertEquals(memberTypeTitle({ ...person, membership_type: "external" }), "Visiting researcher");
   assertEquals(memberTypeTitle(person), undefined);
   assertEquals(memberTypeTitle({ ...person, membership_type: "unknown" }), undefined);
+  assertEquals(memberTypeTitle({ ...person, sanity_id: "stored", membership_type: "integrated", phd: false }), "Non-Doctorate Researcher");
+  assertEquals(memberTypeTitle({ ...person, sanity_id: "stored", membership_type: "integrated", phd: true }), "Doctorate Researcher");
+  assertEquals(memberTypeTitle({ ...person, sanity_id: "stored", membership_type: "external" }), "Visiting researcher");
   const pair = mutations(person, undefined, "target-type-id") as any[];
   assertEquals(pair[1].patch.set.type._ref, "target-type-id");
 });

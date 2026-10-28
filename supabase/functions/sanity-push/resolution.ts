@@ -74,6 +74,7 @@ export function resolver(query: Query) {
   };
 }
 
+// Resolve for new and existing members; mutations preserve any existing type.
 export function memberTypeTitle(p: Row): string | undefined {
   switch (p.membership_type) {
     case "integrated":

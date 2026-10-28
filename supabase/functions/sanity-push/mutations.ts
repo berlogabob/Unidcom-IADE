@@ -60,14 +60,14 @@ export function flexibleDate(d: string | null, precision: string | null) {
   return p === "day" ? { precision: p, date: d } : { precision: p, month: d.slice(0, p === "year" ? 4 : 7) };
 }
 
-// Existing members own their Sanity type, regardless of the portal membership label.
+// Existing members keep their Sanity type; only fill it when missing.
 export function mutations(r: Row, existing?: string, memberType?: string) {
-  if (r.sanity_id || existing) memberType = undefined;
+  const isExisting = !!(r.sanity_id || existing);
   const id = r.sanity_id || existing || `rims-${r.id}`;
   const extra: Fields = { name: r.preferred_name };
-  if (memberType) extra.type = ref(memberType);
+  if (memberType && !isExisting) extra.type = ref(memberType);
   const result = build(id, "member", r.preferred_name, {
-    ...(memberType && { type: ref(memberType) }),
+    ...(memberType && !isExisting && { type: ref(memberType) }),
     name: r.preferred_name,
     shortBio: r.bio,
     orcid: r.orcid,
@@ -76,7 +76,10 @@ export function mutations(r: Row, existing?: string, memberType?: string) {
     boardRole: r.board_role?.[0],
   }, extra);
   // Studio locks published slugs; fill missing slugs without changing existing URLs.
-  (result[1].patch as Fields).setIfMissing = { slug: { _type: "slug", current: slugify(r.preferred_name) } };
+  (result[1].patch as Fields).setIfMissing = {
+    slug: { _type: "slug", current: slugify(r.preferred_name) },
+    ...(memberType && isExisting && { type: ref(memberType) }),
+  };
   return result;
 }
 
