@@ -3,11 +3,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/app/output_wizard.dart';
 import 'package:unidcom_iade/data/enrich_client.dart';
 import 'package:unidcom_iade/data/taxonomy.dart';
+import 'package:unidcom_iade/widgets/taxonomy_picker.dart';
 
 const _taxonomy = [
   TaxonomyNode('Livros', [
     TaxonomyNode('Livro (autor)', []),
     TaxonomyNode('Livro (editor)', []),
+    TaxonomyNode('Capítulos', [
+      TaxonomyNode('Indexados', [TaxonomyNode('Co-autor', [])]),
+      TaxonomyNode('Outros', []),
+    ]),
   ]),
   TaxonomyNode('Formação avançada', []),
 ];
@@ -108,12 +113,81 @@ void main() {
     await tapVisible(tester, 'Continue');
     expect(find.text('Livro (autor)'), findsOneWidget);
     expect(find.text('Livro (editor)'), findsOneWidget);
+    expect(find.byType(TaxonomyPicker), findsNothing);
+    await tapVisible(tester, 'Livro (autor)');
+    expect(find.byType(TaxonomyPicker), findsNothing);
+    expect(find.text('Refine (optional)'), findsNothing);
+    expect(find.text('Detail'), findsNothing);
 
     await tapVisible(tester, 'Back');
     await tapVisible(tester, 'Formação avançada');
     await tapVisible(tester, 'Continue');
     expect(find.widgetWithText(TextField, 'Title'), findsOneWidget);
   });
+
+  for (final refine in [false, true]) {
+    testWidgets('subtype refinement is optional (refine: $refine)', (
+      tester,
+    ) async {
+      Map<String, dynamic>? submitted;
+      await pumpWizard(
+        tester,
+        create: (fields, {projectIds = const []}) async {
+          submitted = fields;
+          return 'new-id';
+        },
+      );
+      await tapVisible(tester, 'No DOI — enter manually');
+      await tapVisible(tester, 'Livros');
+      await tapVisible(tester, 'Continue');
+      await tapVisible(tester, 'Capítulos');
+      expect(find.text('Refine (optional)'), findsOneWidget);
+      expect(find.byType(TaxonomyPicker), findsNothing);
+      expect(find.text('Detail'), findsNothing);
+
+      if (refine) {
+        await tapVisible(tester, 'Refine (optional)');
+        expect(
+          find.descendant(
+            of: find.byType(ExpansionTile),
+            matching: find.byType(TaxonomyPicker),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Category'), findsNothing);
+        expect(find.text('Subcategory'), findsNothing);
+        expect(find.text('Detail'), findsOneWidget);
+        expect(find.text('Role'), findsNothing);
+        await tester.tap(find.byType(DropdownButtonFormField<String?>));
+        await tester.pumpAndSettle();
+        await tapVisible(tester, 'Indexados');
+        expect(find.text('Role'), findsOneWidget);
+        await tester.tap(find.byType(DropdownButtonFormField<String?>).last);
+        await tester.pumpAndSettle();
+        await tapVisible(tester, 'Co-autor');
+        expect(find.byType(DropdownButtonFormField<String?>), findsNWidgets(2));
+      }
+
+      await tapVisible(tester, 'Continue');
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Title'),
+        'Chapter',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Reporting year'),
+        '2026',
+      );
+      await tapVisible(tester, 'Continue');
+      await tapVisible(tester, 'Continue');
+      await tapVisible(tester, 'Submit for UNIDCOM review');
+      expect(
+        submitted?['category_path'],
+        refine
+            ? 'Livros › Capítulos › Indexados › Co-autor'
+            : 'Livros › Capítulos',
+      );
+    });
+  }
 
   testWidgets('DOI lookup prefills metadata title', (tester) async {
     await pumpWizard(tester);

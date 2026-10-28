@@ -384,6 +384,9 @@ class _OutputWizardState extends State<OutputWizard> {
 
   Widget _subtypeStep() {
     final children = _selectedRoot!.children;
+    final subtype = _category.length > 1
+        ? children.where((node) => node.label == _category[1]).firstOrNull
+        : null;
     return RadioGroup<String>(
       groupValue: _category.length > 1 ? _category[1] : null,
       onChanged: (value) =>
@@ -393,20 +396,21 @@ class _OutputWizardState extends State<OutputWizard> {
         children: [
           for (final child in children)
             RadioListTile<String>(title: Text(child.label), value: child.label),
-          if (_category.length > 1 &&
-              children
-                      .where((node) => node.label == _category[1])
-                      .firstOrNull
-                      ?.children
-                      .isNotEmpty ==
-                  true) ...[
-            const SizedBox(height: 8),
-            TaxonomyPicker(
-              roots: _roots!,
-              value: _category,
-              onChanged: (value) => setState(() => _category = value),
+          if (subtype != null && subtype.children.isNotEmpty)
+            ExpansionTile(
+              key: ValueKey(subtype.label),
+              title: const Text('Refine (optional)'),
+              children: [
+                TaxonomyPicker(
+                  roots: subtype.children,
+                  value: _category.skip(2).toList(),
+                  labels: const ['Detail', 'Role'],
+                  onChanged: (value) => setState(
+                    () => _category = [..._category.take(2), ...value],
+                  ),
+                ),
+              ],
             ),
-          ],
         ],
       ),
     );
