@@ -8,12 +8,14 @@ import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
 import '../widgets/taxonomy_picker.dart';
 
-enum WizardStep { doi, type, subtype, metadata, project, review }
+enum WizardStep { owner, doi, type, subtype, metadata, project, review }
 
 List<WizardStep> wizardSteps({
+  bool pickOwner = false,
   required bool typeHasChildren,
   required bool hasProjects,
 }) => [
+  if (pickOwner) WizardStep.owner,
   WizardStep.doi,
   WizardStep.type,
   if (typeHasChildren) WizardStep.subtype,
@@ -24,6 +26,7 @@ List<WizardStep> wizardSteps({
 
 Future<bool?> showOutputWizard(
   BuildContext context, {
+  Future<({String id, String name})?> Function()? pickOwner,
   Future<DoiWork?> Function(String doi) lookup = lookupDoi,
   Future<List<Map<String, dynamic>>> Function({String? doi, String? title})
       findSimilar =
@@ -49,6 +52,7 @@ Future<bool?> showOutputWizard(
         width: 760,
         height: 720,
         child: OutputWizard(
+          pickOwner: pickOwner,
           lookup: lookup,
           findSimilar: findSimilar,
           loadTaxonomy: loadTaxonomy,
@@ -65,6 +69,7 @@ Future<bool?> showOutputWizard(
 class OutputWizard extends StatefulWidget {
   const OutputWizard({
     super.key,
+    this.pickOwner,
     this.lookup = lookupDoi,
     this.findSimilar = findSimilarOutputs,
     this.loadTaxonomy = fetchOutputTaxonomy,
@@ -74,6 +79,7 @@ class OutputWizard extends StatefulWidget {
     this.create = createMyOutput,
   });
 
+  final Future<({String id, String name})?> Function()? pickOwner;
   final Future<DoiWork?> Function(String doi) lookup;
   final Future<List<Map<String, dynamic>>> Function({
     String? doi,
@@ -109,6 +115,8 @@ class _OutputWizardState extends State<OutputWizard> {
   List<String> _category = const [];
   Map<String, dynamic>? _doiMatch;
   List<Map<String, dynamic>> _titleMatches = const [];
+  ({String id, String name})? _owner;
+  bool _pickingOwner = false;
   int _current = 0;
   bool _lookingUp = false;
   bool _saving = false;
@@ -130,7 +138,7 @@ class _OutputWizardState extends State<OutputWizard> {
       final loaded = await Future.wait<Object?>([
         widget.loadTaxonomy(),
         widget.loadKinds(),
-        widget.loadPerson(),
+        widget.pickOwner == null ? widget.loadPerson() : Future.value(null),
       ]);
       final person = loaded[2] as Map<String, dynamic>?;
       final projects = person == null
@@ -172,11 +180,13 @@ class _OutputWizardState extends State<OutputWizard> {
   }
 
   List<WizardStep> get _steps => wizardSteps(
+    pickOwner: widget.pickOwner != null,
     typeHasChildren: _selectedRoot?.children.isNotEmpty ?? false,
     hasProjects: _projects.isNotEmpty,
   );
 
   bool _valid(WizardStep step) => switch (step) {
+    WizardStep.owner => _owner != null && !_pickingOwner,
     WizardStep.doi => _doiMatch == null && !_lookingUp,
     WizardStep.type => _category.isNotEmpty,
     WizardStep.subtype => _category.length >= 2,
@@ -292,6 +302,29 @@ class _OutputWizardState extends State<OutputWizard> {
       setState(() => _saving = false);
     }
   }
+
+  Future<void> _pickOwner() async {
+    setState(() => _pickingOwner = true);
+    try {
+      final owner = await widget.pickOwner!();
+      if (mounted && owner != null) setState(() => _owner = owner);
+    } catch (error) {
+      if (mounted) showSnack(context, error.toString());
+    } finally {
+      if (mounted) setState(() => _pickingOwner = false);
+    }
+  }
+
+  Widget _ownerStep() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      if (_owner != null) Text('For: ${_owner!.name}'),
+      FilledButton.tonal(
+        onPressed: _pickingOwner ? null : _pickOwner,
+        child: Text(_owner == null ? 'Choose person' : 'Change person'),
+      ),
+    ],
+  );
 
   Widget _doiStep() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,6 +454,7 @@ class _OutputWizardState extends State<OutputWizard> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (_owner != null) Text('For: ${_owner!.name}'),
         Text(_category.join(categorySeparator)),
         Text(_title.text.trim()),
         Text(_year.text.trim()),
@@ -440,6 +474,7 @@ class _OutputWizardState extends State<OutputWizard> {
   );
 
   Widget _content(WizardStep step) => switch (step) {
+    WizardStep.owner => _ownerStep(),
     WizardStep.doi => _doiStep(),
     WizardStep.type => _typeStep(),
     WizardStep.subtype => _subtypeStep(),
@@ -510,6 +545,7 @@ class _OutputWizardState extends State<OutputWizard> {
               for (final step in steps)
                 Step(
                   title: Text(switch (step) {
+                    WizardStep.owner => 'For whom',
                     WizardStep.doi => 'DOI',
                     WizardStep.type => 'Type',
                     WizardStep.subtype => 'Subtype',

@@ -921,5 +921,5 @@ Decision: Hugo static site stays as the safe design mirror; test Sanity `ld5jhf2
 - [x] I3b (codex; migration applied live as 20261028163449, sanity-push deployed, 25 deno + 648 flutter tests, analyze clean; local commit) additive migration `sanity_synced_at`, `sanity_error` on people/outputs, set by publish; show "On Sanity ✓ date / failed + Retry" next to the site state
 - [x] I4 (codex; 650 flutter tests pass, analyze clean; local commit; N+1 query for output counts per ready person, fine at current volume) Publish = one click (no confirm bar, undo toast instead), result reports BOTH targets; "Ready to publish" lists outputs too
 - [x] I5 remove redundant buttons: person push is a secondary action under Edit (admin) → Admin actions, only when not On site or Sanity is failed/not synced; chip Retry remains. Bulk Sanity panel removed; website action is "Retry website sync". Analyze: 0 issues; Flutter tests blocked by sandbox localhost sockets.
-- [ ] I6 admin Outputs-list "Add output" uses the same wizard as everywhere (first step: for whom)
+- [x] I6 (codex; fixed two existing setState-returns-Future patterns the new test exposed; 656 tests pass) admin Outputs-list "Add output" uses the same wizard as everywhere (first step: for whom)
 - [ ] I7 re-run the flow audit, compare click count (baseline 25-30)

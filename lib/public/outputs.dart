@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../app/output_wizard.dart';
 import '../data/record_state.dart';
 import '../data/supabase.dart';
 import '../data/taxonomy.dart';
@@ -11,8 +12,8 @@ import '../widgets/output_row.dart';
 import '../widgets/panels.dart';
 import '../widgets/queue_list.dart';
 import '../widgets/search_bar.dart';
+import '../widgets/search_picker.dart';
 import '../widgets/taxonomy_picker.dart';
-import 'output_page.dart';
 import 'person/sanity_push.dart';
 
 class OutputsScreen extends StatefulWidget {
@@ -33,14 +34,14 @@ class _OutputsScreenState extends State<OutputsScreen> {
 
   void _load() {
     final year = int.tryParse(_year);
-    setState(
-      () => _outputs = fetchOutputs(
+    setState(() {
+      _outputs = fetchOutputs(
         query: _query,
         year: year,
         categoryPath: _category,
         approvalStatus: _approvalStatus,
-      ),
-    );
+      );
+    });
   }
 
   void _search(String value) {
@@ -48,12 +49,26 @@ class _OutputsScreenState extends State<OutputsScreen> {
     _load();
   }
 
-  /// Admins insert directly — they hold `outputs_write`. Same dialog the
-  /// researcher gets, so the taxonomy cascade is the only way in for both.
   Future<void> _addOutput() async {
-    final saved = await showDialog<bool>(
-      context: context,
-      builder: (context) => const OutputEditDialog(),
+    ({String id, String name})? owner;
+    final saved = await showOutputWizard(
+      context,
+      pickOwner: () async {
+        final person = await showSearchPicker(
+          context,
+          title: 'For whom',
+          search: (query) => fetchPeople(query: query),
+          label: (person) => person['preferred_name'] as String? ?? 'Unnamed',
+          subtitle: (person) => person['email'] as String? ?? '',
+        );
+        if (person == null) return null;
+        return owner = (
+          id: person['id'] as String,
+          name: person['preferred_name'] as String? ?? 'Unnamed',
+        );
+      },
+      create: (fields, {projectIds = const []}) =>
+          createOutputForPerson(owner!.id, fields),
     );
     if (saved ?? false) _load();
   }

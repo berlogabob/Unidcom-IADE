@@ -21,7 +21,7 @@ void main() {
       WizardStep.review,
     ]);
     expect(
-      wizardSteps(typeHasChildren: true, hasProjects: true),
+      wizardSteps(pickOwner: true, typeHasChildren: true, hasProjects: true),
       WizardStep.values,
     );
   });
@@ -35,6 +35,7 @@ void main() {
       List<String> projectIds,
     })?
     create,
+    Future<({String id, String name})?> Function()? pickOwner,
     ValueChanged<bool?>? onResult,
   }) async {
     tester.view.physicalSize = const Size(1000, 1600);
@@ -49,6 +50,7 @@ void main() {
               onPressed: () async {
                 final result = await showOutputWizard(
                   context,
+                  pickOwner: pickOwner,
                   lookup: (doi) async => doi == '10.1/x'
                       ? DoiWork(
                           title: 'A found title',
@@ -181,6 +183,57 @@ void main() {
     expect(calls.single.projectIds, ['p1']);
     expect(result, isTrue);
   });
+  testWidgets('owner step requires a selection and submits for that person', (
+    tester,
+  ) async {
+    ({String id, String name})? owner;
+    String? createdFor;
+    var cancel = true;
+    await pumpWizard(
+      tester,
+      pickOwner: () async {
+        if (cancel) return null;
+        return owner = (id: 'person-2', name: 'Bob');
+      },
+      create: (fields, {projectIds = const []}) async {
+        createdFor = owner!.id;
+        return 'new-id';
+      },
+    );
+    void expectBlocked() => expect(
+      tester
+          .widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Continue').hitTestable(),
+          )
+          .onPressed,
+      isNull,
+    );
+    expect(find.text('For whom'), findsOneWidget);
+    expectBlocked();
+    await tapVisible(tester, 'Choose person');
+    expectBlocked();
+    cancel = false;
+    await tapVisible(tester, 'Choose person');
+    expect(find.text('For: Bob').hitTestable(), findsOneWidget);
+    await tapVisible(tester, 'Continue');
+    await tapVisible(tester, 'No DOI — enter manually');
+    await tapVisible(tester, 'Formação avançada');
+    await tapVisible(tester, 'Continue');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Title'),
+      'My output',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Reporting year'),
+      '2026',
+    );
+    await tapVisible(tester, 'Continue');
+    expect(find.text('For: Bob').hitTestable(), findsOneWidget);
+    expect(find.text('Project One'), findsNothing);
+    await tapVisible(tester, 'Submit for UNIDCOM review');
+    expect(createdFor, 'person-2');
+  });
+
   testWidgets('non-numeric reporting year shows a hint', (tester) async {
     await pumpWizard(
       tester,

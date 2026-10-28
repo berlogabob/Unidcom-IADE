@@ -44,7 +44,9 @@ class _SearchPickerDialogState extends State<_SearchPickerDialog> {
   late Future<List<Map<String, dynamic>>> _results = widget.search('');
 
   void _onChanged(String value) {
-    setState(() => _results = widget.search(value));
+    setState(() {
+      _results = widget.search(value);
+    });
   }
 
   @override
