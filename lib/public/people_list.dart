@@ -5,7 +5,7 @@ import '../data/record_state.dart';
 import '../data/features.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
-import 'person_page.dart';
+import 'person/person_dialogs.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/ds_page.dart';
 import '../widgets/panels.dart';
@@ -54,13 +54,10 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
     );
   }
 
-  void _refresh() {
-    _load();
-  }
-
   Future<void> _addPerson() async {
-    final saved = await showPersonEditor(context);
-    if (saved) _refresh();
+    final id = await showPersonCreator(context);
+    if (!mounted || id == null) return;
+    context.go('/people/$id');
   }
 
   @override

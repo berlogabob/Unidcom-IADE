@@ -7,21 +7,35 @@ import 'package:unidcom_iade/public/person/person_dialogs.dart';
 void main() {
   Future<void> open(
     WidgetTester tester, {
-    required Future<int> Function(String, Map<String, String?>, Map<String, String>) stage,
-    required Future<int> Function(String, Map<String, String?>, Map<String, String>) stageDraft,
+    required Future<int> Function(
+      String,
+      Map<String, String?>,
+      Map<String, String>,
+    )
+    stage,
+    required Future<int> Function(
+      String,
+      Map<String, String?>,
+      Map<String, String>,
+    )
+    stageDraft,
+    void Function(bool)? onResult,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(
-              onPressed: () => showPersonEditor(
-                context,
-                person: const {'id': 'p1', 'preferred_name': 'Ana'},
-                canEditGovernance: false,
-                stage: stage,
-                stageDraft: stageDraft,
-              ),
+              onPressed: () async {
+                final saved = await showPersonEditor(
+                  context,
+                  person: const {'id': 'p1', 'preferred_name': 'Ana'},
+                  canEditGovernance: false,
+                  stage: stage,
+                  stageDraft: stageDraft,
+                );
+                onResult?.call(saved);
+              },
               child: const Text('Edit'),
             ),
           ),
@@ -32,28 +46,42 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('owner sees Save draft and Submit for UNIDCOM review', (tester) async {
-    await open(tester, stage: (_, _, _) async => 0, stageDraft: (_, _, _) async => 0);
+  testWidgets('owner sees Save draft and Submit for UNIDCOM review', (
+    tester,
+  ) async {
+    await open(
+      tester,
+      stage: (_, _, _) async => 0,
+      stageDraft: (_, _, _) async => 0,
+    );
     expect(find.text('Save draft'), findsOneWidget);
     expect(find.text('Submit for UNIDCOM review'), findsOneWidget);
   });
 
-  testWidgets('Save draft stages as draft, never as a submission', (tester) async {
+  testWidgets('Save draft stages as draft, never as a submission', (
+    tester,
+  ) async {
     var submitted = 0;
     Map<String, String>? drafted;
+    bool? saved;
     await open(
       tester,
       stage: (_, _, _) async => ++submitted,
+      onResult: (value) => saved = value,
       stageDraft: (_, _, proposed) async {
         drafted = proposed;
         return 1;
       },
     );
-    await tester.enterText(find.widgetWithText(TextField, 'Preferred name'), 'Ana N.');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Preferred name'),
+      'Ana N.',
+    );
     await tester.tap(find.text('Save draft'));
     await tester.pumpAndSettle();
     expect(drafted?['preferred_name'], 'Ana N.');
     expect(submitted, 0);
+    expect(saved, isTrue);
     expect(find.text('Draft saved — not sent to UNIDCOM yet'), findsOneWidget);
   });
 }

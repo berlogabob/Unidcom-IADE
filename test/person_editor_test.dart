@@ -46,12 +46,13 @@ void main() {
     Map<String, String?>? current;
     Map<String, String>? proposed;
     var updates = 0;
+    bool? saved;
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: Builder(
             builder: (context) => ElevatedButton(
-              onPressed: () => showPersonEditor(
+              onPressed: () async => saved = await showPersonEditor(
                 context,
                 person: person(),
                 canEditGovernance: false,
@@ -77,6 +78,7 @@ void main() {
     expect(proposed?['phone'], 'new phone');
     expect(current?['phone'], 'old phone');
     expect(updates, 0);
+    expect(saved, isTrue);
   });
 
   testWidgets('owner with no changes stays open', (tester) async {

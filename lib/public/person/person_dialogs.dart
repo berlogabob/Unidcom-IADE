@@ -5,6 +5,14 @@ import '../../theme/tokens.dart';
 import '../../widgets/detail_scaffold.dart';
 import '../../widgets/info_tip.dart';
 
+Future<String?> showPersonCreator(BuildContext context) async {
+  final result = await showDialog<Object>(
+    context: context,
+    builder: (context) => const _PersonEditDialog(),
+  );
+  return result is String ? result : null;
+}
+
 Future<bool> showPersonEditor(
   BuildContext context, {
   Map<String, dynamic>? person,
@@ -25,17 +33,18 @@ Future<bool> showPersonEditor(
   Future<void> Function(String id, Map<String, dynamic> fields) update =
       updatePerson,
 }) async {
-  return await showDialog<bool>(
-        context: context,
-        builder: (context) => _PersonEditDialog(
-          person: person,
-          canEditGovernance: canEditGovernance,
-          stage: stage,
-          stageDraft: stageDraft,
-          update: update,
-        ),
-      ) ??
-      false;
+  final result = await showDialog<Object>(
+    context: context,
+    builder: (context) => _PersonEditDialog(
+      person: person,
+      canEditGovernance: canEditGovernance,
+      stage: stage,
+      stageDraft: stageDraft,
+      update: update,
+    ),
+  );
+  // Existing callers use a boolean to refresh after either create or edit.
+  return result == true || result is String;
 }
 
 Future<bool?> showPersonRoleDialog(BuildContext context, String personId) =>
@@ -226,6 +235,8 @@ class _PersonEditDialogState extends State<_PersonEditDialog> {
       if (_creating) {
         final id = await createPerson(fields);
         if (_linkToMe) await linkPersonToMe(id);
+        if (mounted) Navigator.of(context).pop(id);
+        return;
       } else {
         final id = widget.person!['id'] as String;
         await widget.update(id, fields);
