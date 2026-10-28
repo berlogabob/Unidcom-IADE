@@ -12,32 +12,49 @@ void main() {
       MaterialApp(
         home: Scaffold(
           body: TimelineBar(
-            steps: [
-              timeline.TimelineStep(
-                'Draft',
-                timeline.StepState.done,
-                DateTime.utc(2026, 8, 4),
+            record: timeline.ProfileRecord(
+              live: const timeline.TimelineStep(
+                'Not on the website yet',
+                timeline.StepTone.todo,
               ),
-              timeline.TimelineStep(
-                'Submitted',
-                timeline.StepState.done,
-                DateTime.utc(2026, 9, 29),
-              ),
-              timeline.TimelineStep('Under review', timeline.StepState.current),
-              timeline.TimelineStep('Published', timeline.StepState.todo),
-            ],
+              round: [
+                timeline.TimelineStep(
+                  'Draft',
+                  timeline.StepTone.done,
+                  DateTime.utc(2026, 8, 4),
+                ),
+                timeline.TimelineStep(
+                  'Submitted',
+                  timeline.StepTone.done,
+                  DateTime.utc(2026, 9, 29),
+                ),
+                const timeline.TimelineStep(
+                  'Under review',
+                  timeline.StepTone.unidcom,
+                  null,
+                  "UNIDCOM's turn · reviewing",
+                ),
+                const timeline.TimelineStep('Approved', timeline.StepTone.todo),
+              ],
+            ),
           ),
         ),
       ),
     );
-    for (final label in ['Draft', 'Submitted', 'Under review', 'Published']) {
+    for (final label in ['Draft', 'Submitted', 'Under review', 'Approved']) {
       expect(find.text(label), findsOneWidget);
     }
     expect(find.text('4 Aug 2026'), findsOneWidget);
     expect(find.text('29 Sep 2026'), findsOneWidget);
-    expect(find.text('In progress'), findsOneWidget);
     expect(
-      find.bySemanticsLabel(RegExp('Under review, in progress')),
+      find.descendant(
+        of: find.byKey(const ValueKey('timeline-step-current')),
+        matching: find.text('Under review'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel("Under review, UNIDCOM's turn · reviewing, —"),
       findsOneWidget,
     );
   });
