@@ -13,9 +13,10 @@ const stats = AdminStats(
   outputsToApprove: 3,
   orcidLinked: 30,
   orcidNotLinked: 12,
+  siteInReview: 4,
   sitePublished: 24,
   siteApprovedNotPublished: 5,
-  siteNotPublished: 13,
+  siteNotPublished: 9,
   missingDoi: 7,
   notOnOrcid: 9,
   outputsByType: {'Livros': 18, 'Artigos em revistas': 10},
@@ -82,11 +83,13 @@ void main() {
     expect(opened, ['profiles', 'outputs']);
   });
 
-  testWidgets('sync status has an ORCID line and a Website line', (tester) async {
+  testWidgets('sync status has an ORCID line and a Website line', (
+    tester,
+  ) async {
     await pump(tester);
     expect(find.text('ORCID: 30 linked · 12 not linked'), findsOneWidget);
     expect(
-      find.text('Website: 24 published · 5 approved, not published · 13 not published'),
+      find.text('People: 9 Draft · 4 In review · 5 Approved · 24 On site'),
       findsOneWidget,
     );
   });
@@ -118,11 +121,16 @@ void main() {
     expect(find.text('low priority'), findsNothing);
   });
 
-  testWidgets('a critical alert names the researcher and opens its target', (tester) async {
+  testWidgets('a critical alert names the researcher and opens its target', (
+    tester,
+  ) async {
     final opened = await pump(
       tester,
       alerts: [
-        (text: 'Andrey Dyakov proposed a Bio change', route: '/app/admin/review?tab=suggestions'),
+        (
+          text: 'Andrey Dyakov proposed a Bio change',
+          route: '/app/admin/review?tab=suggestions',
+        ),
         (text: 'Ana Nolasco — no ORCID linked', route: '/people/p1'),
       ],
     );

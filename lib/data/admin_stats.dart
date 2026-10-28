@@ -1,6 +1,7 @@
 /// Admin statistics computation.
 library;
 
+import 'record_state.dart';
 
 class AdminStats {
   final int integrated;
@@ -9,6 +10,7 @@ class AdminStats {
   final int outputsToApprove;
   final int orcidLinked;
   final int orcidNotLinked;
+  final int siteInReview;
   final int sitePublished;
   final int siteApprovedNotPublished;
   final int siteNotPublished;
@@ -24,6 +26,7 @@ class AdminStats {
     required this.outputsToApprove,
     required this.orcidLinked,
     required this.orcidNotLinked,
+    this.siteInReview = 0,
     required this.sitePublished,
     required this.siteApprovedNotPublished,
     required this.siteNotPublished,
@@ -66,7 +69,12 @@ AdminStats computeAdminStats({
 
   // Profiles to approve = members with profile_status 'pending_review'
   final profilesToApprove = members
-      .where((person) => const {'pending_review', 'under_review'}.contains(person['profile_status']))
+      .where(
+        (person) => const {
+          'pending_review',
+          'under_review',
+        }.contains(person['profile_status']),
+      )
       .length;
 
   // Outputs to approve = outputs with approval_status 'pending'
@@ -80,19 +88,14 @@ AdminStats computeAdminStats({
       .length;
   final orcidNotLinked = members.length - orcidLinked;
 
-  // Site visibility counts
-  final sitePublished = members
-      .where((person) => person['public_visibility'] == true)
+  // Display buckets use the same state as the People list.
+  final states = members.map(recordState).toList();
+  final sitePublished = states.where((state) => state == 'On site').length;
+  final siteApprovedNotPublished = states
+      .where((state) => state == 'Approved')
       .length;
-  final siteApprovedNotPublished = members
-      .where(
-        (person) =>
-            person['profile_status'] == 'approved' &&
-            person['public_visibility'] != true,
-      )
-      .length;
-  final siteNotPublished =
-      members.length - sitePublished - siteApprovedNotPublished;
+  final siteInReview = states.where((state) => state == 'In review').length;
+  final siteNotPublished = states.where((state) => state == 'Draft').length;
 
   // Year filter
   final filteredOutputsForYear = year != null
@@ -136,6 +139,7 @@ AdminStats computeAdminStats({
     outputsToApprove: outputsToApprove,
     orcidLinked: orcidLinked,
     orcidNotLinked: orcidNotLinked,
+    siteInReview: siteInReview,
     sitePublished: sitePublished,
     siteApprovedNotPublished: siteApprovedNotPublished,
     siteNotPublished: siteNotPublished,

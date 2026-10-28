@@ -74,9 +74,10 @@ class AdminOverview extends StatelessWidget {
                     'ORCID: ${stats.orcidLinked} linked · ${stats.orcidNotLinked} not linked',
                   ),
                   _line(
-                    'Website: ${stats.sitePublished} published · '
-                    '${stats.siteApprovedNotPublished} approved, not published · '
-                    '${stats.siteNotPublished} not published',
+                    'People: ${stats.siteNotPublished} Draft · '
+                    '${stats.siteInReview} In review · '
+                    '${stats.siteApprovedNotPublished} Approved · '
+                    '${stats.sitePublished} On site',
                   ),
                 ],
               ),

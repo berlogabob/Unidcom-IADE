@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:unidcom_iade/app/own_outputs.dart';
 import 'package:unidcom_iade/data/taxonomy.dart';
+import 'package:unidcom_iade/widgets/record_state_chip.dart';
 
 void main() {
   final authors = <Map<String, dynamic>>[
@@ -84,6 +85,13 @@ void main() {
 
     await pumpOutputs(tester);
     expect(find.byTooltip('Edit output'), findsNothing);
+  });
+
+  testWidgets('own output rows all show their derived state chip', (
+    tester,
+  ) async {
+    await pumpOutputs(tester);
+    expect(find.byType(RecordStateChip), findsNWidgets(6));
   });
 
   testWidgets('contains outputs only', (tester) async {

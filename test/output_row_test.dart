@@ -107,10 +107,12 @@ void main() {
       ),
     );
 
-    expect(find.text('Submitted'), findsOneWidget);
+    expect(find.text('In review'), findsOneWidget);
   });
 
-  testWidgets('approved timeline output has no status pill', (tester) async {
+  testWidgets('approved timeline output has an Approved state pill', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
@@ -130,7 +132,7 @@ void main() {
       ),
     );
 
-    expect(find.text('approved'), findsNothing);
+    expect(find.text('Approved'), findsOneWidget);
   });
 
   testWidgets('rejected timeline output shows the rejection reason', (

@@ -11,6 +11,7 @@ final people = [
     'membership_type': 'integrated',
     'orcid': '0000-0002-1234-5678',
     'profile_status': 'under_review',
+    'website_status': 'published',
     'public_visibility': true,
   },
   {
@@ -29,25 +30,25 @@ Future<List<String>> pump(WidgetTester tester) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final opened = <String>[];
-  await tester.pumpWidget(MaterialApp(
-    home: Scaffold(
-      body: PeopleTable(
-        people: people,
-        lastSignIn: {'p1': DateTime(2026, 9, 28)},
-        issues: const {'p2': 3},
-        onOpen: opened.add,
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Scaffold(
+        body: PeopleTable(
+          people: people,
+          lastSignIn: {'p1': DateTime(2026, 9, 28)},
+          issues: const {'p2': 3},
+          onOpen: opened.add,
+        ),
       ),
     ),
-  ));
+  );
   return opened;
 }
 
 void main() {
-  testWidgets('seven columns in the brief\'s order', (tester) async {
+  testWidgets('six columns with one State column', (tester) async {
     await pump(tester);
-    final headers = [
-      'Name', 'Type', 'ORCID', 'Last login', 'Issues', 'UNIDCOM status', 'Website',
-    ];
+    final headers = ['Name', 'Type', 'ORCID', 'Last login', 'Issues', 'State'];
     final xs = [for (final h in headers) tester.getTopLeft(find.text(h)).dx];
     for (var i = 1; i < xs.length; i++) {
       expect(xs[i] > xs[i - 1], isTrue, reason: headers[i]);
@@ -64,10 +65,10 @@ void main() {
     expect(find.text('Never'), findsOneWidget);
     expect(find.text('3'), findsOneWidget);
     expect(find.text('0'), findsOneWidget);
-    expect(find.text('Under review'), findsOneWidget);
-    expect(find.text('To be validated'), findsOneWidget);
-    expect(find.text('Published'), findsOneWidget);
-    expect(find.text('Not published'), findsOneWidget);
+    expect(find.text('On site'), findsOneWidget);
+    expect(find.text('Draft'), findsOneWidget);
+    expect(find.text('UNIDCOM status'), findsNothing);
+    expect(find.text('Website'), findsNothing);
   });
 
   testWidgets('tapping a row opens that person', (tester) async {
@@ -81,16 +82,18 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: PeopleTable(
-          people: people,
-          lastSignIn: const {},
-          issues: const {},
-          onOpen: (_) {},
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PeopleTable(
+            people: people,
+            lastSignIn: const {},
+            issues: const {},
+            onOpen: (_) {},
+          ),
         ),
       ),
-    ));
+    );
     expect(tester.takeException(), isNull);
   });
 }

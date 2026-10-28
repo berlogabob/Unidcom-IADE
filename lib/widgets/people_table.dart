@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../data/record_state.dart';
 import '../theme/tokens.dart';
+import 'record_state_chip.dart';
 
 /// Rui's v1.0 brief PE-1: the People table.
 class PeopleTable extends StatelessWidget {
@@ -39,12 +41,10 @@ class PeopleTable extends StatelessWidget {
           DataColumn(label: Text('ORCID')),
           DataColumn(label: Text('Last login')),
           DataColumn(label: Text('Issues'), numeric: true),
-          DataColumn(label: Text('UNIDCOM status')),
-          DataColumn(label: Text('Website')),
+          DataColumn(label: Text('State')),
         ],
         rows: [
-          for (final person in people)
-            _row(person, (person['id'] as String)),
+          for (final person in people) _row(person, (person['id'] as String)),
         ],
       ),
     );
@@ -60,20 +60,19 @@ class PeopleTable extends StatelessWidget {
         DataCell(Text(_orcid(person['orcid']))),
         DataCell(Text(_date(lastSignIn[id]))),
         DataCell(Text('${issues[id] ?? 0}')),
-        DataCell(Text(_status(person['profile_status'] as String?))),
-        DataCell(Text(person['public_visibility'] == true
-            ? 'Published'
-            : 'Not published')),
+        DataCell(RecordStateChip(recordState(person))),
       ],
     );
   }
 
   static String _type(String? value) => value == null
       ? '—'
-      : value.replaceFirstMapped(
-          RegExp(r'^.'),
-          (match) => match.group(0)!.toUpperCase(),
-        ).replaceAll('_', ' ');
+      : value
+            .replaceFirstMapped(
+              RegExp(r'^.'),
+              (match) => match.group(0)!.toUpperCase(),
+            )
+            .replaceAll('_', ' ');
 
   static String _orcid(dynamic value) =>
       value is String && value.isNotEmpty ? 'Linked' : 'Not linked';
@@ -81,18 +80,19 @@ class PeopleTable extends StatelessWidget {
   static String _date(DateTime? value) {
     if (value == null) return 'Never';
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${value.day} ${months[value.month - 1]} ${value.year}';
   }
-
-  static String _status(String? value) => switch (value) {
-    'to_validate' => 'To be validated',
-    'draft' => 'Draft',
-    'pending_review' => 'Submitted',
-    'under_review' => 'Under review',
-    'approved' => 'Approved',
-    _ => '—',
-  };
 }

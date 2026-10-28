@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/record_state.dart';
 import '../data/features.dart';
 import '../data/supabase.dart';
 import '../theme/tokens.dart';
@@ -9,6 +10,7 @@ import '../widgets/detail_scaffold.dart';
 import '../widgets/ds_page.dart';
 import '../widgets/panels.dart';
 import '../widgets/people_table.dart';
+import '../widgets/record_state_chip.dart';
 import '../widgets/queue_list.dart';
 import '../widgets/search_bar.dart';
 
@@ -167,8 +169,6 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
                                         final membershipType =
                                             person['membership_type']
                                                 as String?;
-                                        final status =
-                                            person['status'] as String?;
                                         final email =
                                             person['email'] as String?;
                                         return Material(
@@ -241,30 +241,8 @@ class _PeopleListScreenState extends State<PeopleListScreen> {
                                                           TypeBadge(
                                                             membershipType,
                                                           ),
-                                                        if (status != null)
-                                                          StatusPill(
-                                                            queueStatusLabel(
-                                                              status,
-                                                            ),
-                                                            tone: switch (status) {
-                                                              'active' =>
-                                                                PillTone.teal,
-                                                              'a_confirmar' =>
-                                                                PillTone.amber,
-                                                              _ =>
-                                                                PillTone.grey,
-                                                            },
-                                                          ),
-                                                        StatusPill(
-                                                          person['public_visibility'] ==
-                                                                  true
-                                                              ? 'Website · Published'
-                                                              : 'Website · Not published',
-                                                          tone:
-                                                              person['public_visibility'] ==
-                                                                  true
-                                                              ? PillTone.teal
-                                                              : PillTone.grey,
+                                                        RecordStateChip(
+                                                          recordState(person),
                                                         ),
                                                       ],
                                                     ),

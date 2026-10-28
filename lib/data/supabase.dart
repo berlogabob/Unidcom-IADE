@@ -191,8 +191,8 @@ Future<List<Map<String, dynamic>>> fetchPeople({
   try {
     final q = query?.trim();
     final select = hasOutputs
-        ? 'id, preferred_name, membership_type, status, email, orcid, photo_url, profile_status, public_visibility, output_authors!inner(output_id)'
-        : 'id, preferred_name, membership_type, status, email, orcid, photo_url, profile_status, public_visibility';
+        ? 'id, preferred_name, membership_type, status, email, orcid, photo_url, profile_status, public_visibility, website_status, output_authors!inner(output_id)'
+        : 'id, preferred_name, membership_type, status, email, orcid, photo_url, profile_status, public_visibility, website_status';
     var request = db
         .from('people')
         .select(select)
@@ -1322,7 +1322,7 @@ loadAdminOverview() async {
       db
           .from('people')
           .select(
-            'id, preferred_name, membership_type, orcid, profile_status, public_visibility, merged_into',
+            'id, preferred_name, membership_type, orcid, profile_status, public_visibility, website_status, merged_into',
           )
           .filter('merged_into', 'is', null),
       db

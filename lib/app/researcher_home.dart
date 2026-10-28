@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../data/timeline.dart';
 import '../data/attention.dart';
+import '../data/record_state.dart';
 import '../data/features.dart';
 import '../data/output_filters.dart';
 import '../data/supabase.dart';
@@ -546,12 +547,19 @@ class OverviewAlerts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final alerts = attentionItems(
-      person: person,
-      outputs: outputs,
-      candidates: candidates,
-      suggestions: suggestions,
-    );
+    final waiting = outputs
+        .where((output) => recordState(output) == 'In review')
+        .length;
+    final alerts = [
+      if (waiting > 0)
+        AttentionItem('$waiting outputs waiting for review', '/app/outputs'),
+      ...attentionItems(
+        person: person,
+        outputs: outputs,
+        candidates: candidates,
+        suggestions: suggestions,
+      ),
+    ];
 
     return Panel(
       title: 'Needs Your Attention',

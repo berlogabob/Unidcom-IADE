@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../data/record_state.dart';
 import '../data/supabase.dart';
-import '../data/status_labels.dart';
 import '../data/taxonomy.dart';
 import '../theme/tokens.dart';
 import '../widgets/detail_scaffold.dart';
@@ -258,22 +258,12 @@ class _OutputsScreenState extends State<OutputsScreen> {
       year: output['reporting_year'] as int?,
       type: output['type'] as String?,
       detail: authors,
+      state: recordState(output),
       issueCodes: isAdmin
           ? (output['issue_codes'] as List<dynamic>? ?? []).cast<String>()
           : null,
       errorCount: output['error_count'] as int? ?? 0,
       warningCount: output['warning_count'] as int? ?? 0,
-      extraPills: isAdmin
-          ? [
-              (
-                'Website · ${websiteLabel(output['website_status'] as String?)}',
-                output['website_status'] == 'published'
-                    ? PillTone.teal
-                    : PillTone.grey,
-                null,
-              ),
-            ]
-          : const [],
       onTap: () => context.go('/outputs/${output['id']}'),
     );
   }

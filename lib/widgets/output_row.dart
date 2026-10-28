@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/status_labels.dart';
 import '../theme/tokens.dart';
 import 'panels.dart';
+import 'record_state_chip.dart';
 
 PillTone _typeTone(String type) {
   final value = type.toLowerCase();
@@ -55,6 +56,7 @@ class OutputRow extends StatelessWidget {
     this.type,
     this.detail,
     this.status,
+    this.state,
     this.rejectionReason,
     this.trailing,
     this.onTap,
@@ -70,6 +72,7 @@ class OutputRow extends StatelessWidget {
   final String? type;
   final String? detail;
   final String? status;
+  final String? state;
   final String? rejectionReason;
   final Widget? trailing;
   final VoidCallback? onTap;
@@ -84,7 +87,7 @@ class OutputRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusTone = _statusTone(status ?? detail);
+    final statusTone = state == null ? _statusTone(status ?? detail) : null;
     final meta = [
       if (year != null) year.toString(),
       // The status pill already says it: never repeat a status-looking
@@ -191,7 +194,9 @@ class OutputRow extends StatelessWidget {
                   child: TypeBadge(type!, tone: _typeTone(type!)),
                 ),
               ],
-              if (statusTone != null || extraPills.isNotEmpty) ...[
+              if (state != null ||
+                  statusTone != null ||
+                  extraPills.isNotEmpty) ...[
                 const SizedBox(width: 12),
                 // Capped, not Flexible: a flex slot took half the row and left
                 // it mostly empty (Rui, 1 Oct). Pills wrap within the cap.
@@ -201,6 +206,7 @@ class OutputRow extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 4,
                     children: [
+                      if (state != null) RecordStateChip(state!),
                       if (statusTone != null)
                         StatusPill(
                           reviewLabel(status ?? detail),

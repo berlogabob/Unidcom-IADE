@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/record_state.dart';
 import '../../widgets/output_row.dart';
 import '../../widgets/panels.dart';
 
@@ -60,9 +61,7 @@ class PersonOutputRow extends StatelessWidget {
       year: output['reporting_year'] as int?,
       type: type.isEmpty ? null : type,
       detail: detail,
-      status: output['approval_status'] == 'approved'
-          ? null
-          : output['approval_status'] as String?,
+      state: recordState(output),
       rejectionReason: switch (output['approval_status']) {
         'rejected' => output['rejection_reason'] as String?,
         'change_requested' => output['review_note'] as String?,

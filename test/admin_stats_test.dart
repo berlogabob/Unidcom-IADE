@@ -75,6 +75,7 @@ void main() {
         {
           'membership_type': 'integrated',
           'public_visibility': true,
+          'website_status': 'published',
           'profile_status': 'approved',
           'merged_into': null,
         },
@@ -93,6 +94,7 @@ void main() {
         {
           'membership_type': 'integrated',
           'public_visibility': true,
+          'website_status': 'published',
           'profile_status': 'pending_review',
           'merged_into': null,
         },
@@ -111,8 +113,39 @@ void main() {
       );
       expect(result.sitePublished, 2);
       expect(result.siteApprovedNotPublished, 2);
-      expect(result.siteNotPublished, 1);
+      expect(result.siteNotPublished, 0);
+      expect(result.siteInReview, 1);
     });
+
+    test(
+      'state buckets ignore legacy visibility and cover all four states',
+      () {
+        final result = computeAdminStats(
+          people: [
+            {'membership_type': 'integrated', 'public_visibility': true},
+            {'membership_type': 'integrated', 'profile_status': 'submitted'},
+            {
+              'membership_type': 'integrated',
+              'profile_status': 'approved',
+              'public_visibility': true,
+              'website_status': 'error',
+            },
+            {
+              'membership_type': 'integrated',
+              'profile_status': 'draft',
+              'public_visibility': false,
+              'website_status': 'published',
+            },
+          ],
+          outputs: const [],
+          orcidOutputIds: const {},
+        );
+        expect(result.siteNotPublished, 1);
+        expect(result.siteInReview, 1);
+        expect(result.siteApprovedNotPublished, 1);
+        expect(result.sitePublished, 1);
+      },
+    );
 
     test('year filter', () {
       final people = <Map<String, dynamic>>[];

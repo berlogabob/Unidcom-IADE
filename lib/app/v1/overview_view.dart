@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/attention.dart';
 import '../../data/output_filters.dart';
+import '../../data/record_state.dart';
 import '../../data/status_labels.dart';
 import '../../data/timeline.dart';
 import '../../theme/tokens.dart';
@@ -31,6 +32,14 @@ class OverviewView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final outputs = this.outputs.where(isScientificOutput).toList();
+    final waiting = this.outputs
+        .where((output) => recordState(output) == 'In review')
+        .length;
+    final waitingText = '$waiting outputs waiting for review';
+    final alerts = [
+      ...this.alerts,
+      if (waiting > 0) AttentionItem(waitingText, '/app/outputs'),
+    ];
     final membership = switch (person['membership_type']) {
       'integrated' => 'Integrated researcher',
       'collaborator' => 'Collaborator',

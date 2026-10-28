@@ -232,7 +232,11 @@ class _OverviewAlertsPageState extends State<OverviewAlertsPage> {
           title: 'Alerts & Notifications',
           child: person == null
               ? _noProfilePanel()
-              : OverviewAlerts(person: person, requests: data.requests),
+              : OverviewAlerts(
+                  person: person,
+                  requests: data.requests,
+                  outputs: data.outputs,
+                ),
         );
       },
     );
