@@ -183,7 +183,11 @@ class _SiteContentPanelState extends State<SiteContentPanel> {
                 for (var i = 0; i < siteContentKinds.length; i++)
                   ButtonSegment(
                     value: i,
-                    label: Text(siteContentKinds[i].table),
+                    label: Text(
+                      siteContentKinds[i].table[0].toUpperCase() +
+                          siteContentKinds[i].table.substring(1),
+                      softWrap: false,
+                    ),
                   ),
               ],
               selected: {_kind},
