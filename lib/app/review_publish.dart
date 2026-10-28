@@ -357,35 +357,105 @@ class _ResearcherReviewState extends State<ResearcherReview> {
 
 /// Tab "Ready to publish": pick researchers, publish in one batch (PB-*).
 class ReadyToPublishTab extends StatefulWidget {
-  const ReadyToPublishTab({super.key});
+  const ReadyToPublishTab({
+    super.key,
+    this.fetchRows = fetchReadyToPublish,
+    this.publish = publishResearchers,
+    this.setPublished = setPersonPublished,
+    this.pushSanity = runPersonSanityPush,
+    this.syncWebsite = runWebsiteSync,
+  });
+
+  final Future<List<Map<String, dynamic>>> Function() fetchRows;
+  final Future<List<Map<String, dynamic>>> Function(List<String>) publish;
+  final Future<void> Function(String, bool) setPublished;
+  final Future<Map<String, dynamic>> Function({
+    required String personId,
+    required List<String> outputIds,
+    bool dryRun,
+  })
+  pushSanity;
+  final Future<void> Function() syncWebsite;
 
   @override
   State<ReadyToPublishTab> createState() => _ReadyToPublishTabState();
 }
 
 class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
-  late Future<List<Map<String, dynamic>>> _rows = fetchReadyToPublish();
+  late Future<List<Map<String, dynamic>>> _rows = widget.fetchRows();
   Set<String>? _selected; // null = all (default)
-  bool _confirm = false;
   bool _busy = false;
   final _results = <String, Map<String, dynamic>>{};
+  final _names = <String, String>{};
+  String? _undoMessage;
+
+  Future<void> _syncWebsite() async {
+    try {
+      await widget.syncWebsite();
+    } catch (_) {} // The scheduled sync will still pick up the flags.
+  }
+
+  Future<void> _retrySanity(Map<String, dynamic> result) async {
+    setState(() => _busy = true);
+    try {
+      final outputIds = List<String>.from(
+        result['output_ids'] as List? ?? const <String>[],
+      );
+      await widget.pushSanity(
+        personId: '${result['id']}',
+        outputIds: outputIds,
+        dryRun: false,
+      );
+      result['sanity_ok'] = true;
+      result.remove('sanity_error');
+    } catch (error) {
+      result['sanity_ok'] = false;
+      result['sanity_error'] = '$error';
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _undo() async {
+    setState(() => _busy = true);
+    var undone = 0;
+    final errors = <String>[];
+    for (final id in _results.keys.toList()) {
+      if (_results[id]!['ok'] != true) continue;
+      try {
+        await widget.setPublished(id, false);
+        _results.remove(id);
+        undone++;
+      } catch (error) {
+        errors.add('${_names[id] ?? id}: $error');
+      }
+    }
+    if (undone > 0) await _syncWebsite();
+    if (!mounted) return;
+    setState(() {
+      _undoMessage =
+          '$undone unpublished. Website: updates within ~15 min.'
+          '${errors.isEmpty ? '' : ' Undo failed: ${errors.join('; ')}'}';
+      _rows = widget.fetchRows();
+      _busy = false;
+    });
+  }
 
   Future<void> _publish(List<String> ids) async {
     setState(() {
       _busy = true;
-      _confirm = false;
+      _results.clear();
+      _undoMessage = null;
     });
     try {
-      for (final r in await publishResearchers(ids)) {
+      for (final r in await widget.publish(ids)) {
         _results['${r['id']}'] = r;
       }
-      _rows = fetchReadyToPublish();
+      _rows = widget.fetchRows();
       // Fast path: start the site sync now. Best effort — the site also syncs
       // by itself every 10 minutes, so a missing token only costs a few minutes.
       if (_results.values.any((r) => r['ok'] == true)) {
-        try {
-          await runWebsiteSync();
-        } catch (_) {}
+        await _syncWebsite();
       }
     } catch (error) {
       if (mounted) {
@@ -407,6 +477,9 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
           return const Center(child: CircularProgressIndicator());
         }
         final rows = snap.data!;
+        for (final r in rows) {
+          _names['${r['id']}'] = '${r['preferred_name']}';
+        }
         final ids = [for (final r in rows) '${r['id']}'];
         final sel = (_selected ?? ids.toSet()).intersection(ids.toSet());
         return ListView(
@@ -436,95 +509,106 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 decoration: _box(),
-                child: CheckboxListTile(
-                  value: sel.contains('${r['id']}'),
-                  onChanged: (v) => setState(() {
-                    final next = {...sel};
-                    v == true
-                        ? next.add('${r['id']}')
-                        : next.remove('${r['id']}');
-                    _selected = next;
-                  }),
-                  title: Text('${r['preferred_name']}'),
-                  subtitle: Text(
-                    r['website_status'] == 'error'
-                        ? 'Publication error · ${_results['${r['id']}']?['error'] ?? 'try again'}'
-                        : 'approved ${_day(r['updated_at'])}',
-                    style: TextStyle(
-                      color: r['website_status'] == 'error'
-                          ? AppColors.red
-                          : null,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: CheckboxListTile(
+                    value: sel.contains('${r['id']}'),
+                    onChanged: (v) => setState(() {
+                      final next = {...sel};
+                      v == true
+                          ? next.add('${r['id']}')
+                          : next.remove('${r['id']}');
+                      _selected = next;
+                    }),
+                    title: Text('${r['preferred_name']}'),
+                    subtitle: Text(
+                      r['website_status'] == 'error'
+                          ? 'Publication error · ${_results['${r['id']}']?['error'] ?? 'try again'} · +${r['output_count'] ?? 0} outputs'
+                          : 'approved ${_day(r['updated_at'])} · +${r['output_count'] ?? 0} outputs',
+                      style: TextStyle(
+                        color: r['website_status'] == 'error'
+                            ? AppColors.red
+                            : null,
+                      ),
                     ),
+                    secondary: r['website_status'] == 'error'
+                        ? TextButton(
+                            onPressed: _busy
+                                ? null
+                                : () => _publish(['${r['id']}']),
+                            child: const Text('Retry'),
+                          )
+                        : null,
                   ),
-                  secondary: r['website_status'] == 'error'
-                      ? TextButton(
-                          onPressed: _busy
-                              ? null
-                              : () => _publish(['${r['id']}']),
-                          child: const Text('Retry'),
-                        )
-                      : null,
                 ),
               ),
-            if (_results.values.any((r) => r['ok'] == true))
+            if (_undoMessage != null)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(_undoMessage!),
+              ),
+            if (_results.isNotEmpty)
               Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
                 decoration: _box(),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.check_circle, color: AppColors.green),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${_results.values.where((r) => r['ok'] == true).length} researchers published. '
-                        'The website updates by itself within about 15 minutes.',
-                      ),
+                    Text(
+                      '${_results.values.where((r) => r['ok'] == true).length} published. '
+                      'Website: updates within ~15 min. '
+                      'Sanity: ${_results.values.where((r) => r['sanity_ok'] == true).length} ok, '
+                      '${_results.values.where((r) => r['ok'] == true && r['sanity_ok'] != true).length} failed',
                     ),
-                    OutlinedButton.icon(
-                      icon: const Icon(Icons.open_in_new, size: 16),
-                      label: const Text('Check website'),
-                      onPressed: () => launchUrl(
-                        Uri.parse(_siteUrl),
-                        webOnlyWindowName: '_blank',
-                      ),
+                    for (final r in _results.values)
+                      if (r['ok'] != true || r['sanity_ok'] != true)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${_names['${r['id']}'] ?? r['id']}: '
+                                '${r['ok'] == true ? 'Sanity failed: ${r['sanity_error']}' : 'Publish failed: ${r['error']}'}',
+                              ),
+                            ),
+                            if (r['ok'] == true)
+                              TextButton(
+                                onPressed: _busy ? null : () => _retrySanity(r),
+                                child: const Text('Retry'),
+                              ),
+                          ],
+                        ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        if (_results.values.any((r) => r['ok'] == true))
+                          TextButton(
+                            onPressed: _busy ? null : _undo,
+                            child: const Text('Undo'),
+                          ),
+                        OutlinedButton.icon(
+                          icon: const Icon(Icons.open_in_new, size: 16),
+                          label: const Text('Check website'),
+                          onPressed: () => launchUrl(
+                            Uri.parse(_siteUrl),
+                            webOnlyWindowName: '_blank',
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             const SizedBox(height: 8),
-            if (_confirm)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: _box(),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Confirm: ${sel.length} researchers will be updated on the UNIDCOM website.',
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => setState(() => _confirm = false),
-                      child: const Text('Cancel'),
-                    ),
-                    FilledButton(
-                      onPressed: () => _publish(sel.toList()),
-                      child: const Text('Publish'),
-                    ),
-                  ],
-                ),
-              )
-            else
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton(
-                  onPressed: sel.isEmpty || _busy
-                      ? null
-                      : () => setState(() => _confirm = true),
-                  child: Text('Publish selected to website (${sel.length})'),
-                ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: sel.isEmpty || _busy
+                    ? null
+                    : () => _publish(sel.toList()),
+                child: Text('Publish selected (${sel.length})'),
               ),
+            ),
           ],
         );
       },

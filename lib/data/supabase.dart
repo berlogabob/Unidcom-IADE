@@ -2740,13 +2740,23 @@ Future<List<Map<String, dynamic>>> fetchReadyToPublish() async {
         .select('id, preferred_name, website_status, updated_at')
         .inFilter('website_status', const ['ready', 'error'])
         .order('updated_at');
-    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+    return await Future.wait(
+      rows.map(
+        (row) async => {
+          ...row,
+          'output_count': (await _fetchPublishOutputIds(
+            row['id'] as String,
+          )).length,
+        },
+      ),
+    );
   } catch (error) {
     throw Exception(_error(error));
   }
 }
 
-/// Per-researcher result: `{id, ok, error?, published_at?}`.
+/// Per-researcher result includes Sanity outcome and the captured output IDs.
+/// Sanity failures never change the publication result or stop the batch.
 Future<List<Map<String, dynamic>>> publishResearchers(List<String> ids) async {
   // Capture before publishing changes the flags; exclude older published work.
   final outputIds = <String, List<String>>{};
@@ -2765,13 +2775,19 @@ Future<List<Map<String, dynamic>>> publishResearchers(List<String> ids) async {
     throw Exception(_error(error));
   }
   for (final result in results.where((r) => r['ok'] == true)) {
+    final id = result['id'] as String;
+    result['output_ids'] = outputIds[id] ?? <String>[];
     try {
       await runPersonSanityPush(
-        personId: result['id'] as String,
-        outputIds: outputIds[result['id']] ?? [],
+        personId: id,
+        outputIds: outputIds[id] ?? [],
         dryRun: false,
       );
-    } catch (_) {} // Sanity is best effort, just like website-sync.
+      result['sanity_ok'] = true;
+    } catch (error) {
+      result['sanity_ok'] = false;
+      result['sanity_error'] = '$error';
+    }
   }
   return results;
 }
