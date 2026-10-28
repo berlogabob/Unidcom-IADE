@@ -240,6 +240,16 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
             person['auth_user_id'] == db.auth.currentUser?.id;
         final outputAuthors = (person['output_authors'] as List<dynamic>? ?? [])
             .cast<Map<String, dynamic>>();
+        Future<void> retrySanity() => retryPersonSanityPush(
+          context,
+          personId: widget.id,
+          outputIds: outputAuthors
+              .map(outputIdOf)
+              .whereType<String>()
+              .toSet()
+              .toList(),
+          refresh: _refresh,
+        );
         final featured = featuredOf(person);
         // Work from a prior affiliation stays on the profile but out of the
         // UNIDCOM list — and out of every count, which the DB enforces.
@@ -284,6 +294,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                 onAutoFill: () => _autoFill(person),
                 onCheckOrcidSync: _checkOrcidSync,
                 onApprove: _approve,
+                onRetrySanity: admin ? retrySanity : null,
               ),
               if (admin)
                 PersonSanityPushButton(
@@ -362,6 +373,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                         for (final author in highlights)
                           PersonOutputRow(
                             author: author,
+                            onRetrySanity: admin ? retrySanity : null,
                             isFeatured: true,
                             onToggle: admin || isOwner
                                 ? (id) => _toggleFeatured(person, featured, id)
@@ -382,6 +394,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                   onToggleFeatured: (id) =>
                       _toggleFeatured(person, featured, id),
                   onRefresh: _refresh,
+                  onRetrySanity: admin ? retrySanity : null,
                   onAddRole: _addRole,
                   onOpenOutput: (id) => context.go('/outputs/$id'),
                   onOpenLab: (id) => context.go('/labs/$id'),
@@ -403,6 +416,7 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                 for (final author in external)
                   PersonOutputRow(
                     author: author,
+                    onRetrySanity: admin ? retrySanity : null,
                     isFeatured: false,
                     onTap: (id) => context.go('/outputs/$id'),
                   ),

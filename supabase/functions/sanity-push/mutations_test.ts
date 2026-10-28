@@ -41,7 +41,6 @@ Deno.test("selected outputs precede members and all relation patches", () => {
 Deno.test("selected push bypasses publication gates and dry run performs no writes", async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = Deno.env.get;
-  const originalServe = Deno.serve;
   let handler: (req: Request) => Promise<Response> = undefined!;
   const writes: { url: string; body: any }[] = [];
   const reads: string[] = [];
@@ -52,7 +51,6 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
   let storedMembership = "collaborator";
   try {
     Deno.env.get = (name) => ({ SANITY_TOKEN: "test", SUPABASE_URL: "https://db.test" })[name];
-    Deno.serve = ((fn: typeof handler) => { handler = fn; }) as any;
     globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
       const url = String(input);
       if (init?.method === "POST" || init?.method === "PATCH") {
@@ -99,7 +97,7 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
       else throw new Error(`unexpected fetch ${url}`);
       return Promise.resolve(Response.json(data));
     }) as typeof fetch;
-    await import("./index.ts");
+    handler = (await import("./index.ts")).handler;
     const request = (body: unknown) => new Request("https://edge.test", {
       method: "POST", headers: { Authorization: "Bearer admin" }, body: JSON.stringify(body),
     });
@@ -121,7 +119,7 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
     const live = await handler(request({ personId: "u2", outputIds: ["o1"] }));
     assertEquals(live.status, 200);
     assertEquals(writes[0].body.mutations, result.mutations);
-    assertEquals(writes.slice(1).map((w) => w.body.sanity_id), ["rims-o1", "rims-u1"]);
+    assertEquals(writes.slice(1).flatMap((w) => w.body.sanity_id ? [w.body.sanity_id] : []), ["rims-o1", "rims-u1"]);
     const personOnly = await handler(request({ personId: "u2", dryRun: true }));
     assertEquals((await personOnly.json()).counts, { outputs: 0, members: 1 });
     storedMembership = "integrated";
@@ -192,7 +190,7 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
     const matchedLive = await handler(request({ outputIds: ["o1"] }));
     assertEquals(matchedLive.status, 200);
     assertEquals(writes[0].body.mutations, matchedPlan.mutations);
-    assertEquals(writes.slice(1).map((w) => w.body.sanity_id), ["matched-output", "matched-member"]);
+    assertEquals(writes.slice(1).flatMap((w) => w.body.sanity_id ? [w.body.sanity_id] : []), ["matched-output", "matched-member"]);
     writes.length = 0;
     const matchedBulk = await handler(request({ types: ["members", "outputs"] }));
     assertEquals(matchedBulk.status, 200);
@@ -203,9 +201,11 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
     memberResults.push({ _id: "duplicate", slug: "ze-arvore" });
     const ambiguous = await handler(request({ outputIds: ["o1"] }));
     assertEquals(ambiguous.status, 502);
-    assertEquals(writes, []);
+    assertEquals(writes.length, 2);
+    assertEquals(writes.every((w) => typeof w.body.sanity_error === "string"), true);
+    writes.length = 0;
     Deno.env.get = (name) => ({ SANITY_PROJECT: "vj0axykv", SANITY_TOKEN: "test", SUPABASE_URL: "https://db.test" })[name];
-    await import("./index.ts?agency-guard");
+    handler = (await import("./index.ts?agency-guard")).handler;
     const guarded = await handler(request({ personId: "u2" }));
     assertEquals(guarded.status, 400);
     assertEquals(await guarded.json(), { error: "refusing the agency project" });
@@ -213,7 +213,6 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
   } finally {
     globalThis.fetch = originalFetch;
     Deno.env.get = originalEnv;
-    Deno.serve = originalServe;
   }
 });
 

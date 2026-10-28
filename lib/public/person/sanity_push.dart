@@ -113,3 +113,27 @@ class _PersonSanityPushButtonState extends State<PersonSanityPushButton> {
     label: Text(_busy ? 'Pushing…' : 'Push to test Sanity'),
   );
 }
+
+/// Retries immediately and reloads status even when Sanity rejects the push.
+Future<void> retryPersonSanityPush(
+  BuildContext context, {
+  required String personId,
+  required List<String> outputIds,
+  required VoidCallback refresh,
+}) async {
+  try {
+    await runPersonSanityPush(
+      personId: personId,
+      outputIds: outputIds,
+      dryRun: false,
+    );
+  } catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Sanity push failed: $error')));
+    }
+  } finally {
+    if (context.mounted) refresh();
+  }
+}

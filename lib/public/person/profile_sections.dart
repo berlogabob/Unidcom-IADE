@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../app/my_profile.dart' show profileStatusLabel;
 import '../../data/features.dart';
+import '../../data/record_state.dart';
+import '../../widgets/record_state_chip.dart';
+import '../../widgets/sanity_sync_chip.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/detail_scaffold.dart';
 import '../../widgets/info_tip.dart';
@@ -20,6 +22,7 @@ Widget personHeader(
   required VoidCallback onAutoFill,
   required VoidCallback onCheckOrcidSync,
   required VoidCallback onApprove,
+  Future<void> Function()? onRetrySanity,
 }) {
   final name = person['preferred_name'] as String? ?? 'Unnamed';
   final photo = (person['photo_url'] as String? ?? '').trim();
@@ -32,7 +35,6 @@ Widget personHeader(
   ];
   final membershipType = person['membership_type'] as String?;
   final status = person['status'] as String?;
-  final profileStatus = person['profile_status'] as String?;
   final chips = statusChips([
     switch (membershipType) {
       'integrated' => 'Integrated researcher',
@@ -42,7 +44,6 @@ Widget personHeader(
       _ => null,
     },
     if (status != null && status != 'active') queueStatusLabel(status),
-    if (profileStatus != null) profileStatusLabel(profileStatus),
   ]);
 
   return Column(
@@ -110,64 +111,68 @@ Widget personHeader(
           ],
         ),
       ),
-      if (chips.isNotEmpty || admin || isOwner) ...[
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            ...chips,
-            if (admin || isOwner)
-              FilledButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit),
-                label: const Text('Edit'),
-              ),
-            // v2, all three. Rui, seeing them on his own profile band:
-            // "you have three things that i think make noise - connect ORCID,
-            // auto-fill, ORCID sync ... the approve button should not be
-            // visible - we in UNIDCOM ADMIN make it visible every 6 months for
-            // instance ... i would take it off at this stage - make it
-            // invisible."
-            //
-            // Approve is doubly moot for now: every person row is already
-            // approved, so the button's only effect is to look like unfinished
-            // business. Nothing is deleted — person_page.dart still wires all
-            // three handlers and a V2 build restores them.
-            if (v2 && admin)
-              FilledButton.icon(
-                onPressed: enriching ? null : onAutoFill,
-                icon: enriching
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.auto_fix_high),
-                label: Text(enriching ? 'Loading...' : 'Auto-fill'),
-              ),
-            if (v2 && admin)
-              OutlinedButton.icon(
-                onPressed: syncing ? null : onCheckOrcidSync,
-                icon: syncing
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.sync),
-                label: Text(syncing ? 'Checking...' : 'Check ORCID record'),
-              ),
-            if (v2 && admin)
-              FilledButton.icon(
-                onPressed: onApprove,
-                icon: const Icon(Icons.check),
-                label: const Text('Approve'),
-              ),
-          ],
-        ),
-      ],
+      const SizedBox(height: 12),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          ...chips,
+          RecordStateChip(recordState(person)),
+          SanitySyncChip(
+            syncedAt: person['sanity_synced_at'] as String?,
+            error: person['sanity_error'] as String?,
+            onRetry: onRetrySanity,
+          ),
+          if (admin || isOwner)
+            FilledButton.icon(
+              onPressed: onEdit,
+              icon: const Icon(Icons.edit),
+              label: const Text('Edit'),
+            ),
+          // v2, all three. Rui, seeing them on his own profile band:
+          // "you have three things that i think make noise - connect ORCID,
+          // auto-fill, ORCID sync ... the approve button should not be
+          // visible - we in UNIDCOM ADMIN make it visible every 6 months for
+          // instance ... i would take it off at this stage - make it
+          // invisible."
+          //
+          // Approve is doubly moot for now: every person row is already
+          // approved, so the button's only effect is to look like unfinished
+          // business. Nothing is deleted — person_page.dart still wires all
+          // three handlers and a V2 build restores them.
+          if (v2 && admin)
+            FilledButton.icon(
+              onPressed: enriching ? null : onAutoFill,
+              icon: enriching
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.auto_fix_high),
+              label: Text(enriching ? 'Loading...' : 'Auto-fill'),
+            ),
+          if (v2 && admin)
+            OutlinedButton.icon(
+              onPressed: syncing ? null : onCheckOrcidSync,
+              icon: syncing
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync),
+              label: Text(syncing ? 'Checking...' : 'Check ORCID record'),
+            ),
+          if (v2 && admin)
+            FilledButton.icon(
+              onPressed: onApprove,
+              icon: const Icon(Icons.check),
+              label: const Text('Approve'),
+            ),
+        ],
+      ),
     ],
   );
 }

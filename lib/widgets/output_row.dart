@@ -4,6 +4,7 @@ import '../data/status_labels.dart';
 import '../theme/tokens.dart';
 import 'panels.dart';
 import 'record_state_chip.dart';
+import 'sanity_sync_chip.dart';
 
 PillTone _typeTone(String type) {
   final value = type.toLowerCase();
@@ -57,6 +58,9 @@ class OutputRow extends StatelessWidget {
     this.detail,
     this.status,
     this.state,
+    this.sanitySyncedAt,
+    this.sanityError,
+    this.onRetrySanity,
     this.rejectionReason,
     this.trailing,
     this.onTap,
@@ -73,6 +77,9 @@ class OutputRow extends StatelessWidget {
   final String? detail;
   final String? status;
   final String? state;
+  final String? sanitySyncedAt;
+  final String? sanityError;
+  final Future<void> Function()? onRetrySanity;
   final String? rejectionReason;
   final Widget? trailing;
   final VoidCallback? onTap;
@@ -206,7 +213,14 @@ class OutputRow extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 4,
                     children: [
-                      if (state != null) RecordStateChip(state!),
+                      if (state != null) ...[
+                        RecordStateChip(state!),
+                        SanitySyncChip(
+                          syncedAt: sanitySyncedAt,
+                          error: sanityError,
+                          onRetry: onRetrySanity,
+                        ),
+                      ],
                       if (statusTone != null)
                         StatusPill(
                           reviewLabel(status ?? detail),

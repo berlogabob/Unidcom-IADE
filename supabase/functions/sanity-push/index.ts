@@ -42,7 +42,7 @@ async function rows<T>(query: string): Promise<T[]> {
 type Mut = Record<string, any>;
 const idOf = (r: { id: string; sanity_id: string | null }) => r.sanity_id || `rims-${r.id}`;
 
-Deno.serve(async (req) => {
+export async function handler(req: Request) {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
   const authorization = req.headers.get("Authorization") ?? "";
@@ -85,6 +85,23 @@ Deno.serve(async (req) => {
     return m;
   }
 
+  const statusIds = { people: new Set<string>(body.personId ? [body.personId] : []), outputs: new Set<string>(body.outputIds ?? []) };
+  async function patch(table: string, id: string, values: Record<string, unknown>) {
+    try {
+      await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`, {
+        method: "PATCH", headers: { ...dbHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+    } catch {
+      // Status and document-id persistence must never mask the Sanity result.
+    }
+  }
+  async function failed(error: string) {
+    if (dryRun) return;
+    await Promise.all(Object.entries(statusIds).flatMap(([table, ids]) =>
+      [...ids].map((id) => patch(table, id, { sanity_error: error.slice(0, 300) }))
+    ));
+  }
   const warnings: string[] = [];
   async function query(groq: string, params: Record<string, string> = {}) {
     const search = new URLSearchParams({ query: groq });
@@ -142,6 +159,7 @@ Deno.serve(async (req) => {
       for (const o of outputs) for (const a of o.output_authors) if (a.person_id) needed.add(a.person_id);
       // Explicit selection includes private people, but never merged rows.
       const members = people.filter((p) => needed.has(p.id));
+      for (const p of members) statusIds.people.add(p.id);
       const memberMutations: Mut[][] = [];
       for (const p of members) memberMutations.push(await memberMutation(p));
       const memberIds = new Map(members.map((p, i) => [p.id, memberMutations[i][0].createIfNotExists._id as string]));
@@ -166,15 +184,18 @@ Deno.serve(async (req) => {
           method: "POST", headers: { ...auth, "Content-Type": "application/json" },
           body: JSON.stringify({ mutations: all.slice(i, i + 100) }),
         });
-        if (!r.ok) return json({ error: `Sanity ${r.status}: ${(await r.text()).slice(0, 300)}`, dropped, warnings, matched, wouldCreate }, 502);
+        if (!r.ok) {
+          const error = `Sanity ${r.status}: ${(await r.text()).slice(0, 300)}`;
+          await failed(error);
+          return json({ error, dropped, warnings, matched, wouldCreate }, 502);
+        }
       }
+      const syncedAt = new Date().toISOString();
       for (const [table, items] of [["outputs", outputs], ["people", members]] as const) {
-        await Promise.all(items.filter((r) => !r.sanity_id).map((r) =>
-          fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/${table}?id=eq.${r.id}`, {
-            method: "PATCH", headers: { ...dbHeaders(), "Content-Type": "application/json" },
-            body: JSON.stringify({ sanity_id: table === "people" ? memberIds.get(r.id) : mappedOutputs.find((o) => o.id === r.id)?.sanity_id || idOf(r) }),
-          })
-        ));
+        await Promise.all(items.map((r) => patch(table, r.id, {
+          sanity_synced_at: syncedAt, sanity_error: null,
+          ...(!r.sanity_id && { sanity_id: table === "people" ? memberIds.get(r.id) : mappedOutputs.find((o) => o.id === r.id)?.sanity_id || idOf(r) }),
+        })));
       }
       return json({ project: PROJECT, counts, dropped, warnings, matched, wouldCreate });
     }
@@ -186,7 +207,10 @@ Deno.serve(async (req) => {
     const refs = (ids: (string | null)[]) => ids.filter((x): x is string => !!x && personId.has(x)).map((x) => personId.get(x)!);
 
     const built: Record<string, { table: string; items: { row: any; m: Mut[] }[] }> = {};
-    const add = (type: string, table: string, row: any, m: Mut[]) => (built[type] ??= { table, items: [] }).items.push({ row, m });
+    const add = (type: string, table: string, row: any, m: Mut[]) => {
+      if (table === "people" || table === "outputs") statusIds[table].add(row.id);
+      (built[type] ??= { table, items: [] }).items.push({ row, m });
+    };
 
     if (want.includes("funders")) {
       for (const f of await rows<any>("funders?select=*")) add("funders", "funders", f, await withImage(funderMutations(f), "logo", f.logo_url));
@@ -263,20 +287,26 @@ Deno.serve(async (req) => {
           headers: { ...auth, "Content-Type": "application/json" },
           body: JSON.stringify({ mutations: all.slice(i, i + 100) }),
         });
-        if (!r.ok) return json({ error: `Sanity ${r.status} on ${type}: ${(await r.text()).slice(0, 300)}`, counts, warnings, matched, wouldCreate }, 502);
+        if (!r.ok) {
+          const error = `Sanity ${r.status} on ${type}: ${(await r.text()).slice(0, 300)}`;
+          await failed(error);
+          return json({ error, counts, warnings, matched, wouldCreate }, 502);
+        }
       }
       counts[type] = group.items.length;
-      // remember the document id so the next push updates the same document
-      await Promise.all(group.items.filter((i) => !i.row.sanity_id).map((i) =>
-        fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/${group.table}?id=eq.${i.row.id}`, {
-          method: "PATCH",
-          headers: { ...dbHeaders(), "Content-Type": "application/json" },
-          body: JSON.stringify({ sanity_id: i.m[0].createIfNotExists._id }),
-        })
-      ));
+      await Promise.all(group.items.filter((i) => !i.row.sanity_id || group.table === "people" || group.table === "outputs").map((i) => patch(group.table, i.row.id, {
+        ...(!i.row.sanity_id && { sanity_id: i.m[0].createIfNotExists._id }),
+        ...((group.table === "people" || group.table === "outputs") && {
+          sanity_synced_at: new Date().toISOString(), sanity_error: null,
+        }),
+      })));
+      if (group.table === "people" || group.table === "outputs") statusIds[group.table].clear();
     }
     return json({ project: PROJECT, counts, warnings, matched, wouldCreate });
   } catch (e) {
+    await failed(String(e));
     return json({ error: String(e), warnings, matched, wouldCreate }, 502);
   }
-});
+}
+
+if (import.meta.main) Deno.serve(handler);

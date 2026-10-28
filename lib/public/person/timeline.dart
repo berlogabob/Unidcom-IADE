@@ -19,6 +19,7 @@ class PersonTimelineSection extends StatefulWidget {
     required this.isOwner,
     required this.onToggleFeatured,
     required this.onRefresh,
+    this.onRetrySanity,
     required this.onAddRole,
     required this.onOpenOutput,
     required this.onOpenLab,
@@ -32,6 +33,7 @@ class PersonTimelineSection extends StatefulWidget {
   final bool isOwner;
   final ValueChanged<String> onToggleFeatured;
   final VoidCallback onRefresh;
+  final Future<void> Function()? onRetrySanity;
   final VoidCallback onAddRole;
   final ValueChanged<String> onOpenOutput;
   final ValueChanged<String> onOpenLab;
@@ -123,6 +125,7 @@ class _PersonTimelineSectionState extends State<PersonTimelineSection> {
           itemBuilder: (item) => switch (item['_kind']) {
             'Output' => PersonOutputRow(
               author: item,
+              onRetrySanity: widget.onRetrySanity,
               isFeatured: widget.featured.contains(outputIdOf(item)),
               onToggle: canEdit ? widget.onToggleFeatured : null,
               onTap: widget.onOpenOutput,

@@ -235,11 +235,11 @@ Future<Map<String, dynamic>> fetchPerson(String id) async {
           'id, preferred_name, legal_name, bio, membership_type, status, email, photo_url, job_title, phone, '
           'orcid, ciencia_id, profile_status, review_note, public_visibility, last_verified_at, '
           'join_date, exit_date, phd, notes, integration_year, auth_user_id, updated_at, '
-          'orcid_synced_at, featured_outputs, research_interests, board_role, '
+          'website_status, sanity_synced_at, sanity_error, orcid_synced_at, featured_outputs, research_interests, board_role, '
           // category_path feeds the timeline's cascade filter — without it
           // every output reads as unclassified and any picked category
           // filters the list to zero. Caught on the deployed build.
-          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path,approval_status,rejection_reason,review_note,website_status,source,project_outputs(projects(id,title)))), '
+          'output_authors(role, author_position, outputs(id,title,reporting_year,type,subtype,doi,url,affiliation,category_path,approval_status,rejection_reason,review_note,website_status,source,sanity_synced_at,sanity_error,project_outputs(projects(id,title)))), '
           'lab_members(is_coordinator, year, labs(id, code, name)), '
           'person_tags(tags(name))',
         )
@@ -1548,7 +1548,7 @@ Future<List<Map<String, dynamic>>> fetchOutputs({
     var request = db
         .from('outputs')
         .select(
-          'id, title, reporting_year, type, subtype, category_path, doi, url, approval_status, website_status, affiliation, output_authors(people(id,preferred_name))',
+          'id, title, reporting_year, type, subtype, category_path, doi, url, approval_status, website_status, sanity_synced_at, sanity_error, affiliation, output_authors(people(id,preferred_name))',
         )
         .filter('merged_into', 'is', null);
     if (affiliation != null) {

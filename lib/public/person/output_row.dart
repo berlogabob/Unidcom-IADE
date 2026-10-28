@@ -12,6 +12,7 @@ class PersonOutputRow extends StatelessWidget {
     required this.onTap,
     this.onToggle,
     this.onEdit,
+    this.onRetrySanity,
     this.showStates = false,
     this.featurable = true,
   });
@@ -21,6 +22,7 @@ class PersonOutputRow extends StatelessWidget {
   final ValueChanged<String> onTap;
   final ValueChanged<String>? onToggle;
   final ValueChanged<String>? onEdit;
+  final Future<void> Function()? onRetrySanity;
   final bool showStates;
   final bool featurable;
 
@@ -62,6 +64,9 @@ class PersonOutputRow extends StatelessWidget {
       type: type.isEmpty ? null : type,
       detail: detail,
       state: recordState(output),
+      sanitySyncedAt: output['sanity_synced_at'] as String?,
+      sanityError: output['sanity_error'] as String?,
+      onRetrySanity: onRetrySanity,
       rejectionReason: switch (output['approval_status']) {
         'rejected' => output['rejection_reason'] as String?,
         'change_requested' => output['review_note'] as String?,

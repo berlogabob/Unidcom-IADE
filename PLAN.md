@@ -918,7 +918,7 @@ Decision: Hugo static site stays as the safe design mirror; test Sanity `ld5jhf2
 - [x] I1 (codex, verified 16 deno tests; deploy pending) sanity-push: `setIfMissing` memberType also for already matched members (Antirobot-test member has no type) + tests + deploy (orch)
 - [x] I2 DROPPED (28 Oct): mode is already remembered across F5 via sessionStorage, deliberately tab-scoped so a shared machine never inherits admin mode; the audit's "chooser on every load" was a fresh-tab artifact. Codex's localStorage change was reverted.
 - [x] I3a (codex; verified analyze 0 issues, 644 flutter tests; local commit, not pushed) one state vocabulary on person and output rows ("In review / Approved / On site"), remove the contradiction "To be validated" vs "Published"; person overview "No action required" must not hide pending outputs
-- [ ] I3b additive migration `sanity_synced_at`, `sanity_error` on people/outputs, set by publish; show "On Sanity ✓ date / failed + Retry" next to the site state
+- [x] I3b (codex; migration applied live as 20261028163449, sanity-push deployed, 25 deno + 648 flutter tests, analyze clean; local commit) additive migration `sanity_synced_at`, `sanity_error` on people/outputs, set by publish; show "On Sanity ✓ date / failed + Retry" next to the site state
 - [ ] I4 Publish = one click (no confirm bar, undo toast instead), result reports BOTH targets; "Ready to publish" lists outputs too
 - [ ] I5 remove redundant buttons (person "Push to test Sanity" becomes Retry on the Sanity chip; bulk "Sync to Sanity" panel; "Sync to website" kept as admin retry only)
 - [ ] I6 admin Outputs-list "Add output" uses the same wizard as everywhere (first step: for whom)

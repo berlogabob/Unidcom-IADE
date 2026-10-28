@@ -13,6 +13,7 @@ import '../widgets/queue_list.dart';
 import '../widgets/search_bar.dart';
 import '../widgets/taxonomy_picker.dart';
 import 'output_page.dart';
+import 'person/sanity_push.dart';
 
 class OutputsScreen extends StatefulWidget {
   const OutputsScreen({super.key});
@@ -253,7 +254,21 @@ class _OutputsScreenState extends State<OutputsScreen> {
         })
         .whereType<String>()
         .join(', ');
+    final people = (output['output_authors'] as List<dynamic>? ?? [])
+        .map((a) => (a as Map)['people'])
+        .whereType<Map>();
+    final personId = people.firstOrNull?['id'] as String?;
     return OutputRow(
+      sanitySyncedAt: output['sanity_synced_at'] as String?,
+      sanityError: output['sanity_error'] as String?,
+      onRetrySanity: isAdmin && personId != null
+          ? () => retryPersonSanityPush(
+              context,
+              personId: personId,
+              outputIds: [output['id'] as String],
+              refresh: _load,
+            )
+          : null,
       title: output['title'] as String? ?? 'Untitled',
       year: output['reporting_year'] as int?,
       type: output['type'] as String?,

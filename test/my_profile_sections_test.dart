@@ -181,7 +181,7 @@ void main() {
 
     expect(find.text('External researcher'), findsOneWidget);
     expect(find.text('Inactive'), findsOneWidget);
-    expect(find.text('Submitted'), findsOneWidget);
+    expect(find.text('In review'), findsOneWidget);
     expect(
       tester
           .widgetList<Text>(find.byType(Text))
