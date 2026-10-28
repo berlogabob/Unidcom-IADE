@@ -250,6 +250,7 @@ Widget editField(
   int maxLines = 1,
   TextInputType? keyboardType,
   int? softMaxLength,
+  String? errorText,
 }) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 12),
@@ -275,6 +276,7 @@ Widget editField(
             },
       decoration: InputDecoration(
         labelText: label,
+        errorText: errorText,
         border: const OutlineInputBorder(
           borderSide: BorderSide(color: AppColors.cardBorder),
         ),
@@ -485,8 +487,9 @@ Widget sectionHeader(
 
 Widget mutedText(BuildContext context, String text) => Text(
   text,
-  style: Theme.of(context).textTheme.bodyMedium
-      ?.copyWith(color: AppColors.textMuted),
+  style: Theme.of(
+    context,
+  ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
 );
 
 /// Pulls the embedded child rows out of a PostgREST join list
@@ -556,8 +559,9 @@ Widget linkChipsSection(
                             minWidth: 24,
                             minHeight: 24,
                           ),
-                          tooltip: MaterialLocalizations.of(context)
-                              .deleteButtonTooltip,
+                          tooltip: MaterialLocalizations.of(
+                            context,
+                          ).deleteButtonTooltip,
                         ),
                     ],
                   );

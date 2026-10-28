@@ -382,7 +382,16 @@ class _OutputWizardState extends State<OutputWizard> {
   Widget _metadataStep() => Column(
     children: [
       editField(_title, 'Title'),
-      editField(_year, 'Reporting year', keyboardType: TextInputType.number),
+      editField(
+        _year,
+        'Reporting year',
+        keyboardType: TextInputType.number,
+        errorText:
+            _year.text.trim().isNotEmpty &&
+                !RegExp(r'^\d{4}$').hasMatch(_year.text.trim())
+            ? 'Enter a 4-digit year, e.g. 2025'
+            : null,
+      ),
       editField(_reference, 'Full reference', maxLines: 3),
       editField(_url, 'URL'),
       editField(_status, 'Output status'),

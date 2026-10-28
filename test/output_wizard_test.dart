@@ -181,4 +181,22 @@ void main() {
     expect(calls.single.projectIds, ['p1']);
     expect(result, isTrue);
   });
+  testWidgets('non-numeric reporting year shows a hint', (tester) async {
+    await pumpWizard(
+      tester,
+      create: (fields, {projectIds = const []}) async => 'x',
+    );
+    await tapVisible(tester, 'No DOI — enter manually');
+    await tapVisible(tester, 'Livros');
+    await tapVisible(tester, 'Continue');
+    await tapVisible(tester, 'Livro (autor)');
+    await tapVisible(tester, 'Continue');
+    await tester.enterText(find.widgetWithText(TextField, 'Title'), 'T');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Reporting year'),
+      'ewrt',
+    );
+    await tester.pump();
+    expect(find.text('Enter a 4-digit year, e.g. 2025'), findsOneWidget);
+  });
 }
