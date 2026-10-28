@@ -37,11 +37,15 @@ class _WebsiteScreenState extends State<WebsiteScreen> {
     try {
       last = await fetchWebsiteSyncStatus();
     } catch (_) {}
-    final since = DateTime.tryParse('${last?['started_at']}');
+    final since = DateTime.tryParse(
+      '${last?['started_at'] ?? last?['updated_at']}',
+    );
     return (
       last: last,
       ready: (await fetchReadyToPublish()).length,
-      waiting: await fetchPublishedSince(since),
+      waiting: since == null
+          ? <Map<String, dynamic>>[]
+          : await fetchPublishedSince(since),
     );
   }
 
