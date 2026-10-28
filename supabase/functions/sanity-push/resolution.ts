@@ -77,7 +77,7 @@ export function resolver(query: Query) {
 export function memberTypeTitle(p: Row): string | undefined {
   switch (p.membership_type) {
     case "integrated":
-      return p.phd === false ? "Non-Doctorate Researcher" : p.phd === true ? "Doctorate Researcher" : undefined;
+      return p.phd === false ? "Non-Doctorate Researcher" : p.phd === true ? "Doctorate Researcher" : "Integrated"; // phd unknown: the generic type, not a guess
     case "external": return "Visiting researcher";
     case "collaborator": return undefined;
     default: return undefined;

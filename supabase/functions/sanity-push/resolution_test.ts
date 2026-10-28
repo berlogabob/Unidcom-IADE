@@ -85,7 +85,7 @@ Deno.test("only explicit new-member mappings choose a memberType title", () => {
   assertEquals(memberTypeTitle({ ...person, membership_type: "integrated", phd: false }), "Non-Doctorate Researcher");
   assertEquals(memberTypeTitle({ ...person, membership_type: "integrated", phd: true }), "Doctorate Researcher");
   for (const phd of [undefined, null, "Design", "false"]) {
-    assertEquals(memberTypeTitle({ ...person, membership_type: "integrated", phd }), undefined);
+    assertEquals(memberTypeTitle({ ...person, membership_type: "integrated", phd }), "Integrated");
   }
   assertEquals(memberTypeTitle({ ...person, membership_type: "external" }), "Visiting researcher");
   assertEquals(memberTypeTitle(person), undefined);
