@@ -243,7 +243,17 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   /// `create_my_output`, which stamps it pending and links them as an author —
   /// they have no write grant on `outputs` and are not getting one.
   Future<void> _addOutput() async {
-    final saved = await showOutputWizard(context);
+    // Admin viewing someone else files for that person, not for themselves.
+    final owner = widget.personId;
+    final saved = owner == null
+        ? await showOutputWizard(context)
+        : await showOutputWizard(
+            context,
+            loadPerson: () async => {'id': owner},
+            loadProjects: (_) async => const [],
+            create: (fields, {projectIds = const []}) =>
+                createOutputForPerson(owner, fields),
+          );
     if (saved ?? false) _refresh();
   }
 

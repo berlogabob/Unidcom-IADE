@@ -707,6 +707,31 @@ Future<String> createMyOutput(
   }
 }
 
+/// Admin files an output on behalf of [personId] (the person being viewed, not
+/// the admin). Same forced values as `create_my_output`; admins hold
+/// `outputs_write` and `oa_write`, so no RPC is needed.
+Future<String> createOutputForPerson(
+  String personId,
+  Map<String, dynamic> fields, {
+  List<String> projectIds = const [],
+}) async {
+  final id = await createOutput({
+    ...fields,
+    'source': 'manual',
+    'approval_status': 'pending',
+    'affiliation': 'unidcom',
+  });
+  try {
+    await db.from('output_authors').insert({
+      'output_id': id,
+      'person_id': personId,
+    });
+  } catch (error) {
+    throw Exception(_error(error));
+  }
+  return id;
+}
+
 /// The admin path: a direct insert, allowed by `outputs_write`. Mirrors
 /// [createPerson] / [createProject].
 Future<String> createOutput(Map<String, dynamic> fields) async {
