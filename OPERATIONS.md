@@ -167,9 +167,9 @@ list has a "Missing ORCID" filter — then the researcher signs in again.
 | "I added works from ORCID and they don't show up" | they are in Scientific Outputs, `approval_status='pending'`; reports/other types sit under Other activities; pre-UNIDCOM work is `affiliation='external'` (Not affiliated); nothing pending is on the website | point them to the **All** view; correct `affiliation` per output if the ORCID check got it wrong; approve, then publish |
 | Same profile change listed twice for review | before 1 Oct, Save draft + Submit inserted two rows | fixed by the `enrichment_suggestions_supersede` trigger (20261001150000); older rows are `superseded` |
 | "Publish selected" shows Publication error for a researcher | `publish_researchers` could not apply one accepted value (e.g. a protected or unknown field); the researcher's `website_status` is `error` and the reason is in `change_log` | fix or reject the item, then **Retry** on the Ready to publish row |
-| "Sync to test Sanity" says SANITY_TOKEN is not set | the edge function has no Sanity token | create an Editor token on `ld5jhf23` and `supabase secrets set SANITY_TOKEN=<token>` |
-| "Sync to test Sanity" returns `Sanity 4xx on <type>` | a document failed Sanity validation or a referenced document is missing | the message names the type; fix the field in the portal (e.g. a required `citation`, a missing funder) and sync that type again from the chips |
-| "Sync to website" says GITHUB_SYNC_TOKEN is not set | the edge function has no GitHub token | `supabase secrets set GITHUB_SYNC_TOKEN=<fine-grained PAT, unidcom-site, Actions read+write>` |
+| Sanity push says SANITY_TOKEN is not set | the edge function has no Sanity token | create an Editor token on `ld5jhf23` and `supabase secrets set SANITY_TOKEN=<token>` |
+| Sanity push returns `Sanity 4xx on <type>` | a document failed Sanity validation or a referenced document is missing | the message names the type; fix the field in the portal (e.g. a required `citation`, a missing funder) and use Retry on the failed Sanity chip |
+| "Retry website sync" says GITHUB_SYNC_TOKEN is not set | the edge function has no GitHub token | `supabase secrets set GITHUB_SYNC_TOKEN=<fine-grained PAT, unidcom-site, Actions read+write>` |
 | Report generation fails first time | the Typst function cold-starts (~28 MB wasm) and can hit a resource limit | retry; warm it before any demonstration |
 
 For the Phase E permission check, run `audit/tools/perm_check.py` with
@@ -188,7 +188,7 @@ researchers which it is.
 
 | When | What |
 |---|---|
-| Every 10 min | site sync (`unidcom-site`), auto-commits and deploys; Publish and **More → Website → Sync to website** also start one (the schedule lives in the `unidcom-site` repo's `sync.yml`) |
+| Every 10 min | site sync (`unidcom-site`), auto-commits and deploys; Publish and **More → Website → Retry website sync** also start one (the schedule lives in the `unidcom-site` repo's `sync.yml`) |
 | Mondays 05:00 UTC | ORCID works staged into `output_candidates` |
 | Mondays 06:00 UTC | DOI liveness check |
 | Weekly, manual | full API backup with `scripts/backup_all.py` — **see §3 for scope and restore gaps** |

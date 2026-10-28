@@ -15,6 +15,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final calls = <Map<String, dynamic>>[];
   var failure = false;
+  var personState = <String, dynamic>{};
   var failPush = false;
   Completer<void>? pending;
   final preview = {
@@ -62,6 +63,7 @@ void main() {
           result = {
             'id': 'person-1',
             'preferred_name': 'Ana Silva',
+            ...personState,
             'output_authors': [
               {
                 'outputs': {'id': 'output-1'},
@@ -93,6 +95,7 @@ void main() {
   tearDownAll(() => Supabase.instance.dispose());
   setUp(() {
     calls.clear();
+    personState = {};
     failure = false;
     failPush = false;
     pending = null;
@@ -227,7 +230,7 @@ void main() {
         expect(find.textContaining('admins only'), findsOneWidget);
         expect(find.text('Pushed to test Sanity'), findsNothing);
         expect(
-          tester.widget<OutlinedButton>(find.byType(OutlinedButton)).onPressed,
+          tester.widget<TextButton>(find.byType(TextButton)).onPressed,
           isNotNull,
         );
         expect(calls, hasLength(onPush ? 2 : 1));
@@ -241,7 +244,7 @@ void main() {
     await tester.tap(find.text('Push to test Sanity'));
     await tester.pump();
     expect(
-      tester.widget<OutlinedButton>(find.byType(OutlinedButton)).onPressed,
+      tester.widget<TextButton>(find.byType(TextButton)).onPressed,
       isNull,
     );
     pending!.complete();
@@ -268,10 +271,17 @@ void main() {
           ),
         );
         await waitFor(tester, find.text('Ana Silva'));
+        expect(find.text('Push to test Sanity'), findsNothing);
         expect(
-          find.text('Push to test Sanity'),
+          find.text('Admin actions'),
           admin ? findsOneWidget : findsNothing,
         );
+        if (admin) {
+          await tester.ensureVisible(find.text('Admin actions'));
+          await tester.tap(find.text('Admin actions'));
+          await tester.pumpAndSettle();
+          expect(find.text('Push to test Sanity'), findsOneWidget);
+        }
       }
       await tester.ensureVisible(find.text('Push to test Sanity'));
       await openPreview(tester);
@@ -281,4 +291,44 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+  for (final syncState in ['synced', 'failed', 'missing', 'invalid']) {
+    testWidgets(
+      'On site person with $syncState Sanity status gates admin push',
+      (tester) async {
+        personState = {
+          'website_status': 'published',
+          if (syncState != 'missing')
+            'sanity_synced_at': syncState == 'invalid'
+                ? 'invalid'
+                : '2026-10-28T12:00:00Z',
+          if (syncState == 'failed') 'sanity_error': 'Push failed',
+        };
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: PersonPageScreen(
+                id: 'person-1',
+                admin: true,
+                sections: {PersonSection.personal},
+              ),
+            ),
+          ),
+        );
+        await waitFor(tester, find.text('Ana Silva'));
+        expect(find.text('On site'), findsOneWidget);
+        expect(find.text('Push to test Sanity'), findsNothing);
+        expect(
+          find.text('Admin actions'),
+          syncState == 'synced' ? findsNothing : findsOneWidget,
+        );
+        if (syncState != 'synced') {
+          await tester.ensureVisible(find.text('Admin actions'));
+          await tester.tap(find.text('Admin actions'));
+          await tester.pumpAndSettle();
+          expect(find.text('Push to test Sanity'), findsOneWidget);
+        }
+        expect(calls, isEmpty);
+      },
+    );
+  }
 }

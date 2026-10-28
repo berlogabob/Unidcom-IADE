@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/supabase.dart';
 
-/// Mounted only on the admin person detail page.
+/// Secondary action in the admin person detail page’s Admin actions section.
 class PersonSanityPushButton extends StatefulWidget {
   const PersonSanityPushButton({
     super.key,
@@ -107,7 +107,7 @@ class _PersonSanityPushButtonState extends State<PersonSanityPushButton> {
   );
 
   @override
-  Widget build(BuildContext context) => OutlinedButton.icon(
+  Widget build(BuildContext context) => TextButton.icon(
     onPressed: _busy ? null : _push,
     icon: const Icon(Icons.upload_outlined),
     label: Text(_busy ? 'Pushing…' : 'Push to test Sanity'),

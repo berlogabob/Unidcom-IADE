@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../app/own_outputs.dart';
 import '../app/orcid_update.dart';
 import '../data/enrich_client.dart';
+import '../data/record_state.dart';
 import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/featured_readonly.dart';
@@ -296,15 +297,6 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                 onApprove: _approve,
                 onRetrySanity: admin ? retrySanity : null,
               ),
-              if (admin)
-                PersonSanityPushButton(
-                  personId: widget.id,
-                  outputIds: outputAuthors
-                      .map(outputIdOf)
-                      .whereType<String>()
-                      .toSet()
-                      .toList(),
-                ),
               if (admin) _suggestionsSection(),
               ...personLabsSection(
                 context,
@@ -422,6 +414,27 @@ class _PersonPageScreenState extends State<PersonPageScreen> {
                   ),
               ],
             ],
+            if (admin &&
+                widget.sections.contains(PersonSection.personal) &&
+                (recordState(person) != 'On site' ||
+                    DateTime.tryParse(
+                          person['sanity_synced_at'] as String? ?? '',
+                        ) ==
+                        null ||
+                    (person['sanity_error'] as String? ?? '').isNotEmpty))
+              ExpansionTile(
+                title: const Text('Admin actions'),
+                children: [
+                  PersonSanityPushButton(
+                    personId: widget.id,
+                    outputIds: outputAuthors
+                        .map(outputIdOf)
+                        .whereType<String>()
+                        .toSet()
+                        .toList(),
+                  ),
+                ],
+              ),
             ...widget.trailing,
           ],
         );

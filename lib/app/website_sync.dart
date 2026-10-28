@@ -72,12 +72,14 @@ class WebsiteSyncView extends StatelessWidget {
           }),
         const SizedBox(height: 16),
 
-        // Sync button
+        // Recovery action
+        const Text('Retry if published changes have not reached the website.'),
+        const SizedBox(height: 8),
         SizedBox(
           width: double.infinity,
           child: FilledButton(
             onPressed: () => _showSyncConfirmation(context),
-            child: const Text('Sync to website'),
+            child: const Text('Retry website sync'),
           ),
         ),
       ],
