@@ -225,6 +225,25 @@ class _SiteContentPanelState extends State<SiteContentPanel> {
                   ),
                 ],
               ),
+            if (_k.table == 'events')
+              TextButton(
+                onPressed: () async {
+                  try {
+                    final counts = await runSanityPush(types: ['events']);
+                    if (context.mounted) {
+                      showSnack(
+                        context,
+                        'Pushed ${counts['events'] ?? 0} published event(s) to Sanity.',
+                      );
+                    }
+                  } catch (error) {
+                    if (context.mounted) {
+                      showSnack(context, 'Sanity push failed: $error');
+                    }
+                  }
+                },
+                child: const Text('Push published events to Sanity'),
+              ),
             FutureBuilder(
               future: _rows,
               builder: (context, snap) {
