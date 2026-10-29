@@ -389,10 +389,16 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
   final _names = <String, String>{};
   String? _undoMessage;
 
+  // Shown in the result line; falls back to the scheduled sync when the trigger fails.
+  String _websiteNote = 'updates within ~15 min';
+
   Future<void> _syncWebsite() async {
     try {
       await widget.syncWebsite();
-    } catch (_) {} // The scheduled sync will still pick up the flags.
+      _websiteNote = 'update started, live in about 3 min';
+    } catch (_) {
+      _websiteNote = 'updates within ~15 min'; // The scheduled sync still picks up the flags.
+    }
   }
 
   Future<void> _retrySanity(Map<String, dynamic> result) async {
@@ -434,7 +440,7 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
     if (!mounted) return;
     setState(() {
       _undoMessage =
-          '$undone unpublished. Website: updates within ~15 min.'
+          '$undone unpublished. Website: $_websiteNote.'
           '${errors.isEmpty ? '' : ' Undo failed: ${errors.join('; ')}'}';
       _rows = widget.fetchRows();
       _busy = false;
@@ -557,9 +563,17 @@ class _ReadyToPublishTabState extends State<ReadyToPublishTab> {
                   children: [
                     Text(
                       '${_results.values.where((r) => r['ok'] == true).length} published. '
-                      'Website: updates within ~15 min. '
+                      'Website: $_websiteNote. '
                       'Sanity: ${_results.values.where((r) => r['sanity_ok'] == true).length} ok, '
                       '${_results.values.where((r) => r['ok'] == true && r['sanity_ok'] != true).length} failed',
+                    ),
+                    TextButton(
+                      onPressed: () => launchUrl(
+                        Uri.parse(
+                          'https://berlogabob.github.io/unidcom-site/people/',
+                        ),
+                      ),
+                      child: const Text('Open website'),
                     ),
                     for (final r in _results.values)
                       if (r['ok'] != true || r['sanity_ok'] != true)

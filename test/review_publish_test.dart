@@ -235,7 +235,7 @@ void main() {
       expect(find.text('Publish'), findsNothing);
       expect(
         find.text(
-          '2 published. Website: updates within ~15 min. Sanity: 1 ok, 1 failed',
+          '2 published. Website: update started, live in about 3 min. Sanity: 1 ok, 1 failed',
         ),
         findsOneWidget,
       );
