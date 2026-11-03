@@ -10,7 +10,7 @@ for (const mode of ["success", "reject", "throw", "dry", "patch-throw", "patch-r
     const patches: { url: string; body: Record<string, unknown> }[] = [];
     globalThis.fetch = async (input, init) => {
       const url = String(input);
-      if (url.endsWith("/auth/v1/user")) return Response.json({ app_metadata: { role: "admin" } });
+      if (url.endsWith("/rest/v1/rpc/has_perm")) return Response.json(true);
       if (init?.method === "PATCH") {
         assertEquals(new Headers(init.headers).get("Authorization"), "Bearer service-test");
         patches.push({ url, body: JSON.parse(String(init.body)) });

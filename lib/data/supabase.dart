@@ -54,9 +54,34 @@ void forgetMode() {
   storeMode(null);
 }
 
-/// Does this account hold the admin role at all? Fixed for the session, and
-/// the only thing that decides whether the mode switcher is offered.
-bool get isAdminAccount => db.auth.currentUser?.appMetadata['role'] == 'admin';
+/// What this account may do, from `my_permissions()` (roles live in
+/// public.user_roles / role_permissions, edited on /app/admin/roles).
+/// UI-only, like [isAdmin]: RLS and `public.has_perm()` are the enforcement.
+final permissions = ValueNotifier<Set<String>>(const {});
+
+/// Reload [permissions]; empty when signed out or on failure (fail closed).
+Future<void> loadPermissions() async {
+  if (db.auth.currentSession == null) {
+    permissions.value = const {};
+    return;
+  }
+  try {
+    final rows = await db.rpc('my_permissions') as List;
+    permissions.value = rows.cast<String>().toSet();
+  } catch (_) {
+    permissions.value = const {};
+  }
+}
+
+bool hasPerm(String permission) => permissions.value.contains(permission);
+
+/// Does this account hold an admin-type role at all (research.edit)? The only
+/// thing that decides whether the mode switcher is offered.
+bool get isAdminAccount => hasPerm('research.edit');
+
+/// A news-only account (students): drafts news and events on the Website
+/// screen and sees nothing else.
+bool get isNewsAccount => hasPerm('news.edit') && !isAdminAccount;
 
 /// Is the UI *currently* acting as an administrator?
 ///
@@ -285,9 +310,10 @@ List<List<Map<String, dynamic>>> groupMergeCandidates(
   final sets = <Set<String>>[];
   final valid = <int>[]; // indices of people with a usable (>=2 token) name
   for (var i = 0; i < people.length; i++) {
-    final tokens = _normalizeName(
-      people[i]['preferred_name'] as String?,
-    ).split(' ').where((s) => s.isNotEmpty).toSet();
+    final tokens = _normalizeName(people[i]['preferred_name'] as String?)
+        .split(' ')
+        .where((s) => s.isNotEmpty)
+        .toSet();
     sets.add(tokens);
     if (tokens.length >= 2) valid.add(i);
   }
@@ -2744,9 +2770,8 @@ Future<List<Map<String, dynamic>>> fetchReadyToPublish() async {
       rows.map(
         (row) async => {
           ...row,
-          'output_count': (await _fetchPublishOutputIds(
-            row['id'] as String,
-          )).length,
+          'output_count': (await _fetchPublishOutputIds(row['id'] as String))
+              .length,
         },
       ),
     );
@@ -3046,4 +3071,47 @@ Future<int> importNewsDrafts(List<NewsImportRow> rows) async {
     inserted = end;
   }
   return inserted;
+}
+
+// ------------------------------------------------------------------ roles
+// Roles page (/app/admin/roles). The RPCs refuse callers without roles.manage.
+
+typedef RolesMatrix = ({
+  List<Map<String, dynamic>> permissions,
+  List<Map<String, dynamic>> roles,
+  Map<String, Set<String>> grants,
+});
+
+Future<RolesMatrix> fetchRolesMatrix() async {
+  final results = await Future.wait([
+    db.from('permissions').select().order('sort'),
+    db.from('roles').select().order('builtin', ascending: false).order('key'),
+    db.from('role_permissions').select(),
+  ]);
+  final grants = <String, Set<String>>{};
+  for (final r in results[2]) {
+    grants
+        .putIfAbsent(r['role_key'] as String, () => {})
+        .add(r['permission'] as String);
+  }
+  return (permissions: results[0], roles: results[1], grants: grants);
+}
+
+Future<void> saveRole(String key, String label, Set<String> perms) async {
+  await db.rpc(
+    'save_role',
+    params: {'p_key': key, 'p_label': label, 'p_perms': perms.toList()},
+  );
+  await loadPermissions();
+}
+
+Future<void> deleteRole(String key) =>
+    db.rpc('delete_role', params: {'p_key': key});
+
+Future<List<Map<String, dynamic>>> fetchAccounts() async =>
+    (await db.rpc('list_accounts') as List).cast<Map<String, dynamic>>();
+
+Future<void> setUserRole(String userId, String? role) async {
+  await db.rpc('set_user_role', params: {'p_user': userId, 'p_role': role});
+  if (userId == db.auth.currentUser?.id) await loadPermissions();
 }

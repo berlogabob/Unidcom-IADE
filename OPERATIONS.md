@@ -182,6 +182,30 @@ A researcher files one and it sits in the table until an admin opens
 add a trigger or make someone responsible for checking daily — and tell
 researchers which it is.
 
+### Roles and who can do what
+
+Roles are data, not a JWT claim (migration `20261103120000_roles_matrix`).
+**More → Roles** (`/app/admin/roles`, needs `roles.manage`) shows a matrix of
+roles against permissions. Tick a cell, add a role, or change an account's
+role in the Accounts table. Changes apply on that person's next page load.
+
+| Role | Can | Cannot |
+|---|---|---|
+| Admin (built-in) | everything | lose `roles.manage` (locked) |
+| Editor | edit everything, publish to the website | delete records, merge duplicates, manage roles |
+| News | write draft news and events, upload images | publish, delete, see anything else |
+
+Every role and permission change goes to `change_log` (`subject_type` `role`
+or `user_role`). The database refuses a change that would leave nobody with
+`roles.manage`. The six permissions are fixed in the migration because each
+is a database check. A new kind of permission needs a new migration.
+
+Giving someone a role: create the account in Supabase → Authentication →
+Add user (email + password, auto-confirm), as before. Then pick the role on
+the Roles page. For a researcher, also set `people.auth_user_id` so their
+profile is linked. There is no in-portal invite yet: the app has no
+set-password screen, so an invite email would give only one sign-in.
+
 ---
 
 ## 6. Routine

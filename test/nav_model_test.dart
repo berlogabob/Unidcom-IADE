@@ -1,7 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:unidcom_iade/data/supabase.dart' show permissions;
 import 'package:unidcom_iade/widgets/nav_model.dart';
 
 void main() {
+  // The admin nav as a full admin sees it; gated items need their permission.
+  setUp(() => permissions.value = {'research.merge', 'roles.manage'});
+
   const routerPaths = [
     '/people',
     '/projects',
@@ -17,6 +21,7 @@ void main() {
     '/app/admin/merge',
     '/app/admin/data',
     '/app/admin/website',
+    '/app/admin/roles',
     '/app/profile',
     '/app/profile/identifiers',
     '/app/profile/bio',
@@ -86,10 +91,7 @@ void main() {
       'Resources & Guidance',
     );
     expect(navSelected(adminNav(), '/labs/abc')!.label, 'Structure');
-    expect(
-      navSelected(adminNav(), '/outputs/123')!.label,
-      'Outputs',
-    );
+    expect(navSelected(adminNav(), '/outputs/123')!.label, 'Outputs');
   });
   test('nav selection prefers exact and longest matching routes', () {
     final researcher = researcherNav(signedIn: true);
@@ -213,12 +215,23 @@ void main() {
   test('admin sidebar is the brief\'s five, the rest under More (AD-1)', () {
     final groups = adminNav();
     expect(groups.first.items.map((i) => i.label), [
-      'Dashboard', 'People', 'Pending approval', 'Outputs', 'Reports',
+      'Dashboard',
+      'People',
+      'Pending approval',
+      'Outputs',
+      'Reports',
     ]);
     expect(groups[1].label, 'More');
-    expect(groups[1].items.map((i) => i.label), containsAll([
-      'Projects', 'Structure', 'Data browser', 'Merge duplicates', 'Settings',
-    ]));
+    expect(
+      groups[1].items.map((i) => i.label),
+      containsAll([
+        'Projects',
+        'Structure',
+        'Data browser',
+        'Merge duplicates',
+        'Settings',
+      ]),
+    );
   });
   test('navGroupOf finds the owning group', () {
     final groups = adminNav();
@@ -248,4 +261,20 @@ void main() {
     expect(bare.label, '');
     expect(bare.route, isNull);
   });
+
+  test(
+    'editor without merge sees no Merge duplicates; news nav is one item',
+    () {
+      permissions.value = {'research.edit'};
+      final labels = [
+        for (final g in adminNav()) ...g.items.map((i) => i.label),
+      ];
+      expect(labels, isNot(contains('Merge duplicates')));
+      expect(labels, isNot(contains('Roles')));
+      expect(
+        [for (final g in newsNav()) ...g.items.map((i) => i.route)],
+        ['/app/admin/website'],
+      );
+    },
+  );
 }

@@ -7,7 +7,7 @@ import '../data/supabase.dart';
 import 'news_wizard.dart';
 
 Future<bool?> showNewsImport(BuildContext context) async {
-  if (!canPublishNews()) return false;
+  if (!canEditNews()) return false;
   try {
     final file = await pickNewsFile();
     if (file == null) return false;
@@ -27,9 +27,8 @@ Future<bool?> showNewsImport(BuildContext context) async {
     );
   } catch (error) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('$error')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$error')));
     }
     return false;
   }
@@ -39,7 +38,7 @@ class NewsImportPreview extends StatefulWidget {
   const NewsImportPreview({
     super.key,
     required this.result,
-    this.canEdit = canPublishNews,
+    this.canEdit = canEditNews,
     this.importRows = importNewsDrafts,
   });
   final NewsParseResult result;

@@ -74,6 +74,8 @@ class _AppShellState extends State<AppShell> {
     final admin = data.isAdmin;
     final groups = !hasSession
         ? researcherNav(signedIn: false)
+        : data.isNewsAccount
+        ? newsNav()
         : admin
         ? adminNav()
         : researcherNav(signedIn: true);
@@ -167,6 +169,8 @@ class _AppShellState extends State<AppShell> {
   }) {
     final subtitle = !hasSession
         ? 'Welcome pack'
+        : data.isNewsAccount
+        ? 'News & events'
         : admin
         ? 'Admin'
         : 'Researcher portal';

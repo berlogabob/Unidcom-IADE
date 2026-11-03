@@ -144,11 +144,7 @@ void main() {
 
     test('admin requests open the review queue in v1 admin mode', () {
       expect(
-        redirect(
-          '/app/admin/requests',
-          adminAccount: true,
-          adminMode: true,
-        ),
+        redirect('/app/admin/requests', adminAccount: true, adminMode: true),
         '/app/admin/review',
       );
     });
@@ -181,5 +177,19 @@ void main() {
       expect(redirect('/login'), isNull);
       expect(redirect('/'), isNull);
     });
+  });
+
+  test('a news-only account is held on the Website screen', () {
+    String? news(String l) => modeRedirect(
+      l,
+      adminAccount: false,
+      adminMode: false,
+      chosen: false,
+      newsAccount: true,
+    );
+    expect(news('/app/home'), newsHome);
+    expect(news('/people'), newsHome);
+    expect(news('/app/admin/roles'), newsHome);
+    expect(news(newsHome), isNull);
   });
 }

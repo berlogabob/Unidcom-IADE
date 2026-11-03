@@ -85,6 +85,14 @@ void main() {
       }),
     );
     viewMode.value = ViewMode.admin;
+    permissions.value = {
+      'research.edit',
+      'research.delete',
+      'research.merge',
+      'website.publish',
+      'news.edit',
+      'roles.manage',
+    };
   });
   tearDownAll(() async {
     viewMode.value = ViewMode.researcher;

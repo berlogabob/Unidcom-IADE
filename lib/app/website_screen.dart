@@ -22,7 +22,9 @@ class _WebsiteScreenState extends State<WebsiteScreen> {
       List<Map<String, dynamic>> waiting,
     })
   >
-  _data = _load();
+  _data = isNewsAccount
+      ? Future.value((last: null, ready: 0, waiting: <Map<String, dynamic>>[]))
+      : _load();
 
   static Future<
     ({
@@ -61,18 +63,24 @@ class _WebsiteScreenState extends State<WebsiteScreen> {
       setState(() => _data = _load());
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('$error')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('$error')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Students: drafts only, none of the sync/recovery tools.
+    if (isNewsAccount) {
+      return const DsPage(
+        title: 'News & events',
+        subtitle: 'Write news and events as drafts. An editor reviews and publishes them.',
+        children: [SiteContentPanel()],
+      );
+    }
     return DsPage(
       title: 'Website',
-      subtitle:
-          'Publish sends updates to the website and Sanity. The website also syncs every 10 minutes; check its status and retry here if needed.',
+      subtitle: 'Publish sends updates to the website and Sanity. The website also syncs every 10 minutes; check its status and retry here if needed.',
       children: [
         Align(
           alignment: Alignment.centerLeft,

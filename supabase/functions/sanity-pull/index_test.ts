@@ -31,7 +31,7 @@ Deno.test("non-admin denied before reading either dataset", async () => {
   globalThis.fetch = (input) => {
     calls.push(String(input));
     return Promise.resolve(
-      Response.json({ app_metadata: { role: "researcher" } }),
+      Response.json(false),
     );
   };
   try {
@@ -43,7 +43,7 @@ Deno.test("non-admin denied before reading either dataset", async () => {
     );
     assertEquals(res.status, 403);
     assertEquals(calls.length, 1);
-    assert(calls[0].endsWith("/auth/v1/user"));
+    assert(calls[0].endsWith("/rest/v1/rpc/has_perm"));
   } finally {
     globalThis.fetch = original;
   }
@@ -55,12 +55,13 @@ Deno.test("admin comparison only uses GET, anonymous GROQ and paginated portal r
   globalThis.fetch = (input, init) => {
     const url = String(input);
     calls.push(url);
-    assertEquals(init?.method ?? "GET", "GET");
-    if (url.endsWith("/auth/v1/user")) {
+    // The permission check is the one POST: a read-only RPC, not a write.
+    if (url.endsWith("/rest/v1/rpc/has_perm")) {
       return Promise.resolve(
-        Response.json({ app_metadata: { role: "admin" } }),
+        Response.json(true),
       );
     }
+    assertEquals(init?.method ?? "GET", "GET");
     if (url.includes(".api.sanity.io/")) {
       assertEquals(init?.headers, undefined);
       assert(url.includes("/data/query/production?"));
@@ -103,8 +104,8 @@ Deno.test("upstream failure returns CORS JSON error rather than incomplete compa
   const original = globalThis.fetch;
   globalThis.fetch = (input) =>
     Promise.resolve(
-      String(input).endsWith("/auth/v1/user")
-        ? Response.json({ app_metadata: { role: "admin" } })
+      String(input).endsWith("/rest/v1/rpc/has_perm")
+        ? Response.json(true)
         : new Response("Unavailable", { status: 503 }),
     );
   try {

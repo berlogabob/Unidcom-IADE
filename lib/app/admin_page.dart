@@ -4,6 +4,7 @@ import 'data_page.dart';
 import 'merge.dart';
 import 'reports.dart';
 import 'review_queue.dart';
+import 'roles_screen.dart';
 import 'website_screen.dart';
 import 'website_differences_screen.dart';
 
@@ -15,6 +16,7 @@ const adminTools = [
   'data',
   'website',
   'website-differences',
+  'roles',
 ];
 
 class AdminScreen extends StatelessWidget {
@@ -31,6 +33,7 @@ class AdminScreen extends StatelessWidget {
       'data' => const DataScreen(),
       'website' => const WebsiteScreen(),
       'website-differences' => const WebsiteDifferencesScreen(),
+      'roles' => const RolesScreen(),
       _ => ReviewQueueScreen(initialTab: tab),
     };
   }

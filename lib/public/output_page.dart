@@ -376,24 +376,25 @@ class _OutputPageScreenState extends State<OutputPageScreen> {
           ),
           // Find DOI and Merge duplicates used to sit here, in everyone's way.
           // They live inside the Edit dialog now — see _edit.
-          PopupMenuButton<void>(
-            icon: const Icon(Icons.more_vert),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                onTap: _delete,
-                child: ListTile(
-                  leading: Icon(
-                    Icons.delete_outline,
-                    color: theme.colorScheme.error,
-                  ),
-                  title: Text(
-                    'Delete',
-                    style: TextStyle(color: theme.colorScheme.error),
+          if (hasPerm('research.delete'))
+            PopupMenuButton<void>(
+              icon: const Icon(Icons.more_vert),
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  onTap: _delete,
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.delete_outline,
+                      color: theme.colorScheme.error,
+                    ),
+                    title: Text(
+                      'Delete',
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ],
     );
@@ -969,9 +970,8 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
                 Text(
                   'UNIDCOM reviews what you add before it appears on the '
                   'public site.',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: AppColors.textMuted),
                 ),
               ],
               if (_titleMatches.isNotEmpty)
@@ -1015,7 +1015,7 @@ class _OutputEditDialogState extends State<OutputEditDialog> {
                           icon: const Icon(Icons.travel_explore, size: 18),
                           label: const Text('Find DOI'),
                         ),
-                      if (widget.onMerge != null)
+                      if (widget.onMerge != null && hasPerm('research.merge'))
                         OutlinedButton.icon(
                           onPressed: () => _runTool(widget.onMerge!),
                           icon: const Icon(Icons.merge, size: 18),

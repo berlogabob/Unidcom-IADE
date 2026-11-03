@@ -24,11 +24,19 @@ const CORS = {
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
-async function isAdmin(authorization: string) {
-  const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/user`, {
-    headers: { Authorization: authorization, apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "" },
+// Roles live in public.user_roles (see migration 20261103120000_roles_matrix);
+// ask the DB as the caller rather than reading a JWT claim.
+async function isAdmin(authorization: string): Promise<boolean> {
+  const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/rpc/has_perm`, {
+    method: "POST",
+    headers: {
+      Authorization: authorization,
+      apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ p: "website.publish" }),
   });
-  return res.ok && (await res.json())?.app_metadata?.role === "admin";
+  return res.ok && (await res.json()) === true;
 }
 
 const key = () => Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

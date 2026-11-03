@@ -173,6 +173,12 @@ Future<void> _boot() async {
   // be overwritten by the (absent) broker error.
   _orcidError ??= Uri.base.queryParameters['orcid_error'];
 
+  // The router reads permissions synchronously, so have them before the first
+  // route resolves; afterwards every sign-in/out/refresh reloads them.
+  await data.loadPermissions();
+  Supabase.instance.client.auth.onAuthStateChange.listen(
+    (_) => data.loadPermissions(),
+  );
   runApp(const UnidcomApp());
 }
 
@@ -230,6 +236,9 @@ Widget parameterizedRouteWidget(String path, String value, {String? tab}) =>
 ///
 /// A prefix list rather than a chain of ifs so that adding an admin screen
 /// later is a one-line edit here, not a fourth branch in the redirect.
+/// The one screen a news-only account (students) can open.
+const newsHome = '/app/admin/website';
+
 const _adminOnly = [
   '/people',
   '/projects',
@@ -255,7 +264,10 @@ String? modeRedirect(
   required bool adminAccount,
   required bool adminMode,
   required bool chosen,
+  bool newsAccount = false,
 }) {
+  // A news-only account has exactly one screen.
+  if (newsAccount) return location == newsHome ? null : newsHome;
   // Ask the question before honouring any deep link, otherwise an admin's
   // bookmark silently decides the mode for them.
   if (adminAccount && !chosen) {
@@ -303,6 +315,7 @@ final _router = GoRouter(
   refreshListenable: Listenable.merge([
     GoRouterRefreshStream(Supabase.instance.client.auth.onAuthStateChange),
     data.viewMode,
+    data.permissions,
   ]),
   errorBuilder: (context, state) {
     if (state.error != null) {
@@ -319,7 +332,9 @@ final _router = GoRouter(
     // Anonymous callers are on the Welcome pack and have no mode to pick.
     if (!hasSession) return anonymousRedirect(state.matchedLocation);
     if (onLogin) {
-      return data.isAdminAccount && !data.modeChosen
+      return data.isNewsAccount
+          ? newsHome
+          : data.isAdminAccount && !data.modeChosen
           ? '/app/mode'
           : data.isAdmin
           ? '/app/dashboard'
@@ -330,6 +345,7 @@ final _router = GoRouter(
       adminAccount: data.isAdminAccount,
       adminMode: data.isAdmin,
       chosen: data.modeChosen,
+      newsAccount: data.isNewsAccount,
     );
   },
   routes: [

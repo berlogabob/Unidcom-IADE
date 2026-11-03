@@ -87,7 +87,12 @@ class _SiteContentPanelState extends State<SiteContentPanel> {
   int _kind = 0;
   late Future<List<Map<String, dynamic>>> _rows = _load();
 
-  SiteContentKind get _k => siteContentKinds[_kind];
+  // Students write news and events only; funders stay with admins.
+  late final _kinds = isNewsAccount
+      ? siteContentKinds.where((k) => k.table != 'funders').toList()
+      : siteContentKinds;
+
+  SiteContentKind get _k => _kinds[_kind];
 
   Future<List<Map<String, dynamic>>> _load() =>
       fetchSiteRows(_k.table, order: _k.order);
@@ -163,7 +168,9 @@ class _SiteContentPanelState extends State<SiteContentPanel> {
 
   @override
   Widget build(BuildContext context) {
-    if (!isAdmin) return const Center(child: Text('Admin access required'));
+    if (!isAdmin && !isNewsAccount) {
+      return const Center(child: Text('Admin access required'));
+    }
     return Panel(
       title: 'Website content',
       trailing: FilledButton(
@@ -180,12 +187,12 @@ class _SiteContentPanelState extends State<SiteContentPanel> {
             SegmentedButton<int>(
               showSelectedIcon: false,
               segments: [
-                for (var i = 0; i < siteContentKinds.length; i++)
+                for (var i = 0; i < _kinds.length; i++)
                   ButtonSegment(
                     value: i,
                     label: Text(
-                      siteContentKinds[i].table[0].toUpperCase() +
-                          siteContentKinds[i].table.substring(1),
+                      _kinds[i].table[0].toUpperCase() +
+                          _kinds[i].table.substring(1),
                       softWrap: false,
                     ),
                   ),
@@ -197,7 +204,7 @@ class _SiteContentPanelState extends State<SiteContentPanel> {
               }),
             ),
             const SizedBox(height: 8),
-            if (_k.table == 'articles' && canPublishNews())
+            if (_k.table == 'articles' && canEditNews())
               Wrap(
                 spacing: 8,
                 children: [
@@ -225,7 +232,7 @@ class _SiteContentPanelState extends State<SiteContentPanel> {
                   ),
                 ],
               ),
-            if (_k.table == 'events')
+            if (_k.table == 'events' && hasPerm('website.publish'))
               TextButton(
                 onPressed: () async {
                   try {
@@ -258,20 +265,26 @@ class _SiteContentPanelState extends State<SiteContentPanel> {
                         contentPadding: EdgeInsets.zero,
                         title: Text('${r['title']}'),
                         subtitle: Text(_k.subtitle?.call(r) ?? ''),
-                        onTap: () => _edit(r),
+                        // Students cannot change a published row (RLS); don't offer it.
+                        onTap: isNewsAccount && r['published'] == true
+                            ? null
+                            : () => _edit(r),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             if (r.containsKey('published'))
                               Switch(
                                 value: r['published'] == true,
-                                onChanged: (v) => _togglePublished(r, v),
+                                onChanged: isAdmin
+                                    ? (v) => _togglePublished(r, v)
+                                    : null,
                               ),
-                            IconButton(
-                              tooltip: 'Delete',
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () => _delete(r),
-                            ),
+                            if (hasPerm('research.delete'))
+                              IconButton(
+                                tooltip: 'Delete',
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () => _delete(r),
+                              ),
                           ],
                         ),
                       ),

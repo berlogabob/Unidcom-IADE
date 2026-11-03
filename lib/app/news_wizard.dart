@@ -7,11 +7,14 @@ import '../data/supabase.dart';
 import '../widgets/detail_scaffold.dart';
 import '../widgets/panels.dart';
 
-// Add a publications editor role here when that role is available.
+/// Opening the wizard and saving drafts: admin mode, or a news-only account.
+bool canEditNews() => isAdmin || isNewsAccount;
+
+/// Publishing sets `published`, which RLS allows only with research.edit.
 bool canPublishNews() => isAdmin;
 
 Future<void> saveNews(Map<String, dynamic> fields, String? id) async {
-  if (!canPublishNews()) throw StateError('Admin access required');
+  if (!canEditNews()) throw StateError('Admin access required');
   if (id == null) {
     await createSiteRow('articles', fields);
   } else {
@@ -46,7 +49,8 @@ class NewsWizard extends StatefulWidget {
   const NewsWizard({
     super.key,
     this.article,
-    this.canEdit = canPublishNews,
+    this.canEdit = canEditNews,
+    this.canPublish = canPublishNews,
     this.loadSlugs = fetchArticleSlugs,
     this.save = saveNews,
     this.push = pushNews,
@@ -55,6 +59,7 @@ class NewsWizard extends StatefulWidget {
 
   final Map<String, dynamic>? article;
   final bool Function() canEdit;
+  final bool Function() canPublish;
   final Future<Set<String>> Function() loadSlugs;
   final Future<void> Function(Map<String, dynamic>, String?) save;
   final Future<void> Function() push;
@@ -174,6 +179,7 @@ class _NewsWizardState extends State<NewsWizard> {
 
   Future<void> _save(bool published) async {
     if (_busy || !_valid(3) || !widget.canEdit()) return;
+    if (published && !widget.canPublish()) return;
     setState(() {
       _busy = true;
       _error = null;
@@ -442,12 +448,13 @@ class _NewsWizardState extends State<NewsWizard> {
                                   : null,
                               child: const Text('Save draft'),
                             ),
-                            FilledButton(
-                              onPressed: !_busy && _valid(3)
-                                  ? () => _save(true)
-                                  : null,
-                              child: const Text('Publish'),
-                            ),
+                            if (widget.canPublish())
+                              FilledButton(
+                                onPressed: !_busy && _valid(3)
+                                    ? () => _save(true)
+                                    : null,
+                                child: const Text('Publish'),
+                              ),
                           ] else
                             FilledButton(
                               onPressed: !_busy && _valid(_step)

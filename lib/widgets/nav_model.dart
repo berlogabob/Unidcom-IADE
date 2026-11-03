@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../data/features.dart';
+import '../data/supabase.dart' show hasPerm;
 import '../view_mode_store.dart';
 
 class NavItem {
@@ -198,8 +200,15 @@ List<NavGroup> adminNav() => [
       '/app/admin/data',
       icon: Icons.table_chart_outlined,
     ),
-    NavItem('Merge duplicates', '/app/admin/merge', icon: Icons.merge_type),
+    if (hasPerm('research.merge'))
+      NavItem('Merge duplicates', '/app/admin/merge', icon: Icons.merge_type),
     NavItem('Website', '/app/admin/website', icon: Icons.public),
+    if (hasPerm('roles.manage'))
+      NavItem(
+        'Roles',
+        '/app/admin/roles',
+        icon: Icons.admin_panel_settings_outlined,
+      ),
     NavItem('Settings', '/app/settings', icon: Icons.settings_outlined),
     if (v2)
       NavItem(
@@ -210,6 +219,13 @@ List<NavGroup> adminNav() => [
   ]),
   // M2 from the IA (not built): Research activities, Planning & monitoring,
   // Data export page, Settings sub-pages (centre info, users & roles, ...).
+];
+
+/// News-only accounts (students): the Website screen and nothing else.
+List<NavGroup> newsNav() => [
+  NavGroup('', [
+    NavItem('News & events', '/app/admin/website', icon: Icons.public),
+  ]),
 ];
 
 /// The item (top-level or child) that owns [path], for highlighting and the

@@ -53,6 +53,7 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
     Deno.env.get = (name) => ({ SANITY_TOKEN: "test", SUPABASE_URL: "https://db.test" })[name];
     globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
       const url = String(input);
+      if (url.endsWith("/rest/v1/rpc/has_perm")) return Promise.resolve(Response.json(true));
       if (init?.method === "POST" || init?.method === "PATCH") {
         writes.push({ url, body: JSON.parse(String(init.body)) });
         return Promise.resolve(Response.json({}));
@@ -60,8 +61,7 @@ Deno.test("selected push bypasses publication gates and dry run performs no writ
       reads.push(url);
       if (url === "https://photo.test") return Promise.resolve(new Response(null, { status: 404 }));
       let data: unknown;
-      if (url.endsWith("/auth/v1/user")) data = { app_metadata: { role: "admin" } };
-      else if (url.includes("/people?")) data = [
+      if (url.includes("/people?")) data = [
         { ...row, public_visibility: false, photo_url: "https://photo.test" },
         { ...row, id: "u2", public_visibility: false, sanity_id: "member-2", membership_type: storedMembership },
         { ...row, id: "unrelated" },

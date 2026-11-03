@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:unidcom_iade/data/supabase.dart' show permissions;
 import 'package:unidcom_iade/widgets/app_shell.dart';
 import 'package:unidcom_iade/widgets/nav_model.dart';
 
@@ -54,6 +55,7 @@ void main() {
       }),
     );
   });
+  setUp(() => permissions.value = {'research.edit'});
   tearDownAll(() => Supabase.instance.dispose());
 
   testWidgets('desktop sidebar survives the nested route semantics barrier', (

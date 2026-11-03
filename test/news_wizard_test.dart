@@ -28,6 +28,7 @@ Future<void> _pump(
         body: NewsWizard(
           article: article,
           canEdit: () => allowed,
+          canPublish: () => allowed,
           loadSlugs: () async => {'existing', 'my-news'},
           save: save ?? (_, _) async {},
           push: push ?? () async {},
@@ -202,6 +203,7 @@ void main() {
                 height: 720,
                 child: NewsWizard(
                   canEdit: () => true,
+                  canPublish: () => true,
                   loadSlugs: () async =>
                       ++loads == 1 ? <String>{} : {'new-news'},
                   save: (data, id) async {
