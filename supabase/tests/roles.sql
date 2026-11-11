@@ -1,5 +1,5 @@
 -- Run AFTER the migration inside one transaction, then roll back:
---   begin; \i migrations/20261103120000_roles_matrix.sql; \i tests/roles.sql; rollback;
+--   begin; \i migrations/20261103150437_roles_matrix.sql; \i tests/roles.sql; rollback;
 -- Any failed assert raises. Needs a role that can SET LOCAL role/claims.
 do $t$
 declare

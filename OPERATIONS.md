@@ -184,7 +184,7 @@ researchers which it is.
 
 ### Roles and who can do what
 
-Roles are data, not a JWT claim (migration `20261103120000_roles_matrix`).
+Roles are data, not a JWT claim (migration `20261103150437_roles_matrix`).
 **More → Roles** (`/app/admin/roles`, needs `roles.manage`) shows a matrix of
 roles against permissions. Tick a cell, add a role, or change an account's
 role in the Accounts table. Changes apply on that person's next page load.

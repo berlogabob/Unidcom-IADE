@@ -13,7 +13,7 @@ Welcome pack (`/app/welcome/*`) are its only anonymous screens.
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the review/publication split and the
 two privacy boundaries.
 
-Updated 30 Sep 2026 (Phase E).
+Updated 11 Nov 2026. Team workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 | | |
 |---|---|
@@ -54,6 +54,11 @@ See `lib/data/features.dart` for the v2 flag's rationale.
 
 ## Who can write what
 
+Account roles are data (`roles`, `role_permissions`, `user_roles`, enforced by
+`has_perm()`); built-in Admin, Editor (edit and publish, no delete/merge) and
+News (draft news and events only). Admins edit the matrix on **More → Roles**
+(`/app/admin/roles`). See OPERATIONS.md "Roles".
+
 Researchers have **no write grant on `outputs` or `output_authors`** — both
 policies are `is_admin()` and stay that way. They record their own work through
 the controlled create flow, then submit records in `to_validate` or `rejected`
@@ -80,7 +85,7 @@ inside a `if (v2)` branch before someone flips the flag.
 
 ```sh
 flutter analyze
-flutter test            # 330 tests at Phase E handoff
+flutter test            # 667 tests at 11 Nov 2026
 ```
 
 ### End-to-end
@@ -158,19 +163,24 @@ logged too. The Phase E RPCs include `submit_my_outputs`,
 `my_profile_timeline` (the researcher's own timeline; `round_started_at` dates
 the current round of changes), and
 `admin_last_sign_ins` (admin-only). No `SECURITY DEFINER` function is callable
-by `anon`; the Sanity bridge is service-role/admin-only. Two edge
-functions live in `supabase/functions/` — `orcid-auth` (the sign-in broker) and
-`report` (Typst → PDF). The report function has Deno tests:
+by `anon`; the Sanity bridge is service-role/admin-only. Edge functions in
+`supabase/functions/`: `orcid-auth` (sign-in broker), `report` (Typst → PDF),
+`sanity-push` / `sanity-pull` (portal → Sanity, and the Website differences
+screen) and `website-sync` (starts the static-site rebuild on publish). All
+have Deno tests:
 
 ```sh
 deno test supabase/functions/report/
 deno test supabase/functions/orcid-auth/
+deno test -A supabase/functions/sanity-push/ supabase/functions/sanity-pull/ supabase/functions/website-sync/
 ```
 
 ## Documentation
 
 | | |
 |---|---|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | team workflow: branches, PRs, migration naming, no personal data |
+| [CLAUDE.md](CLAUDE.md) | rules for Claude Code sessions |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | how both repositories fit together |
 | [OPERATIONS.md](OPERATIONS.md) | backups, secrets, access, incidents, supporting researchers |
 | [AUDIT.md](AUDIT.md) | 2026-08-07 review: what was fixed, what is still open |
@@ -184,3 +194,7 @@ deno test supabase/functions/orcid-auth/
 | `docs/reports/2026-09-briefing-kit/` | decision record: quick layout edits in briefings (hot reload for menus, design canvas for layout) and the transfer loop |
 | `docs/reports/2026-09-rui-spec-gap/` | Rui's 10 Sep portal spec (Doc 1 + 2) against the portal and schema: gap table, the four Supabase changes worth doing now, build order (Typst + PDF) |
 | `docs/reports/2026-09-phase-d-delivery/` | Phase D delivery: what was built against Rui's spec on 10 Sep, before/after per measure, the four DB changes, method, open items (Typst + PDF) |
+| `docs/reports/2026-10-sanity-bridge/` | Sanity bridge how-to and agency questions (Typst + PDF) |
+| `docs/reports/2026-10-portal-flow-audit/` | 28 Oct click-count audit of the admin publish lane (drove Phase I) |
+| `docs/reports/2026-10-rollups/` | dashboard roll-up variants A/B/C (Typst + PDF) |
+| `docs/reports/2026-10-demo-29-oct/` | 29 Oct demo scripts: researcher and event flows |

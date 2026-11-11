@@ -219,6 +219,14 @@ The Welcome pack stays anonymous deliberately: a researcher arrives from the
 public site and should be able to read the onboarding material before they have
 an account.
 
+### Roles and permissions (3 Nov 2026)
+
+After sign-in, what an account may do comes from `public.user_roles` →
+`role_permissions`, checked by `has_perm()` in RLS, RPCs and the Sanity/website
+edge functions (`website.publish`). `is_admin()` now means `research.edit`, so
+older policies kept working unchanged. Migration `20261103150437_roles_matrix`;
+admin UI at `/app/admin/roles`; details in OPERATIONS.md "Roles".
+
 ## Where things live
 
 | | |
@@ -226,10 +234,10 @@ an account.
 | `lib/public/` | the directory — people, outputs, projects, structure. **Internal now**, despite the name; renaming it would touch every import and every historical brief for no behavioural gain |
 | `lib/app/` | the portal proper — profile, requests, dashboard, admin, Welcome pack |
 | `lib/data/supabase.dart` | every query in the app |
-| `supabase/migrations/` | 30 migrations; schema, RLS and the audit triggers |
-| `supabase/functions/` | `orcid-auth` (sign-in broker), `report` (Typst → PDF) |
+| `supabase/migrations/` | 52 migrations (file names = live versions); schema, RLS and the audit triggers |
+| `supabase/functions/` | `orcid-auth` (sign-in broker), `report` (Typst → PDF), `sanity-push`, `sanity-pull`, `website-sync` |
 | `scripts/` | Python batch jobs — import, enrich, ORCID works, DOI checks |
-| `.maestro/` | four end-to-end flows |
+| `.maestro/` | six end-to-end flows |
 
 ## Further reading
 

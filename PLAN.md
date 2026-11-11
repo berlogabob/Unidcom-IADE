@@ -910,7 +910,7 @@ Goal: edit in the portal what the Sanity-driven website shows. Decisions: test p
 - [ ] Researcher-side editing of the new fields: only `research_interests` goes through the review flow; `board_role`, keywords, images and the rest are admin-only.
 - [ ] Pushing to `vj0axykv` needs the agency's token and an explicit decision.
 
-- [x] (28 Oct) User OK on all waiting items. [x] fixed two stale timeline tests broken by e3ec407 (432 flutter tests pass, analyze clean) · [x] news migration applied live (additive) · [x] people sanity_id backfill applied (143 rows; 185 people, 143 with sanity_id) · [x] PROBLEM fixed: 106 `people.photo_url` pointed at the deleted old Supabase host (photos broken in portal and real push failed at asset upload); rewritten to the new host, all 106 objects exist in new storage · [x] REAL PUSH Verónica Silva + 2 outputs to ld5jhf23: member updated (bio+photo), 2 `rims-` outputs created with `members` ref, re-run created nothing; read back via GROQ · [ ] push commits to main (deploy) · [ ] coordinator invites need your choice (email vs ORCID-only) · [ ] rotate test token, revoke agency token
+- [x] (28 Oct) User OK on all waiting items. [x] fixed two stale timeline tests broken by e3ec407 (432 flutter tests pass, analyze clean) · [x] news migration applied live (additive) · [x] people sanity_id backfill applied (143 rows; 185 people, 143 with sanity_id) · [x] PROBLEM fixed: 106 `people.photo_url` pointed at the deleted old Supabase host (photos broken in portal and real push failed at asset upload); rewritten to the new host, all 106 objects exist in new storage · [x] REAL PUSH Verónica Silva + 2 outputs to ld5jhf23: member updated (bio+photo), 2 `rims-` outputs created with `members` ref, re-run created nothing; read back via GROQ · [x] push commits to main (deploy, done by 3 Nov) · [ ] coordinator invites need your choice (email vs ORCID-only) · [ ] rotate test token, revoke agency token
 - [x] (28 Oct) Rest of orchestrator items: [x] `sanity-pull` verified live as admin: people same 2 / differs 152 (memberType 109, shortBio 105, name 89, slug 85, orcid 46, email 9) / website_only 95 / portal_only 30; outputs website_only 1596 / portal_only 372 / 0 matched (real: portal has the recent form submissions, the site holds the legacy set) · [x] migration files renamed to the live versions (20261027185004_sanity_fields, 20261028103208_news_fields) · [x] backup vs live row counts match on all base tables; nightly backup = launchd `local.unidcom.backup` 02:30 on this Mac (log `~/Backups/unidcom/backup.log`, kickstart run verified, 0 errors) · PROBLEM: Supabase PITR off and no managed backups, so the local backup is the only copy; Mac must be awake; no retention/prune; restore never tested on a scratch DB · [ ] 16 name-only matches stay unapplied (common names, 2 with different emails, 4 with long-name variants) — needs human identity review · [ ] website-only people (95) / outputs (1596): decision needed
 
 ### Phase I — One lane, two outputs (28 Oct, from docs/reports/2026-10-portal-flow-audit)
@@ -926,3 +926,20 @@ Decision: Hugo static site stays as the safe design mirror; test Sanity `ld5jhf2
 - [x] (28 Oct) Live checks after Phase I deploy: Website screen cleaned (Retry website sync, Website differences, no bulk Sanity panel); news entry points render live (New news item (wizard), Download template, Import filled template - the file picker/download itself still needs a human click); Antirobot-test pushed to test Sanity: member type = Integrated, sanity_synced_at set on person + output.
 - [x] I11 (codex; 665 tests; pushed) Website screen says "Last sync: never run" although the static site syncs every 10 min (the sibling-repo workflow writes no record) and lists already published people under "Waiting for the next sync": show the real last run (GitHub Actions run time via the website-sync function) or drop the line
 - [ ] Human click-test: news template download + import preview (user), then I import the 181 rows as drafts
+
+### Phase J — Roles, events push, team handoff (3–11 Nov 2026)
+
+- [x] Roles as data: `roles` / `role_permissions` / `user_roles`, `has_perm()` in RLS, RPCs and edge functions; Admin, Editor, News; matrix at `/app/admin/roles` (5fbce6d, live as `20261103150437` + `20261103150448`)
+- [x] Website events tab: push published events to Sanity (0f7f462)
+- [x] Publish reports that the website update started (~3 min) with a link (364e5b9); Website screen shows no more "never run" (ea304d7)
+- [x] ORCID connect fills an admin-created profile that has no iD (`20261105103059_link_orcid_fills_own_profile`, live 5 Nov; file committed 11 Nov)
+- [x] (11 Nov) Repo brought to current state for team work: migration files renamed to live versions (52/52), Sep–Oct audits and reports committed, `sanity-dump/` + report CSVs + admin screenshots kept out of the public repo, CONTRIBUTING.md + CLAUDE.md added, README/ARCHITECTURE updated; 667 flutter tests, analyze clean; `feat/sanity-bridge` pushed unmerged; backup branch `backup/2026-11-11-pre-team` + tag
+
+Still open (carried):
+- [ ] Coordinator invites: email vs ORCID-only (8 coordinators, 0 accounts)
+- [ ] 16 name-only people matches need human identity review
+- [ ] Website-only rows (95 people / 1596 outputs): import decision
+- [ ] Backups: Supabase PITR off; nightly backup runs only on one Mac; restore never tested
+- [ ] Rotate the test Sanity token, revoke the agency token; 2 edge secrets outstanding
+- [ ] Human click-test: news template download + import, then import 181 rows as drafts
+- [ ] Old audit files on `main` (`audit/2026-09-0*/flows-results.json`, `screens.md`) contain one test-account email; already in public history

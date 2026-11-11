@@ -24,7 +24,7 @@ const CORS = {
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
-// Roles live in public.user_roles (see migration 20261103120000_roles_matrix);
+// Roles live in public.user_roles (see migration 20261103150437_roles_matrix);
 // ask the DB as the caller rather than reading a JWT claim.
 async function isAdmin(authorization: string): Promise<boolean> {
   const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/rpc/has_perm`, {
