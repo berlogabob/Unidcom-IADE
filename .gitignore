@@ -150,3 +150,12 @@ audit/*/screens/
 audit/*/hierarchy/
 audit/*/measurements.json
 docs/reports/*/fonts/
+
+# Sanity snapshots hold agency emails — public repo, keep local
+/sanity-dump/
+/login_result.png
+docs/reports/*/20??-??-??-*.txt
+# Report data with researcher emails, and admin screenshots (show the signed-in email)
+docs/reports/*/*.csv
+docs/reports/*/shots/
+audit/*/flows-results.json
